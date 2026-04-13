@@ -117,19 +117,39 @@ function computeStrictnessLevel(
   avgTestScore: number,
   streak: number,
   avgStress: number,
-  avgEnergy: number
+  avgEnergy: number,
+  performanceScore: number,
+  activeDaysLast7: number
 ): AIContext["strictnessLevel"] {
-  // AIIMS Delhi cutoff ~710/720 = 98.6%, min AIIMS Rishikesh ~690/720 = 95.8% (General Category)
-  const rishikeshReady = overallPct >= 85 && avgTestScore >= 95.8;
-  const delhiReady = overallPct >= 95 && avgTestScore >= 98.6;
+  // ── Target benchmarks ──
+  // AIIMS Delhi: ~710/720 = 98.6% tests; AIIMS Rishikesh: ~660/720 = 95.8%
+  const delhiReady = overallPct >= 95 && avgTestScore >= 98.6 && performanceScore >= 95;
+  const rishikeshReady = overallPct >= 85 && avgTestScore >= 95.8 && performanceScore >= 85;
 
+  // ── 95%+ across everything: maintain MODERATE (she has earned calm guidance) ──
   if (delhiReady) return "MODERATE";
+
+  // ── Consistency signals ──
+  // A student who consistently shows up deserves MODERATE tone, not harsh criticism
+  const isConsistent =
+    streak >= 5 ||                    // 5+ consecutive days logged
+    activeDaysLast7 >= 5 ||           // active at least 5 of last 7 days
+    performanceScore >= 70;           // composite score reflecting solid effort
+
+  // ── Rishikesh-level progress + consistent → MODERATE ──
+  if (rishikeshReady && isConsistent) return "MODERATE";
+
+  // ── Rishikesh progress without full consistency → STRICT ──
   if (rishikeshReady) return "STRICT";
 
-  // High stress + low energy → encourage slightly, but never fully lenient
+  // ── Below Rishikesh but consistently showing up → STRICT (not harsh VERY_STRICT) ──
+  if (isConsistent) return "STRICT";
+
+  // ── High stress + low energy + NOT consistent → ease slightly to avoid burnout collapse ──
   if (avgStress >= 8 && avgEnergy <= 3) return "ENCOURAGING";
 
-  return "VERY_STRICT"; // Default: she is not where she needs to be
+  // ── Default: she is neither consistent nor close to her targets ──
+  return "VERY_STRICT";
 }
 
 export async function buildAIContext(): Promise<AIContext> {
@@ -276,8 +296,16 @@ export async function buildAIContext(): Promise<AIContext> {
   const examDate = new Date("2027-05-02T09:00:00+05:30");
   const daysRemaining = Math.max(0, Math.ceil((examDate.getTime() - Date.now()) / 86400000));
 
-  // Strictness level
-  const strictnessLevel = computeStrictnessLevel(overallCompletion, avgTestScore, streak, avgStress, avgEnergy);
+  // Strictness level — now also uses performanceScore and activeDays for consistency detection
+  const strictnessLevel = computeStrictnessLevel(
+    overallCompletion,
+    avgTestScore,
+    streak,
+    avgStress,
+    avgEnergy,
+    performanceScore,
+    last7DaysSummary.activeDays
+  );
 
   // Cycle phase
   const cyclePhase = estimateCyclePhase(lastCycle ? lastCycle.startDate : null);
@@ -338,10 +366,10 @@ export function buildSystemPrompt(
   const { strictnessLevel, moodSummary, student } = context;
 
   const toneGuide = {
-    VERY_STRICT: `You are operating in VERY STRICT mode. Misti is critically behind schedule. She has ${student.daysRemaining} days left and is on her 4th attempt. Treat every question, claim, and excuse with direct confrontation. Point out data gaps. Be stern but not cruel. Never console without a correction.`,
-    STRICT: `You are operating in STRICT mode. Misti shows some progress but is not yet at AIIMS Rishikesh level. Be firm, data-driven, and push her to go further. Acknowledge effort only when the data supports it.`,
-    MODERATE: `You are operating in MODERATE mode. Misti's performance is approaching AIIMS Rishikesh level. Maintain high standards while acknowledging concrete achievements. Guide her toward AIIMS Delhi — the true goal.`,
-    ENCOURAGING: `You are operating in ENCOURAGING mode (temporarily). This is ONLY because her mood data shows extreme stress (avg stress ${moodSummary.avgStress}/10) and low energy (avg ${moodSummary.avgEnergy}/10). Reduce the pressure briefly but do NOT lower standards. Be warm but redirect to strategy within 2-3 sentences.`,
+    VERY_STRICT: `You are operating in VERY STRICT mode. Misti is critically behind schedule and not showing consistent effort. She has ${student.daysRemaining} days left and is on her 4th attempt. Treat every question, claim, and excuse with direct confrontation. Point out data gaps. Be stern but not cruel. Never console without a correction. She needs to start showing up every single day — the data proves she is not.`,
+    STRICT: `You are operating in STRICT mode. Misti is putting in effort but has not yet crossed the AIIMS Rishikesh benchmark. Consistency is noted — reward it with recognition, then immediately redirect to what still needs to improve. Be firm, data-driven, and specific. Acknowledge genuine effort when the data shows it, but do not let her settle below AIIMS Delhi standard.`,
+    MODERATE: `You are operating in MODERATE mode. Misti is being consistent and her performance metrics reflect real progress. Her consistency streak and active study days show she is taking this seriously. Maintain high academic standards — guide her with precision and depth. You can acknowledge effort warmly, but always follow with what comes next. Do NOT become lax. If she asks lazy questions or cuts corners, call it out clearly. The goal is AIIMS Delhi, not comfort.`,
+    ENCOURAGING: `You are operating in ENCOURAGING mode (temporarily). This is ONLY because her mood data shows extreme stress (avg stress ${moodSummary.avgStress}/10) and low energy (avg ${moodSummary.avgEnergy}/10). She needs steadiness right now, not more pressure. Be warm and grounding — but do NOT lower standards or skip accountability. Redirect to strategy within 2-3 sentences. This mode resets automatically when her energy stabilises.`,
   }[strictnessLevel];
 
   const moodContext = context.recentMoods.length > 0
