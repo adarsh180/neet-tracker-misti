@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Subject {
+  id          String    @id @default(cuid())
+  slug        String    @unique // botany, zoology, physics, chemistry
+  name        String
+  emoji       String
+  color       String    // hex color for UI
+  topics      Topic[]
+  dailyGoals  DailyGoal[]
+  testRecords TestRecord[]
+  errorPatterns ErrorPattern[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("subjects")
+}
+
+model Topic {
+  id             String    @id @default(cuid())
+  subjectId      String
+  subject        Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  name           String
+  chapter        String?   // chapter name/number
+  classLevel     String?   // "11" or "12"
+  isCompleted    Boolean   @default(false)
+  completedAt    DateTime?
+  questionsSolved Int      @default(0)
+  revisions      Revision[]
+  
+  // Spaced Repetition System (SRS)
+  nextReviewDate DateTime?
+  easeFactor     Float     @default(2.5) // SuperMemo-2 
+  interval       Int       @default(0)   // Days until next review
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("topics")
+}
+
+model Revision {
+  id        String   @id @default(cuid())
+  topicId   String
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  note      String?  @db.Text
+  revisedAt DateTime @default(now())
+
+  @@map("revisions")
+}
+
+model DailyGoal {
+  id             String   @id @default(cuid())
+  subjectId      String
+  subject        Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  date           DateTime @db.Date
+  hoursStudied   Float    @default(0)
+  questionsSolved Int     @default(0)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([subjectId, date])
+  @@map("daily_goals")
+}
+
+model TestRecord {
+  id          String     @id @default(cuid())
+  subjectId   String?
+  subject     Subject?   @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  testType    String     // SECTIONAL, FULL_LENGTH, AITS, UNIT_TEST
+  testName    String
+  score       Float
+  maxScore    Float
+  percentage  Float
+  rank        Int?
+  totalStudents Int?
+  institute   String?
+  staminaDecay Int?       // 1-10 rating on mental fatigue post-test
+  takenAt     DateTime
+  notes       String?    @db.Text
+  createdAt   DateTime   @default(now())
+
+  @@map("test_records")
+}
+
+model CycleEntry {
+  id          String    @id @default(cuid())
+  startDate   DateTime  @db.Date
+  endDate     DateTime? @db.Date
+  flowLevel   String    // LIGHT, MODERATE, HEAVY, SPOTTING
+  symptoms    String?   @db.Text
+  mood        String?   // HAPPY, ANXIOUS, TIRED, NORMAL, CRAMPY
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  @@map("cycle_entries")
+}
+
+model AiConversation {
+  id        String       @id @default(cuid())
+  title     String?
+  mode      String       @default("neet-guru") // neet-guru, rank, quiz, cycle
+  messages  AiMessage[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String         // user | assistant
+  content        String         @db.LongText
+  createdAt      DateTime       @default(now())
+
+  @@map("ai_messages")
+}
+
+model AiMemoryProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  displayName         String
+  version             Int      @default(1)
+  stats               Json
+  preferences         Json
+  strengths           Json
+  weaknesses          Json
+  misconceptions      Json
+  behavioralPatterns  Json
+  conversationSnapshots Json
+  rollingSummary      String   @db.LongText
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("ai_memory_profiles")
+}
+
+model RankPrediction {
+  id              String   @id @default(cuid())
+  predictedRank   Int
+  predictedScore  Float
+  confidence      Float    // 0-100
+  analysisJson    String   @db.LongText // JSON blob with full analysis
+  createdAt       DateTime @default(now())
+
+  @@map("rank_predictions")
+}
+
+model MoodEntry {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  mood        String   // AMAZING, GOOD, OKAY, LOW, TERRIBLE
+  energy      Int      // 1-10
+  focus       Int      // 1-10
+  stress      Int      // 1-10 (1=calm, 10=very stressed)
+  note        String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([date])
+  @@map("mood_entries")
+}
+
+model QuizSession {
+  id          String   @id @default(cuid())
+  subject     String
+  topic       String?
+  difficulty  String
+  score       Int
+  maxScore    Int
+  accuracy    Float
+  createdAt   DateTime @default(now())
+
+  @@map("quiz_sessions")
+}
+
+model ErrorPattern {
+  id          String   @id @default(cuid())
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  errorType   String   // e.g., "Calculation", "Formula", "Conceptual", "Silly"
+  frequency   Int      @default(1)
+  notes       String?  @db.Text
+  updatedAt   DateTime @updatedAt
+  
+  @@map("error_patterns")
+}
