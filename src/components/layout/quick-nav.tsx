@@ -19,43 +19,54 @@ import {
   Brain,
   Heart,
   TrendingUp,
-  BookOpen,
+  ListTodo,
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
 
-const NAV_ITEMS = [
+type NavItem = {
+  href: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  accent: string;
+};
+
+const EXECUTION_ITEMS: NavItem[] = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", accent: "#d4a853" },
+  { href: "/todo", icon: ListTodo, label: "Todo Deck", accent: "#f59e0b" },
   { href: "/daily-goals", icon: Target, label: "Daily Goals", accent: "#e8728a" },
   { href: "/tests", icon: BarChart2, label: "Tests", accent: "#5b9cf5" },
   { href: "/mood", icon: SmilePlus, label: "Mood Tracker", accent: "#b680d9" },
-  { href: "/ai-insights", icon: Sparkles, label: "AI Insights", accent: "#d4a853" },
+] ;
 
+const AI_ITEMS: NavItem[] = [
+  { href: "/ai-insights", icon: Sparkles, label: "AI Insights", accent: "#d4a853" },
+  { href: "/todo?focus=mission", icon: Target, label: "Mission Planner", accent: "#e8728a" },
+  { href: "/todo?focus=copilot", icon: Brain, label: "Task Copilot", accent: "#f59e0b" },
   { href: "/ai-insights/neet-guru", icon: Brain, label: "NEET-GURU", accent: "#d4a853" },
   { href: "/ai-insights/rank-predictor", icon: TrendingUp, label: "Rank Predictor", accent: "#5b9cf5" },
   { href: "/ai-insights/cycle-planner", icon: Heart, label: "Cycle Planner", accent: "#e8728a" },
+] ;
 
+const SUBJECT_ITEMS: NavItem[] = [
   { href: "/subjects/botany", icon: Leaf, label: "Botany", accent: "#5cc87d" },
   { href: "/subjects/zoology", icon: Microscope, label: "Zoology", accent: "#d4a853" },
   { href: "/subjects/physics", icon: Zap, label: "Physics", accent: "#5b9cf5" },
   { href: "/subjects/chemistry", icon: Atom, label: "Chemistry", accent: "#b680d9" },
-] as const;
+] ;
 
 const GROUPS = [
-  { label: "Navigation", items: NAV_ITEMS.slice(0, 5) },
-  { label: "AI Tools", items: NAV_ITEMS.slice(5, 9) },
-  { label: "Subjects", items: NAV_ITEMS.slice(9) },
-] as const;
+  { label: "Execution", items: EXECUTION_ITEMS },
+  { label: "AI Tools", items: AI_ITEMS },
+  { label: "Subjects", items: SUBJECT_ITEMS },
+];
 
 export default function QuickNav() {
   const [open, setOpen] = useState(false);
-  const [ready, setReady] = useState(false);
 
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    setReady(true);
-
     // Prevent scrolling on the body when the menu is open
     if (open) {
       document.body.style.overflow = "hidden";
@@ -73,8 +84,6 @@ export default function QuickNav() {
   };
 
   const flatItems = useMemo(() => GROUPS.flatMap((group) => group.items), []);
-
-  if (!ready) return null;
 
   return (
     <>

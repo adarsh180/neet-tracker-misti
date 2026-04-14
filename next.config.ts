@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   },
   // For Vercel deployment
   experimental: {
+    viewTransition: true,
     serverActions: {
       bodySizeLimit: "2mb",
     },

@@ -6,12 +6,13 @@ import { useState } from "react";
 import {
   LayoutDashboard, Target, BarChart2, Sparkles,
   SmilePlus, Leaf, Zap, Microscope, Atom,
-  LogOut, Menu, X, ChevronDown
+  LogOut, Menu, X, ChevronDown, ListTodo
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
 
 const NAV_LINKS = [
   { href: "/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/todo",        icon: ListTodo,        label: "Todo" },
   { href: "/daily-goals", icon: Target,           label: "Goals" },
   { href: "/tests",       icon: BarChart2,        label: "Tests" },
   { href: "/mood",        icon: SmilePlus,        label: "Mood" },

@@ -4,7 +4,7 @@ const OPENROUTER_BASE = "https://generativelanguage.googleapis.com/v1beta/openai
 export const AI_MODELS = {
   primary:   "gemma-4-31b-it",
   fallback1: "gemma-4-26b-a4b-it",
-  fallback2: "gemini-2.5-flash",
+  fallback2: "gemma-3-27b-it",
 };
 
 export const MODELS_LIST = Object.values(AI_MODELS);
@@ -39,11 +39,14 @@ async function callModel(
   maxTokens = 4096,
   temperature = 0.7
 ): Promise<AIResponse> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 18000);
   const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature, stream: false }),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeoutId));
 
   if (res.status === 429) throw new Error(`RATE_LIMITED:${model}`);
   if (!res.ok) {

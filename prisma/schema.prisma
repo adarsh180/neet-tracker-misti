@@ -20,6 +20,8 @@ model Subject {
   dailyGoals  DailyGoal[]
   testRecords TestRecord[]
   errorPatterns ErrorPattern[]
+  tasks       Task[]
+  missionSessions MissionSession[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -197,4 +199,139 @@ model ErrorPattern {
   updatedAt   DateTime @updatedAt
   
   @@map("error_patterns")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  SKIPPED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TaskSource {
+  MANUAL
+  AI
+}
+
+enum TaskAgentTrigger {
+  START
+  FINISH
+  SKIP
+  MANUAL
+}
+
+enum TaskAgentRunStatus {
+  SUCCESS
+  FAILED
+}
+
+enum TaskTimelineEventType {
+  CREATED
+  UPDATED
+  STARTED
+  COMPLETED
+  SKIPPED
+  AI_TRIGGERED
+}
+
+enum MissionKind {
+  MISSION_PLANNER
+  AUTO_TODO
+  TEST_RECOVERY
+  REVISION_PULSE
+  DAILY_COMMAND
+  PATTERN_DETECTOR
+}
+
+enum MissionSessionStatus {
+  READY
+  APPLIED
+  ARCHIVED
+}
+
+model Task {
+  id                String              @id @default(cuid())
+  title             String
+  description       String?             @db.Text
+  status            TaskStatus          @default(TODO)
+  priority          TaskPriority        @default(MEDIUM)
+  source            TaskSource          @default(MANUAL)
+  missionId         String?
+  mission           MissionSession?     @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  subjectId         String?
+  subject           Subject?            @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  dueDate           DateTime?           @db.Date
+  plannedMinutes    Int?
+  actualMinutes     Int?
+  orderIndex        Int                 @default(0)
+  lastAgentSummary  String?             @db.Text
+  aiAssistEnabled   Boolean             @default(true)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  skippedAt         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  agentRuns         TaskAgentRun[]
+  timelineEvents    TaskTimelineEvent[]
+
+  @@index([status, orderIndex])
+  @@index([dueDate])
+  @@index([missionId])
+  @@map("tasks")
+}
+
+model TaskAgentRun {
+  id              String              @id @default(cuid())
+  taskId           String
+  task             Task                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  trigger          TaskAgentTrigger
+  status           TaskAgentRunStatus  @default(SUCCESS)
+  prompt           String              @db.LongText
+  response         String              @db.LongText
+  suggestionsJson  Json?
+  model            String?
+  createdAt        DateTime            @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("task_agent_runs")
+}
+
+model TaskTimelineEvent {
+  id          String                @id @default(cuid())
+  taskId       String
+  task         Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type         TaskTimelineEventType
+  label        String
+  detail       String?               @db.Text
+  createdAt    DateTime              @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("task_timeline_events")
+}
+
+model MissionSession {
+  id                 String               @id @default(cuid())
+  kind               MissionKind
+  status             MissionSessionStatus @default(READY)
+  title              String
+  goal               String?              @db.Text
+  summary            String?              @db.Text
+  responseMarkdown   String               @db.LongText
+  responseJson       Json
+  model              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  subjectId          String?
+  subject            Subject?             @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  tasks              Task[]
+
+  @@index([kind, createdAt])
+  @@map("mission_sessions")
 }

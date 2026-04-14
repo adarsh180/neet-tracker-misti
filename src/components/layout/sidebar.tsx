@@ -5,12 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Target, BarChart2, Sparkles, Leaf, Zap,
   Microscope, Atom, LogOut, ChevronLeft, ChevronRight,
-  SmilePlus
+  SmilePlus, ListTodo
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
 
 const NAV_MAIN = [
   { href: "/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/todo",        icon: ListTodo,         label: "Todo Deck" },
   { href: "/daily-goals", icon: Target,           label: "Daily Goals" },
   { href: "/tests",       icon: BarChart2,        label: "Tests" },
   { href: "/ai-insights", icon: Sparkles,         label: "AI Insights" },
