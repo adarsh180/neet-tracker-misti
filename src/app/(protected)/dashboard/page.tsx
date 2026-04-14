@@ -208,6 +208,17 @@ const QUICK_SECTIONS = [
     border: "hsla(352,65%,60%,0.24)",
     emoji: "🩷",
   },
+  {
+    href: "https://upsc-cse-tracker-adarsh.vercel.app/",
+    icon: Award,
+    label: "UPSC CSE Tracker",
+    desc: "Switch to the UPSC Civil Services Examination Tracker",
+    color: "var(--physics)",
+    glow: "var(--physics-glow)",
+    bg: "var(--physics-dim)",
+    border: "hsla(218,84%,62%,0.24)",
+    emoji: "🏛️",
+  },
 ];
 
 export default function DashboardPage() {
