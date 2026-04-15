@@ -32,16 +32,19 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
-  attachmentName?: string;
-  attachmentType?: string;
+  attachments?: UploadedFile[];
 }
 
 interface UploadedFile {
   name: string;
   type: string; // mime type
-  base64: string;
+  base64?: string;
   preview?: string; // for images
 }
+
+const ALLOWED_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+const MAX_UPLOAD_SIZE = 20 * 1024 * 1024;
+const MAX_ATTACHMENTS = 5;
 
 interface Conversation {
   id: string;
@@ -70,6 +73,27 @@ function formatMessageContent(text: string) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+
+function normalizeMessage(raw: Partial<Message> & { attachmentsJson?: unknown }): Message {
+  const attachments = Array.isArray(raw.attachmentsJson)
+    ? (raw.attachmentsJson as Array<{ name: string; mimeType: string; base64?: string; fileUrl?: string }>).map((file) => ({
+        name: file.name,
+        type: file.mimeType,
+        base64: file.base64,
+        preview: file.mimeType.startsWith("image/")
+          ? (file.fileUrl || (file.base64 ? `data:${file.mimeType};base64,${file.base64}` : undefined))
+          : undefined,
+      }))
+    : [];
+
+  return {
+    id: raw.id || crypto.randomUUID(),
+    role: (raw.role as "user" | "assistant") || "assistant",
+    content: raw.content || "",
+    createdAt: raw.createdAt || new Date().toISOString(),
+    attachments,
+  };
 }
 
 function NeetGuruLogo() {
@@ -128,8 +152,9 @@ export default function NEETGuruPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [error, setError] = useState("");
   const [activeModel, setActiveModel] = useState("NEET-GURU");
-  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [fileLoading, setFileLoading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -180,7 +205,7 @@ export default function NEETGuruPage() {
     const res = await fetch(`/api/ai/conversations/${id}`);
     if (res.ok) {
       const c = await res.json();
-      setMessages(c.messages || []);
+      setMessages((c.messages || []).map(normalizeMessage));
     }
   };
 
@@ -189,50 +214,70 @@ export default function NEETGuruPage() {
     setMessages([]);
     setInput("");
     setError("");
-    setUploadedFile(null);
+    setUploadedFiles([]);
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const loadUploadedFiles = useCallback(async (files: File[]) => {
+    if (!files.length) return false;
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
-    if (!allowedTypes.includes(file.type)) {
-      setError("Only images (JPG, PNG, WebP, GIF) and PDFs are supported.");
-      return;
+    const availableSlots = MAX_ATTACHMENTS - uploadedFiles.length;
+    if (availableSlots <= 0) {
+      setError(`You can attach up to ${MAX_ATTACHMENTS} files at a time.`);
+      return false;
     }
-    if (file.size > 20 * 1024 * 1024) { // 20MB limit
-      setError("File too large. Maximum size is 20MB.");
-      return;
+
+    const selectedFiles = files.slice(0, availableSlots);
+    const invalidFile = selectedFiles.find((file) => !ALLOWED_UPLOAD_TYPES.includes(file.type));
+    if (invalidFile) {
+      setError("Only images (JPG, PNG, WebP, GIF) and PDFs are supported.");
+      return false;
+    }
+
+    const oversizedFile = selectedFiles.find((file) => file.size > MAX_UPLOAD_SIZE);
+    if (oversizedFile) {
+      setError(`"${oversizedFile.name}" is too large. Maximum size is 20MB.`);
+      return false;
     }
 
     setFileLoading(true);
     setError("");
-    try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Strip the data URL prefix, keep only the base64 part
-          resolve(result.split(",")[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
 
-      setUploadedFile({
-        name: file.name,
-        type: file.type,
-        base64,
-        preview: file.type.startsWith("image/") ? `data:${file.type};base64,${base64}` : undefined,
-      });
+    try {
+      const nextFiles = await Promise.all(
+        selectedFiles.map(
+          (file) =>
+            new Promise<UploadedFile>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = reader.result as string;
+                const base64 = result.split(",")[1];
+                resolve({
+                  name: file.name || `pasted-${Date.now()}.${file.type.split("/")[1] || "bin"}`,
+                  type: file.type,
+                  base64,
+                  preview: file.type.startsWith("image/") ? `data:${file.type};base64,${base64}` : undefined,
+                });
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+
+      setUploadedFiles((current) => [...current, ...nextFiles]);
+      return true;
     } catch {
       setError("Failed to read file. Please try again.");
+      return false;
     } finally {
       setFileLoading(false);
-      // Reset input so same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  }, [uploadedFiles.length]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    await loadUploadedFiles(files);
   };
 
   const deleteConv = async (id: string, e: React.MouseEvent) => {
@@ -245,22 +290,21 @@ export default function NEETGuruPage() {
 
   const sendMessage = async (text?: string) => {
     const msg = (text ?? input).trim();
-    if ((!msg && !uploadedFile) || streaming) return;
-    const fileToSend = uploadedFile;
+    if ((!msg && uploadedFiles.length === 0) || streaming) return;
+    const filesToSend = uploadedFiles;
     setInput("");
     setError("");
     setStreaming(true);
     setStreamingText("");
-    setUploadedFile(null);
+    setUploadedFiles([]);
     if (inputRef.current) inputRef.current.style.height = "auto";
 
     const tempMsg: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: msg || (fileToSend ? `[Attached: ${fileToSend.name}]` : ""),
+      content: msg || (filesToSend.length ? `[Attached ${filesToSend.length} file${filesToSend.length > 1 ? "s" : ""}]` : ""),
       createdAt: new Date().toISOString(),
-      attachmentName: fileToSend?.name,
-      attachmentType: fileToSend?.type,
+      attachments: filesToSend,
     };
     setMessages((p) => [...p, tempMsg]);
 
@@ -274,9 +318,11 @@ export default function NEETGuruPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId: activeConvId,
-          message: msg || "Please analyze this file I've uploaded.",
+          message: msg || "Please analyze all attached files carefully.",
           mode: "neet-guru",
-          file: fileToSend ? { base64: fileToSend.base64, mimeType: fileToSend.type, name: fileToSend.name } : null,
+          files: filesToSend
+            .filter((file) => file.base64)
+            .map((file) => ({ base64: file.base64 as string, mimeType: file.type, name: file.name })),
         }),
         signal: abortRef.current.signal,
       });
@@ -339,6 +385,44 @@ export default function NEETGuruPage() {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleComposerPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = Array.from(e.clipboardData.items)
+      .filter((item) => item.kind === "file")
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => Boolean(file));
+    if (!files.length) return;
+
+    e.preventDefault();
+    await loadUploadedFiles(
+      files.map(
+        (file) => new File([file], file.name || `pasted-image-${Date.now()}.png`, { type: file.type || "image/png" })
+      )
+    );
+  };
+
+  const removeUploadedFile = (index: number) => {
+    setUploadedFiles((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (streaming) return;
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (streaming) return;
+    await loadUploadedFiles(Array.from(e.dataTransfer.files || []));
   };
 
   const cancelStreaming = () => {
@@ -513,17 +597,23 @@ export default function NEETGuruPage() {
                           <div className="ng-message-text markdown-body">
                             {msg.role === "user" ? (
                               <div className="ng-user-message-body">
-                                {msg.attachmentName && (
-                                  <div className="ng-attachment-chip">
-                                    {msg.attachmentType?.startsWith("image/") ? (
-                                      <ImageIcon size={14} />
-                                    ) : (
-                                      <FileText size={14} />
-                                    )}
-                                    <span>{msg.attachmentName}</span>
+                                {msg.attachments && msg.attachments.length > 0 && (
+                                  <div className="ng-message-attachments">
+                                    {msg.attachments.map((attachment, index) => (
+                                      <div key={`${msg.id}-${attachment.name}-${index}`} className="ng-attachment-chip">
+                                        {attachment.preview ? (
+                                          <img src={attachment.preview} className="ng-attachment-thumb" alt={attachment.name} />
+                                        ) : (
+                                          <div className="ng-attachment-icon">
+                                            {attachment.type.startsWith("image/") ? <ImageIcon size={14} /> : <FileText size={14} />}
+                                          </div>
+                                        )}
+                                        <span>{attachment.name}</span>
+                                      </div>
+                                    ))}
                                   </div>
                                 )}
-                                {!msg.content.startsWith("[Attached:") && <span>{msg.content}</span>}
+                                {!msg.content.startsWith("[Attached") && <span>{msg.content}</span>}
                               </div>
                             ) : (
                               renderMarkdown(formatMessageContent(msg.content))
@@ -577,32 +667,42 @@ export default function NEETGuruPage() {
             <div className="ng-input-glow" />
 
             {/* File preview strip */}
-            {uploadedFile && (
+            {uploadedFiles.length > 0 && (
               <div className="ng-file-preview-strip">
-                <div className="ng-file-chip">
-                  {uploadedFile.preview ? (
-                    <img src={uploadedFile.preview} className="ng-file-thumb" alt="preview" />
-                  ) : (
-                    <div className="ng-file-icon-wrap"><FileText size={18} /></div>
-                  )}
-                  <div className="ng-file-chip-info">
-                    <span className="ng-file-chip-name">{uploadedFile.name}</span>
-                    <span className="ng-file-chip-type">{uploadedFile.type.startsWith("image/") ? "Image" : "PDF"} · ready to send</span>
-                  </div>
-                  <button className="ng-file-chip-remove" onClick={() => setUploadedFile(null)} title="Remove file">
-                    <X size={15} />
-                  </button>
+                <div className="ng-file-strip-grid">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="ng-file-chip">
+                      {file.preview ? (
+                        <img src={file.preview} className="ng-file-thumb" alt={file.name} />
+                      ) : (
+                        <div className="ng-file-icon-wrap"><FileText size={18} /></div>
+                      )}
+                      <div className="ng-file-chip-info">
+                        <span className="ng-file-chip-name">{file.name}</span>
+                        <span className="ng-file-chip-type">{file.type.startsWith("image/") ? "Image" : "PDF"} · ready to send</span>
+                      </div>
+                      <button className="ng-file-chip-remove" onClick={() => removeUploadedFile(index)} title="Remove file">
+                        <X size={15} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            <div className="ng-input-container">
+            <div
+              className={`ng-input-container ${dragActive ? "drag-active" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="ng-input-left-accent" />
 
               {/* Hidden file input */}
               <input
                 ref={fileInputRef}
                 type="file"
+                multiple
                 accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
                 style={{ display: "none" }}
                 onChange={handleFileSelect}
@@ -610,17 +710,17 @@ export default function NEETGuruPage() {
 
               {/* Paperclip button */}
               <button
-                className={`ng-attach-btn ${fileLoading ? "loading" : ""} ${uploadedFile ? "has-file" : ""}`}
+                className={`ng-attach-btn ${fileLoading ? "loading" : ""} ${uploadedFiles.length > 0 ? "has-file" : ""}`}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={streaming || fileLoading}
-                title="Attach image or PDF"
+                title="Attach images or PDFs"
               >
                 {fileLoading ? <div className="ng-attach-spinner" /> : <Paperclip size={18} />}
               </button>
               <textarea
                 ref={inputRef}
                 className="ng-textarea"
-                placeholder="Message NEET-GURU..."
+                placeholder="Message NEET-GURU, paste images, or drop files..."
                 value={input}
                 disabled={streaming}
                 rows={1}
@@ -630,6 +730,7 @@ export default function NEETGuruPage() {
                   e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
                 }}
                 onKeyDown={handleKeyDown}
+                onPaste={handleComposerPaste}
               />
               <div className="ng-input-actions">
                 {streaming ? (
@@ -638,9 +739,9 @@ export default function NEETGuruPage() {
                   </button>
                 ) : (
                   <button
-                    className={`ng-action-btn send ${input.trim() ? "active" : ""}`}
+                    className={`ng-action-btn send ${input.trim() || uploadedFiles.length > 0 ? "active" : ""}`}
                     onClick={() => sendMessage()}
-                    disabled={!input.trim()}
+                    disabled={!input.trim() && uploadedFiles.length === 0}
                     title="Send message"
                   >
                     <Send size={16} />
@@ -649,7 +750,7 @@ export default function NEETGuruPage() {
               </div>
             </div>
             <div className="ng-input-footer">
-              NEET-GURU can make mistakes. Check important medical facts.
+              Paste screenshots, drop files, or attach multiple images for direct analysis. NEET-GURU can make mistakes, so check important medical facts.
               <span className="ng-model-indicator">• {activeModel}</span>
             </div>
           </div>
@@ -1584,6 +1685,12 @@ export default function NEETGuruPage() {
           transform: translateY(-1px);
         }
 
+        .ng-input-container.drag-active {
+          border-color: rgba(139, 211, 255, 0.55);
+          box-shadow: 0 0 0 1px rgba(139, 211, 255, 0.18), 0 18px 42px rgba(0, 0, 0, 0.38);
+          background: linear-gradient(180deg, rgba(47, 47, 47, 0.98), rgba(34, 40, 46, 0.98));
+        }
+
         .ng-input-left-accent {
           position: absolute;
           inset: 0 auto 0 0;
@@ -1707,8 +1814,13 @@ export default function NEETGuruPage() {
           margin-bottom: 10px;
           animation: fadeIn 0.25s ease-out;
         }
+        .ng-file-strip-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 10px;
+        }
         .ng-file-chip {
-          display: inline-flex;
+          display: flex;
           align-items: center;
           gap: 12px;
           background: rgba(255, 255, 255, 0.04);
@@ -1779,6 +1891,11 @@ export default function NEETGuruPage() {
           flex-direction: column;
           gap: 8px;
         }
+        .ng-message-attachments {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
         .ng-attachment-chip {
           display: inline-flex;
           align-items: center;
@@ -1791,6 +1908,23 @@ export default function NEETGuruPage() {
           font-weight: 600;
           color: #8bd3ff;
           max-width: 260px;
+        }
+        .ng-attachment-thumb,
+        .ng-attachment-icon {
+          width: 26px;
+          height: 26px;
+          border-radius: 7px;
+          flex-shrink: 0;
+        }
+        .ng-attachment-thumb {
+          object-fit: cover;
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+        .ng-attachment-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.08);
         }
         .ng-attachment-chip span {
           white-space: nowrap;

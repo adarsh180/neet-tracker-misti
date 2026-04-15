@@ -128,6 +128,7 @@ model AiMessage {
   conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String         // user | assistant
   content        String         @db.LongText
+  attachmentsJson Json?
   createdAt      DateTime       @default(now())
 
   @@map("ai_messages")
