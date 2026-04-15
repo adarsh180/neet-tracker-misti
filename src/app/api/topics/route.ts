@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createTopicRecord } from "@/lib/topic-manager";
 
+function normalizeChapterValue(value: unknown) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
 // POST — add topic, PATCH — update topic, DELETE — delete topic
 export async function POST(req: NextRequest) {
   try {
@@ -55,16 +61,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "rename_chapter") {
-      const chapterName = data.chapterName?.trim();
-      const nextChapterName = data.nextChapterName?.trim();
-      if (!data.subjectId || !chapterName || !nextChapterName) {
+      const chapterName = normalizeChapterValue(data.chapterName);
+      const nextChapterName = normalizeChapterValue(data.nextChapterName);
+      if (!data.subjectId || !nextChapterName) {
         return NextResponse.json({ error: "subjectId, chapterName and nextChapterName are required" }, { status: 400 });
       }
 
       await db.topic.updateMany({
         where: {
           subjectId: data.subjectId,
-          chapter: chapterName,
+          chapter: chapterName === null ? null : chapterName,
         },
         data: {
           chapter: nextChapterName,
@@ -75,15 +81,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "delete_chapter") {
-      const chapterName = data.chapterName?.trim();
-      if (!data.subjectId || !chapterName) {
+      const chapterName = normalizeChapterValue(data.chapterName);
+      if (!data.subjectId) {
         return NextResponse.json({ error: "subjectId and chapterName are required" }, { status: 400 });
       }
 
       await db.topic.deleteMany({
         where: {
           subjectId: data.subjectId,
-          chapter: chapterName,
+          chapter: chapterName === null ? null : chapterName,
         },
       });
 

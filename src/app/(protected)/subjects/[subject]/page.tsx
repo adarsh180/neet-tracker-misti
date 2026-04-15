@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckSquare,
   Square,
@@ -14,18 +15,18 @@ import {
   ChevronRight,
   Check,
   X,
-  Flame,
   Trophy,
   Target,
   ArrowLeft,
   Search,
   Filter,
+  Pencil,
   Sparkles,
   Brain,
   BarChart3,
   Activity,
-  CircleDot,
   Layers3,
+  GripVertical,
   Wand2,
   GraduationCap,
   TrendingUp,
@@ -43,6 +44,7 @@ interface Topic {
   id: string;
   name: string;
   chapter: string | null;
+  chapterOrder: number;
   classLevel: string | null;
   isCompleted: boolean;
   completedAt: string | null;
@@ -115,6 +117,98 @@ function prettyDate(iso: string) {
   }
 }
 
+type ChapterEntry = {
+  chapter: string;
+  chapterOrder: number;
+  topics: Topic[];
+  done: number;
+  percent: number;
+  qs: number;
+  revs: number;
+};
+
+const EMPTY_TOPICS: Topic[] = [];
+
+function getChapterLabel(chapter: string | null) {
+  return chapter?.trim() || "General Topics";
+}
+
+function toStoredChapterValue(chapter: string) {
+  return chapter === "General Topics" ? null : chapter;
+}
+
+function buildChapterEntries(
+  topics: Topic[],
+  filters?: { searchQuery: string; filterMode: "all" | "pending" | "done" }
+) {
+  const grouped = new Map<string, Topic[]>();
+  const chapterOrderMap = new Map<string, number>();
+  const searchQuery = filters?.searchQuery.trim().toLowerCase() ?? "";
+  const filterMode = filters?.filterMode ?? "all";
+
+  for (const topic of topics) {
+    const chapter = getChapterLabel(topic.chapter);
+    const matchesSearch =
+      !searchQuery ||
+      topic.name.toLowerCase().includes(searchQuery) ||
+      chapter.toLowerCase().includes(searchQuery);
+    const matchesFilter =
+      filterMode === "all" ||
+      (filterMode === "done" ? topic.isCompleted : !topic.isCompleted);
+
+    if (!matchesSearch || !matchesFilter) {
+      continue;
+    }
+
+    const currentTopics = grouped.get(chapter) ?? [];
+    currentTopics.push(topic);
+    grouped.set(chapter, currentTopics);
+
+    const currentOrder = chapterOrderMap.get(chapter);
+    if (currentOrder === undefined || topic.chapterOrder < currentOrder) {
+      chapterOrderMap.set(chapter, topic.chapterOrder);
+    }
+  }
+
+  return [...grouped.entries()]
+    .map(([chapter, chapterTopics]) => {
+      const done = chapterTopics.filter((topic) => topic.isCompleted).length;
+      const percent = chapterTopics.length
+        ? Math.round((done / chapterTopics.length) * 100)
+        : 0;
+
+      return {
+        chapter,
+        chapterOrder: chapterOrderMap.get(chapter) ?? 0,
+        topics: chapterTopics,
+        done,
+        percent,
+        qs: chapterTopics.reduce((sum, topic) => sum + topic.questionsSolved, 0),
+        revs: chapterTopics.reduce((sum, topic) => sum + topic.revisions.length, 0),
+      };
+    })
+    .sort((a, b) => {
+      if (a.chapterOrder !== b.chapterOrder) {
+        return a.chapterOrder - b.chapterOrder;
+      }
+      return a.chapter.localeCompare(b.chapter);
+    });
+}
+
+function reorderChapterList(order: string[], source: string, target: string) {
+  const sourceIndex = order.indexOf(source);
+  const targetIndex = order.indexOf(target);
+
+  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+    return order;
+  }
+
+  const next = [...order];
+  const [moved] = next.splice(sourceIndex, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
+}
+
 export default function SubjectPage() {
   const params = useParams<{ subject: string }>();
   const slug = params.subject;
@@ -131,7 +225,14 @@ export default function SubjectPage() {
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicChapter, setNewTopicChapter] = useState("");
   const [newTopicClass, setNewTopicClass] = useState("11");
+  const [chapterOrderDraft, setChapterOrderDraft] = useState<string[]>([]);
+  const [draggedChapter, setDraggedChapter] = useState<string | null>(null);
+  const [dragTargetChapter, setDragTargetChapter] = useState<string | null>(null);
+  const [editingChapter, setEditingChapter] = useState<string | null>(null);
+  const [editingChapterName, setEditingChapterName] = useState("");
+  const [chapterActionBusy, setChapterActionBusy] = useState<string | null>(null);
   const topicInputRef = useRef<HTMLInputElement>(null);
+  const reorderSaveTimeoutRef = useRef<number | null>(null);
 
   const fetchSubject = useCallback(async () => {
     setLoading(true);
@@ -154,6 +255,14 @@ export default function SubjectPage() {
   useEffect(() => {
     fetchSubject();
   }, [fetchSubject]);
+
+  useEffect(() => {
+    return () => {
+      if (reorderSaveTimeoutRef.current !== null) {
+        window.clearTimeout(reorderSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const toggleTopic = async (topicId: string) => {
     setToggling((prev) => new Set([...prev, topicId]));
@@ -254,6 +363,201 @@ export default function SubjectPage() {
     });
   };
 
+  const meta = SUBJECT_META[slug] || SUBJECT_META.botany;
+  const subjectTopics = subject?.topics ?? EMPTY_TOPICS;
+  const completedTopics = subjectTopics.filter((topic) => topic.isCompleted).length;
+  const pct = subjectTopics.length > 0 ? Math.round((completedTopics / subjectTopics.length) * 100) : 0;
+  const totalQs = subjectTopics.reduce((sum, topic) => sum + topic.questionsSolved, 0);
+  const totalRevisions = subjectTopics.reduce((sum, topic) => sum + topic.revisions.length, 0);
+  const pendingTopics = subjectTopics.length - completedTopics;
+
+  const allChapterEntries = useMemo(
+    () => buildChapterEntries(subjectTopics),
+    [subjectTopics]
+  );
+  const chapterEntries = useMemo(
+    () => buildChapterEntries(subjectTopics, { searchQuery, filterMode }),
+    [subjectTopics, searchQuery, filterMode]
+  );
+  const canReorderChapters =
+    filterMode === "all" && !searchQuery.trim() && allChapterEntries.length > 1;
+  const chapterEntryMap = useMemo(
+    () => new Map(chapterEntries.map((entry) => [entry.chapter, entry])),
+    [chapterEntries]
+  );
+
+  useEffect(() => {
+    setChapterOrderDraft(allChapterEntries.map((entry) => entry.chapter));
+  }, [allChapterEntries]);
+
+  const orderedChapterEntries = useMemo(() => {
+    if (!canReorderChapters) {
+      return chapterEntries;
+    }
+
+    const ordered = chapterOrderDraft
+      .map((chapter) => chapterEntryMap.get(chapter))
+      .filter((entry): entry is ChapterEntry => Boolean(entry));
+    const missing = chapterEntries.filter(
+      (entry) => !chapterOrderDraft.includes(entry.chapter)
+    );
+
+    return [...ordered, ...missing];
+  }, [canReorderChapters, chapterEntries, chapterEntryMap, chapterOrderDraft]);
+
+  const persistChapterOrder = useCallback(
+    async (nextOrder: string[]) => {
+      if (!subject) return;
+
+      setSubject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          topics: prev.topics.map((topic) => {
+            const chapter = getChapterLabel(topic.chapter);
+            const chapterIndex = nextOrder.indexOf(chapter);
+            return chapterIndex === -1
+              ? topic
+              : { ...topic, chapterOrder: chapterIndex };
+          }),
+        };
+      });
+
+      const res = await fetch("/api/topics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reorder_chapters",
+          items: nextOrder.map((chapter, chapterOrder) => ({
+            subjectId: subject.id,
+            chapter,
+            chapterOrder,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        await fetchSubject();
+      }
+    },
+    [fetchSubject, subject]
+  );
+
+  const queueChapterOrderSave = useCallback(
+    (nextOrder: string[]) => {
+      if (reorderSaveTimeoutRef.current !== null) {
+        window.clearTimeout(reorderSaveTimeoutRef.current);
+      }
+
+      reorderSaveTimeoutRef.current = window.setTimeout(() => {
+        void persistChapterOrder(nextOrder);
+      }, 180);
+    },
+    [persistChapterOrder]
+  );
+
+  const finalizeChapterReorder = useCallback(
+    (nextOrder: string[]) => {
+      if (!canReorderChapters) return;
+      setDraggedChapter(null);
+      setDragTargetChapter(null);
+      queueChapterOrderSave(nextOrder);
+    },
+    [canReorderChapters, queueChapterOrderSave]
+  );
+
+  const startChapterRename = useCallback((chapter: string) => {
+    setEditingChapter(chapter);
+    setEditingChapterName(chapter);
+  }, []);
+
+  const cancelChapterRename = useCallback(() => {
+    setEditingChapter(null);
+    setEditingChapterName("");
+  }, []);
+
+  const saveChapterRename = useCallback(
+    async (chapter: string) => {
+      if (!subject) return;
+
+      const nextChapterName = editingChapterName.trim();
+      if (!nextChapterName) return;
+      if (nextChapterName === chapter) {
+        cancelChapterRename();
+        return;
+      }
+
+      setChapterActionBusy(chapter);
+
+      const res = await fetch("/api/topics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "rename_chapter",
+          subjectId: subject.id,
+          chapterName: toStoredChapterValue(chapter),
+          nextChapterName,
+        }),
+      });
+
+      setChapterActionBusy(null);
+      cancelChapterRename();
+
+      if (res.ok) {
+        setExpandedChapters((prev) => {
+          const next = new Set(prev);
+          if (next.delete(chapter)) {
+            next.add(nextChapterName);
+          }
+          return next;
+        });
+        await fetchSubject();
+      }
+    },
+    [cancelChapterRename, editingChapterName, fetchSubject, subject]
+  );
+
+  const deleteChapter = useCallback(
+    async (chapter: string) => {
+      if (!subject) return;
+      if (!confirm(`Delete the chapter "${chapter}" and all topics inside it?`)) return;
+
+      setChapterActionBusy(chapter);
+
+      const res = await fetch("/api/topics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_chapter",
+          subjectId: subject.id,
+          chapterName: toStoredChapterValue(chapter),
+        }),
+      });
+
+      setChapterActionBusy(null);
+
+      if (res.ok) {
+        setExpandedChapters((prev) => {
+          const next = new Set(prev);
+          next.delete(chapter);
+          return next;
+        });
+        if (editingChapter === chapter) {
+          cancelChapterRename();
+        }
+        await fetchSubject();
+      }
+    },
+    [cancelChapterRename, editingChapter, fetchSubject, subject]
+  );
+
+  const topMomentum = [...chapterEntries].sort((a, b) => b.percent - a.percent);
+  const topQuestions = [...chapterEntries].sort((a, b) => b.qs - a.qs);
+  const topRevisions = [...chapterEntries].sort((a, b) => b.revs - a.revs);
+
+  const questionTrend = buildTrendBars(topQuestions.map((chapterEntry) => chapterEntry.qs));
+  const revisionTrend = buildTrendBars(topRevisions.map((chapterEntry) => chapterEntry.revs));
+
   if (loading) {
     return (
       <div className="subject-page animate-fade-in">
@@ -299,41 +603,6 @@ export default function SubjectPage() {
       </div>
     );
   }
-
-  const meta = SUBJECT_META[slug] || SUBJECT_META.botany;
-  const completedTopics = subject.topics.filter((t) => t.isCompleted).length;
-  const pct = subject.topics.length > 0 ? Math.round((completedTopics / subject.topics.length) * 100) : 0;
-  const totalQs = subject.topics.reduce((s, t) => s + t.questionsSolved, 0);
-  const totalRevisions = subject.topics.reduce((s, t) => s + t.revisions.length, 0);
-  const pendingTopics = subject.topics.length - completedTopics;
-
-  const grouped: Record<string, Topic[]> = {};
-  subject.topics
-    .filter((t) => {
-      const matchSearch = !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchFilter = filterMode === "all" || (filterMode === "done" ? t.isCompleted : !t.isCompleted);
-      return matchSearch && matchFilter;
-    })
-    .forEach((t) => {
-      const ch = t.chapter || "General Topics";
-      if (!grouped[ch]) grouped[ch] = [];
-      grouped[ch].push(t);
-    });
-
-  const chapterEntries = Object.entries(grouped).map(([chapter, topics]) => {
-    const done = topics.filter((t) => t.isCompleted).length;
-    const percent = topics.length ? Math.round((done / topics.length) * 100) : 0;
-    const qs = topics.reduce((s, t) => s + t.questionsSolved, 0);
-    const revs = topics.reduce((s, t) => s + t.revisions.length, 0);
-    return { chapter, topics, done, percent, qs, revs };
-  });
-
-  const topMomentum = [...chapterEntries].sort((a, b) => b.percent - a.percent);
-  const topQuestions = [...chapterEntries].sort((a, b) => b.qs - a.qs);
-  const topRevisions = [...chapterEntries].sort((a, b) => b.revs - a.revs);
-
-  const questionTrend = buildTrendBars(topQuestions.map((c) => c.qs));
-  const revisionTrend = buildTrendBars(topRevisions.map((c) => c.revs));
 
   return (
     <div className="subject-page animate-fade-in">
@@ -427,7 +696,7 @@ export default function SubjectPage() {
             </div>
 
             <div className="insight-list custom-scroll">
-              {topMomentum.map((c, i) => (
+              {topMomentum.map((c) => (
                 <div key={c.chapter} className="insight-row group-hover">
                   <span className="insight-label" title={c.chapter}>{c.chapter}</span>
                   <div className="insight-track">
@@ -562,6 +831,15 @@ export default function SubjectPage() {
           >
             <Plus size={14} /> Add Topic
           </button>
+
+          <div className={`reorder-note ${canReorderChapters ? "active" : ""}`}>
+            <GripVertical size={13} />
+            <span>
+              {canReorderChapters
+                ? "Drag chapters to rearrange them."
+                : "Clear search and show all topics to reorder chapters."}
+            </span>
+          </div>
         </section>
 
         {showAddTopic && (
@@ -621,7 +899,7 @@ export default function SubjectPage() {
           </section>
         )}
 
-        <section className="chapter-stack">
+        <section className={`chapter-stack ${canReorderChapters ? "reorderable" : ""}`}>
           {chapterEntries.length === 0 ? (
             <div className="glass-card empty-match premium-card">
               <div className="empty-icon">
@@ -631,48 +909,150 @@ export default function SubjectPage() {
               <p>Try another keyword or switch back to all topics.</p>
             </div>
           ) : (
-            chapterEntries.map(({ chapter, topics, done, percent }) => {
+            orderedChapterEntries.map(({ chapter, topics, done, percent }) => {
               const isOpen = expandedChapters.has(chapter);
+              const isEditingChapter = editingChapter === chapter;
+              const chapterBusy = chapterActionBusy === chapter;
 
               return (
-                <article
+                <motion.article
                   key={chapter}
-                  className={`glass-card chapter-card premium-card ${isOpen ? "open" : ""}`}
+                  layout
+                  draggable={canReorderChapters}
+                  className={`glass-card chapter-card premium-card ${isOpen ? "open" : ""} ${canReorderChapters ? "drag-enabled" : ""} ${dragTargetChapter === chapter ? "drop-target" : ""}`}
+                  onDragStartCapture={(event: React.DragEvent<HTMLElement>) => {
+                    if (!canReorderChapters) return;
+                    setDraggedChapter(chapter);
+                    setDragTargetChapter(chapter);
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", chapter);
+                  }}
+                  onDragOverCapture={(event: React.DragEvent<HTMLElement>) => {
+                    if (!canReorderChapters || !draggedChapter || draggedChapter === chapter) return;
+                    event.preventDefault();
+                    setDragTargetChapter(chapter);
+                    setChapterOrderDraft((current) => reorderChapterList(current, draggedChapter, chapter));
+                  }}
+                  onDropCapture={(event: React.DragEvent<HTMLElement>) => {
+                    if (!canReorderChapters) return;
+                    event.preventDefault();
+                    finalizeChapterReorder(
+                      draggedChapter && chapter !== draggedChapter
+                        ? reorderChapterList(chapterOrderDraft, draggedChapter, chapter)
+                        : chapterOrderDraft
+                    );
+                  }}
+                  onDragEndCapture={() => finalizeChapterReorder(chapterOrderDraft)}
                   style={{ borderColor: isOpen ? `color-mix(in srgb, ${meta.varColor} 18%, transparent)` : "var(--glass-border)" }}
+                  animate={{
+                    scale: draggedChapter === chapter ? 1.01 : 1,
+                    opacity: draggedChapter === chapter ? 0.92 : 1,
+                  }}
+                  transition={{ layout: { type: "spring", stiffness: 420, damping: 32, mass: 0.58 } }}
                 >
-                  <button
-                    className="chapter-header"
-                    onClick={() => {
-                      setExpandedChapters((prev) => {
-                        const next = new Set(prev);
-                        if (isOpen) next.delete(chapter);
-                        else next.add(chapter);
-                        return next;
-                      });
-                    }}
-                  >
-                    <div className="chapter-left">
-                      <div className={`chapter-chevron ${isOpen ? "open" : ""}`}>
-                        {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                      </div>
-                      <div className="chapter-copy">
-                        <div className="chapter-name-row">
-                          <span className="chapter-name">{chapter}</span>
-                          <span className="badge badge-gold chapter-badge">{done}/{topics.length}</span>
+                  <div className="chapter-header">
+                    <button
+                      className="chapter-toggle"
+                      onClick={() => {
+                        setExpandedChapters((prev) => {
+                          const next = new Set(prev);
+                          if (isOpen) next.delete(chapter);
+                          else next.add(chapter);
+                          return next;
+                        });
+                      }}
+                    >
+                      <div className="chapter-left">
+                        <div className={`chapter-chevron ${isOpen ? "open" : ""}`}>
+                          {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         </div>
-                        <div className="chapter-subline">{done} completed · {topics.length - done} pending</div>
+                        <div className="chapter-copy">
+                          <div className="chapter-name-row">
+                            {isEditingChapter ? (
+                              <input
+                                className="input chapter-name-input"
+                                value={editingChapterName}
+                                autoFocus
+                                onChange={(event) => setEditingChapterName(event.target.value)}
+                                onClick={(event) => event.stopPropagation()}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") {
+                                    void saveChapterRename(chapter);
+                                  }
+                                  if (event.key === "Escape") {
+                                    cancelChapterRename();
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="chapter-name">{chapter}</span>
+                            )}
+                            <span className="badge badge-gold chapter-badge">{done}/{topics.length}</span>
+                          </div>
+                          <div className="chapter-subline">{done} completed - {topics.length - done} pending</div>
+                        </div>
                       </div>
-                    </div>
+                    </button>
 
                     <div className="chapter-right">
+                      {canReorderChapters && (
+                        <div className={`chapter-handle ${dragTargetChapter === chapter ? "active" : ""}`} aria-hidden="true">
+                          <GripVertical size={15} />
+                        </div>
+                      )}
+                      <div className="chapter-actions">
+                        {isEditingChapter ? (
+                          <>
+                            <button
+                              className="btn btn-glass btn-xs chapter-action-btn"
+                              onClick={() => void saveChapterRename(chapter)}
+                              disabled={chapterBusy || !editingChapterName.trim()}
+                            >
+                              <Check size={12} />
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-xs chapter-action-btn"
+                              onClick={cancelChapterRename}
+                              disabled={chapterBusy}
+                            >
+                              <X size={12} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="btn btn-glass btn-xs chapter-action-btn"
+                              onClick={() => startChapterRename(chapter)}
+                              disabled={chapterBusy}
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-xs chapter-action-btn danger-btn"
+                              onClick={() => void deleteChapter(chapter)}
+                              disabled={chapterBusy}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                       <div className="chapter-percent">{percent}%</div>
                       <div className="progress-track chapter-track">
                         <div className="progress-fill" style={{ width: `${percent}%`, background: meta.gradient }} />
                       </div>
                     </div>
-                  </button>
+                  </div>
 
-                  {isOpen && (
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                    <motion.div
+                      className="topic-list-wrap"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    >
                     <div className="topic-list">
                       {topics.map((topic, idx) => {
                         const revisionCount = topic.revisions.length;
@@ -774,8 +1154,10 @@ export default function SubjectPage() {
                         );
                       })}
                     </div>
-                  )}
-                </article>
+                    </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.article>
               );
             })
           )}
@@ -1334,6 +1716,26 @@ export default function SubjectPage() {
           flex-wrap: wrap;
         }
 
+        .reorder-note {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.03);
+          color: rgba(255,255,255,0.55);
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+        }
+
+        .reorder-note.active {
+          color: rgba(255,255,255,0.82);
+          border-color: rgba(251,191,36,0.2);
+          background: rgba(251,191,36,0.08);
+        }
+
         .input-shell {
           position: relative;
           flex: 1;
@@ -1441,26 +1843,53 @@ export default function SubjectPage() {
           gap: 12px;
         }
 
+        .chapter-stack.reorderable {
+          position: relative;
+        }
+
         .chapter-card {
           overflow: hidden;
+          will-change: transform;
+        }
+
+        .chapter-card.drag-enabled {
+          cursor: grab;
+        }
+
+        .chapter-card.drag-enabled:active {
+          cursor: grabbing;
+        }
+
+        .chapter-card.drop-target {
+          border-color: color-mix(in srgb, var(--gold) 26%, transparent) !important;
+          box-shadow: 0 0 0 1px rgba(251,191,36,0.14), 0 20px 44px rgba(0,0,0,0.24);
         }
 
         .chapter-header {
-          width: 100%;
-          padding: 18px 20px;
-          border: none;
-          background: transparent;
-          color: inherit;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 18px;
-          cursor: pointer;
+          padding: 18px 20px;
           transition: background 0.2s ease;
         }
 
         .chapter-header:hover {
           background: rgba(255,255,255,0.02);
+        }
+
+        .chapter-toggle {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          border: none;
+          background: transparent;
+          color: inherit;
+          cursor: pointer;
+          text-align: left;
+          padding: 0;
         }
 
         .chapter-left {
@@ -1505,6 +1934,12 @@ export default function SubjectPage() {
           color: #fff;
         }
 
+        .chapter-name-input {
+          max-width: 360px;
+          min-height: 40px;
+          font-weight: 700;
+        }
+
         .chapter-badge {
           flex-shrink: 0;
         }
@@ -1523,6 +1958,37 @@ export default function SubjectPage() {
           min-width: 180px;
         }
 
+        .chapter-handle {
+          width: 34px;
+          height: 34px;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          background: rgba(255,255,255,0.045);
+          border: 1px solid rgba(255,255,255,0.07);
+          color: rgba(255,255,255,0.5);
+          transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+        }
+
+        .chapter-card.drag-enabled:hover .chapter-handle,
+        .chapter-handle.active {
+          transform: translateY(-1px);
+          color: var(--gold);
+          border-color: rgba(251,191,36,0.22);
+          background: rgba(251,191,36,0.08);
+        }
+
+        .chapter-actions {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .chapter-action-btn {
+          min-width: 32px;
+          padding-inline: 10px;
+        }
+
         .chapter-percent {
           font-size: 17px;
           font-weight: 900;
@@ -1539,6 +2005,10 @@ export default function SubjectPage() {
 
         .topic-list {
           border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .topic-list-wrap {
+          overflow: hidden;
         }
 
         .topic-row {

@@ -374,21 +374,40 @@ export default function TodoPage() {
               <div>
                 <div className="eyebrow">Manual Add</div>
                 <h2>Quick task</h2>
+                <p>Build a clean manual task without cramped fields or overflow.</p>
               </div>
             </div>
 
             <div className="manual-grid">
-              <input className="input" placeholder="Task title" value={form.title} onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))} />
-              <select className="input select" value={form.priority} onChange={(e) => setForm((c) => ({ ...c, priority: e.target.value as TaskPriority }))}>
-                {Object.entries(PRIORITY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-              <input className="input" placeholder="Short note" value={form.description} onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))} />
-              <select className="input select" value={form.subjectId} onChange={(e) => setForm((c) => ({ ...c, subjectId: e.target.value }))}>
-                <option value="">No subject</option>
-                {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
-              </select>
-              <input className="input" type="date" value={form.dueDate} onChange={(e) => setForm((c) => ({ ...c, dueDate: e.target.value }))} />
-              <input className="input" type="number" placeholder="Minutes" value={form.plannedMinutes} onChange={(e) => setForm((c) => ({ ...c, plannedMinutes: e.target.value }))} />
+              <label className="manual-field manual-field-wide">
+                <span>Task title</span>
+                <input className="input" placeholder="Finish optics numericals and revise formula traps" value={form.title} onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))} />
+              </label>
+              <label className="manual-field">
+                <span>Priority</span>
+                <select className="input select" value={form.priority} onChange={(e) => setForm((c) => ({ ...c, priority: e.target.value as TaskPriority }))}>
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+              <label className="manual-field">
+                <span>Subject</span>
+                <select className="input select" value={form.subjectId} onChange={(e) => setForm((c) => ({ ...c, subjectId: e.target.value }))}>
+                  <option value="">No subject</option>
+                  {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
+                </select>
+              </label>
+              <label className="manual-field">
+                <span>Due date</span>
+                <input className="input" type="date" value={form.dueDate} onChange={(e) => setForm((c) => ({ ...c, dueDate: e.target.value }))} />
+              </label>
+              <label className="manual-field">
+                <span>Planned minutes</span>
+                <input className="input" type="number" placeholder="90" value={form.plannedMinutes} onChange={(e) => setForm((c) => ({ ...c, plannedMinutes: e.target.value }))} />
+              </label>
+              <label className="manual-field manual-field-wide">
+                <span>Task note</span>
+                <textarea className="input manual-textarea" rows={4} placeholder="Add the exact block, chapter, question target, or revision angle." value={form.description} onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))} />
+              </label>
             </div>
 
             <div className="manual-actions">
@@ -552,6 +571,19 @@ export default function TodoPage() {
         .top-shell, .workspace { display: grid; gap: 18px; }
         .top-shell { grid-template-columns: minmax(0, 1.45fr) 300px; }
         .hero, .stats-rail, .manual-panel, .column, .detail-card { padding: 22px; }
+        .todo-page,
+        .glass-card,
+        .manual-panel,
+        .manual-grid,
+        .manual-field,
+        .task-card,
+        .task-card strong,
+        .task-card p,
+        .markdown-card,
+        .markdown-body,
+        .timeline-item {
+          min-width: 0;
+        }
         .eyebrow {
           display: inline-flex;
           align-items: center;
@@ -596,10 +628,34 @@ export default function TodoPage() {
         }
         .stat-row strong { font-size: 28px; line-height: 1; }
         .manual-panel { display: grid; gap: 16px; }
+        .manual-head p {
+          max-width: 560px;
+          line-height: 1.7;
+          color: var(--text-secondary);
+        }
         .manual-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          align-items: start;
+        }
+        .manual-field {
+          display: grid;
+          gap: 8px;
+        }
+        .manual-field span {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: .12em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+        }
+        .manual-field-wide {
+          grid-column: 1 / -1;
+        }
+        .manual-textarea {
+          min-height: 120px;
+          max-width: 100%;
         }
         .toggle-row { display: inline-flex; align-items: center; gap: 10px; color: var(--text-secondary); }
         .workspace { grid-template-columns: minmax(0, 1.45fr) 420px; align-items: start; }
@@ -641,6 +697,12 @@ export default function TodoPage() {
           background: rgba(251,191,36,.11);
         }
         .task-card strong { display: block; font-size: 16px; }
+        .task-card strong,
+        .task-card p,
+        .markdown-body {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
         .task-card p { margin: 10px 0 0; font-size: 13px; line-height: 1.65; }
         .task-meta {
           display: flex;
@@ -683,6 +745,11 @@ export default function TodoPage() {
         .markdown-body { padding: 14px; color: rgba(245,238,230,.88); line-height: 1.8; }
         .markdown-body :global(p) { margin: 0 0 12px; }
         .markdown-body :global(ul) { margin: 0; padding-left: 20px; }
+        .markdown-body :global(li),
+        .markdown-body :global(code) {
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
         .timeline-item {
           display: grid;
           grid-template-columns: 12px 1fr;
@@ -720,6 +787,7 @@ export default function TodoPage() {
         }
         @media (max-width: 1100px) {
           .top-shell, .manual-grid { grid-template-columns: 1fr; }
+          .manual-field-wide { grid-column: auto; }
         }
         @media (max-width: 760px) {
           .todo-page { padding: 18px 14px 60px; }

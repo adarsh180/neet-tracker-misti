@@ -498,6 +498,7 @@ export async function POST(req: NextRequest) {
       "Use create_topic when the user wants to add a topic or chapter to a subject.",
       "Use create_task when the user wants a todo list or study plan.",
       "When the user asks to add a chapter but does not provide a specific topic, create a seed topic using the chapter name as topicName so it appears in the existing chapter-based UI.",
+      "If the requested chapter looks like a casing variant or a small spelling mistake of an existing chapter in that subject, reuse the existing chapter instead of inventing a new one.",
       "When creating tasks, prefer topic-wise or chapter-wise tasks over generic subject-only tasks.",
       "If the user gives total hours or total question targets, distribute them intelligently across the requested subjects using the evidence in the tracker context.",
       "Do not create duplicate tasks that already exist in the current board unless the user clearly asks to replace or regenerate them.",
