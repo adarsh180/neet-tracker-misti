@@ -3,12 +3,14 @@ import type { TaskAgentTrigger } from "@prisma/client";
 import { db } from "@/lib/db";
 import { generateTaskAgentResponse } from "@/lib/task-agent";
 import { summarizeTaskRun } from "@/lib/tasks";
+import { refreshTodoWorkspace } from "@/lib/todo-workspace";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await refreshTodoWorkspace();
     const { id } = await params;
     const body = await req.json();
     const { trigger = "MANUAL", userNote } = body as {

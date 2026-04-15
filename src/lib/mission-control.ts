@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { buildAIContext } from "@/lib/ai-context-builder";
 import { chatWithAI } from "@/lib/openrouter";
 import { startOfLocalDay } from "@/lib/tasks";
+import { buildTaskDescriptionWithReason, clearMissionReasonsNow, getVisibleBoardTasks, refreshTodoWorkspace } from "@/lib/todo-workspace";
 
 type SuggestedTask = {
   title: string;
@@ -12,6 +13,8 @@ type SuggestedTask = {
   plannedMinutes?: number | null;
   dueDate?: string | null;
   rationale: string;
+  scopeType?: "TOPIC" | "CHAPTER" | "SUBJECT";
+  scopeLabel?: string | null;
 };
 
 type MissionPayload = {
@@ -143,13 +146,17 @@ function buildFallbackMissionPayload(kind: MissionKind, goal: string | undefined
       },
       taskSuggestions: [
         {
-          title: `Question drill for ${weak[0]?.name ?? "weak subject"}`,
-          description: `Run a targeted question block on the weakest subject and log the actual mistakes, not just the score.`,
+          title: `Question drill: ${overdue[0]?.topic ?? weak[0]?.name ?? "weak subject"}`,
+          description: overdue[0]
+            ? `Revise and drill ${overdue[0].topic} from ${overdue[0].subject} with mistake logging.`
+            : `Run a targeted question block on the weakest subject and log the actual mistakes, not just the score.`,
           priority: "HIGH",
           subjectSlug: weak[0]?.slug ?? null,
           plannedMinutes: 90,
           dueDate: isoDayFromNow(0),
           rationale: "Weak-subject pressure should be addressed before adding more broad study load.",
+          scopeType: overdue[0] ? "TOPIC" : "SUBJECT",
+          scopeLabel: overdue[0]?.topic ?? weak[0]?.name ?? null,
         },
         {
           title: `Revision rescue for ${overdue[0]?.topic ?? "overdue topic"}`,
@@ -159,15 +166,21 @@ function buildFallbackMissionPayload(kind: MissionKind, goal: string | undefined
           plannedMinutes: 45,
           dueDate: isoDayFromNow(0),
           rationale: "Overdue revisions usually create false confidence and repeated error loops.",
+          scopeType: overdue[0]?.chapter ? "CHAPTER" : "TOPIC",
+          scopeLabel: overdue[0]?.chapter ?? overdue[0]?.topic ?? null,
         },
         {
-          title: `Neglect breaker for ${neglected[0]?.name ?? "neglected subject"}`,
-          description: `Touch the subject that has been left alone the longest with a short but real session.`,
+          title: `Neglect breaker: ${untouched[0]?.chapter ?? neglected[0]?.name ?? "neglected subject"}`,
+          description: untouched[0]
+            ? `Touch ${untouched[0].topic} from ${untouched[0].subject} to break avoidance in ${untouched[0].chapter ?? "that chapter"}.`
+            : `Touch the subject that has been left alone the longest with a short but real session.`,
           priority: "MEDIUM",
           subjectSlug: neglected[0]?.slug ?? null,
           plannedMinutes: 50,
           dueDate: isoDayFromNow(1),
           rationale: "Long untouched gaps make syllabus balance worse and increase avoidance.",
+          scopeType: untouched[0]?.chapter ? "CHAPTER" : "SUBJECT",
+          scopeLabel: untouched[0]?.chapter ?? neglected[0]?.name ?? null,
         },
         {
           title: "Mistake log cleanup",
@@ -193,31 +206,41 @@ function buildFallbackMissionPayload(kind: MissionKind, goal: string | undefined
       },
       taskSuggestions: [
         {
-          title: `Untouched chapter start: ${untouched[0]?.topic ?? "Pending topic"}`,
+          title: `Untouched chapter start: ${untouched[0]?.chapter ?? untouched[0]?.topic ?? "Pending topic"}`,
           description: untouched[0] ? `Start ${untouched[0].topic} from ${untouched[0].subject} because it is still untouched in the tracker.` : "Start one untouched topic instead of recycling only familiar chapters.",
           priority: "HIGH",
           subjectSlug: weak[0]?.slug ?? null,
           plannedMinutes: 75,
           dueDate: isoDayFromNow(1),
           rationale: "Untouched areas quietly become high-risk backlog near exams.",
+          scopeType: untouched[0]?.chapter ? "CHAPTER" : "TOPIC",
+          scopeLabel: untouched[0]?.chapter ?? untouched[0]?.topic ?? null,
         },
         {
-          title: `Weak subject problem set: ${weak[0]?.name ?? "weak subject"}`,
-          description: "Solve a compact, high-yield problem set and record the misses in detail.",
+          title: `Weak set: ${overdue[0]?.topic ?? weak[0]?.name ?? "weak subject"}`,
+          description: overdue[0]
+            ? `Solve a compact problem set on ${overdue[0].topic} and record the misses in detail.`
+            : "Solve a compact, high-yield problem set and record the misses in detail.",
           priority: "HIGH",
           subjectSlug: weak[0]?.slug ?? null,
           plannedMinutes: 80,
           dueDate: isoDayFromNow(0),
           rationale: "Weak areas need active correction, not passive reading.",
+          scopeType: overdue[0] ? "TOPIC" : "SUBJECT",
+          scopeLabel: overdue[0]?.topic ?? weak[0]?.name ?? null,
         },
         {
-          title: `Return to ${neglected[0]?.name ?? "neglected subject"}`,
-          description: "Do one deliberate restart block on the most neglected subject.",
+          title: `Return to ${untouched[1]?.chapter ?? neglected[0]?.name ?? "neglected subject"}`,
+          description: untouched[1]
+            ? `Do one deliberate restart block on ${untouched[1].topic} from ${untouched[1].chapter ?? untouched[1].subject}.`
+            : "Do one deliberate restart block on the most neglected subject.",
           priority: "MEDIUM",
           subjectSlug: neglected[0]?.slug ?? null,
           plannedMinutes: 45,
           dueDate: isoDayFromNow(1),
           rationale: "Neglect usually grows when a subject feels harder than the others.",
+          scopeType: untouched[1]?.chapter ? "CHAPTER" : "SUBJECT",
+          scopeLabel: untouched[1]?.chapter ?? neglected[0]?.name ?? null,
         },
         {
           title: "Revision debt sweep",
@@ -255,13 +278,17 @@ function buildFallbackMissionPayload(kind: MissionKind, goal: string | undefined
           rationale: "Test recovery starts with error typing, not random extra questions.",
         },
         {
-          title: `Recovery drill for ${weak[0]?.name ?? "weak subject"}`,
-          description: "Retry a focused block in the subject with the worst live signal.",
+          title: `Recovery drill: ${overdue[0]?.topic ?? weak[0]?.name ?? "weak subject"}`,
+          description: overdue[0]
+            ? `Retry a focused block on ${overdue[0].topic} from ${overdue[0].subject}.`
+            : "Retry a focused block in the subject with the worst live signal.",
           priority: "HIGH",
           subjectSlug: weak[0]?.slug ?? null,
           plannedMinutes: 75,
           dueDate: isoDayFromNow(0),
           rationale: "The weakest test area needs a same-day corrective repetition.",
+          scopeType: overdue[0] ? "TOPIC" : "SUBJECT",
+          scopeLabel: overdue[0]?.topic ?? weak[0]?.name ?? null,
         },
         {
           title: "Retest one corrected concept",
@@ -290,31 +317,41 @@ function buildFallbackMissionPayload(kind: MissionKind, goal: string | undefined
       },
       taskSuggestions: [
         {
-          title: `Overdue review: ${overdue[0]?.topic ?? "priority revision topic"}`,
+          title: `Overdue review: ${overdue[0]?.topic ?? overdue[0]?.chapter ?? "priority revision topic"}`,
           description: overdue[0] ? `Revise ${overdue[0].topic} from ${overdue[0].subject} and close the due review.` : "Close the oldest overdue review task from the revision queue.",
           priority: "CRITICAL",
           subjectSlug: weak[0]?.slug ?? null,
           plannedMinutes: 35,
           dueDate: isoDayFromNow(0),
           rationale: "Due reviews are the cleanest sign of material beginning to fade.",
+          scopeType: overdue[0]?.chapter ? "CHAPTER" : "TOPIC",
+          scopeLabel: overdue[0]?.chapter ?? overdue[0]?.topic ?? null,
         },
         {
-          title: "Active recall revision block",
-          description: "Use recall-first revision instead of passive rereading for one weak chapter.",
+          title: `Active recall: ${overdue[1]?.chapter ?? weak[0]?.name ?? "revision block"}`,
+          description: overdue[1]
+            ? `Use recall-first revision on ${overdue[1].topic} from ${overdue[1].subject}.`
+            : "Use recall-first revision instead of passive rereading for one weak chapter.",
           priority: "HIGH",
           subjectSlug: weak[0]?.slug ?? null,
           plannedMinutes: 45,
           dueDate: isoDayFromNow(0),
           rationale: "Active recall exposes what is actually weak.",
+          scopeType: overdue[1]?.chapter ? "CHAPTER" : "SUBJECT",
+          scopeLabel: overdue[1]?.chapter ?? weak[0]?.name ?? null,
         },
         {
-          title: "Zero-revision chapter revisit",
-          description: "Revisit one completed topic that still has zero revision depth.",
+          title: `Zero-revision revisit: ${untouched[0]?.chapter ?? "priority chapter"}`,
+          description: untouched[0]
+            ? `Revisit ${untouched[0].topic} because that chapter still has shallow revision depth.`
+            : "Revisit one completed topic that still has zero revision depth.",
           priority: "MEDIUM",
           subjectSlug: neglected[0]?.slug ?? null,
           plannedMinutes: 30,
           dueDate: isoDayFromNow(1),
           rationale: "Completed without revision is usually unstable learning.",
+          scopeType: untouched[0]?.chapter ? "CHAPTER" : "TOPIC",
+          scopeLabel: untouched[0]?.chapter ?? untouched[0]?.topic ?? null,
         },
       ],
     },
@@ -331,13 +368,17 @@ function buildFallbackMissionPayload(kind: MissionKind, goal: string | undefined
       },
       taskSuggestions: [
         {
-          title: "Primary command block",
-          description: "Use the strongest available block of the day on the highest-priority weak area.",
+          title: `Primary command: ${overdue[0]?.topic ?? weak[0]?.name ?? "weak area"}`,
+          description: overdue[0]
+            ? `Use the strongest available block on ${overdue[0].topic} from ${overdue[0].subject}.`
+            : "Use the strongest available block of the day on the highest-priority weak area.",
           priority: "CRITICAL",
           subjectSlug: weak[0]?.slug ?? null,
           plannedMinutes: 90,
           dueDate: isoDayFromNow(0),
           rationale: "The best daily command is short, hard, and unambiguous.",
+          scopeType: overdue[0] ? "TOPIC" : "SUBJECT",
+          scopeLabel: overdue[0]?.topic ?? weak[0]?.name ?? null,
         },
         {
           title: "Close one overdue review",
@@ -367,13 +408,17 @@ function buildFallbackMissionPayload(kind: MissionKind, goal: string | undefined
       },
       taskSuggestions: [
         {
-          title: `Avoidance breaker: ${neglected[0]?.name ?? "neglected area"}`,
-          description: "Do the first complete session in the area that has been left alone longest.",
+          title: `Avoidance breaker: ${untouched[0]?.chapter ?? neglected[0]?.name ?? "neglected area"}`,
+          description: untouched[0]
+            ? `Do the first complete session on ${untouched[0].topic} from ${untouched[0].subject}.`
+            : "Do the first complete session in the area that has been left alone longest.",
           priority: "HIGH",
           subjectSlug: neglected[0]?.slug ?? null,
           plannedMinutes: 45,
           dueDate: isoDayFromNow(0),
           rationale: "Neglected areas usually point to silent avoidance, not just poor planning.",
+          scopeType: untouched[0]?.chapter ? "CHAPTER" : "SUBJECT",
+          scopeLabel: untouched[0]?.chapter ?? neglected[0]?.name ?? null,
         },
         {
           title: "Skip recovery pass",
@@ -496,13 +541,14 @@ async function buildMissionAnalytics() {
       subject: subjectMap.get(topic.subjectId)?.name ?? "Unknown",
     }));
 
+  const visibleTasks = getVisibleBoardTasks(tasks, today);
   const executionStats = {
-    totalTasks: tasks.length,
-    done: tasks.filter((task) => task.status === "DONE").length,
-    skipped: tasks.filter((task) => task.status === "SKIPPED").length,
-    inProgress: tasks.filter((task) => task.status === "IN_PROGRESS").length,
-    aiCreated: tasks.filter((task) => task.source === "AI").length,
-    manualCreated: tasks.filter((task) => task.source === "MANUAL").length,
+    totalTasks: visibleTasks.length,
+    done: visibleTasks.filter((task) => task.status === "DONE").length,
+    skipped: visibleTasks.filter((task) => task.status === "SKIPPED").length,
+    inProgress: visibleTasks.filter((task) => task.status === "IN_PROGRESS").length,
+    aiCreated: visibleTasks.filter((task) => task.source === "AI").length,
+    manualCreated: visibleTasks.filter((task) => task.source === "MANUAL").length,
     recentAiRuns: taskRuns.length,
   };
 
@@ -550,7 +596,7 @@ function buildMissionPrompt(kind: MissionKind, goal: string | undefined, context
     "studyMinutes": 0,
     "shutdownRule": "single sentence"
   },
-  "taskSuggestions": [
+      "taskSuggestions": [
     {
       "title": "task title",
       "description": "task detail",
@@ -558,11 +604,14 @@ function buildMissionPrompt(kind: MissionKind, goal: string | undefined, context
       "subjectSlug": "physics|chemistry|botany|zoology|null",
       "plannedMinutes": 90,
       "dueDate": "YYYY-MM-DD or null",
-      "rationale": "why this task exists"
+      "rationale": "why this task exists",
+      "scopeType": "TOPIC|CHAPTER|SUBJECT",
+      "scopeLabel": "specific topic or chapter if available"
     }
   ]
 }`,
     `Create between ${kindConfig.taskMin} and ${kindConfig.taskMax} taskSuggestions.`,
+    "Prefer topic-wise or chapter-wise taskSuggestions over generic subject-only tasks whenever the analytics expose a concrete topic or chapter.",
     "For TEST_RECOVERY, at least one task must be test-analysis focused.",
     "For REVISION_PULSE, at least one task must be revision-focused.",
     "For DAILY_COMMAND, keep scope narrow and high-leverage.",
@@ -617,7 +666,7 @@ async function createTasksFromMission(sessionId: string, kind: MissionKind, task
         missionId: sessionId,
         source: "AI",
         title: task.title,
-        description: `${task.description}\n\nWhy this exists: ${task.rationale}`,
+        description: buildTaskDescriptionWithReason(task.description, task.rationale),
         priority: task.priority,
         subjectId: task.subjectSlug ? (slugMap.get(task.subjectSlug) ?? null) : null,
         dueDate: task.dueDate ? startOfLocalDay(task.dueDate) : null,
@@ -644,6 +693,10 @@ export async function generateMissionSession(input: {
   createTasks?: boolean;
   subjectSlug?: string;
 }) {
+  await refreshTodoWorkspace();
+  if (input.createTasks) {
+    await clearMissionReasonsNow();
+  }
   const [context, analytics] = await Promise.all([buildAIContext(), buildMissionAnalytics()]);
   const prompt = buildMissionPrompt(input.kind, input.goal, context, analytics);
   let parsed: MissionPayload | null = null;
@@ -713,6 +766,7 @@ export async function generateMissionSession(input: {
 }
 
 export async function getMissionSessions() {
+  await refreshTodoWorkspace();
   return db.missionSession.findMany({
     include: {
       tasks: {

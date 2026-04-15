@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { TaskStatus, TaskTimelineEventType } from "@prisma/client";
+import { getTaskWindowCutoff } from "@/lib/todo-workspace";
 
 const STATUS_EVENT_MAP: Record<TaskStatus, { type: TaskTimelineEventType; label: string }> = {
   TODO: { type: "UPDATED", label: "Moved back to to-do" },
@@ -14,6 +15,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const cutoff = getTaskWindowCutoff();
     const { id } = await params;
     const body = await req.json();
     const { status, actualMinutes, note } = body as {
@@ -52,6 +54,7 @@ export async function POST(
           take: 1,
         },
         timelineEvents: {
+          where: { createdAt: { gte: cutoff } },
           orderBy: { createdAt: "desc" },
           take: 6,
         },

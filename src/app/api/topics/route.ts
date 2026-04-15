@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { createTopicRecord } from "@/lib/topic-manager";
 
 // POST — add topic, PATCH — update topic, DELETE — delete topic
 export async function POST(req: NextRequest) {
@@ -8,13 +9,11 @@ export async function POST(req: NextRequest) {
     const { action, ...data } = body;
 
     if (action === "add_topic") {
-      const topic = await db.topic.create({
-        data: {
-          subjectId: data.subjectId,
-          name: data.name,
-          chapter: data.chapter,
-          classLevel: data.classLevel,
-        },
+      const topic = await createTopicRecord({
+        subjectId: data.subjectId,
+        name: data.name,
+        chapter: data.chapter,
+        classLevel: data.classLevel,
       });
       return NextResponse.json(topic);
     }
@@ -52,6 +51,73 @@ export async function POST(req: NextRequest) {
 
     if (action === "delete_topic") {
       await db.topic.delete({ where: { id: data.topicId } });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "rename_chapter") {
+      const chapterName = data.chapterName?.trim();
+      const nextChapterName = data.nextChapterName?.trim();
+      if (!data.subjectId || !chapterName || !nextChapterName) {
+        return NextResponse.json({ error: "subjectId, chapterName and nextChapterName are required" }, { status: 400 });
+      }
+
+      await db.topic.updateMany({
+        where: {
+          subjectId: data.subjectId,
+          chapter: chapterName,
+        },
+        data: {
+          chapter: nextChapterName,
+        },
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "delete_chapter") {
+      const chapterName = data.chapterName?.trim();
+      if (!data.subjectId || !chapterName) {
+        return NextResponse.json({ error: "subjectId and chapterName are required" }, { status: 400 });
+      }
+
+      await db.topic.deleteMany({
+        where: {
+          subjectId: data.subjectId,
+          chapter: chapterName,
+        },
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "reorder_topics") {
+      const items = Array.isArray(data.items) ? data.items : [];
+      await db.$transaction(
+        items.map((item: { topicId: string; topicOrder: number }) =>
+          db.topic.update({
+            where: { id: item.topicId },
+            data: { topicOrder: item.topicOrder },
+          })
+        )
+      );
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "reorder_chapters") {
+      const items = Array.isArray(data.items) ? data.items : [];
+      await db.$transaction(
+        items.flatMap((item: { subjectId: string; chapter: string; chapterOrder: number }) => [
+          db.topic.updateMany({
+            where: {
+              subjectId: item.subjectId,
+              chapter: item.chapter,
+            },
+            data: {
+              chapterOrder: item.chapterOrder,
+            },
+          }),
+        ])
+      );
       return NextResponse.json({ success: true });
     }
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 // GET all subjects with topics
@@ -10,7 +10,7 @@ export async function GET() {
           include: {
             revisions: { orderBy: { revisedAt: "desc" }, take: 5 },
           },
-          orderBy: [{ classLevel: "asc" }, { createdAt: "asc" }],
+          orderBy: [{ chapterOrder: "asc" }, { topicOrder: "asc" }, { createdAt: "asc" }],
         },
       },
       orderBy: { name: "asc" },

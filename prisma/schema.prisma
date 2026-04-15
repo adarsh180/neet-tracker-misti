@@ -34,7 +34,9 @@ model Topic {
   subject        Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   name           String
   chapter        String?   // chapter name/number
+  chapterOrder   Int       @default(0)
   classLevel     String?   // "11" or "12"
+  topicOrder     Int       @default(0)
   isCompleted    Boolean   @default(false)
   completedAt    DateTime?
   questionsSolved Int      @default(0)

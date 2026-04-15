@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { startOfLocalDay } from "@/lib/tasks";
+import { stripTaskReason } from "@/lib/todo-workspace";
+import { getTaskWindowCutoff } from "@/lib/todo-workspace";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const cutoff = getTaskWindowCutoff();
     const { id } = await params;
     const body = await req.json();
     const {
@@ -18,6 +21,7 @@ export async function PATCH(
       plannedMinutes,
       actualMinutes,
       aiAssistEnabled,
+      removeAiReason,
     } = body as {
       title?: string;
       description?: string | null;
@@ -27,14 +31,20 @@ export async function PATCH(
       plannedMinutes?: number | null;
       actualMinutes?: number | null;
       aiAssistEnabled?: boolean;
+      removeAiReason?: boolean;
     };
+    const currentTask = removeAiReason
+      ? await db.task.findUnique({ where: { id }, select: { description: true } })
+      : null;
 
     const task = await db.task.update({
       where: { id },
       data: {
         title: title === undefined ? undefined : title.trim(),
         description:
-          description === undefined
+          removeAiReason
+            ? stripTaskReason(currentTask?.description)
+            : description === undefined
             ? undefined
             : description === null
               ? null
@@ -60,6 +70,7 @@ export async function PATCH(
           take: 1,
         },
         timelineEvents: {
+          where: { createdAt: { gte: cutoff } },
           orderBy: { createdAt: "desc" },
           take: 6,
         },

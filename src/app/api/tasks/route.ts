@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { startOfLocalDay } from "@/lib/tasks";
+import { getTaskWindowCutoff, getVisibleBoardTasks, refreshTodoWorkspace } from "@/lib/todo-workspace";
 
 export async function GET() {
   try {
+    await refreshTodoWorkspace();
+    const cutoff = getTaskWindowCutoff();
     const tasks = await db.task.findMany({
       include: {
         subject: { select: { id: true, name: true, slug: true, color: true } },
@@ -12,6 +15,7 @@ export async function GET() {
           take: 1,
         },
         timelineEvents: {
+          where: { createdAt: { gte: cutoff } },
           orderBy: { createdAt: "desc" },
           take: 6,
         },
@@ -19,7 +23,7 @@ export async function GET() {
       orderBy: [{ orderIndex: "asc" }, { createdAt: "desc" }],
     });
 
-    return NextResponse.json(tasks);
+    return NextResponse.json(getVisibleBoardTasks(tasks));
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }

@@ -1,8 +1,7 @@
 const OPENROUTER_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 
-// Google AI Studio specific Gemma 4 models
 export const AI_MODELS = {
-  primary:   "gemma-4-31b-it",
+  primary: "gemma-4-31b-it",
   fallback1: "gemma-4-26b-a4b-it",
   fallback2: "gemma-3-27b-it",
 };
@@ -20,7 +19,27 @@ export interface AIResponse {
   usage?: { prompt_tokens: number; completion_tokens: number };
 }
 
-// Shared headers
+function foldSystemIntoUser(messages: ChatMessage[]): ChatMessage[] {
+  const systemContent = messages
+    .filter((message) => message.role === "system")
+    .map((message) => message.content.trim())
+    .filter(Boolean)
+    .join("\n\n");
+
+  const nonSystemMessages = messages.filter((message) => message.role !== "system");
+  if (!systemContent) return messages;
+  if (!nonSystemMessages.length) return [{ role: "user", content: systemContent }];
+
+  const [firstMessage, ...rest] = nonSystemMessages;
+  return [
+    {
+      role: "user" as const,
+      content: `Instruction:\n${systemContent}\n\nRequest:\n${firstMessage.content}`,
+    },
+    ...rest,
+  ];
+}
+
 function getHeaders() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -37,10 +56,12 @@ async function callModel(
   model: string,
   messages: ChatMessage[],
   maxTokens = 4096,
-  temperature = 0.7
+  temperature = 0.7,
+  timeoutMs = 18000
 ): Promise<AIResponse> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 18000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
     method: "POST",
     headers: getHeaders(),
@@ -51,7 +72,7 @@ async function callModel(
   if (res.status === 429) throw new Error(`RATE_LIMITED:${model}`);
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`HTTP ${res.status} â€” ${err.slice(0, 200)}`);
+    throw new Error(`HTTP ${res.status} - ${err.slice(0, 200)}`);
   }
 
   const data = await res.json();
@@ -63,19 +84,37 @@ async function callModel(
 export async function chatWithAI(
   messages: ChatMessage[],
   maxTokens = 4096,
-  temperature = 0.7
+  temperature = 0.7,
+  timeoutMs = 18000
 ): Promise<AIResponse> {
   const errors: string[] = [];
+
   for (const model of MODELS_LIST) {
     try {
-      const result = await callModel(model, messages, maxTokens, temperature);
+      const result = await callModel(model, messages, maxTokens, temperature, timeoutMs);
       if (result.content) return result;
     } catch (err) {
       const msg = String(err);
+
+      if (
+        msg.includes("Developer instruction is not enabled") &&
+        messages.some((message) => message.role === "system")
+      ) {
+        try {
+          const retried = await callModel(model, foldSystemIntoUser(messages), maxTokens, temperature, timeoutMs);
+          if (retried.content) return retried;
+        } catch (retryErr) {
+          const retryMsg = String(retryErr);
+          errors.push(`${model} (folded): ${retryMsg}`);
+          console.warn(`[Google AI Studio] ${model} folded retry failed -> ${retryMsg}`);
+        }
+      }
+
       errors.push(`${model}: ${msg}`);
-      console.warn(`[Google AI Studio] ${model} failed â†’ ${msg}`);
+      console.warn(`[Google AI Studio] ${model} failed -> ${msg}`);
     }
   }
+
   throw new Error(`All models failed:\n${errors.join("\n")}`);
 }
 
@@ -95,7 +134,6 @@ export async function streamWithAI(
         body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature, stream: true }),
       });
 
-      // Retry on rate limit
       if (res.status === 429) {
         errors.push(`${model}: rate-limited`);
         console.warn(`[Stream] ${model} rate-limited, trying next...`);
@@ -130,8 +168,13 @@ export async function streamWithAI(
           try {
             const parsed = JSON.parse(data);
             const text = parsed.choices?.[0]?.delta?.content || "";
-            if (text) { fullContent += text; onChunk(text); }
-          } catch { /* skip malformed SSE lines */ }
+            if (text) {
+              fullContent += text;
+              onChunk(text);
+            }
+          } catch {
+            continue;
+          }
         }
       }
 
@@ -144,10 +187,9 @@ export async function streamWithAI(
     } catch (err) {
       const msg = String(err);
       errors.push(`${model}: ${msg}`);
-      console.warn(`[Stream] ${model} threw:`, msg);
+      console.warn(`[Stream] ${model} threw: ${msg}`);
     }
   }
 
   throw new Error(`All streaming models failed:\n${errors.join("\n")}`);
 }
-
