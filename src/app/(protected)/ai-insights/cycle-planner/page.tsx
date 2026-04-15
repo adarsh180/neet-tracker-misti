@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Heart, ChevronLeft, Plus, Sparkles, Flame, Moon, Sun, Wind, Calendar, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import SmoothLink from "@/components/layout/smooth-link";
 import { format, subDays } from "date-fns";
 
 interface CycleEntry {
@@ -137,7 +137,7 @@ IMPORTANT: Write in clean prose. No asterisks, no bullet points, no dashes. Be d
     <div className="animate-fade-in">
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Link href="/ai-insights" className="btn btn-ghost btn-sm" style={{ padding: "6px 10px" }}><ChevronLeft size={16} /></Link>
+          <SmoothLink href="/ai-insights" className="btn btn-ghost btn-sm" style={{ padding: "6px 10px" }} direction="back"><ChevronLeft size={16} /></SmoothLink>
           <div>
             <h1 className="page-title" style={{ background: "linear-gradient(135deg, var(--rose-bright), var(--lotus-bright))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Cycle & Wellness Planner

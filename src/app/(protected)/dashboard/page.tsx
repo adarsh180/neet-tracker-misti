@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, type CSSProperties } from "react";
-import Link from "next/link";
 import {
   Leaf,
   Zap,
@@ -32,6 +31,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import CountdownTimer from "@/components/countdown-timer";
+import SmoothLink from "@/components/layout/smooth-link";
 
 interface SubjectStat {
   id: string;
@@ -504,7 +504,7 @@ export default function DashboardPage() {
           {metrics?.subjects && (
             <div className="db-sub-progress-list">
               {metrics.subjects.map((sub) => (
-                <Link key={sub.slug} href={`/subjects/${sub.slug}`} className="db-sub-progress-link">
+                <SmoothLink key={sub.slug} href={`/subjects/${sub.slug}`} className="db-sub-progress-link">
                   <div className="db-sub-row">
                     <span className="db-sub-name" style={{ color: sub.color }}>{sub.name}</span>
                     <span className="db-sub-pct">{sub.completionPct}%</span>
@@ -512,7 +512,7 @@ export default function DashboardPage() {
                   <div className="progress-track db-mini-progress">
                     <div className="progress-fill" style={{ width: `${sub.completionPct}%`, background: sub.color }} />
                   </div>
-                </Link>
+                </SmoothLink>
               ))}
             </div>
           )}
@@ -539,7 +539,7 @@ export default function DashboardPage() {
                 const meta = SUBJECT_META[sub.slug] || SUBJECT_META.botany;
 
                 return (
-                  <Link
+                  <SmoothLink
                     href={`/subjects/${sub.slug}`}
                     key={sub.slug}
                     className="db-sub-card glass-panel interactive-card"
@@ -604,7 +604,7 @@ export default function DashboardPage() {
                       <span>Explore Subject</span>
                       <ChevronRight size={16} />
                     </div>
-                  </Link>
+                  </SmoothLink>
                 );
               })}
             </div>
@@ -621,7 +621,7 @@ export default function DashboardPage() {
 
           <div className="db-quick-grid">
             {QUICK_SECTIONS.map((sec, index) => (
-              <Link
+              <SmoothLink
                 key={sec.href}
                 href={sec.href}
                 className="db-quick-card glass-panel interactive-card"
@@ -641,7 +641,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="db-quick-desc">{sec.desc}</p>
                 </div>
-              </Link>
+              </SmoothLink>
             ))}
           </div>
         </section>

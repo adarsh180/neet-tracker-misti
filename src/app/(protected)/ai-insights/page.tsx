@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Brain, TrendingUp, Heart, ArrowRight, Sparkles } from "lucide-react";
+import SmoothLink from "@/components/layout/smooth-link";
 
 const TOOLS = [
   {
@@ -107,7 +107,7 @@ export default function AIInsightsPage() {
               const iconRgb = hexToRgb(tool.accent);
 
               return (
-                <Link
+                <SmoothLink
                   key={tool.href}
                   href={tool.href}
                   className="ai-card"
@@ -146,7 +146,7 @@ export default function AIInsightsPage() {
                       <ArrowRight size={15} className="ai-card-arrow" />
                     </span>
                   </div>
-                </Link>
+                </SmoothLink>
               );
             })}
           </div>

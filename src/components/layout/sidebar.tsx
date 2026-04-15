@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Target, BarChart2, Sparkles, Leaf, Zap,
@@ -8,6 +7,7 @@ import {
   SmilePlus, ListTodo
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
+import SmoothLink from "@/components/layout/smooth-link";
 
 const NAV_MAIN = [
   { href: "/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
@@ -59,11 +59,11 @@ export default function Sidebar({ collapsed, setCollapsed }: Props) {
           {NAV_MAIN.map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
-              <Link key={item.href} href={item.href} className={`sb-link ${active ? "sb-link--active" : ""}`} data-tip={collapsed ? item.label : undefined}>
+              <SmoothLink key={item.href} href={item.href} className={`sb-link ${active ? "sb-link--active" : ""}`} data-tip={collapsed ? item.label : undefined}>
                 <item.icon size={18} strokeWidth={active ? 2.2 : 1.8} />
                 {!collapsed && <span className="sb-link-label">{item.label}</span>}
                 {active && !collapsed && <span className="sb-link-dot" />}
-              </Link>
+              </SmoothLink>
             );
           })}
 
@@ -73,7 +73,7 @@ export default function Sidebar({ collapsed, setCollapsed }: Props) {
           {NAV_SUBJECTS.map((item) => {
             const active = pathname === item.href;
             return (
-              <Link
+              <SmoothLink
                 key={item.href} href={item.href}
                 className={`sb-link ${active ? "sb-link--active" : ""}`}
                 data-tip={collapsed ? item.label : undefined}
@@ -81,7 +81,7 @@ export default function Sidebar({ collapsed, setCollapsed }: Props) {
               >
                 <item.icon size={16} strokeWidth={active ? 2.2 : 1.8} />
                 {!collapsed && <span className="sb-link-label">{item.label}</span>}
-              </Link>
+              </SmoothLink>
             );
           })}
         </nav>

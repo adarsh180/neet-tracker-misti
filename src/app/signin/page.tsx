@@ -15,16 +15,19 @@ export default function SignInPage() {
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (getStoredAuth()) router.replace("/dashboard"); }, [router]);
+  useEffect(() => {
+    router.prefetch("/dashboard");
+    if (getStoredAuth()) router.replace("/dashboard");
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    
+
     startTransition(async () => {
       const isValid = await validateCredentials(email, password);
       if (isValid) {
-        setAuth(); 
+        setAuth();
+        router.prefetch("/dashboard");
         router.replace("/dashboard");
       } else {
         setError("Invalid credentials. This platform is exclusively for Misti.");

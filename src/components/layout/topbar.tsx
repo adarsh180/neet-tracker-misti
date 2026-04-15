@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -9,6 +8,7 @@ import {
   LogOut, Menu, X, ChevronDown, ListTodo
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
+import SmoothLink from "@/components/layout/smooth-link";
 
 const NAV_LINKS = [
   { href: "/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
@@ -41,7 +41,7 @@ export default function Topbar() {
       <header className="topbar">
         <div className="topbar-inner">
           {/* Logo */}
-          <Link href="/dashboard" className="topbar-logo">
+          <SmoothLink href="/dashboard" className="topbar-logo">
             <div className="topbar-logo-mark">
               <span className="devanagari" style={{ fontSize: 14, color: "var(--gold-bright)" }}>ॐ</span>
             </div>
@@ -49,21 +49,21 @@ export default function Topbar() {
               <span className="topbar-brand">Sacred Path</span>
               <span className="topbar-sub">NEET 2027</span>
             </div>
-          </Link>
+          </SmoothLink>
 
           {/* Desktop nav */}
           <nav className="topbar-nav">
             {NAV_LINKS.map((item) => {
               const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href) && !pathname.startsWith("/subjects"));
               return (
-                <Link
+                <SmoothLink
                   key={item.href}
                   href={item.href}
                   className={`topbar-link ${active ? "topbar-link--active" : ""}`}
                 >
                   <item.icon size={14} strokeWidth={active ? 2.3 : 1.9} />
                   {item.label}
-                </Link>
+                </SmoothLink>
               );
             })}
 
@@ -77,10 +77,10 @@ export default function Topbar() {
               {subjectsOpen && (
                 <div className="topbar-dropdown-menu">
                   {SUBJECT_LINKS.map((s) => (
-                    <Link key={s.href} href={s.href} className="topbar-dropdown-item" onClick={() => setSubjectsOpen(false)}>
+                    <SmoothLink key={s.href} href={s.href} className="topbar-dropdown-item" onClick={() => setSubjectsOpen(false)}>
                       <s.icon size={14} style={{ color: s.color, flexShrink: 0 }} />
                       <span style={{ color: s.color }}>{s.label}</span>
-                    </Link>
+                    </SmoothLink>
                   ))}
                 </div>
               )}
@@ -106,7 +106,7 @@ export default function Topbar() {
             {NAV_LINKS.map((item) => {
               const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
               return (
-                <Link
+                <SmoothLink
                   key={item.href}
                   href={item.href}
                   className={`topbar-mobile-link ${active ? "active" : ""}`}
@@ -114,12 +114,12 @@ export default function Topbar() {
                 >
                   <item.icon size={16} />
                   {item.label}
-                </Link>
+                </SmoothLink>
               );
             })}
             <div className="topbar-mobile-section">Subjects</div>
             {SUBJECT_LINKS.map((s) => (
-              <Link
+              <SmoothLink
                 key={s.href}
                 href={s.href}
                 className="topbar-mobile-link"
@@ -127,7 +127,7 @@ export default function Topbar() {
               >
                 <s.icon size={16} style={{ color: s.color }} />
                 <span style={{ color: s.color }}>{s.label}</span>
-              </Link>
+              </SmoothLink>
             ))}
             <div className="topbar-mobile-divider" />
             <button className="topbar-mobile-link" onClick={handleSignOut} style={{ color: "var(--danger)", background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left" }}>

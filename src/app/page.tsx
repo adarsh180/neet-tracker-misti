@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Shield, Sparkles } from "lucide-react";
 import { getStoredAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import SmoothLink from "@/components/layout/smooth-link";
 
 const EXAM_DATE = new Date("2027-05-02T09:00:00+05:30");
 function daysUntil() { return Math.max(0, Math.ceil((EXAM_DATE.getTime() - Date.now()) / 86400000)); }
@@ -157,9 +157,9 @@ export default function LandingPage() {
         </div>
 
         <div className="ld-cta animate-fade-in" style={{ animationDelay: "400ms" }}>
-          <Link href="/signin" id="landing-cta" className="btn btn-primary btn-xl">
+          <SmoothLink href="/signin" id="landing-cta" className="btn btn-primary btn-xl" direction="forward">
             Begin Sacred Journey <ArrowRight size={20} />
-          </Link>
+          </SmoothLink>
           <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 10, display: "flex", alignItems: "center", gap: 5, justifyContent: "center" }}>
             <Shield size={11} /> Private & secure · exclusively for Misti Tiwari
           </div>

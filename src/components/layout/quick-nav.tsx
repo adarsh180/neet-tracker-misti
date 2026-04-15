@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
@@ -22,6 +21,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
+import SmoothLink from "@/components/layout/smooth-link";
 
 type NavItem = {
   href: string;
@@ -126,7 +126,7 @@ export default function QuickNav() {
                     const index = flatItems.findIndex((x) => x.href === item.href);
 
                     return (
-                      <Link
+                      <SmoothLink
                         key={item.href}
                         href={item.href}
                         className={`item-container ${isActive ? "active" : ""}`}
@@ -142,7 +142,7 @@ export default function QuickNav() {
                           <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                         </div>
                         <span className="item-label">{item.label}</span>
-                      </Link>
+                      </SmoothLink>
                     );
                   })}
                 </div>

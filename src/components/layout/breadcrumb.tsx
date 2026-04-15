@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard } from "lucide-react";
+import SmoothLink from "@/components/layout/smooth-link";
 
 const BREADCRUMBS: Record<string, { label: string; parent?: string; parentLabel?: string }> = {
   "/dashboard":                   { label: "Dashboard" },
@@ -26,9 +26,9 @@ export default function PageBreadcrumb() {
     const label = subject.charAt(0).toUpperCase() + subject.slice(1);
     return (
       <div className="breadcrumb-bar">
-        <Link href="/dashboard" className="breadcrumb-link">
+        <SmoothLink href="/dashboard" className="breadcrumb-link" direction="back">
           <LayoutDashboard size={12} /> Dashboard
-        </Link>
+        </SmoothLink>
         <span className="breadcrumb-sep">/</span>
         <span className="breadcrumb-current">{label}</span>
       </div>
@@ -40,13 +40,13 @@ export default function PageBreadcrumb() {
 
   return (
     <div className="breadcrumb-bar">
-      <Link href="/dashboard" className="breadcrumb-link">
+      <SmoothLink href="/dashboard" className="breadcrumb-link" direction="back">
         <LayoutDashboard size={12} /> Dashboard
-      </Link>
+      </SmoothLink>
       {crumb.parent && crumb.parent !== "/dashboard" && (
         <>
           <span className="breadcrumb-sep">/</span>
-          <Link href={crumb.parent} className="breadcrumb-link">{crumb.parentLabel}</Link>
+          <SmoothLink href={crumb.parent} className="breadcrumb-link" direction="back">{crumb.parentLabel}</SmoothLink>
         </>
       )}
       <span className="breadcrumb-sep">/</span>

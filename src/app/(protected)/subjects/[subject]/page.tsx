@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckSquare,
@@ -33,6 +32,7 @@ import {
   Clock3,
   ScrollText,
 } from "lucide-react";
+import SmoothLink from "@/components/layout/smooth-link";
 
 interface Revision {
   id: string;
@@ -595,9 +595,9 @@ export default function SubjectPage() {
             </div>
             <h2>Subject not found</h2>
             <p>Ensure the database is seeded and try again.</p>
-            <Link href="/dashboard" className="btn btn-primary btn-sm">
+            <SmoothLink href="/dashboard" className="btn btn-primary btn-sm" direction="back">
               <ArrowLeft size={14} /> Back to Dashboard
-            </Link>
+            </SmoothLink>
           </div>
         </div>
       </div>
@@ -616,9 +616,9 @@ export default function SubjectPage() {
       </div>
 
       <main className="content-shell">
-        <Link href="/dashboard" className="back-link">
+        <SmoothLink href="/dashboard" className="back-link" direction="back">
           <ArrowLeft size={14} /> Dashboard
-        </Link>
+        </SmoothLink>
 
         <section className="hero glass-card premium-card" style={{ borderColor: `color-mix(in srgb, ${meta.varColor} 28%, transparent)`, background: meta.dimBg }}>
           <div className="hero-ambient" style={{ background: `radial-gradient(circle at 80% 40%, ${meta.glow} 0%, transparent 58%)` }} />

@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Cell
 } from "recharts";
 import { TrendingUp, AlertTriangle, Target, Zap, ChevronLeft, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import SmoothLink from "@/components/layout/smooth-link";
 
 interface SubjectBreakdown {
   subject: string;
@@ -77,9 +77,9 @@ export default function RankPredictorPage() {
     <div className="animate-fade-in">
       <div className="dash-header" style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Link href="/ai-insights" className="btn btn-ghost btn-sm" style={{ padding: "6px 10px" }}>
+          <SmoothLink href="/ai-insights" className="btn btn-ghost btn-sm" style={{ padding: "6px 10px" }} direction="back">
             <ChevronLeft size={16} />
-          </Link>
+          </SmoothLink>
           <div>
             <h1 className="dash-hero-title">Rank Predictor</h1>
             <p className="text-secondary" style={{ fontSize: 14 }}>AI analyses all your data to predict your NEET rank and gap from AIIMS</p>

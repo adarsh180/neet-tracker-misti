@@ -1,9 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@300;400;500;600;700;800&family=Noto+Serif+Devanagari:wght@400;600;700&display=swap');
 
 /* ============================================================
    SACRED DESIGN TOKENS — PREMIUM LIQUID GLASS SYSTEM
    ============================================================ */
 :root {
+  --font-sans: "Inter", -apple-system, system-ui, sans-serif;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-devanagari: "Noto Serif Devanagari", serif;
+
   /* ── Background layers ── */
   --bg-void:      #020204;
   --bg-deep:      #06060e;
@@ -22,9 +25,9 @@
   --glass-border:      rgba(255,255,255,0.07);
   --glass-border-mid:  rgba(255,255,255,0.12);
   --glass-border-hot:  rgba(255,255,255,0.20);
-  --glass-blur-sm:  blur(12px) saturate(160%);
-  --glass-blur:     blur(24px) saturate(180%);
-  --glass-blur-lg:  blur(48px) saturate(200%);
+  --glass-blur-sm:  blur(8px) saturate(135%);
+  --glass-blur:     blur(16px) saturate(145%);
+  --glass-blur-lg:  blur(24px) saturate(155%);
 
   /* ── Sacred accent palette (HSL-tuned) ── */
   --gold:          hsl(38,  72%, 58%);
@@ -102,9 +105,25 @@
   --ease-out:    cubic-bezier(0.0, 0.0, 0.2, 1.0);
   --ease-in-out: cubic-bezier(0.4, 0.0, 0.2, 1.0);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1.0);
-  --t-fast:   all 0.12s var(--ease-out);
-  --t-smooth: all 0.25s var(--ease-in-out);
-  --t-spring: all 0.40s var(--ease-spring);
+  --t-fast:
+    color 0.12s var(--ease-out),
+    background-color 0.12s var(--ease-out),
+    border-color 0.12s var(--ease-out),
+    opacity 0.12s var(--ease-out),
+    transform 0.12s var(--ease-out),
+    box-shadow 0.12s var(--ease-out);
+  --t-smooth:
+    color 0.25s var(--ease-in-out),
+    background-color 0.25s var(--ease-in-out),
+    border-color 0.25s var(--ease-in-out),
+    opacity 0.25s var(--ease-in-out),
+    transform 0.25s var(--ease-in-out),
+    box-shadow 0.25s var(--ease-in-out),
+    filter 0.25s var(--ease-in-out);
+  --t-spring:
+    transform 0.40s var(--ease-spring),
+    box-shadow 0.40s var(--ease-spring),
+    opacity 0.40s var(--ease-spring);
 
   /* ── Layout ── */
   --topbar-h: 0px;
@@ -114,15 +133,23 @@
    RESET
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scrollbar-gutter: stable;
+  color-scheme: dark;
+}
 
 body {
-  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--bg-void);
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  text-rendering: optimizeLegibility;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -139,6 +166,7 @@ body::before {
     radial-gradient(ellipse 40% 30% at 80%  50%,  hsla(218,80%,55%,0.05) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
+  transform: translateZ(0);
 }
 
 /* ── Noise texture overlay ── */
@@ -151,17 +179,18 @@ body::after {
   background-size: 128px;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.5;
+  opacity: 0.32;
+  transform: translateZ(0);
 }
 
 /* ============================================================
    TYPOGRAPHY
    ============================================================ */
-h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 800; letter-spacing: -0.025em; line-height: 1.08; }
-h2 { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
-h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
-h4, h5, h6 { font-family: 'Inter', sans-serif; font-weight: 600; }
-.devanagari { font-family: 'Noto Serif Devanagari', serif; }
+h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.025em; line-height: 1.08; }
+h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+h4, h5, h6 { font-family: var(--font-sans); font-weight: 600; }
+.devanagari { font-family: var(--font-devanagari); }
 
 /* ============================================================
    GLASS SYSTEM
@@ -191,6 +220,8 @@ h4, h5, h6 { font-family: 'Inter', sans-serif; font-weight: 600; }
   box-shadow: var(--shadow-md);
   transition: var(--t-smooth);
   overflow: hidden;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* Top highlight line */
@@ -253,7 +284,7 @@ h4, h5, h6 { font-family: 'Inter', sans-serif; font-weight: 600; }
   padding: 10px 20px;
   border-radius: var(--r-pill);
   border: none; cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600; font-size: 13.5px;
   letter-spacing: 0.01em;
   transition: var(--t-smooth);
@@ -349,7 +380,7 @@ h4, h5, h6 { font-family: 'Inter', sans-serif; font-weight: 600; }
   border-radius: var(--r-md);
   padding: 11px 14px;
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14.5px;
   transition: var(--t-fast);
   outline: none;
@@ -451,6 +482,59 @@ textarea.input { resize: vertical; line-height: 1.5; }
   width: 100%;
   margin: 0 auto;
   min-height: 100vh;
+  isolation: isolate;
+}
+
+.app-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.app-loading-card {
+  width: min(420px, 100%);
+  padding: 28px;
+  border-radius: var(--r-xl);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: var(--glass-blur-sm);
+  box-shadow: var(--shadow-lg);
+}
+
+.app-loading-badge,
+.app-loading-title,
+.app-loading-copy {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+  border-radius: var(--r-pill);
+}
+
+.app-loading-badge {
+  width: 112px;
+  height: 14px;
+  margin-bottom: 16px;
+}
+
+.app-loading-title {
+  width: 58%;
+  height: 28px;
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+}
+
+.app-loading-copy {
+  width: 100%;
+  height: 12px;
+}
+
+.app-loading-copy + .app-loading-copy {
+  margin-top: 12px;
+}
+
+.app-loading-copy--short {
+  width: 68%;
 }
 
 /* ============================================================
@@ -544,6 +628,75 @@ textarea.input { resize: vertical; line-height: 1.5; }
 @keyframes draw-circle {
   from { stroke-dashoffset: 113; }
   to   { stroke-dashoffset: 0; }
+}
+
+@keyframes route-fade-in {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+@keyframes route-fade-out {
+  from { opacity: 1; filter: blur(0); }
+  to { opacity: 0; filter: blur(2px); }
+}
+
+@keyframes route-slide-forward-in {
+  from { opacity: 0; transform: translateX(28px) translateY(8px) scale(0.992); }
+  to { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+}
+
+@keyframes route-slide-forward-out {
+  from { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+  to { opacity: 0; transform: translateX(-24px) translateY(-4px) scale(0.995); }
+}
+
+@keyframes route-slide-back-in {
+  from { opacity: 0; transform: translateX(-28px) translateY(8px) scale(0.992); }
+  to { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+}
+
+@keyframes route-slide-back-out {
+  from { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+  to { opacity: 0; transform: translateX(24px) translateY(-4px) scale(0.995); }
+}
+
+::view-transition-group(.route-fade),
+::view-transition-group(.nav-forward),
+::view-transition-group(.nav-back) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(.route-fade) {
+  animation: route-fade-out 160ms ease both;
+}
+
+::view-transition-new(.route-fade) {
+  animation: route-fade-in 280ms ease 40ms both;
+}
+
+::view-transition-old(.nav-forward) {
+  animation:
+    route-fade-out 160ms ease both,
+    route-slide-forward-out 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+::view-transition-new(.nav-forward) {
+  animation:
+    route-fade-in 220ms ease 50ms both,
+    route-slide-forward-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+::view-transition-old(.nav-back) {
+  animation:
+    route-fade-out 160ms ease both,
+    route-slide-back-out 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+::view-transition-new(.nav-back) {
+  animation:
+    route-fade-in 220ms ease 50ms both,
+    route-slide-back-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-fade-in    { animation: fadeInUp 0.45s var(--ease-out) both; }
@@ -642,6 +795,27 @@ textarea.input { resize: vertical; line-height: 1.5; }
 @media (max-width: 768px) {
   .page-content { padding: 16px; }
   .chat-bubble-user, .chat-bubble-ai { max-width: 90%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
 }
 
 /* ============================================================
