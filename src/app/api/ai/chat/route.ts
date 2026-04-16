@@ -34,6 +34,41 @@ type HistoryRow = {
   attachmentsJson: unknown;
 };
 
+function shouldForceVisualForMessage(message: string, mode: "neet-guru" | "rank" | "quiz" | "cycle") {
+  if (mode !== "neet-guru") return false;
+
+  const normalized = message.toLowerCase();
+  if (!normalized) return false;
+
+  const visualIntentPatterns = [
+    /\bexplain\b/,
+    /\bhow\b/,
+    /\bwhy\b/,
+    /\bmechanism\b/,
+    /\bpathway\b/,
+    /\bprocess\b/,
+    /\bflow\b/,
+    /\bcycle\b/,
+    /\bstages?\b/,
+    /\bsteps?\b/,
+    /\bcompare\b/,
+    /\bdifference\b/,
+    /\bvs\b/,
+    /\bdiagram\b/,
+    /\bvisuali[sz]e\b/,
+    /\breaction\b/,
+    /\bworking\b/,
+    /\bsystem\b/,
+  ];
+
+  const nonVisualPatterns = [/\brank\b/, /\bscore\b/, /\bplan\b/, /\bschedule\b/, /\bmcq\b/, /\bquiz\b/];
+  if (nonVisualPatterns.some((pattern) => pattern.test(normalized))) {
+    return false;
+  }
+
+  return visualIntentPatterns.some((pattern) => pattern.test(normalized));
+}
+
 function normalizeAttachments(body: { file?: IncomingAttachment | null; files?: IncomingAttachment[] | null }) {
   if (Array.isArray(body.files) && body.files.length > 0) {
     return body.files.filter((file) => file?.base64 && file?.mimeType);
@@ -99,13 +134,23 @@ export async function POST(req: NextRequest) {
     }
 
     const context = await buildAIContext();
-    const systemPrompt = buildSystemPrompt(context, mode as "neet-guru" | "rank" | "quiz" | "cycle");
+    const resolvedMode = mode as "neet-guru" | "rank" | "quiz" | "cycle";
+    const systemPrompt = buildSystemPrompt(context, resolvedMode);
     const memoryPrompt = await buildMemoryContextForPrompt({
       latestMessage: message || (files.length ? `Attached files:\n${getAttachmentSummary(files)}` : ""),
       context,
       displayName: context.student.name,
     });
-    const augmentedSystemPrompt = memoryPrompt ? `${systemPrompt}\n\n${memoryPrompt}` : systemPrompt;
+    const shouldForceVisual = shouldForceVisualForMessage(message, resolvedMode);
+    const turnVisualInstruction = resolvedMode === "neet-guru"
+      ? `TURN-SPECIFIC VISUAL DECISION:
+- ${shouldForceVisual ? "This exact user request clearly benefits from a dynamic visual, so include one valid <guru_visual> block after the prose answer." : "Include a <guru_visual> block only if it materially improves understanding for this exact request."}
+- Keep the prose answer first, the visual block second.
+- Never emit more than one <guru_visual> block.
+- If multiple attachments are present, make the visual consistent with the attachment evidence and the written explanation.
+- The visual block must represent only the study concept being explained. Do not put student-performance data, attempts, progress, rank, schedule, or scolding language into the visual.`
+      : "";
+    const augmentedSystemPrompt = [systemPrompt, memoryPrompt, turnVisualInstruction].filter(Boolean).join("\n\n");
 
     let conversation;
     if (conversationId) {

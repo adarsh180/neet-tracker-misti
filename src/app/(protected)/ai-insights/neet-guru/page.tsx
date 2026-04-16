@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import {
   Send,
   Plus,
-  Trash2,
   MessageSquare,
   X,
   Square,
@@ -25,6 +24,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import { NeetGuruVisualExplainer } from "@/components/neet-guru-visual-explainer";
+import { parseNeetGuruMessage } from "@/lib/neet-guru-visual";
 import "katex/dist/katex.min.css";
 
 interface Message {
@@ -142,6 +143,20 @@ function NeetGuruLogo() {
   );
 }
 
+function DustbinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="ng-dustbin" aria-hidden="true" focusable="false">
+      <g className="ng-dustbin-lid">
+        <path d="M8.4 6.9h7.2" className="ng-dustbin-stroke" />
+        <path d="M10.15 5.2h3.7" className="ng-dustbin-stroke" />
+        <path d="M7.2 8.15h9.6" className="ng-dustbin-stroke" />
+      </g>
+      <path d="M8.1 8.85h7.8l-.64 8.12a2 2 0 0 1-1.99 1.84h-2.34a2 2 0 0 1-1.99-1.84L8.1 8.85Z" className="ng-dustbin-body" />
+      <path d="M10.15 11.15v4.85M12 11.15v4.85M13.85 11.15v4.85" className="ng-dustbin-lines" />
+    </svg>
+  );
+}
+
 export default function NEETGuruPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -152,6 +167,7 @@ export default function NEETGuruPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [error, setError] = useState("");
   const [activeModel, setActiveModel] = useState("NEET-GURU");
+  const [deletingConvIds, setDeletingConvIds] = useState<string[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [fileLoading, setFileLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -184,6 +200,21 @@ export default function NEETGuruPage() {
       </ReactMarkdown>
     ),
     []
+  );
+
+  const renderAssistantContent = useCallback(
+    (content: string, appendCursor?: boolean) => {
+      const parsed = parseNeetGuruMessage(content);
+      const cleanContent = formatMessageContent(parsed.markdown);
+
+      return (
+        <>
+          {cleanContent ? renderMarkdown(cleanContent + (appendCursor && !parsed.visual ? " ▌" : "")) : null}
+          {parsed.visual ? <NeetGuruVisualExplainer visual={parsed.visual} /> : null}
+        </>
+      );
+    },
+    [renderMarkdown]
   );
 
   const fetchConversations = useCallback(async () => {
@@ -282,10 +313,29 @@ export default function NEETGuruPage() {
 
   const deleteConv = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (deletingConvIds.includes(id)) return;
+
+    setDeletingConvIds((current) => [...current, id]);
+    await new Promise((resolve) => setTimeout(resolve, 520));
+
     if (activeConvId === id) startNew();
-    setConversations((p) => p.filter((c) => c.id !== id));
-    await fetch(`/api/ai/conversations/${id}`, { method: "DELETE" });
-    fetchConversations();
+
+    startTransition(() => {
+      setConversations((current) => current.filter((conv) => conv.id !== id));
+    });
+
+    try {
+      const res = await fetch(`/api/ai/conversations/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        throw new Error("Could not delete that chat.");
+      }
+      fetchConversations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete that chat.");
+      fetchConversations();
+    } finally {
+      setDeletingConvIds((current) => current.filter((convId) => convId !== id));
+    }
   };
 
   const sendMessage = async (text?: string) => {
@@ -510,14 +560,22 @@ export default function NEETGuruPage() {
                       key={conv.id}
                       role="button"
                       tabIndex={0}
-                      className={`ng-history-item ${activeConvId === conv.id ? "active" : ""}`}
-                      onClick={() => loadConversation(conv.id)}
-                      onKeyDown={(e) => e.key === "Enter" && loadConversation(conv.id)}
+                      className={`ng-history-item ${activeConvId === conv.id ? "active" : ""} ${
+                        deletingConvIds.includes(conv.id) ? "is-deleting" : ""
+                      }`}
+                      onClick={() => !deletingConvIds.includes(conv.id) && loadConversation(conv.id)}
+                      onKeyDown={(e) => e.key === "Enter" && !deletingConvIds.includes(conv.id) && loadConversation(conv.id)}
                     >
                       <span className="ng-history-dot" />
                       <span className="ng-history-title">{conv.title?.slice(0, 48) || "Untitled conversation"}</span>
-                      <button className="ng-history-del" onClick={(e) => deleteConv(conv.id, e)} title="Delete chat">
-                        <Trash2 size={14} />
+                      <button
+                        className={`ng-history-del ${deletingConvIds.includes(conv.id) ? "is-deleting" : ""}`}
+                        onClick={(e) => deleteConv(conv.id, e)}
+                        title="Delete chat"
+                        aria-label="Delete chat"
+                      >
+                        <span className="ng-history-vacuum-wave" aria-hidden="true" />
+                        <DustbinIcon />
                       </button>
                     </div>
                   ))}
@@ -616,7 +674,7 @@ export default function NEETGuruPage() {
                                 {!msg.content.startsWith("[Attached") && <span>{msg.content}</span>}
                               </div>
                             ) : (
-                              renderMarkdown(formatMessageContent(msg.content))
+                              renderAssistantContent(msg.content)
                             )}
                           </div>
                         </div>
@@ -645,7 +703,7 @@ export default function NEETGuruPage() {
                         </div>
                       ) : (
                         <div className="ng-message-text markdown-body">
-                          {renderMarkdown(formatMessageContent(streamingText) + " ▌")}
+                          {renderAssistantContent(streamingText, true)}
                         </div>
                       )}
                     </div>
@@ -1043,6 +1101,8 @@ export default function NEETGuruPage() {
         }
 
         .ng-history-item {
+          position: relative;
+          overflow: hidden;
           display: flex;
           align-items: center;
           gap: 10px;
@@ -1093,6 +1153,7 @@ export default function NEETGuruPage() {
         }
 
         .ng-history-del {
+          position: relative;
           background: transparent;
           border: none;
           cursor: pointer;
@@ -1100,6 +1161,12 @@ export default function NEETGuruPage() {
           opacity: 0;
           padding: 4px;
           display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 12px;
+          overflow: hidden;
           transition: opacity 0.2s, color 0.2s, transform 0.2s;
         }
 
@@ -1110,6 +1177,127 @@ export default function NEETGuruPage() {
         .ng-history-del:hover {
           color: #ff6b6b;
           transform: scale(1.04);
+          background: rgba(255, 107, 107, 0.08);
+        }
+
+        .ng-history-del.is-deleting {
+          opacity: 1;
+          color: #ffd6d6;
+          background: rgba(255, 107, 107, 0.08);
+        }
+
+        .ng-history-item.is-deleting {
+          pointer-events: none;
+        }
+
+        .ng-history-item.is-deleting .ng-history-dot,
+        .ng-history-item.is-deleting .ng-history-title {
+          animation: historySuck 0.52s cubic-bezier(0.22, 0.75, 0.18, 1) forwards;
+          transform-origin: right center;
+        }
+
+        .ng-history-item.is-deleting .ng-history-del {
+          opacity: 1;
+          transform: scale(1.06);
+        }
+
+        .ng-history-vacuum-wave {
+          position: absolute;
+          inset: 50% calc(100% - 2px) auto auto;
+          width: 88px;
+          height: 12px;
+          transform: translateY(-50%) scaleX(0.25);
+          transform-origin: right center;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 162, 162, 0.12), rgba(255, 162, 162, 0.45));
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .ng-history-item.is-deleting .ng-history-vacuum-wave {
+          animation: vacuumWave 0.52s ease forwards;
+        }
+
+        .ng-dustbin {
+          width: 17px;
+          height: 17px;
+          overflow: visible;
+        }
+
+        .ng-dustbin-stroke,
+        .ng-dustbin-lines,
+        .ng-dustbin-body {
+          fill: none;
+          stroke: currentColor;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .ng-dustbin-stroke,
+        .ng-dustbin-body {
+          stroke-width: 1.7;
+        }
+
+        .ng-dustbin-lines {
+          stroke-width: 1.4;
+          opacity: 0.78;
+        }
+
+        .ng-dustbin-lid {
+          transform-box: fill-box;
+          transform-origin: 18% 82%;
+          transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .ng-history-item:hover .ng-dustbin-lid,
+        .ng-history-del:hover .ng-dustbin-lid {
+          transform: rotate(-34deg) translate(-0.2px, -0.9px);
+        }
+
+        .ng-history-item.is-deleting .ng-dustbin-lid {
+          animation: dustbinOpen 0.52s ease forwards;
+        }
+
+        @keyframes historySuck {
+          0% {
+            opacity: 1;
+            filter: blur(0);
+            transform: translateX(0) scale(1);
+          }
+          65% {
+            opacity: 1;
+            filter: blur(0.5px);
+            transform: translateX(20px) scale(0.84);
+          }
+          100% {
+            opacity: 0;
+            filter: blur(7px);
+            transform: translateX(84px) scale(0.16);
+          }
+        }
+
+        @keyframes vacuumWave {
+          0% {
+            opacity: 0;
+            transform: translateY(-50%) scaleX(0.25);
+          }
+          30% {
+            opacity: 1;
+            transform: translateY(-50%) scaleX(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-50%) scaleX(1.08);
+          }
+        }
+
+        @keyframes dustbinOpen {
+          0% {
+            transform: rotate(-20deg) translate(-0.2px, -0.5px);
+          }
+          100% {
+            transform: rotate(-42deg) translate(-0.3px, -1.2px);
+          }
         }
 
         .ng-sidebar-footer {
