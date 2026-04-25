@@ -11,6 +11,7 @@ const PREFETCH_ROUTES = [
   "/todo",
   "/daily-goals",
   "/tests",
+  "/tests/error-log",
   "/mood",
   "/ai-insights",
   "/ai-insights/neet-guru",

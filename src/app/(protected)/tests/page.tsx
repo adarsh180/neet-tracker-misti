@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, type CSSProperties } from "react";
+import Link from "next/link";
 import {
   AreaChart,
   Area,
@@ -28,6 +29,7 @@ import {
   ChevronDown,
   CalendarDays,
   ArrowUpRight,
+  FileSpreadsheet,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -229,6 +231,10 @@ export default function TestsPage() {
               <span className="tests-mini-stat-label">Latest average</span>
               <span className="tests-mini-stat-value">{avgPct}%</span>
             </div>
+
+            <Link href="/tests/error-log" className="btn btn-glass btn-sm tests-error-log-btn">
+              <FileSpreadsheet size={14} /> Error Log Tracker
+            </Link>
 
             <button className={`btn btn-primary btn-sm tests-record-btn ${showForm ? "open" : ""}`} onClick={() => setShowForm(!showForm)}>
               {showForm ? (

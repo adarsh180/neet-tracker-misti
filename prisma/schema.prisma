@@ -98,6 +98,76 @@ model TestRecord {
   @@map("test_records")
 }
 
+model ErrorLogTest {
+  id              String             @id @default(cuid())
+  testName        String
+  testType        String             // AITS, SECTIONAL, UNIT, FLT, PYQ, REAL_ATTEMPT
+  questionCount   Int
+  takenAt         DateTime           @default(now())
+  notes           String?            @db.Text
+  questions       ErrorLogQuestion[]
+  analyses        ErrorLogAnalysis[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([testType, takenAt])
+  @@map("error_log_tests")
+}
+
+model ErrorLogQuestion {
+  id              String       @id @default(cuid())
+  testId          String
+  test            ErrorLogTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  questionNumber  Int
+  questionSummary String?      @db.Text
+  subject         String
+  chapter         String?
+  topic           String?
+  attemptStatus   String       @default("SKIPPED") // ATTEMPTED, SKIPPED
+  outcome         String       @default("UNMARKED") // CORRECT, WRONG, UNMARKED
+  correctAnswer   String?      @db.Text
+  whyCorrect      String?      @db.Text
+  whereLacked     String?      @db.Text
+  contentStatus   String       @default("HAD_CONTENT") // HAD_CONTENT, WEAK_CONTENT, NOT_STUDIED, OUT_OF_SYLLABUS
+  outOfSyllabus   Boolean      @default(false)
+  notStudied      Boolean      @default(false)
+  difficulty      String       @default("MEDIUM") // EASY, MEDIUM, HARD
+  confidence      Int?
+  timeSpentSeconds Int?
+  reasonTags      Json?
+  actionFix       String?      @db.Text
+  notes           String?      @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([subject, chapter])
+  @@index([outcome, contentStatus])
+  @@map("error_log_questions")
+}
+
+model ErrorLogAnalysis {
+  id            String        @id @default(cuid())
+  testId        String
+  test          ErrorLogTest  @relation(fields: [testId], references: [id], onDelete: Cascade)
+  response      String        @db.LongText
+  model         String?
+  summaryJson   Json?
+  createdAt     DateTime      @default(now())
+
+  @@index([testId, createdAt])
+  @@map("error_log_analyses")
+}
+
+model ErrorLogGlobalAnalysis {
+  id            String   @id @default(cuid())
+  response      String   @db.LongText
+  model         String?
+  summaryJson   Json?
+  createdAt     DateTime @default(now())
+
+  @@map("error_log_global_analyses")
+}
+
 model CycleEntry {
   id          String    @id @default(cuid())
   startDate   DateTime  @db.Date

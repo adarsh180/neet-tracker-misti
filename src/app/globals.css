@@ -404,6 +404,13 @@ h4, h5, h6 { font-family: var(--font-sans); font-weight: 600; }
   cursor: pointer;
 }
 
+.select option,
+select.input option,
+select option {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+
 textarea.input { resize: vertical; line-height: 1.5; }
 
 /* Input group with icon */
