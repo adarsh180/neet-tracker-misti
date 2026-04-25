@@ -58,6 +58,17 @@ const getTopics = (subjectName: string, chapterName: string) => {
   return chap ? chap.topics : [];
 };
 
+type SubjectTopicRecord = {
+  id: string;
+  name: string;
+  topics: Array<{
+    id: string;
+    name: string;
+    chapter: string | null;
+    classLevel: string | null;
+  }>;
+};
+
 const ATTEMPT_STATUS = ["ATTEMPTED", "SKIPPED"];
 const OUTCOMES = ["CORRECT", "WRONG", "UNMARKED"];
 const CONTENT_STATUS = ["HAD_CONTENT", "WEAK_CONTENT", "NOT_STUDIED", "OUT_OF_SYLLABUS"];
@@ -319,6 +330,7 @@ export default function ErrorLogTrackerPage() {
   const [savingBatch, setSavingBatch] = useState(false);
   const [viewMode, setViewMode] = useState<"form" | "grid">("form");
   const [gridQuestions, setGridQuestions] = useState<DraftQuestion[]>([]);
+  const [subjectTopicRecords, setSubjectTopicRecords] = useState<SubjectTopicRecord[]>([]);
   const [testAiLoading, setTestAiLoading] = useState(false);
   const [globalAiLoading, setGlobalAiLoading] = useState(false);
   const [error, setError] = useState("");
@@ -337,6 +349,11 @@ export default function ErrorLogTrackerPage() {
     if (res.ok) setGlobalAnalysis(await res.json());
   }, []);
 
+  const fetchSubjectTopics = useCallback(async () => {
+    const res = await fetch("/api/subjects", { cache: "no-store" });
+    if (res.ok) setSubjectTopicRecords((await res.json()) as SubjectTopicRecord[]);
+  }, []);
+
   const fetchSelected = useCallback(async (id: string) => {
     const res = await fetch(`/api/error-logs/${id}`, { cache: "no-store" });
     if (res.ok) {
@@ -353,8 +370,8 @@ export default function ErrorLogTrackerPage() {
   }, [questionDraft.id]);
 
   useEffect(() => {
-    Promise.all([fetchLogs(), fetchGlobalAnalysis()]).finally(() => setLoading(false));
-  }, [fetchLogs, fetchGlobalAnalysis]);
+    Promise.all([fetchLogs(), fetchGlobalAnalysis(), fetchSubjectTopics()]).finally(() => setLoading(false));
+  }, [fetchLogs, fetchGlobalAnalysis, fetchSubjectTopics]);
 
   useEffect(() => {
     if (selectedId) fetchSelected(selectedId);
@@ -412,6 +429,117 @@ export default function ErrorLogTrackerPage() {
 
   const updateDraft = <K extends keyof DraftQuestion>(key: K, value: DraftQuestion[K]) => {
     setQuestionDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const normalizeTopicText = (value: string) => value.replace(/\s+/g, " ").trim();
+  const normalizeLookup = (value: string | null | undefined) => normalizeTopicText(value ?? "").toLowerCase();
+
+  const getSubjectTopicRecord = (subjectName: string) =>
+    subjectTopicRecords.find((subject) => normalizeLookup(subject.name) === normalizeLookup(subjectName)) ?? null;
+
+  const getMergedChapters = (subjectName: string) => {
+    const staticChapters = getChapters(subjectName);
+    const dbChapters =
+      getSubjectTopicRecord(subjectName)?.topics
+        .map((topic) => topic.chapter)
+        .filter((chapter): chapter is string => Boolean(chapter && chapter.trim())) ?? [];
+
+    return [...new Set([...staticChapters, ...dbChapters])];
+  };
+
+  const getMergedTopics = (subjectName: string, chapterName: string) => {
+    const staticTopics = getTopics(subjectName, chapterName);
+    const dbTopics =
+      getSubjectTopicRecord(subjectName)?.topics
+        .filter((topic) => normalizeLookup(topic.chapter) === normalizeLookup(chapterName))
+        .map((topic) => topic.name) ?? [];
+
+    return [...new Set([...staticTopics, ...dbTopics])];
+  };
+
+  const inferClassLevel = (subjectName: string, chapterName: string) => {
+    const subject = SYLLABUS.find((item) => item.name === subjectName);
+    return subject?.chapters.find((chapter) => chapter.name === chapterName)?.classLevel ?? null;
+  };
+
+  const ensureTopicForFuture = async (subjectName: string, chapterName: string, topicName: string) => {
+    const cleanTopic = normalizeTopicText(topicName);
+    if (!cleanTopic) return cleanTopic;
+
+    const staticExisting = getTopics(subjectName, chapterName).find(
+      (topic) => normalizeLookup(topic) === normalizeLookup(cleanTopic),
+    );
+    if (staticExisting) return staticExisting;
+
+    const subject = getSubjectTopicRecord(subjectName);
+    if (!subject) return cleanTopic;
+
+    const existing = subject.topics.find(
+      (topic) =>
+        normalizeLookup(topic.chapter) === normalizeLookup(chapterName) &&
+        normalizeLookup(topic.name) === normalizeLookup(cleanTopic),
+    );
+    if (existing) return existing.name;
+
+    const res = await fetch("/api/topics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_topic",
+        subjectId: subject.id,
+        name: cleanTopic,
+        chapter: normalizeTopicText(chapterName) || null,
+        classLevel: inferClassLevel(subjectName, chapterName),
+      }),
+    });
+
+    if (!res.ok) throw new Error("Could not save this custom topic for future use.");
+    const created = (await res.json()) as SubjectTopicRecord["topics"][number];
+
+    setSubjectTopicRecords((current) =>
+      current.map((item) => {
+        if (item.id !== subject.id) return item;
+        const exists = item.topics.some((topic) => topic.id === created.id);
+        return exists ? item : { ...item, topics: [...item.topics, created] };
+      }),
+    );
+
+    return created.name;
+  };
+
+  const commitQuestionTopic = async (value: string) => {
+    const cleanTopic = normalizeTopicText(value);
+    updateDraft("topic", cleanTopic);
+    if (!cleanTopic || !questionDraft.subject) return;
+
+    try {
+      const savedTopic = await ensureTopicForFuture(questionDraft.subject, questionDraft.chapter, cleanTopic);
+      updateDraft("topic", savedTopic);
+    } catch (caught) {
+      setError((caught as Error).message);
+    }
+  };
+
+  const commitGridTopic = async (index: number, question: DraftQuestion) => {
+    const cleanTopic = normalizeTopicText(question.topic);
+    const nextQuestion = { ...question, topic: cleanTopic };
+    const copy = [...gridQuestions];
+    copy[index] = nextQuestion;
+    setGridQuestions(copy);
+
+    try {
+      const savedTopic =
+        cleanTopic && question.subject
+          ? await ensureTopicForFuture(question.subject, question.chapter, cleanTopic)
+          : cleanTopic;
+      const savedQuestion = { ...nextQuestion, topic: savedTopic };
+      const nextCopy = [...copy];
+      nextCopy[index] = savedQuestion;
+      setGridQuestions(nextCopy);
+      await saveGridRow(savedQuestion);
+    } catch (caught) {
+      setError((caught as Error).message);
+    }
   };
 
   const createLog = async (event: React.FormEvent) => {
@@ -836,11 +964,11 @@ export default function ErrorLogTrackerPage() {
                   <div className="el-form-grid two">
                     <select className="el-field el-select" value={questionDraft.chapter} onChange={(event) => updateDraft("chapter", event.target.value)}>
                       <option value="">Select Chapter</option>
-                      {getChapters(questionDraft.subject).map(c => <option key={c} value={c}>{c}</option>)}
+                      {getMergedChapters(questionDraft.subject).map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <input className="el-field" list={`topics-form`} value={questionDraft.topic} onChange={(event) => updateDraft("topic", event.target.value)} placeholder="Topic or custom entry" />
+                    <input className="el-field" list={`topics-form`} value={questionDraft.topic} onChange={(event) => updateDraft("topic", event.target.value)} onBlur={(event) => void commitQuestionTopic(event.target.value)} placeholder="Topic or custom entry" />
                     <datalist id="topics-form">
-                      {getTopics(questionDraft.subject, questionDraft.chapter || "").map(t => <option key={t} value={t} />)}
+                      {getMergedTopics(questionDraft.subject, questionDraft.chapter || "").map(t => <option key={t} value={t} />)}
                     </datalist>
                   </div>
                   <div className="el-form-grid three">
@@ -863,12 +991,8 @@ export default function ErrorLogTrackerPage() {
                     <select className="el-field el-select" value={questionDraft.contentStatus} onChange={(event) => updateDraft("contentStatus", event.target.value)}>
                       {CONTENT_STATUS.map((item) => <option key={item} value={item}>{cleanLabel(item)}</option>)}
                     </select>
-                    <input className="el-field" type="number" min={1} max={5} value={questionDraft.confidence} onChange={(event) => updateDraft("confidence", event.target.value)} placeholder="Confidence /5" />
+                    <input className="el-field" type="number" min={1} max={100} value={questionDraft.confidence} onChange={(event) => updateDraft("confidence", event.target.value)} placeholder="Confidence /100" />
                     <input className="el-field" type="number" min={0} value={questionDraft.timeSpentSeconds} onChange={(event) => updateDraft("timeSpentSeconds", event.target.value)} placeholder="Time seconds" />
-                  </div>
-                  <div className="el-checks">
-                    <label><input type="checkbox" checked={questionDraft.outOfSyllabus} onChange={(event) => updateDraft("outOfSyllabus", event.target.checked)} /> Out of syllabus</label>
-                    <label><input type="checkbox" checked={questionDraft.notStudied} onChange={(event) => updateDraft("notStudied", event.target.checked)} /> Not studied</label>
                   </div>
                   <div className="el-reason-wrap">
                     {REASONS.map((reason) => (
@@ -904,8 +1028,6 @@ export default function ErrorLogTrackerPage() {
                              <th>Difficulty</th>
                              <th>Content</th>
                              <th>Reasons</th>
-                             <th>OOS</th>
-                             <th>Not Studied</th>
                              <th>Time (s)</th>
                              <th>Conf</th>
                            </tr>
@@ -923,13 +1045,13 @@ export default function ErrorLogTrackerPage() {
                                <td>
                                  <select className="el-field el-select input-sm" value={q.chapter} onChange={e => { const copy = [...gridQuestions]; copy[i].chapter = e.target.value; copy[i].topic = ""; setGridQuestions(copy); }} onBlur={() => saveGridRow(gridQuestions[i])}>
                                    <option value="">Select Chapter</option>
-                                   {getChapters(q.subject).map(c => <option key={c} value={c}>{c}</option>)}
+                                   {getMergedChapters(q.subject).map(c => <option key={c} value={c}>{c}</option>)}
                                  </select>
                                </td>
                                <td>
-                                 <input className="el-field input-sm" list={`topics-grid-${i}`} value={q.topic} onChange={e => { const copy = [...gridQuestions]; copy[i].topic = e.target.value; setGridQuestions(copy); }} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="Topic" />
+                                 <input className="el-field input-sm" list={`topics-grid-${i}`} value={q.topic} onChange={e => { const copy = [...gridQuestions]; copy[i].topic = e.target.value; setGridQuestions(copy); }} onBlur={() => void commitGridTopic(i, gridQuestions[i])} placeholder="Topic" />
                                  <datalist id={`topics-grid-${i}`}>
-                                   {getTopics(q.subject, q.chapter || "").map(t => <option key={t} value={t} />)}
+                                   {getMergedTopics(q.subject, q.chapter || "").map(t => <option key={t} value={t} />)}
                                  </datalist>
                                </td>
                                <td>
@@ -953,10 +1075,8 @@ export default function ErrorLogTrackerPage() {
                                  </select>
                                </td>
                                <td><input className="el-field input-sm reason-col" value={Array.isArray(q.reasonTags) ? q.reasonTags.join(', ') : q.reasonTags} onChange={e => { const copy = [...gridQuestions]; copy[i].reasonTags = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); setGridQuestions(copy); }} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="Reasons (csv)" /></td>
-                               <td><input type="checkbox" checked={q.outOfSyllabus} onChange={e => { const copy = [...gridQuestions]; copy[i].outOfSyllabus = e.target.checked; setGridQuestions(copy); saveGridRow(copy[i]); }} /></td>
-                               <td><input type="checkbox" checked={q.notStudied} onChange={e => { const copy = [...gridQuestions]; copy[i].notStudied = e.target.checked; setGridQuestions(copy); saveGridRow(copy[i]); }} /></td>
                                <td><input className="el-field input-sm" type="number" min={0} value={q.timeSpentSeconds} onChange={e => { const copy = [...gridQuestions]; copy[i].timeSpentSeconds = e.target.value; setGridQuestions(copy); }} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="s" style={{width: '60px'}} /></td>
-                               <td><input className="el-field input-sm" type="number" min={1} max={5} value={q.confidence} onChange={e => { const copy = [...gridQuestions]; copy[i].confidence = e.target.value; setGridQuestions(copy); }} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="/5" style={{width: '50px'}} /></td>
+                               <td><input className="el-field input-sm" type="number" min={1} max={100} value={q.confidence} onChange={e => { const copy = [...gridQuestions]; copy[i].confidence = e.target.value; setGridQuestions(copy); }} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="/100" style={{width: '60px'}} /></td>
                              </tr>
                            ))}
                          </tbody>
@@ -1151,9 +1271,7 @@ export default function ErrorLogTrackerPage() {
         .el-form-grid { display: grid; gap: 10px; }
         .el-form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .el-form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .el-checks, .el-reason-wrap, .el-ai-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .el-checks label { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 9px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: rgba(255,255,255,.68); font-size: 12px; font-weight: 800; }
-        .el-checks input { accent-color: var(--gold); }
+        .el-reason-wrap, .el-ai-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         .el-reason { padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: rgba(255,255,255,.58); font-size: 11px; font-weight: 800; cursor: pointer; transition: all .15s; }
         .el-reason.on { color: var(--gold-bright); border-color: rgba(212,168,83,.32); background: rgba(212,168,83,.12); }
         .el-ai-card { display: grid; gap: 16px; align-content: start; }
