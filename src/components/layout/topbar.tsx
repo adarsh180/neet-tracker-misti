@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "/todo",        icon: ListTodo,        label: "Todo" },
   { href: "/daily-goals", icon: Target,           label: "Goals" },
   { href: "/tests",       icon: BarChart2,        label: "Tests" },
+  { href: "/visual-lab",  icon: Atom,             label: "Visual Lab" },
   { href: "/mood",        icon: SmilePlus,        label: "Mood" },
   { href: "/ai-insights", icon: Sparkles,         label: "AI Insights" },
 ];

@@ -35,6 +35,7 @@ const EXECUTION_ITEMS: NavItem[] = [
   { href: "/todo", icon: ListTodo, label: "Todo Deck", accent: "#f59e0b" },
   { href: "/daily-goals", icon: Target, label: "Daily Goals", accent: "#e8728a" },
   { href: "/tests", icon: BarChart2, label: "Tests", accent: "#5b9cf5" },
+  { href: "/visual-lab", icon: Atom, label: "Visual Lab", accent: "#4dd6ff" },
   { href: "/mood", icon: SmilePlus, label: "Mood Tracker", accent: "#b680d9" },
 ] ;
 

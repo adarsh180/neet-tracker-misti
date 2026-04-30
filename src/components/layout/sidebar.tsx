@@ -14,6 +14,7 @@ const NAV_MAIN = [
   { href: "/todo",        icon: ListTodo,         label: "Todo Deck" },
   { href: "/daily-goals", icon: Target,           label: "Daily Goals" },
   { href: "/tests",       icon: BarChart2,        label: "Tests" },
+  { href: "/visual-lab",  icon: Atom,             label: "Visual Lab" },
   { href: "/ai-insights", icon: Sparkles,         label: "AI Insights" },
   { href: "/mood",        icon: SmilePlus,        label: "Mood Tracker" },
 ];
