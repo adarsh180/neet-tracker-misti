@@ -61,3 +61,28 @@ export async function getPrivateSession(): Promise<PrivateSession | null> {
   const cookieStore = await cookies();
   return verifyCookieValue(cookieStore.get(PRIVATE_SESSION_COOKIE)?.value);
 }
+
+export function resolveCredentialUser(email: string, password: string): PrivateSession | null {
+  const normalizedEmail = email.toLowerCase().trim();
+  const candidates = [
+    {
+      userId: "misti",
+      email: process.env.MISTI_EMAIL || "",
+      password: process.env.MISTI_PWD || "",
+    },
+    {
+      userId: "divyani",
+      email: process.env.DIVYANI_EMAIL || "",
+      password: process.env.DIVYANI_PWD || "",
+    },
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate.email || !candidate.password) continue;
+    if (normalizedEmail === candidate.email.toLowerCase().trim() && password === candidate.password) {
+      return { userId: candidate.userId };
+    }
+  }
+
+  return null;
+}

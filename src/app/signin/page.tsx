@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
-import { setAuth, getStoredAuth } from "@/lib/auth";
-import { validateCredentials } from "@/app/actions/authActions";
+import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -12,28 +11,58 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw]   = useState(false);
   const [error, setError]     = useState("");
-  const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     router.prefetch("/dashboard");
-    if (getStoredAuth()) router.replace("/dashboard");
+
+    let cancelled = false;
+    async function checkSession() {
+      if (!getStoredAuth()) return;
+
+      try {
+        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        if (cancelled) return;
+        if (res.ok) {
+          setAuth();
+          router.replace("/dashboard");
+        } else {
+          clearAuth();
+        }
+      } catch {
+        if (!cancelled) clearAuth();
+      }
+    }
+
+    checkSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setLoading(true);
 
-    startTransition(async () => {
-      const isValid = await validateCredentials(email, password);
-      if (isValid) {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
         setAuth();
         router.prefetch("/dashboard");
         router.replace("/dashboard");
       } else {
         setError("Invalid credentials. This platform is exclusively for Misti.");
-        setLoading(false);
       }
-    });
+    } catch {
+      setError("Could not create a private session. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

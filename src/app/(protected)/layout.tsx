@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStoredAuth } from "@/lib/auth";
+import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
 import QuickNav from "@/components/layout/quick-nav";
 import RouteTransition from "@/components/layout/route-transition";
 
@@ -29,15 +29,42 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!getStoredAuth()) {
-      router.replace("/signin");
-      return;
+    let cancelled = false;
+
+    async function verifyPrivateSession() {
+      if (!getStoredAuth()) {
+        router.replace("/signin");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        if (cancelled) return;
+
+        if (!res.ok) {
+          clearAuth();
+          router.replace("/signin");
+          return;
+        }
+
+        setAuth();
+        PREFETCH_ROUTES.forEach((route) => {
+          router.prefetch(route);
+        });
+        setReady(true);
+      } catch {
+        if (!cancelled) {
+          clearAuth();
+          router.replace("/signin");
+        }
+      }
     }
 
-    PREFETCH_ROUTES.forEach((route) => {
-      router.prefetch(route);
-    });
-    setReady(true);
+    verifyPrivateSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   if (!ready) {
