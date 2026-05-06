@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { buildAIContext, buildSystemPrompt } from "@/lib/ai-context-builder";
 import { buildMemoryContextForPrompt, updateMemoryFromExchange } from "@/lib/ai-memory";
 import { MODELS_LIST } from "@/lib/openrouter";
+import { getPrivateSession } from "@/lib/server-auth";
 
 const GOOGLE_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 
@@ -125,6 +126,11 @@ function buildHistoryMessage(message: HistoryRow) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getPrivateSession();
+    if (!session) {
+      return NextResponse.json({ error: "Private session required" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { conversationId, message = "", mode = "neet-guru" } = body;
     const files = normalizeAttachments(body);
@@ -133,7 +139,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message or file is required" }, { status: 400 });
     }
 
-    const context = await buildAIContext();
+    const context = await buildAIContext(session.userId);
     const resolvedMode = mode as "neet-guru" | "rank" | "quiz" | "cycle";
     const systemPrompt = buildSystemPrompt(context, resolvedMode);
     const memoryPrompt = await buildMemoryContextForPrompt({

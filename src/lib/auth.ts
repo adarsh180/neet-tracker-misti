@@ -13,5 +13,5 @@ export function clearAuth(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem("neet_auth");
   localStorage.removeItem("neet_auth_time");
+  fetch("/api/auth/logout", { method: "POST", keepalive: true }).catch(() => {});
 }
-

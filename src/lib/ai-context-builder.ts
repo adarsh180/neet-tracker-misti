@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { buildCycleIntelligence } from "@/lib/cycle-intelligence";
 
 export interface AIContext {
   student: {
@@ -152,8 +153,8 @@ function computeStrictnessLevel(
   return "VERY_STRICT";
 }
 
-export async function buildAIContext(): Promise<AIContext> {
-  const [subjects, allTopics, recentGoals, recentTests, lastCycle, recentMoodEntries, errorPatterns] = await Promise.all([
+export async function buildAIContext(userId = "misti"): Promise<AIContext> {
+  const [subjects, allTopics, recentGoals, recentTests, cycleIntelligence, recentMoodEntries, errorPatterns] = await Promise.all([
     db.subject.findMany({ orderBy: { name: "asc" } }),
     db.topic.findMany({ include: { revisions: true }, orderBy: { createdAt: "asc" } }),
     db.dailyGoal.findMany({
@@ -166,8 +167,9 @@ export async function buildAIContext(): Promise<AIContext> {
       orderBy: { takenAt: "desc" },
       take: 10,
     }),
-    db.cycleEntry.findFirst({ orderBy: { startDate: "desc" } }),
+    buildCycleIntelligence(userId),
     db.moodEntry.findMany({
+      where: { userId },
       orderBy: { date: "desc" },
       take: 14,
     }),
@@ -308,7 +310,11 @@ export async function buildAIContext(): Promise<AIContext> {
   );
 
   // Cycle phase
-  const cyclePhase = estimateCyclePhase(lastCycle ? lastCycle.startDate : null);
+  const cyclePhase = {
+    currentPhase: cycleIntelligence.currentPhase,
+    dayOfCycle: cycleIntelligence.dayOfCycle,
+    nextPeriodEst: cycleIntelligence.predictedStart,
+  };
 
   return {
     student: {

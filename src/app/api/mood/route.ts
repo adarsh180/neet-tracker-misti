@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getPrivateSession } from "@/lib/server-auth";
+
+function unauthorized() {
+  return NextResponse.json({ error: "Private session required" }, { status: 401 });
+}
 
 // IST offset = UTC+5:30 = 330 minutes
 function getISTMidnight(dateStr?: string): Date {
@@ -20,12 +25,15 @@ function getISTMidnight(dateStr?: string): Date {
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getPrivateSession();
+    if (!session) return unauthorized();
+
     const { searchParams } = new URL(req.url);
     const days = parseInt(searchParams.get("days") || "30");
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const entries = await db.moodEntry.findMany({
-      where: { date: { gte: since } },
+      where: { userId: session.userId, date: { gte: since } },
       orderBy: { date: "desc" },
     });
     return NextResponse.json(entries);
@@ -34,6 +42,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getPrivateSession();
+    if (!session) return unauthorized();
+
     const body = await req.json();
     const { date, mood, energy, focus, stress, note } = body;
 
@@ -42,6 +53,7 @@ export async function POST(req: NextRequest) {
 
     const existing = await db.moodEntry.findFirst({
       where: {
+        userId: session.userId,
         date: {
           gte: dateObj,
           lt: new Date(dateObj.getTime() + 24 * 60 * 60 * 1000),
@@ -64,6 +76,7 @@ export async function POST(req: NextRequest) {
     } else {
       result = await db.moodEntry.create({
         data: {
+          userId: session.userId,
           date: dateObj,
           mood,
           energy: energy ?? 5,

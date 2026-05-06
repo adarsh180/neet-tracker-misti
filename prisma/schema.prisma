@@ -170,6 +170,7 @@ model ErrorLogGlobalAnalysis {
 
 model CycleEntry {
   id          String    @id @default(cuid())
+  userId      String    @default("misti")
   startDate   DateTime  @db.Date
   endDate     DateTime? @db.Date
   flowLevel   String    // LIGHT, MODERATE, HEAVY, SPOTTING
@@ -178,7 +179,27 @@ model CycleEntry {
   notes       String?   @db.Text
   createdAt   DateTime  @default(now())
 
+  @@index([userId, startDate])
   @@map("cycle_entries")
+}
+
+model CyclePrediction {
+  id                String   @id @default(cuid())
+  userId            String   @default("misti")
+  currentPhase      String
+  dayOfCycle        Int?
+  predictedStart    DateTime @db.Date
+  windowStart       DateTime @db.Date
+  windowEnd         DateTime @db.Date
+  confidence        Float
+  confidenceLabel   String
+  averageCycleLength Float
+  cycleVariability  Float
+  evidenceJson      Json
+  createdAt         DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("cycle_predictions")
 }
 
 model AiConversation {
@@ -236,6 +257,7 @@ model RankPrediction {
 
 model MoodEntry {
   id          String   @id @default(cuid())
+  userId      String   @default("misti")
   date        DateTime @db.Date
   mood        String   // AMAZING, GOOD, OKAY, LOW, TERRIBLE
   energy      Int      // 1-10
@@ -246,6 +268,7 @@ model MoodEntry {
   updatedAt   DateTime @updatedAt
 
   @@unique([date])
+  @@index([userId, date])
   @@map("mood_entries")
 }
 

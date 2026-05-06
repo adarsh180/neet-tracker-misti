@@ -1,4 +1,5 @@
 "use server";
+import { setPrivateSession } from "@/lib/server-auth";
 
 export async function validateCredentials(email: string, password: string): Promise<boolean> {
   const mistiEmail = process.env.MISTI_EMAIL || "";
@@ -11,9 +12,12 @@ export async function validateCredentials(email: string, password: string): Prom
     return false;
   }
 
-  return (
-    (email.toLowerCase().trim() === mistiEmail.toLowerCase().trim() || 
-     email.toLowerCase().trim() === divyaniEmail.toLowerCase().trim()) &&
-    (password === mistiPwd || password === divyaniPwd)
-  );
+  const normalizedEmail = email.toLowerCase().trim();
+  const isMisti = normalizedEmail === mistiEmail.toLowerCase().trim() && password === mistiPwd;
+  const isDivyani = normalizedEmail === divyaniEmail.toLowerCase().trim() && password === divyaniPwd;
+
+  if (!isMisti && !isDivyani) return false;
+
+  await setPrivateSession(isMisti ? "misti" : "divyani");
+  return true;
 }

@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { buildAIContext, buildSystemPrompt } from "@/lib/ai-context-builder";
 import { chatWithAI } from "@/lib/openrouter";
+import { getPrivateSession } from "@/lib/server-auth";
 
 export async function POST() {
   try {
-    const context = await buildAIContext();
+    const session = await getPrivateSession();
+    if (!session) return NextResponse.json({ error: "Private session required" }, { status: 401 });
+
+    const context = await buildAIContext(session.userId);
     const systemPrompt = buildSystemPrompt(context, "rank");
 
     const analysisPrompt = `Based on all the data provided about Divyani, perform a comprehensive NEET rank prediction analysis. Include:
@@ -93,6 +97,9 @@ Return a JSON object with this structure:
 
 export async function GET() {
   try {
+    const session = await getPrivateSession();
+    if (!session) return NextResponse.json({ error: "Private session required" }, { status: 401 });
+
     const predictions = await db.rankPrediction.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
