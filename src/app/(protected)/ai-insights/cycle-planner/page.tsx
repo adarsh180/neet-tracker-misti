@@ -197,6 +197,37 @@ function moodColor(mood?: string | null) {
   return "var(--text-muted)";
 }
 
+function parseAdviceSections(text: string) {
+  if (!text.trim()) return [];
+
+  const sectionNames = ["Body Signal", "Study Strategy", "Today Plan", "Safety Note"];
+  const escaped = sectionNames.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const pattern = new RegExp(`(?:^|\\n)\\s*(?:\\d+\\.\\s*)?(${escaped})\\s*:?\\s*`, "gi");
+  const matches = [...text.matchAll(pattern)];
+
+  if (!matches.length) {
+    return [{ title: "Cycle-Aware Plan", body: text.trim() }];
+  }
+
+  return matches.map((match, index) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = matches[index + 1]?.index ?? text.length;
+    return {
+      title: match[1],
+      body: text.slice(start, end).trim(),
+    };
+  }).filter((section) => section.body);
+}
+
+function getAdviceMeta(title: string) {
+  const normalized = title.toLowerCase();
+  if (normalized.includes("body")) return { icon: Heart, color: "var(--rose-bright)" };
+  if (normalized.includes("strategy")) return { icon: Brain, color: "var(--physics)" };
+  if (normalized.includes("plan")) return { icon: Target, color: "var(--gold)" };
+  if (normalized.includes("safety")) return { icon: ShieldCheck, color: "var(--botany)" };
+  return { icon: Sparkles, color: "var(--lotus-bright)" };
+}
+
 export default function CyclePlannerPage() {
   const [data, setData] = useState<CycleIntelligence | null>(null);
   const [loading, setLoading] = useState(true);
@@ -250,6 +281,7 @@ export default function CyclePlannerPage() {
   const selectedDay = daysByDate.get(selectedDate);
   const phase = data ? PHASE_META[data.currentPhase] : PHASE_META.unknown;
   const PhaseIcon = phase.icon;
+  const adviceSections = useMemo(() => parseAdviceSections(advice), [advice]);
 
   const predictionLine = data?.predictedStart
     ? data.status === "overdue"
@@ -697,32 +729,88 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
               </div>
 
               <div className="glass-card ai-card">
-                <div className="panel-head">
-                  <div>
-                    <h2>AI Study Adjustment</h2>
-                    <p>Uses only the private prediction summary and her tracker context.</p>
+                <div className="ai-card-glow" />
+                <div className="ai-panel-top">
+                  <div className="ai-mark">
+                    <Sparkles size={20} />
                   </div>
-                  <Sparkles size={17} />
+                  <div className="ai-heading">
+                    <span>Private AI Brief</span>
+                    <h2>Study Adjustment</h2>
+                    <p>Turns cycle prediction, phase, mood, and tracker context into today&apos;s workload decision.</p>
+                  </div>
+                </div>
+
+                <div className="ai-context-strip">
+                  <div>
+                    <span>Phase</span>
+                    <strong>{PHASE_META[data.currentPhase].short}</strong>
+                  </div>
+                  <div>
+                    <span>Confidence</span>
+                    <strong>{data.confidence}%</strong>
+                  </div>
+                  <div>
+                    <span>Mode</span>
+                    <strong>{TONE_COPY[data.studySignals.recommendationTone]}</strong>
+                  </div>
                 </div>
 
                 <button className="btn btn-primary btn-lg ai-button" onClick={getAIAdvice} disabled={loadingAdvice} type="button">
-                  {loadingAdvice ? <><RefreshCw size={16} className="spin" /> Generating plan...</> : <><Sparkles size={16} /> Generate Today&apos;s Cycle-Aware Plan</>}
+                  {loadingAdvice ? <><RefreshCw size={16} className="spin" /> Building private brief...</> : <><Sparkles size={16} /> Generate Clean Study Brief</>}
                 </button>
 
-                {loadingAdvice && (
-                  <div className="ai-loading">
-                    <div className="typing-indicator">
-                      <div className="typing-dot" />
-                      <div className="typing-dot" />
-                      <div className="typing-dot" />
+                {!advice && !loadingAdvice && (
+                  <div className="ai-empty">
+                    <div className="ai-empty-icon">
+                      <Lock size={18} />
+                    </div>
+                    <div>
+                      <h3>No brief generated yet</h3>
+                      <p>Generate once after logging period/mood data. The AI receives only the private prediction summary, not the raw calendar UI.</p>
                     </div>
                   </div>
                 )}
 
-                {advice && (
-                  <div className="ai-output">
-                    {advice}
-                    {adviceModel && <p className="model-line">Generated by {adviceModel.split("/").pop()}</p>}
+                {loadingAdvice && (
+                  <div className="ai-loading">
+                    <div className="ai-loading-orbit">
+                      <Sparkles size={18} />
+                    </div>
+                    <div>
+                      <div className="typing-indicator">
+                        <div className="typing-dot" />
+                        <div className="typing-dot" />
+                        <div className="typing-dot" />
+                      </div>
+                      <p>Reading phase, confidence, energy signals, and NEET context...</p>
+                    </div>
+                  </div>
+                )}
+
+                {adviceSections.length > 0 && !loadingAdvice && (
+                  <div className="ai-brief">
+                    {adviceSections.map((section) => {
+                      const meta = getAdviceMeta(section.title);
+                      const Icon = meta.icon;
+
+                      return (
+                        <article key={section.title} className="ai-brief-section" style={{ "--brief-color": meta.color } as React.CSSProperties}>
+                          <div className="ai-brief-icon">
+                            <Icon size={16} />
+                          </div>
+                          <div>
+                            <h3>{section.title}</h3>
+                            <p>{section.body}</p>
+                          </div>
+                        </article>
+                      );
+                    })}
+
+                    <div className="ai-footnote">
+                      <ShieldCheck size={13} />
+                      <span>{adviceModel ? `Generated by ${adviceModel.split("/").pop()}` : "Private cycle-aware guidance"}</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1379,33 +1467,235 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           line-height: 1.6;
         }
 
-        .ai-button {
-          width: 100%;
-          justify-content: center;
+        .ai-card {
+          position: relative;
+          overflow: hidden;
+          border-color: rgba(212, 168, 83, 0.14);
+          background:
+            radial-gradient(circle at 0% 0%, rgba(212, 168, 83, 0.12), transparent 32%),
+            radial-gradient(circle at 100% 0%, rgba(232, 114, 138, 0.1), transparent 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.085), rgba(255,255,255,0.03)),
+            rgba(14, 14, 18, 0.76);
+        }
+
+        .ai-card-glow {
+          position: absolute;
+          width: 220px;
+          height: 220px;
+          right: -95px;
+          top: -95px;
+          border-radius: 999px;
+          background: radial-gradient(circle, rgba(212, 168, 83, 0.16), transparent 66%);
+          filter: blur(16px);
+          pointer-events: none;
+        }
+
+        .ai-panel-top {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 14px;
+          align-items: start;
           margin-bottom: 16px;
         }
 
-        .ai-loading {
+        .ai-mark,
+        .ai-empty-icon,
+        .ai-loading-orbit,
+        .ai-brief-icon {
           display: grid;
           place-items: center;
-          min-height: 72px;
+          flex-shrink: 0;
         }
 
-        .ai-output {
-          white-space: pre-wrap;
+        .ai-mark {
+          width: 46px;
+          height: 46px;
+          border-radius: 16px;
+          color: var(--gold);
+          background:
+            radial-gradient(circle at 30% 20%, rgba(255,255,255,0.12), transparent 34%),
+            rgba(212, 168, 83, 0.12);
+          border: 1px solid rgba(212, 168, 83, 0.22);
+          box-shadow: 0 12px 26px rgba(0,0,0,0.18);
+        }
+
+        .ai-heading span {
+          display: inline-flex;
+          align-items: center;
+          margin-bottom: 5px;
+          color: rgba(255, 214, 138, 0.86);
+          font-size: 10.5px;
+          font-weight: 850;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+
+        .ai-heading h2 {
+          margin: 0;
+          font-size: 24px;
+          line-height: 1.05;
+          letter-spacing: -0.04em;
+        }
+
+        .ai-heading p {
+          margin-top: 8px;
+          color: var(--text-secondary);
+          font-size: 13px;
+          line-height: 1.62;
+        }
+
+        .ai-context-strip {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 14px;
+        }
+
+        .ai-context-strip div {
+          min-width: 0;
+          padding: 11px 12px;
+          border-radius: 15px;
+          background: rgba(255,255,255,0.045);
+          border: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .ai-context-strip span {
+          display: block;
+          color: var(--text-muted);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+
+        .ai-context-strip strong {
+          display: block;
+          overflow-wrap: anywhere;
           color: var(--text-primary);
-          font-size: 14px;
-          line-height: 1.8;
+          font-size: 12.5px;
+          line-height: 1.25;
+        }
+
+        .ai-button {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          justify-content: center;
+          margin-bottom: 16px;
+          min-height: 48px;
+          border-radius: 16px;
+        }
+
+        .ai-empty,
+        .ai-loading {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 13px;
+          align-items: center;
           padding: 16px;
+          min-height: 94px;
           border-radius: 18px;
           background: rgba(255,255,255,0.04);
           border: 1px solid rgba(255,255,255,0.07);
         }
 
-        .model-line {
-          margin-top: 14px;
+        .ai-empty-icon,
+        .ai-loading-orbit {
+          width: 38px;
+          height: 38px;
+          border-radius: 14px;
+          color: var(--gold);
+          background: rgba(212, 168, 83, 0.1);
+          border: 1px solid rgba(212, 168, 83, 0.18);
+        }
+
+        .ai-loading-orbit {
+          animation: aiPulse 1.6s ease-in-out infinite;
+        }
+
+        .ai-empty h3 {
+          margin: 0 0 4px;
+          font-size: 14px;
+          color: var(--text-primary);
+        }
+
+        .ai-empty p,
+        .ai-loading p {
+          margin: 7px 0 0;
+          color: var(--text-secondary);
+          font-size: 12.5px;
+          line-height: 1.55;
+        }
+
+        .ai-brief {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .ai-brief-section {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 12px;
+          padding: 15px;
+          border-radius: 18px;
+          background:
+            linear-gradient(180deg, color-mix(in srgb, var(--brief-color) 7%, transparent), rgba(255,255,255,0.035)),
+            rgba(255,255,255,0.03);
+          border: 1px solid color-mix(in srgb, var(--brief-color) 20%, rgba(255,255,255,0.07));
+        }
+
+        .ai-brief-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 12px;
+          color: var(--brief-color);
+          background: color-mix(in srgb, var(--brief-color) 12%, transparent);
+          border: 1px solid color-mix(in srgb, var(--brief-color) 22%, transparent);
+        }
+
+        .ai-brief-section h3 {
+          margin: 1px 0 7px;
+          color: var(--brief-color);
+          font-size: 13.5px;
+          line-height: 1.2;
+          letter-spacing: -0.01em;
+        }
+
+        .ai-brief-section p {
+          margin: 0;
+          white-space: pre-wrap;
+          color: rgba(255,255,255,0.75);
+          font-size: 13.2px;
+          line-height: 1.72;
+        }
+
+        .ai-footnote {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          align-self: flex-start;
+          margin-top: 2px;
+          padding: 7px 10px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.07);
           color: var(--text-muted);
           font-size: 11px;
+        }
+
+        @keyframes aiPulse {
+          0%, 100% { transform: scale(1); box-shadow: none; }
+          50% { transform: scale(1.04); box-shadow: 0 0 24px rgba(212,168,83,0.16); }
         }
 
         .spin {
@@ -1459,6 +1749,17 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
 
         @media (max-width: 620px) {
           .prediction-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .ai-context-strip {
+            grid-template-columns: 1fr;
+          }
+
+          .ai-panel-top,
+          .ai-empty,
+          .ai-loading,
+          .ai-brief-section {
             grid-template-columns: 1fr;
           }
 
