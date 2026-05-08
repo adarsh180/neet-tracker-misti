@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { format, addDays, subDays as dateFnsSubDays } from "date-fns";
+import { format, addDays, subDays as dateFnsSubDays, differenceInCalendarDays } from "date-fns";
 import {
   Clock,
   BookOpen,
@@ -47,6 +47,16 @@ interface HeatCell {
 interface ChartPoint {
   date: string;
   displayDate: string;
+  hours: number;
+  questions: number;
+}
+
+interface SubjectAnalytics {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  hours: number;
   questions: number;
 }
 
@@ -68,6 +78,17 @@ interface PerformanceBand {
 }
 
 /* ---------- LOGIC ---------- */
+const TRACKER_START = new Date(2026, 4, 1);
+const TRACKER_END = new Date(2027, 4, 31);
+const TRACKER_START_KEY = format(TRACKER_START, "yyyy-MM-dd");
+const TRACKER_END_KEY = format(TRACKER_END, "yyyy-MM-dd");
+const TRACKER_DAYS = differenceInCalendarDays(TRACKER_END, TRACKER_START) + 1;
+const LIVE_REFRESH_MS = 30000;
+
+function dateKey(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
+
 function getIntensity(hours: number, questions: number): number {
   const score = (hours / 12) * 0.5 + (questions / 500) * 0.5;
   if (score >= 1) return 4;
@@ -78,14 +99,14 @@ function getIntensity(hours: number, questions: number): number {
 }
 
 const INTENSITY_COLORS = [
-  "rgba(255,255,255,0.04)",
-  "rgba(212,168,83,0.22)",
-  "rgba(212,168,83,0.46)",
-  "rgba(194,96,110,0.72)",
-  "#d4a853",
+  "var(--glass-thin)",
+  "var(--gold-dim)",
+  "hsla(38,72%,58%,0.32)",
+  "var(--rose-glow)",
+  "var(--gold)",
 ];
 
-function build365Heatmap(goals: DailyGoalEntry[]): HeatCell[] {
+function buildCycleHeatmap(goals: DailyGoalEntry[]): HeatCell[] {
   const map: Record<string, { hours: number; questions: number }> = {};
   goals.forEach((g) => {
     const d = g.date.split("T")[0];
@@ -95,8 +116,8 @@ function build365Heatmap(goals: DailyGoalEntry[]): HeatCell[] {
   });
 
   const cells: HeatCell[] = [];
-  for (let i = 364; i >= 0; i--) {
-    const date = format(dateFnsSubDays(new Date(), i), "yyyy-MM-dd");
+  for (let i = 0; i < TRACKER_DAYS; i++) {
+    const date = dateKey(addDays(TRACKER_START, i));
     const data = map[date] || { hours: 0, questions: 0 };
     cells.push({
       date,
@@ -108,25 +129,58 @@ function build365Heatmap(goals: DailyGoalEntry[]): HeatCell[] {
   return cells;
 }
 
-function buildChartData(goals: DailyGoalEntry[], days = 14): ChartPoint[] {
-  const map: Record<string, number> = {};
+function buildChartData(goals: DailyGoalEntry[], days = 30): ChartPoint[] {
+  const map: Record<string, { hours: number; questions: number }> = {};
   goals.forEach((g) => {
     const d = g.date.split("T")[0];
-    if (!map[d]) map[d] = 0;
-    map[d] += g.questionsSolved;
+    if (!map[d]) map[d] = { hours: 0, questions: 0 };
+    map[d].hours += g.hoursStudied;
+    map[d].questions += g.questionsSolved;
   });
 
   const data: ChartPoint[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const targetDate = dateFnsSubDays(new Date(), i);
     const dateStr = format(targetDate, "yyyy-MM-dd");
+    const point = map[dateStr] || { hours: 0, questions: 0 };
     data.push({
       date: dateStr,
       displayDate: format(targetDate, "MMM dd"),
-      questions: map[dateStr] || 0,
+      hours: point.hours,
+      questions: point.questions,
     });
   }
   return data;
+}
+
+function buildSubjectAnalytics(goals: DailyGoalEntry[], subjects: Subject[]): SubjectAnalytics[] {
+  const fallback = new Map<string, SubjectAnalytics>();
+  subjects.forEach((subject) => {
+    fallback.set(subject.id, {
+      id: subject.id,
+      name: subject.name,
+      slug: subject.slug,
+      color: subject.color,
+      hours: 0,
+      questions: 0,
+    });
+  });
+
+  goals.forEach((goal) => {
+    const subject = fallback.get(goal.subjectId) || {
+      id: goal.subjectId,
+      name: goal.subject.name,
+      slug: goal.subject.slug,
+      color: goal.subject.color,
+      hours: 0,
+      questions: 0,
+    };
+    subject.hours += goal.hoursStudied;
+    subject.questions += goal.questionsSolved;
+    fallback.set(goal.subjectId, subject);
+  });
+
+  return [...fallback.values()].sort((a, b) => b.hours - a.hours);
 }
 
 function getPerformanceBand(score: number): PerformanceBand {
@@ -134,15 +188,15 @@ function getPerformanceBand(score: number): PerformanceBand {
     return { label: "Chumma", score, accent: "var(--gold)", glowClass: "gold-glow", cardClass: "band-chumma" };
   }
   if (score >= 0.72) {
-    return { label: "Very Good", score, accent: "#8bd3ff", glowClass: "blue-glow", cardClass: "band-very-good" };
+    return { label: "Very Good", score, accent: "var(--physics)", glowClass: "physics-glow", cardClass: "band-very-good" };
   }
   if (score >= 0.5) {
-    return { label: "Good", score, accent: "#86efac", glowClass: "soft-alt", cardClass: "band-good" };
+    return { label: "Good", score, accent: "var(--botany)", glowClass: "botany-glow", cardClass: "band-good" };
   }
   if (score >= 0.25) {
     return { label: "Moderate", score, accent: "var(--text-primary)", glowClass: "gray-glow", cardClass: "band-moderate" };
   }
-  return { label: "Poor", score, accent: "#fda4af", glowClass: "danger-glow", cardClass: "band-poor" };
+  return { label: "Poor", score, accent: "var(--rose-bright)", glowClass: "danger-glow", cardClass: "band-poor" };
 }
 
 function getCurrentStreak(goals: DailyGoalEntry[]): number {
@@ -168,15 +222,16 @@ export default function DailyGoalsPage() {
   const [saved, setSaved] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [hoveredHeat, setHoveredHeat] = useState<HeatCell | null>(null);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [subjectsData, goalsData] = await Promise.all([
         fetch("/api/subjects")
           .then(async (response) => (response.ok ? ((await response.json()) as Subject[]) : null))
           .catch(() => null),
-        fetch("/api/daily-goals?days=365")
+        fetch(`/api/daily-goals?start=${TRACKER_START_KEY}&end=${TRACKER_END_KEY}`)
           .then(async (response) => (response.ok ? ((await response.json()) as DailyGoalEntry[]) : null))
           .catch(() => null),
       ]);
@@ -186,19 +241,22 @@ export default function DailyGoalsPage() {
         const gs = goalsData;
         setGoals(gs);
 
-        const todayGoals = gs.filter((g: DailyGoalEntry) => g.date.split("T")[0] === selectedDate);
-        const initial: GoalFormState = {};
-        todayGoals.forEach((g: DailyGoalEntry) => {
-          initial[g.subjectId] = {
-            hours: String(g.hoursStudied),
-            questions: String(g.questionsSolved),
-            notes: g.notes || "",
-          };
-        });
-        setForm(initial);
+        if (!silent) {
+          const todayGoals = gs.filter((g: DailyGoalEntry) => g.date.split("T")[0] === selectedDate);
+          const initial: GoalFormState = {};
+          todayGoals.forEach((g: DailyGoalEntry) => {
+            initial[g.subjectId] = {
+              hours: String(g.hoursStudied),
+              questions: String(g.questionsSolved),
+              notes: g.notes || "",
+            };
+          });
+          setForm(initial);
+        }
       }
+      setLastSynced(new Date());
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [selectedDate]);
 
@@ -206,8 +264,14 @@ export default function DailyGoalsPage() {
     fetchData();
   }, [fetchData]);
 
-  const heatCells = useMemo(() => build365Heatmap(goals), [goals]);
-  const chartData = useMemo(() => buildChartData(goals, 14), [goals]);
+  useEffect(() => {
+    const id = window.setInterval(() => fetchData(true), LIVE_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [fetchData]);
+
+  const heatCells = useMemo(() => buildCycleHeatmap(goals), [goals]);
+  const chartData = useMemo(() => buildChartData(goals, 30), [goals]);
+  const subjectAnalytics = useMemo(() => buildSubjectAnalytics(goals, subjects), [goals, subjects]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -240,8 +304,8 @@ export default function DailyGoalsPage() {
     setSelectedDate(format(addDays(cur, days), "yyyy-MM-dd"));
   };
 
-  const weeks: HeatCell[][] = [];
-  let week: HeatCell[] = [];
+  const weeks: Array<Array<HeatCell | null>> = [];
+  let week: Array<HeatCell | null> = Array.from({ length: TRACKER_START.getDay() }, () => null);
   heatCells.forEach((cell) => {
     week.push(cell);
     if (week.length === 7) {
@@ -249,25 +313,42 @@ export default function DailyGoalsPage() {
       week = [];
     }
   });
-  if (week.length > 0) weeks.push(week);
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
 
   const todayTotalHours = Object.values(form).reduce((s: number, v) => s + (parseFloat(v.hours) || 0), 0);
   const todayTotalQs = Object.values(form).reduce((s: number, v) => s + (parseInt(v.questions) || 0), 0);
   const filledSubjects = Object.values(form).filter((v) => v.hours !== "" || v.questions !== "").length;
-  const activeDays14 = chartData.filter((d) => d.questions > 0).length;
-  const avgQuestions14 = Math.round(chartData.reduce((sum, d) => sum + d.questions, 0) / chartData.length);
+  const activeDays30 = chartData.filter((d) => d.questions > 0 || d.hours > 0).length;
+  const avgQuestions30 = Math.round(chartData.reduce((sum, d) => sum + d.questions, 0) / chartData.length);
+  const avgHours30 = chartData.reduce((sum, d) => sum + d.hours, 0) / chartData.length;
   const bestChartPoint = chartData.reduce((best, current) => (current.questions > best.questions ? current : best), chartData[0]);
-  const activeDays30 = heatCells.slice(-30).filter((cell) => cell.intensity > 0).length;
   const currentStreak = getCurrentStreak(goals);
+  const cycleActiveDays = heatCells.filter((cell) => cell.intensity > 0).length;
+  const cycleHours = heatCells.reduce((sum, cell) => sum + cell.totalHours, 0);
+  const cycleQuestions = heatCells.reduce((sum, cell) => sum + cell.totalQuestions, 0);
+  const trackerElapsedDays = Math.min(
+    TRACKER_DAYS,
+    Math.max(1, differenceInCalendarDays(new Date(), TRACKER_START) + 1)
+  );
+  const cycleConsistencyPct = Math.round((cycleActiveDays / trackerElapsedDays) * 100);
+  const maxSubjectHours = Math.max(...subjectAnalytics.map((subject) => subject.hours), 1);
   const subjectCoverage = subjects.length > 0 ? filledSubjects / subjects.length : 0;
   const dailyPerformanceScore = Math.min(1, todayTotalHours / 12 * 0.4 + todayTotalQs / 500 * 0.4 + subjectCoverage * 0.2);
-  const consistencyScore = Math.min(1, activeDays14 / 14 * 0.45 + activeDays30 / 30 * 0.35 + Math.min(currentStreak, 10) / 10 * 0.2);
+  const consistencyScore = Math.min(1, activeDays30 / 30 * 0.55 + Math.min(currentStreak, 10) / 10 * 0.25 + cycleConsistencyPct / 100 * 0.2);
   const intensityBand = getPerformanceBand(dailyPerformanceScore);
   const consistencyBand = getPerformanceBand(consistencyScore);
   const monthMarkers = weeks
     .map((currentWeek, index) => ({
       index,
-      label: format(new Date(currentWeek[0].date), "MMM"),
+      firstDay: currentWeek.find(Boolean),
+    }))
+    .filter((marker): marker is { index: number; firstDay: HeatCell } => Boolean(marker.firstDay))
+    .map((marker) => ({
+      index: marker.index,
+      label: format(new Date(marker.firstDay.date), "MMM"),
     }))
     .filter((marker, index, all) => index === 0 || marker.label !== all[index - 1].label);
 
@@ -301,10 +382,10 @@ export default function DailyGoalsPage() {
             <div className="eyebrow-row">
               <span className="eyebrow-chip">Daily Goals</span>
               <span className="eyebrow-divider" />
-              <span className="eyebrow-copy">Plan with intent. Log with precision.</span>
+              <span className="eyebrow-copy">May 2026 to May 2027. Live from real logs.</span>
             </div>
-            <h1 className="title gradient-text">Daily Forging</h1>
-            <p className="subtitle">Execute your routine. Read the pattern. Improve the system.</p>
+            <h1 className="title gradient-text">Daily Analytics</h1>
+            <p className="subtitle">Log the day, then read the full NEET cycle from left to right without fabricated numbers.</p>
           </div>
           <div className="date-picker-glass">
             <button className="date-nav-btn" onClick={() => changeDate(-1)} aria-label="Previous day">
@@ -328,10 +409,10 @@ export default function DailyGoalsPage() {
 
         <section className="hero-band animate-slide-up" style={{ animationDelay: "60ms" }}>
           <div className="hero-copy">
-            <span className="hero-kicker">Today’s command center</span>
-            <h2 className="hero-title">Log your work, read the pattern, and stay brutally consistent.</h2>
+            <span className="hero-kicker">Live command center</span>
+            <h2 className="hero-title">One honest timeline from May 2026 to May 2027.</h2>
             <p className="hero-desc">
-              This layout turns the page into a dense dashboard: daily entry, performance line, and annual heatmap live in one frame so the rhythm is easy to see.
+              Every tile, line, and subject bar below is calculated from saved daily-goal entries. Empty days stay empty until work is logged.
             </p>
             <div className="hero-mini-row">
               <div className="mini-chip">
@@ -340,22 +421,22 @@ export default function DailyGoalsPage() {
               </div>
               <div className="mini-chip">
                 <Target size={14} />
-                <span>{activeDays14}/14 active days</span>
+                <span>{activeDays30}/30 active days</span>
               </div>
               <div className="mini-chip">
                 <Activity size={14} />
-                <span>{intensityBand.label} intensity</span>
+                <span>{lastSynced ? `Synced ${format(lastSynced, "HH:mm:ss")}` : "Live sync pending"}</span>
               </div>
             </div>
           </div>
 
           <div className="hero-pulse-card">
-            <div className="hero-pulse-label">Current pulse</div>
-            <div className="hero-pulse-value">{intensityBand.label}</div>
+            <div className="hero-pulse-label">Cycle consistency</div>
+            <div className="hero-pulse-value">{cycleConsistencyPct}%</div>
             <div className="hero-pulse-meta">
-              <span>{filledSubjects}/{Math.max(subjects.length, 1)} subjects logged</span>
-              <span>{activeDays14} active days in the last 14</span>
-              <span>{avgQuestions14} avg questions per day</span>
+              <span>{cycleActiveDays} active days in the NEET cycle</span>
+              <span>{cycleHours.toFixed(1)} total hours logged</span>
+              <span>{cycleQuestions} total questions solved</span>
             </div>
           </div>
         </section>
@@ -407,7 +488,7 @@ export default function DailyGoalsPage() {
               <h3>
                 <TrendingUp size={20} className="inline-icon" /> Performance Trajectory
               </h3>
-              <p className="panel-desc">Questions solved over the last 14 days.</p>
+              <p className="panel-desc">Realtime 30-day question trajectory from saved daily entries.</p>
             </div>
             <div className="chart-stat-badge">
               Max: <span>{maxChartQ} Qs</span>
@@ -419,8 +500,8 @@ export default function DailyGoalsPage() {
               <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="line-chart">
                 <defs>
                   <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(212,168,83,0.34)" />
-                    <stop offset="100%" stopColor="rgba(212,168,83,0.0)" />
+                    <stop offset="0%" stopColor="hsla(38,72%,58%,0.34)" />
+                    <stop offset="100%" stopColor="hsla(38,72%,58%,0)" />
                   </linearGradient>
                   <filter id="glow">
                     <feGaussianBlur stdDeviation="3.5" result="blur" />
@@ -473,8 +554,8 @@ export default function DailyGoalsPage() {
             <div className="chart-insight-rail">
               <div className="insight-card insight-card-primary">
                 <span className="insight-label">Average / day</span>
-                <strong className="insight-value">{avgQuestions14}</strong>
-                <span className="insight-meta">questions across the last 14 days</span>
+                <strong className="insight-value">{avgQuestions30}</strong>
+                <span className="insight-meta">questions across the last 30 days</span>
               </div>
               <div className="insight-card">
                 <span className="insight-label">Best day</span>
@@ -483,10 +564,32 @@ export default function DailyGoalsPage() {
               </div>
               <div className="insight-card">
                 <span className="insight-label">Active cadence</span>
-                <strong className="insight-value">{activeDays14}/14</strong>
-                <span className="insight-meta">days with recorded question practice</span>
+                <strong className="insight-value">{activeDays30}/30</strong>
+                <span className="insight-meta">{avgHours30.toFixed(1)} avg hours per day</span>
               </div>
             </div>
+          </div>
+
+          <div className="subject-analytics">
+            {subjectAnalytics.map((subject) => (
+              <div className="subject-analytics-row" key={subject.id}>
+                <div className="subject-analytics-copy">
+                  <span className="subject-analytics-name" style={{ color: subject.color }}>
+                    {subject.name}
+                  </span>
+                  <span>{subject.hours.toFixed(1)} hrs / {subject.questions} qs</span>
+                </div>
+                <div className="subject-analytics-track">
+                  <span
+                    className="subject-analytics-fill"
+                    style={{
+                      width: `${Math.max(3, (subject.hours / maxSubjectHours) * 100)}%`,
+                      background: subject.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -590,12 +693,12 @@ export default function DailyGoalsPage() {
                 <h3>
                   <Activity size={20} className="inline-icon" /> Consistency Atlas
                 </h3>
-                <p className="panel-desc">A full-year field view of your logged effort density.</p>
+                <p className="panel-desc">May 2026 starts at the left edge and May 2027 closes the map on the right.</p>
               </div>
               <div className={`heatmap-callout ${consistencyBand.cardClass}`}>
                 <span className="heatmap-callout-label">Consistency</span>
                 <strong>{consistencyBand.label}</strong>
-                <span className="heatmap-callout-meta">{activeDays30} active days in the last 30</span>
+                <span className="heatmap-callout-meta">{cycleActiveDays} active cycle days logged</span>
               </div>
             </div>
 
@@ -626,17 +729,21 @@ export default function DailyGoalsPage() {
               <div className="heatmap-grid">
                 {weeks.map((w, i) => (
                   <div className="heatmap-col" key={`week-${i}`}>
-                    {w.map((c) => (
-                      <button
-                        key={c.date}
-                        className="heat-cell"
-                        style={{ backgroundColor: INTENSITY_COLORS[c.intensity] }}
-                        title={`${c.date}: ${c.totalHours} hrs, ${c.totalQuestions} qs`}
-                        onMouseEnter={() => setHoveredHeat(c)}
-                        onMouseLeave={() => setHoveredHeat(null)}
-                        type="button"
-                      />
-                    ))}
+                    {w.map((c, rowIndex) =>
+                      c ? (
+                        <button
+                          key={c.date}
+                          className="heat-cell"
+                          style={{ backgroundColor: INTENSITY_COLORS[c.intensity] }}
+                          title={`${c.date}: ${c.totalHours} hrs, ${c.totalQuestions} qs`}
+                          onMouseEnter={() => setHoveredHeat(c)}
+                          onMouseLeave={() => setHoveredHeat(null)}
+                          type="button"
+                        />
+                      ) : (
+                        <span className="heat-cell heat-cell-empty" key={`empty-${i}-${rowIndex}`} aria-hidden="true" />
+                      )
+                    )}
                   </div>
                 ))}
               </div>
@@ -655,8 +762,8 @@ export default function DailyGoalsPage() {
               <div className="heatmap-hover-card">
                 {hoveredHeat ? (
                   <>
-                    <strong>{format(new Date(hoveredHeat.date), "MMM dd")}</strong>
-                    <span>{hoveredHeat.totalHours} hrs · {hoveredHeat.totalQuestions} qs</span>
+                    <strong>{format(new Date(hoveredHeat.date), "MMM dd, yyyy")}</strong>
+                    <span>{hoveredHeat.totalHours} hrs / {hoveredHeat.totalQuestions} qs</span>
                   </>
                 ) : (
                   <>
@@ -671,33 +778,16 @@ export default function DailyGoalsPage() {
       </div>
 
       <style jsx>{`
-        :root {
-          --bg-color: #050508;
-          --bg-soft: #090a0f;
-          --text-primary: #f3f4f6;
-          --text-secondary: #a1a1aa;
-          --text-muted: #71717a;
-          --glass-bg: rgba(13, 14, 20, 0.72);
-          --glass-border: rgba(255, 255, 255, 0.08);
-          --glass-border-mid: rgba(255, 255, 255, 0.14);
-          --gold: #d4a853;
-          --blue: #60a5fa;
-          --purple: #c084fc;
-          --r-lg: 14px;
-          --r-xl: 18px;
-          --r-2xl: 26px;
-        }
-
         .goals-page {
           min-height: 100vh;
           background:
-            radial-gradient(circle at top left, rgba(192, 132, 252, 0.08), transparent 30%),
-            radial-gradient(circle at top right, rgba(212, 168, 83, 0.09), transparent 28%),
-            linear-gradient(180deg, #030304 0%, #07080b 35%, #050508 100%);
+            radial-gradient(circle at top left, var(--lotus-dim), transparent 30%),
+            radial-gradient(circle at top right, var(--gold-dim), transparent 28%),
+            linear-gradient(180deg, var(--bg-void) 0%, var(--bg-deep) 35%, var(--bg-base) 100%);
           padding: 40px 24px 88px;
           position: relative;
           color: var(--text-primary);
-          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family: var(--font-sans);
           overflow-x: hidden;
         }
 
@@ -728,7 +818,7 @@ export default function DailyGoalsPage() {
           height: 460px;
           top: -120px;
           left: -100px;
-          background: var(--purple);
+          background: var(--lotus);
           animation: float 12s ease-in-out infinite;
         }
         .orb-2 {
@@ -744,7 +834,7 @@ export default function DailyGoalsPage() {
           height: 340px;
           top: 38%;
           left: 20%;
-          background: var(--blue);
+          background: var(--physics);
           animation: float 14s ease-in-out infinite 4s;
           opacity: 0.08;
         }
@@ -787,7 +877,7 @@ export default function DailyGoalsPage() {
         .eyebrow-divider { width: 24px; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.25), transparent); }
         .eyebrow-copy { color: var(--text-muted); font-size: 13px; letter-spacing: 0.03em; }
         .gradient-text {
-          background: linear-gradient(to right, #fff, #bbb);
+          background: linear-gradient(135deg, var(--gold-bright), var(--rose-bright), var(--lotus-bright));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -853,8 +943,8 @@ export default function DailyGoalsPage() {
           border-radius: 30px;
           border: 1px solid rgba(255,255,255,0.08);
           background:
-            radial-gradient(circle at top left, rgba(212,168,83,0.14), transparent 34%),
-            radial-gradient(circle at bottom right, rgba(96,165,250,0.09), transparent 25%),
+            radial-gradient(circle at top left, var(--gold-dim), transparent 34%),
+            radial-gradient(circle at bottom right, var(--physics-dim), transparent 25%),
             linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
           backdrop-filter: blur(24px);
           box-shadow: 0 18px 60px rgba(0,0,0,0.3);
@@ -870,8 +960,8 @@ export default function DailyGoalsPage() {
           text-transform: uppercase;
           font-weight: 800;
           color: var(--gold);
-          background: rgba(212,168,83,0.08);
-          border: 1px solid rgba(212,168,83,0.16);
+          background: var(--gold-dim);
+          border: 1px solid hsla(38,72%,58%,0.16);
         }
         .hero-title { margin: 0; font-size: clamp(26px, 4vw, 40px); line-height: 1.06; letter-spacing: -0.05em; max-width: 14ch; }
         .hero-desc { margin: 0; max-width: 68ch; color: var(--text-secondary); font-size: 15px; line-height: 1.75; }
@@ -929,7 +1019,7 @@ export default function DailyGoalsPage() {
           gap: 16px;
         }
         .metric-card {
-          background: var(--glass-bg);
+          background: var(--glass-mid);
           border: 1px solid var(--glass-border);
           border-radius: var(--r-2xl);
           padding: 24px;
@@ -941,7 +1031,7 @@ export default function DailyGoalsPage() {
           transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
         }
         .metric-card:hover { transform: translateY(-6px); border-color: var(--glass-border-mid); box-shadow: 0 18px 44px rgba(0,0,0,0.26); }
-        .peak-card { border-color: rgba(212,168,83,0.3); background: linear-gradient(180deg, rgba(212,168,83,0.05) 0%, rgba(15,15,20,0.7) 100%); }
+        .peak-card { border-color: hsla(38,72%,58%,0.3); background: linear-gradient(180deg, var(--gold-dim) 0%, var(--glass-mid) 100%); }
         .metric-icon-wrap {
           width: 60px;
           height: 60px;
@@ -951,12 +1041,14 @@ export default function DailyGoalsPage() {
           justify-content: center;
           flex-shrink: 0;
         }
-        .blue-glow { background: hsla(210, 80%, 60%, 0.15); color: var(--blue); box-shadow: inset 0 0 20px hsla(210, 80%, 60%, 0.1); }
-        .soft-alt { background: hsla(160, 45%, 50%, 0.14); color: #86efac; box-shadow: inset 0 0 20px rgba(134,239,172,0.1); }
-        .purple-glow { background: hsla(285, 60%, 60%, 0.15); color: var(--purple); box-shadow: inset 0 0 20px hsla(285, 60%, 60%, 0.1); }
+        .blue-glow,
+        .physics-glow { background: var(--physics-dim); color: var(--physics); box-shadow: inset 0 0 20px var(--physics-glow); }
+        .soft-alt,
+        .botany-glow { background: var(--botany-dim); color: var(--botany); box-shadow: inset 0 0 20px var(--botany-glow); }
+        .purple-glow { background: var(--lotus-dim); color: var(--lotus-bright); box-shadow: inset 0 0 20px var(--lotus-glow); }
         .gold-glow { background: hsla(38, 90%, 55%, 0.15); color: var(--gold); box-shadow: inset 0 0 20px hsla(38, 90%, 55%, 0.2); }
         .gray-glow { background: hsla(0, 0%, 50%, 0.1); color: var(--text-secondary); }
-        .danger-glow { background: rgba(244, 114, 182, 0.14); color: #fda4af; box-shadow: inset 0 0 20px rgba(253,164,175,0.12); }
+        .danger-glow { background: var(--rose-dim); color: var(--rose-bright); box-shadow: inset 0 0 20px var(--rose-glow); }
         .metric-info { min-width: 0; }
         .metric-val {
           font-size: clamp(28px, 3vw, 40px);
@@ -973,14 +1065,14 @@ export default function DailyGoalsPage() {
           letter-spacing: 0.1em;
         }
         .flame-peak { animation: pulseWarning 2s infinite alternate; }
-        .band-poor { border-color: rgba(253,164,175,0.22); background: linear-gradient(180deg, rgba(253,164,175,0.05) 0%, rgba(15,15,20,0.7) 100%); }
+        .band-poor { border-color: hsla(352,52%,54%,0.22); background: linear-gradient(180deg, var(--rose-dim) 0%, var(--glass-mid) 100%); }
         .band-moderate { border-color: rgba(255,255,255,0.12); }
-        .band-good { border-color: rgba(134,239,172,0.24); background: linear-gradient(180deg, rgba(134,239,172,0.05) 0%, rgba(15,15,20,0.7) 100%); }
-        .band-very-good { border-color: rgba(139,211,255,0.24); background: linear-gradient(180deg, rgba(139,211,255,0.06) 0%, rgba(15,15,20,0.7) 100%); }
-        .band-chumma { border-color: rgba(212,168,83,0.3); background: linear-gradient(180deg, rgba(212,168,83,0.05) 0%, rgba(15,15,20,0.7) 100%); }
+        .band-good { border-color: hsla(142,60%,48%,0.24); background: linear-gradient(180deg, var(--botany-dim) 0%, var(--glass-mid) 100%); }
+        .band-very-good { border-color: hsla(218,84%,62%,0.24); background: linear-gradient(180deg, var(--physics-dim) 0%, var(--glass-mid) 100%); }
+        .band-chumma { border-color: hsla(38,72%,58%,0.3); background: linear-gradient(180deg, var(--gold-dim) 0%, var(--glass-mid) 100%); }
 
         .glass-panel {
-          background: var(--glass-bg);
+          background: var(--glass-mid);
           backdrop-filter: blur(24px);
           border: 1px solid var(--glass-border);
           border-radius: var(--r-2xl);
@@ -1018,8 +1110,8 @@ export default function DailyGoalsPage() {
           align-items: stretch;
         }
         .chart-stat-badge {
-          background: rgba(212,168,83,0.1);
-          border: 1px solid rgba(212,168,83,0.3);
+          background: var(--gold-dim);
+          border: 1px solid hsla(38,72%,58%,0.3);
           color: var(--gold);
           padding: 6px 12px;
           border-radius: 100px;
@@ -1053,7 +1145,7 @@ export default function DailyGoalsPage() {
           animation: drawLine 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
         .chart-point {
-          fill: var(--bg-color);
+          fill: var(--bg-base);
           stroke: var(--gold);
           stroke-width: 2;
           transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1064,11 +1156,11 @@ export default function DailyGoalsPage() {
           fill: var(--gold);
           transform-origin: center;
           transform: scale(1.45);
-          filter: drop-shadow(0 0 10px rgba(212,168,83,0.8));
+          filter: drop-shadow(0 0 10px var(--gold-glow));
         }
         .chart-tooltip { pointer-events: none; }
         .tooltip-bg { fill: rgba(15,15,20,0.95); stroke: var(--glass-border-mid); stroke-width: 1; }
-        .tooltip-text { fill: #fff; font-size: 13px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+        .tooltip-text { fill: var(--text-primary); font-size: 13px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
         .chart-insight-rail { display: flex; flex-direction: column; gap: 12px; }
         .insight-card {
           flex: 1;
@@ -1083,8 +1175,8 @@ export default function DailyGoalsPage() {
           gap: 8px;
         }
         .insight-card-primary {
-          background: linear-gradient(180deg, rgba(212,168,83,0.09), rgba(255,255,255,0.025));
-          border-color: rgba(212,168,83,0.15);
+          background: linear-gradient(180deg, var(--gold-dim), rgba(255,255,255,0.025));
+          border-color: hsla(38,72%,58%,0.15);
         }
         .insight-label {
           font-size: 11px;
@@ -1095,6 +1187,46 @@ export default function DailyGoalsPage() {
         }
         .insight-value { font-size: 30px; line-height: 1; letter-spacing: -0.05em; }
         .insight-meta { color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
+
+        .subject-analytics {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+          padding-top: 4px;
+        }
+        .subject-analytics-row {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          min-width: 0;
+          padding: 14px 16px;
+          border-radius: var(--r-lg);
+          background: rgba(255,255,255,0.03);
+          border: 1px solid var(--glass-border);
+        }
+        .subject-analytics-copy {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          color: var(--text-secondary);
+          font-size: 12px;
+          line-height: 1.4;
+        }
+        .subject-analytics-name {
+          font-weight: 800;
+          min-width: 0;
+        }
+        .subject-analytics-track {
+          height: 7px;
+          border-radius: var(--r-pill);
+          background: rgba(255,255,255,0.05);
+          overflow: hidden;
+        }
+        .subject-analytics-fill {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+        }
 
         .main-grid {
           display: grid;
@@ -1145,8 +1277,8 @@ export default function DailyGoalsPage() {
           transform: translateY(-2px);
         }
         .subject-row-active {
-          border-color: rgba(212,168,83,0.22);
-          box-shadow: inset 0 0 0 1px rgba(212,168,83,0.06);
+          border-color: hsla(38,72%,58%,0.22);
+          box-shadow: inset 0 0 0 1px var(--gold-dim);
         }
         .subject-info { display: flex; align-items: center; gap: 14px; min-width: 0; }
         .subject-avatar {
@@ -1179,7 +1311,7 @@ export default function DailyGoalsPage() {
           width: 90px;
           background: rgba(0,0,0,0.4);
           border: 1px solid var(--glass-border);
-          color: white;
+          color: var(--text-primary);
           border-radius: 12px;
           padding: 10px 32px 10px 14px;
           font-family: inherit;
@@ -1192,7 +1324,7 @@ export default function DailyGoalsPage() {
           outline: none;
           border-color: var(--gold);
           background: rgba(0,0,0,0.55);
-          box-shadow: 0 0 0 3px rgba(212,168,83,0.15), inset 0 2px 4px rgba(0,0,0,0.2);
+          box-shadow: 0 0 0 3px var(--gold-dim), inset 0 2px 4px rgba(0,0,0,0.2);
         }
         .glass-input::placeholder { color: rgba(255,255,255,0.15); }
         .glass-input::-webkit-outer-spin-button,
@@ -1214,8 +1346,8 @@ export default function DailyGoalsPage() {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          background: linear-gradient(135deg, hsla(38, 90%, 50%, 0.92), hsla(285, 60%, 55%, 0.92));
-          color: white;
+          background: linear-gradient(135deg, var(--gold), var(--rose));
+          color: var(--bg-void);
           border: none;
           padding: 18px;
           border-radius: var(--r-xl);
@@ -1223,16 +1355,16 @@ export default function DailyGoalsPage() {
           font-size: 15px;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: 0 10px 28px rgba(212, 168, 83, 0.24);
+          box-shadow: 0 10px 28px var(--gold-glow);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
         .save-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 14px 30px rgba(212, 168, 83, 0.34);
+          box-shadow: 0 14px 30px var(--gold-glow);
         }
         .save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
-        .save-btn.saved { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 10px 28px rgba(16, 185, 129, 0.26); }
+        .save-btn.saved { background: linear-gradient(135deg, var(--success), var(--botany)); box-shadow: 0 10px 28px var(--botany-glow); }
 
         .heatmap-panel { overflow: hidden; }
         .heatmap-header { align-items: center; }
@@ -1310,6 +1442,10 @@ export default function DailyGoalsPage() {
           cursor: crosshair;
           padding: 0;
         }
+        .heat-cell-empty {
+          visibility: hidden;
+          pointer-events: none;
+        }
         .heat-cell:hover {
           transform: scale(1.45);
           border-color: rgba(255,255,255,0.85);
@@ -1353,7 +1489,7 @@ export default function DailyGoalsPage() {
           width: 18px;
           height: 18px;
           border: 2.5px solid rgba(255,255,255,0.3);
-          border-top-color: white;
+          border-top-color: var(--text-primary);
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
@@ -1362,8 +1498,8 @@ export default function DailyGoalsPage() {
         .animate-slide-up { opacity: 0; transform: translateY(20px); animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
         @keyframes pulseWarning {
-          0% { filter: drop-shadow(0 0 5px rgba(212,168,83,0.5)); transform: scale(1); }
-          100% { filter: drop-shadow(0 0 18px rgba(212,168,83,1)); transform: scale(1.15); }
+          0% { filter: drop-shadow(0 0 5px var(--gold-glow)); transform: scale(1); }
+          100% { filter: drop-shadow(0 0 18px var(--gold)); transform: scale(1.15); }
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes float {
@@ -1377,6 +1513,7 @@ export default function DailyGoalsPage() {
         @media (max-width: 1180px) {
           .main-grid { grid-template-columns: 1fr; }
           .chart-layout { grid-template-columns: 1fr; }
+          .subject-analytics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
         @media (max-width: 900px) {
@@ -1405,6 +1542,7 @@ export default function DailyGoalsPage() {
           .panel-desc { font-size: 14px; }
           .chart-stat-badge { align-self: flex-start; }
           .form-summary-strip { grid-template-columns: 1fr; }
+          .subject-analytics { grid-template-columns: 1fr; }
           .heatmap-meta-row { grid-template-columns: 1fr; }
           .subject-row { flex-direction: column; align-items: stretch; gap: 14px; padding: 14px 16px; }
           .inputs-group { width: 100%; gap: 10px; }

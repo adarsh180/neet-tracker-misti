@@ -4,11 +4,22 @@ import { db } from "@/lib/db";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
     const days = parseInt(searchParams.get("days") || "365");
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const startDate = start ? new Date(start) : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const endDate = end ? new Date(end) : null;
+    startDate.setHours(0, 0, 0, 0);
+    endDate?.setHours(23, 59, 59, 999);
 
     const goals = await db.dailyGoal.findMany({
-      where: { date: { gte: since } },
+      where: {
+        date: {
+          gte: startDate,
+          ...(endDate ? { lte: endDate } : {}),
+        },
+      },
       include: { subject: { select: { id: true, name: true, slug: true, color: true } } },
       orderBy: { date: "desc" },
     });
