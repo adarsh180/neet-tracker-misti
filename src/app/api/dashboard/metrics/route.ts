@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { isPrismaConnectionError } from "@/lib/prisma-errors";
 
 function getUniqueChapterStats(
   topics: Array<{ chapter: string | null; isCompleted: boolean }>
@@ -16,6 +17,32 @@ function getUniqueChapterStats(
   const completedChapters = [...chapterMap.values()].filter(Boolean).length;
 
   return { totalChapters, completedChapters };
+}
+
+function getUnavailableMetrics() {
+  return {
+    studentName: "Misti",
+    subjects: [],
+    totalTopics: 0,
+    completedTopics: 0,
+    totalChapters: 0,
+    completedChapters: 0,
+    overallPct: 0,
+    totalStudyHours: 0,
+    totalQuestions: 0,
+    streak: 0,
+    pulse: Array.from({ length: 14 }, () => 0),
+    testCount: 0,
+    avgTestScore: 0,
+    activeDays14: 0,
+    recentHours7: 0,
+    recentQuestions7: 0,
+    momentumScore: 0,
+    dataHealth: {
+      databaseAvailable: false,
+      note: "The live tracker database is currently unreachable, so metrics are temporarily shown as safe defaults.",
+    },
+  };
 }
 
 export async function GET() {
@@ -153,6 +180,7 @@ export async function GET() {
     });
   } catch (err) {
     console.error("[dashboard/metrics]", err);
+    if (isPrismaConnectionError(err)) return NextResponse.json(getUnavailableMetrics());
     return NextResponse.json({ error: "Failed to load metrics", details: err }, { status: 500 });
   }
 }

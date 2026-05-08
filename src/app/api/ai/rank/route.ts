@@ -1,8 +1,133 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { buildAIContext, buildSystemPrompt } from "@/lib/ai-context-builder";
+import { buildAIContext, buildSystemPrompt, type AIContext } from "@/lib/ai-context-builder";
 import { chatWithAI } from "@/lib/openrouter";
 import { getPrivateSession } from "@/lib/server-auth";
+import { isPrismaConnectionError } from "@/lib/prisma-errors";
+
+type RankAnalysis = {
+  currentScore: number;
+  predictedScoreMin: number;
+  predictedScoreMax: number;
+  predictedRankMin: number;
+  predictedRankMax: number;
+  confidence: number;
+  aimsRishikeshGap: number;
+  aimsDelhiGap: number;
+  subjectBreakdown: {
+    subject: string;
+    currentLevel: number;
+    targetLevel: number;
+    priority: "HIGH" | "MEDIUM" | "LOW";
+  }[];
+  bluffFlags: string[];
+  weeklyPlan: string;
+  overallAnalysis: string;
+  strictMessage: string;
+};
+
+const SUBJECT_MAX_MARKS: Record<string, number> = {
+  Physics: 180,
+  Chemistry: 180,
+  Botany: 180,
+  Zoology: 180,
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function estimateRank(score: number) {
+  if (score >= 700) return 50;
+  if (score >= 680) return 250;
+  if (score >= 660) return 500;
+  if (score >= 620) return 7000;
+  if (score >= 580) return 20000;
+  if (score >= 540) return 50000;
+  if (score >= 500) return 100000;
+  if (score >= 450) return 200000;
+  if (score >= 400) return 400000;
+  return 900000;
+}
+
+function getSubjectLevel(context: AIContext, subjectName: string) {
+  const subject = context.subjects.find((item) => item.name.toLowerCase() === subjectName.toLowerCase());
+  if (!subject || subject.totalTopics === 0) return 0;
+
+  const completionSignal = (subject.completedTopics / subject.totalTopics) * 55;
+  const questionSignal = Math.min(subject.totalQuestionsInTopics / 800, 1) * 20;
+  const revisionSignal = clamp(10 - subject.pendingRevisions * 2, 0, 10);
+  const subjectTests = context.recentTests.filter((test) => test.subjectName === subjectName);
+  const testSignal = subjectTests.length
+    ? (subjectTests.reduce((sum, test) => sum + test.percentage, 0) / subjectTests.length) * 0.15
+    : 0;
+
+  return Math.round(clamp(completionSignal + questionSignal + revisionSignal + testSignal, 0, 100));
+}
+
+function buildDeterministicRankAnalysis(context: AIContext, reason: unknown): RankAnalysis {
+  const subjectNames = Object.keys(SUBJECT_MAX_MARKS);
+  const subjectBreakdown = subjectNames.map((subject) => {
+    const currentLevel = getSubjectLevel(context, subject);
+    const gap = 90 - currentLevel;
+
+    return {
+      subject,
+      currentLevel,
+      targetLevel: 90,
+      priority: gap >= 35 || currentLevel < 55 ? "HIGH" as const : gap >= 18 ? "MEDIUM" as const : "LOW" as const,
+    };
+  });
+
+  const completionBasedScore = subjectBreakdown.reduce(
+    (sum, subject) => sum + (subject.currentLevel / 100) * (SUBJECT_MAX_MARKS[subject.subject] || 180),
+    0
+  );
+  const recentTestScore = context.recentTests.length
+    ? context.recentTests.reduce((sum, test) => sum + (test.score / Math.max(test.maxScore, 1)) * 720, 0) / context.recentTests.length
+    : null;
+  const currentScore = Math.round(clamp(
+    recentTestScore === null ? completionBasedScore * 0.9 : recentTestScore * 0.65 + completionBasedScore * 0.35,
+    0,
+    720
+  ));
+  const dataUnavailable = context.dataHealth?.databaseAvailable === false;
+  const band = dataUnavailable ? 90 : context.recentTests.length ? 35 : 60;
+  const predictedScoreMin = Math.round(clamp(currentScore - band, 0, 720));
+  const predictedScoreMax = Math.round(clamp(currentScore + band, 0, 720));
+  const confidence = dataUnavailable
+    ? 12
+    : Math.round(clamp(30 + context.recentTests.length * 5 + context.last7DaysSummary.activeDays * 3 + context.consistencyStreak * 2, 20, 82));
+  const bluffFlags = [
+    ...(dataUnavailable ? ["Live tracker database was unreachable, so study logs and tests could not be verified."] : []),
+    ...(context.recentTests.length === 0 ? ["No recent test records are available, so rank confidence is low."] : []),
+  ];
+  const failureReason = reason instanceof Error ? reason.message.split("\n")[0] : String(reason);
+
+  return {
+    currentScore,
+    predictedScoreMin,
+    predictedScoreMax,
+    predictedRankMin: estimateRank(predictedScoreMax),
+    predictedRankMax: estimateRank(predictedScoreMin),
+    confidence,
+    aimsRishikeshGap: Math.max(0, 660 - predictedScoreMax),
+    aimsDelhiGap: Math.max(0, 700 - predictedScoreMax),
+    subjectBreakdown,
+    bluffFlags,
+    weeklyPlan: "Use this fallback plan until the AI service is healthy: take one full syllabus diagnostic test, review every wrong answer the same day, assign two high-priority subject blocks daily, and log study hours plus questions so the next prediction can use real evidence.",
+    overallAnalysis: `Google AI Studio did not return a usable response (${failureReason}), so this is a deterministic fallback based on the tracker context currently available to the app. It preserves the rank predictor flow, but it should be treated as lower confidence than the normal AI analysis.`,
+    strictMessage: dataUnavailable
+      ? "The database and AI model are both unavailable right now, so do not treat this as a final rank prediction. Fix connectivity, log real test data, and rerun."
+      : "The AI model failed, so this fallback is useful for direction only. Your real accountability still comes from full-length tests, logged revision, and subject-wise error review.",
+  };
+}
+
+function parseRankAnalysis(content: string): RankAnalysis {
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("No JSON in response");
+  return JSON.parse(jsonMatch[0]) as RankAnalysis;
+}
 
 export async function POST() {
   try {
@@ -11,6 +136,10 @@ export async function POST() {
 
     const context = await buildAIContext(session.userId);
     const systemPrompt = buildSystemPrompt(context, "rank");
+
+    const databaseNotice = context.dataHealth?.databaseAvailable === false
+      ? "\n\nImportant: The live tracker database is currently unreachable. Treat this as a provisional, low-confidence analysis based only on safe defaults. Clearly say that the real study logs, test records, and completion data could not be loaded, and do not pretend this is a complete data-backed prediction."
+      : "";
 
     const analysisPrompt = `Based on all the data provided about Divyani, perform a comprehensive NEET rank prediction analysis. Include:
 
@@ -44,51 +173,49 @@ Return a JSON object with this structure:
   "weeklyPlan": "Study plan text here",
   "overallAnalysis": "Detailed analysis paragraph here",
   "strictMessage": "Your honest mentor message here"
-}`;
+}${databaseNotice}`;
 
-    const res = await chatWithAI([
-      { role: "system", content: systemPrompt },
-      { role: "user", content: analysisPrompt },
-    ], 4096, 0.5);
+    let parsed: RankAnalysis;
+    let model = "deterministic-fallback";
+    let aiFallbackReason: string | undefined;
 
-    // Extract JSON from response
-    let parsed;
     try {
-      const jsonMatch = res.content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("No JSON in response");
-      }
-    } catch {
-      parsed = {
-        currentScore: 0,
-        predictedScoreMin: 0,
-        predictedScoreMax: 0,
-        predictedRankMin: 999999,
-        predictedRankMax: 999999,
-        confidence: 0,
-        aimsRishikeshGap: 200,
-        aimsDelhiGap: 300,
-        subjectBreakdown: [],
-        bluffFlags: [],
-        weeklyPlan: "Unable to generate plan.",
-        overallAnalysis: res.content,
-        strictMessage: "Please provide more study data for accurate prediction.",
-      };
+      const res = await chatWithAI([
+        { role: "system", content: systemPrompt },
+        { role: "user", content: analysisPrompt },
+      ], 4096, 0.5, 90000);
+
+      parsed = parseRankAnalysis(res.content);
+      model = res.model;
+    } catch (error) {
+      aiFallbackReason = error instanceof Error ? error.message : String(error);
+      console.warn("[rank-predict] AI generation failed; using deterministic fallback.", error);
+      parsed = buildDeterministicRankAnalysis(context, error);
     }
 
-    // Save prediction
-    await db.rankPrediction.create({
-      data: {
-        predictedRank: parsed.predictedRankMin || 999999,
-        predictedScore: parsed.predictedScoreMin || 0,
-        confidence: parsed.confidence || 0,
-        analysisJson: JSON.stringify(parsed),
-      },
-    });
+    let historySaved = true;
+    try {
+      await db.rankPrediction.create({
+        data: {
+          predictedRank: parsed.predictedRankMin || 999999,
+          predictedScore: parsed.predictedScoreMin || 0,
+          confidence: parsed.confidence || 0,
+          analysisJson: JSON.stringify(parsed),
+        },
+      });
+    } catch (error) {
+      if (!isPrismaConnectionError(error)) throw error;
+      historySaved = false;
+      console.warn("[rank-predict] Prediction generated but history was not saved because the database is unavailable.", error);
+    }
 
-    return NextResponse.json({ ...parsed, model: res.model });
+    return NextResponse.json({
+      ...parsed,
+      model,
+      aiFallbackReason,
+      historySaved,
+      dataNotice: context.dataHealth?.databaseAvailable === false ? context.dataHealth.note : undefined,
+    });
   } catch (err) {
     console.error("[rank-predict]", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -109,6 +236,7 @@ export async function GET() {
       analysis: JSON.parse(p.analysisJson),
     })));
   } catch (err) {
+    if (isPrismaConnectionError(err)) return NextResponse.json([]);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

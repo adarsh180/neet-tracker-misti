@@ -4,6 +4,7 @@ export const AI_MODELS = {
   primary: "gemma-4-31b-it",
   fallback1: "gemma-4-26b-a4b-it",
   fallback2: "gemma-3-27b-it",
+  emergencyFallback: "gemini-2.5-flash",
 };
 
 export const MODELS_LIST = Object.values(AI_MODELS);
@@ -57,7 +58,7 @@ async function callModel(
   messages: ChatMessage[],
   maxTokens = 4096,
   temperature = 0.7,
-  timeoutMs = 18000
+  timeoutMs = 60000
 ): Promise<AIResponse> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { buildCycleIntelligence } from "@/lib/cycle-intelligence";
+import { isPrismaConnectionError } from "@/lib/prisma-errors";
 
 export interface AIContext {
   student: {
@@ -82,6 +83,10 @@ export interface AIContext {
     topic: string;
     subjectId: string;
   }[];
+  dataHealth?: {
+    databaseAvailable: boolean;
+    note: string;
+  };
 }
 
 // IST-aware date helper
@@ -90,27 +95,6 @@ function getISTDateString(date: Date): string {
     timeZone: "Asia/Kolkata",
     year: "numeric", month: "2-digit", day: "2-digit"
   }).format(date);
-}
-
-function estimateCyclePhase(lastStart: Date | null, avgCycleLength = 28): {
-  currentPhase: string;
-  dayOfCycle: number | null;
-  nextPeriodEst: string | null;
-} {
-  if (!lastStart) return { currentPhase: "unknown", dayOfCycle: null, nextPeriodEst: null };
-
-  const today = new Date();
-  const dayOfCycle = Math.floor((today.getTime() - lastStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-  let currentPhase = "luteal";
-  if (dayOfCycle <= 5) currentPhase = "menstrual";
-  else if (dayOfCycle <= 13) currentPhase = "follicular";
-  else if (dayOfCycle <= 16) currentPhase = "ovulatory";
-
-  const nextPeriodDate = new Date(lastStart.getTime() + avgCycleLength * 24 * 60 * 60 * 1000);
-  const nextPeriodEst = getISTDateString(nextPeriodDate);
-
-  return { currentPhase, dayOfCycle, nextPeriodEst };
 }
 
 function computeStrictnessLevel(
@@ -153,32 +137,121 @@ function computeStrictnessLevel(
   return "VERY_STRICT";
 }
 
+function buildUnavailableAIContext(userId: string): AIContext {
+  const examDate = new Date("2027-05-02T09:00:00+05:30");
+  const daysRemaining = Math.max(0, Math.ceil((examDate.getTime() - Date.now()) / 86400000));
+  const subjectNames = [
+    { name: "Physics", slug: "physics" },
+    { name: "Chemistry", slug: "chemistry" },
+    { name: "Botany", slug: "botany" },
+    { name: "Zoology", slug: "zoology" },
+  ];
+
+  return {
+    student: {
+      name: userId === "divyani" ? "Divyani" : "Misti",
+      targetExam: "NEET UG 2027",
+      targetCollege: "AIIMS Delhi (MBBS)",
+      examDate: "2027-05-02",
+      attempt: 5,
+      daysRemaining,
+      bscEnrolled: true,
+      hasPartner: true,
+    },
+    subjects: subjectNames.map((subject) => ({
+      ...subject,
+      totalTopics: 0,
+      completedTopics: 0,
+      totalQuestionsInTopics: 0,
+      pendingRevisions: 0,
+      chapters: [],
+    })),
+    recentDailyGoals: [],
+    last7DaysSummary: {
+      totalHours: 0,
+      totalQuestions: 0,
+      activeDays: 0,
+      avgHoursPerDay: 0,
+    },
+    recentTests: [],
+    cyclePhase: {
+      currentPhase: "unknown",
+      dayOfCycle: null,
+      nextPeriodEst: null,
+    },
+    recentMoods: [],
+    moodSummary: {
+      avgEnergy: 5,
+      avgFocus: 5,
+      avgStress: 5,
+      dominantMood: "UNKNOWN",
+      trend: "unknown",
+    },
+    overallCompletion: 0,
+    consistencyStreak: 0,
+    performanceScore: 0,
+    strictnessLevel: "VERY_STRICT",
+    errorAnalysis: [],
+    srsTopicsDue: [],
+    dataHealth: {
+      databaseAvailable: false,
+      note: "The live tracker database is currently unreachable, so this context contains only safe defaults. Treat the output as provisional and low confidence.",
+    },
+  };
+}
+
 export async function buildAIContext(userId = "misti"): Promise<AIContext> {
-  const [subjects, allTopics, recentGoals, recentTests, cycleIntelligence, recentMoodEntries, errorPatterns] = await Promise.all([
-    db.subject.findMany({ orderBy: { name: "asc" } }),
-    db.topic.findMany({ include: { revisions: true }, orderBy: { createdAt: "asc" } }),
-    db.dailyGoal.findMany({
-      include: { subject: true },
-      orderBy: { date: "desc" },
-      take: 50,
-    }),
-    db.testRecord.findMany({
-      include: { subject: true },
-      orderBy: { takenAt: "desc" },
-      take: 10,
-    }),
-    buildCycleIntelligence(userId),
-    db.moodEntry.findMany({
-      where: { userId },
-      orderBy: { date: "desc" },
-      take: 14,
-    }),
-    db.errorPattern.findMany({
-      include: { subject: true },
-      orderBy: { frequency: "desc" },
-      take: 10,
-    })
-  ]);
+  try {
+    await db.$connect();
+  } catch (error) {
+    if (isPrismaConnectionError(error)) {
+      console.warn("[ai-context] Database unavailable; using provisional AI context.", error);
+      return buildUnavailableAIContext(userId);
+    }
+    throw error;
+  }
+
+  let subjects;
+  let allTopics;
+  let recentGoals;
+  let recentTests;
+  let cycleIntelligence;
+  let recentMoodEntries;
+  let errorPatterns;
+
+  try {
+    [subjects, allTopics, recentGoals, recentTests, cycleIntelligence, recentMoodEntries, errorPatterns] = await Promise.all([
+      db.subject.findMany({ orderBy: { name: "asc" } }),
+      db.topic.findMany({ include: { revisions: true }, orderBy: { createdAt: "asc" } }),
+      db.dailyGoal.findMany({
+        include: { subject: true },
+        orderBy: { date: "desc" },
+        take: 50,
+      }),
+      db.testRecord.findMany({
+        include: { subject: true },
+        orderBy: { takenAt: "desc" },
+        take: 10,
+      }),
+      buildCycleIntelligence(userId),
+      db.moodEntry.findMany({
+        where: { userId },
+        orderBy: { date: "desc" },
+        take: 14,
+      }),
+      db.errorPattern.findMany({
+        include: { subject: true },
+        orderBy: { frequency: "desc" },
+        take: 10,
+      })
+    ]);
+  } catch (error) {
+    if (isPrismaConnectionError(error)) {
+      console.warn("[ai-context] Database query failed; using provisional AI context.", error);
+      return buildUnavailableAIContext(userId);
+    }
+    throw error;
+  }
 
   // Subject stats
   const subjectStats = subjects.map((sub: (typeof subjects)[number]) => {
@@ -360,7 +433,11 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
     srsTopicsDue: allTopics.filter(t => t.nextReviewDate && new Date(t.nextReviewDate) <= new Date()).map(t => ({
       topic: t.name,
       subjectId: t.subjectId
-    }))
+    })),
+    dataHealth: {
+      databaseAvailable: true,
+      note: "Live tracker database context loaded successfully.",
+    },
   };
 }
 
