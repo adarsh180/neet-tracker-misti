@@ -352,13 +352,13 @@ export default function DailyGoalsPage() {
     }))
     .filter((marker, index, all) => index === 0 || marker.label !== all[index - 1].label);
 
+  const maxChartQ = Math.max(...chartData.map((d) => d.questions), 50);
   const chartWidth = 1000;
-  const chartHeight = 240;
-  const padX = 42;
-  const padY = 30;
+  const chartHeight = 270;
+  const padX = Math.max(58, String(maxChartQ).length * 9 + 28);
+  const padY = 44;
   const usableW = chartWidth - padX * 2;
   const usableH = chartHeight - padY * 2;
-  const maxChartQ = Math.max(...chartData.map((d) => d.questions), 50);
 
   const chartPoints = chartData.map((d, i) => {
     const x = padX + (i / (chartData.length - 1)) * usableW;
@@ -512,6 +512,10 @@ export default function DailyGoalsPage() {
                   </filter>
                 </defs>
 
+                <text x={padX} y="20" className="chart-axis-title">
+                  Questions solved
+                </text>
+
                 {[0, 0.5, 1].map((ratio) => {
                   const y = chartHeight - padY - ratio * usableH;
                   return (
@@ -527,27 +531,50 @@ export default function DailyGoalsPage() {
                 <path d={areaD} fill="url(#areaGradient)" className="chart-area" />
                 <path d={lineD} fill="none" className="chart-line" filter="url(#glow)" />
 
-                {chartPoints.map((p, i) => (
-                  <g key={i} onMouseEnter={() => setHoveredPoint(i)} onMouseLeave={() => setHoveredPoint(null)} className="point-group">
-                    <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
-                    <circle cx={p.x} cy={p.y} r={hoveredPoint === i ? "6" : "4"} className={`chart-point ${hoveredPoint === i ? "point-hovered" : ""}`} />
+                {chartPoints.map((p, i) => {
+                  const isHovered = hoveredPoint === i;
+                  const tooltipWidth = 104;
+                  const tooltipHeight = 38;
+                  const tooltipGap = 14;
+                  const tooltipX = Math.min(
+                    Math.max(p.x - tooltipWidth / 2, padX - 10),
+                    chartWidth - padX - tooltipWidth + 10
+                  );
+                  const showBelow = p.y < padY + tooltipHeight + tooltipGap;
+                  const tooltipY = showBelow ? p.y + tooltipGap : p.y - tooltipHeight - tooltipGap;
+                  const tooltipCenterX = tooltipX + tooltipWidth / 2;
+                  const tooltipCenterY = tooltipY + tooltipHeight / 2 + 1;
 
-                    {i % 3 === 0 && (
-                      <text x={p.x} y={chartHeight - 10} className="axis-label x-axis">
-                        {p.displayDate}
-                      </text>
-                    )}
+                  return (
+                    <g key={i} onMouseEnter={() => setHoveredPoint(i)} onMouseLeave={() => setHoveredPoint(null)} className="point-group">
+                      <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
+                      <circle cx={p.x} cy={p.y} r={isHovered ? "6" : "4"} className={`chart-point ${isHovered ? "point-hovered" : ""}`} />
 
-                    {hoveredPoint === i && (
-                      <g className="chart-tooltip">
-                        <rect x={p.x - 44} y={p.y - 48} width="88" height="30" rx="10" className="tooltip-bg" />
-                        <text x={p.x} y={p.y - 28} className="tooltip-text">
-                          {p.questions} Qs
+                      {i % 3 === 0 && (
+                        <text x={p.x} y={chartHeight - 12} className="axis-label x-axis">
+                          {p.displayDate}
                         </text>
-                      </g>
-                    )}
-                  </g>
-                ))}
+                      )}
+
+                      {isHovered && (
+                        <g className={`chart-tooltip ${showBelow ? "tooltip-below" : ""}`}>
+                          <line
+                            x1={p.x}
+                            y1={showBelow ? p.y + 9 : p.y - 9}
+                            x2={p.x}
+                            y2={showBelow ? tooltipY : tooltipY + tooltipHeight}
+                            className="tooltip-stem"
+                          />
+                          <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height={tooltipHeight} rx="13" className="tooltip-bg" />
+                          <text x={tooltipCenterX} y={tooltipCenterY} className="tooltip-text">
+                            <tspan className="tooltip-value">{p.questions}</tspan>
+                            <tspan dx="4" className="tooltip-unit">Qs</tspan>
+                          </text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                })}
               </svg>
             </div>
 
@@ -1101,7 +1128,10 @@ export default function DailyGoalsPage() {
         .inline-icon { color: var(--gold); }
         .loading-pulse { font-size: 13px; color: var(--gold); font-weight: 700; animation: pulse 1.5s infinite; }
 
-        .chart-panel { padding-bottom: 24px; }
+        .chart-panel {
+          padding-bottom: 24px;
+          overflow: hidden;
+        }
         .chart-header { align-items: center; }
         .chart-layout {
           display: grid;
@@ -1124,16 +1154,28 @@ export default function DailyGoalsPage() {
           width: 100%;
           position: relative;
           overflow-x: auto;
-          overflow-y: visible;
-          padding-bottom: 10px;
+          overflow-y: hidden;
+          padding: 12px 10px 14px;
+          border-radius: 22px;
+          border: 1px solid rgba(255,255,255,0.055);
+          background:
+            radial-gradient(circle at 12% 0%, hsla(38,72%,58%,0.1), transparent 28%),
+            linear-gradient(180deg, rgba(255,255,255,0.035), rgba(0,0,0,0.08));
         }
         .chart-container::-webkit-scrollbar { height: 8px; }
         .chart-container::-webkit-scrollbar-thumb { background: var(--glass-border-mid); border-radius: 999px; }
-        .line-chart { width: 100%; min-width: 760px; height: auto; display: block; overflow: visible; }
+        .line-chart { width: 100%; min-width: 780px; height: auto; display: block; overflow: visible; }
         .grid-line { stroke: rgba(255,255,255,0.05); stroke-width: 1; stroke-dasharray: 4 4; }
         .axis-label { fill: var(--text-muted); font-size: 12px; font-weight: 600; }
         .y-axis { text-anchor: end; alignment-baseline: middle; }
         .x-axis { text-anchor: middle; }
+        .chart-axis-title {
+          fill: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
         .chart-area { opacity: 0; animation: fadeIn 1s ease-out 0.4s forwards; }
         .chart-line {
           stroke: var(--gold);
@@ -1159,8 +1201,30 @@ export default function DailyGoalsPage() {
           filter: drop-shadow(0 0 10px var(--gold-glow));
         }
         .chart-tooltip { pointer-events: none; }
-        .tooltip-bg { fill: rgba(15,15,20,0.95); stroke: var(--glass-border-mid); stroke-width: 1; }
-        .tooltip-text { fill: var(--text-primary); font-size: 13px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+        .tooltip-stem {
+          stroke: hsla(38,72%,58%,0.42);
+          stroke-width: 1.4;
+          stroke-linecap: round;
+        }
+        .tooltip-bg {
+          fill: rgba(10,10,14,0.98);
+          stroke: hsla(38,72%,58%,0.3);
+          stroke-width: 1;
+          filter: drop-shadow(0 8px 18px rgba(0,0,0,0.45));
+        }
+        .tooltip-text {
+          fill: var(--text-primary);
+          font-size: 13px;
+          font-weight: 800;
+          text-anchor: middle;
+          dominant-baseline: middle;
+        }
+        .tooltip-unit {
+          fill: var(--text-secondary);
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
         .chart-insight-rail { display: flex; flex-direction: column; gap: 12px; }
         .insight-card {
           flex: 1;
@@ -1207,6 +1271,8 @@ export default function DailyGoalsPage() {
         .subject-analytics-copy {
           display: flex;
           justify-content: space-between;
+          align-items: flex-start;
+          flex-wrap: wrap;
           gap: 12px;
           color: var(--text-secondary);
           font-size: 12px;
@@ -1215,6 +1281,10 @@ export default function DailyGoalsPage() {
         .subject-analytics-name {
           font-weight: 800;
           min-width: 0;
+        }
+        .subject-analytics-copy span:last-child {
+          overflow-wrap: anywhere;
+          text-align: right;
         }
         .subject-analytics-track {
           height: 7px;
