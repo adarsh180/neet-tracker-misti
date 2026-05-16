@@ -79,6 +79,16 @@ export interface AIContext {
     frequency: number;
     notes: string | null;
   }[];
+  errorTopicAnalysis?: {
+    subject: string;
+    chapter: string | null;
+    topic: string | null;
+    frequency: number;
+    wrong: number;
+    skipped: number;
+    notStudied: number;
+    notes: string | null;
+  }[];
   srsTopicsDue?: {
     topic: string;
     subjectId: string;
@@ -192,6 +202,7 @@ function buildUnavailableAIContext(userId: string): AIContext {
     performanceScore: 0,
     strictnessLevel: "VERY_STRICT",
     errorAnalysis: [],
+    errorTopicAnalysis: [],
     srsTopicsDue: [],
     dataHealth: {
       databaseAvailable: false,
@@ -218,9 +229,10 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
   let cycleIntelligence;
   let recentMoodEntries;
   let errorPatterns;
+  let recentErrorQuestions;
 
   try {
-    [subjects, allTopics, recentGoals, recentTests, cycleIntelligence, recentMoodEntries, errorPatterns] = await Promise.all([
+    [subjects, allTopics, recentGoals, recentTests, cycleIntelligence, recentMoodEntries, errorPatterns, recentErrorQuestions] = await Promise.all([
       db.subject.findMany({ orderBy: { name: "asc" } }),
       db.topic.findMany({ include: { revisions: true }, orderBy: { createdAt: "asc" } }),
       db.dailyGoal.findMany({
@@ -243,7 +255,11 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
         include: { subject: true },
         orderBy: { frequency: "desc" },
         take: 10,
-      })
+      }),
+      db.errorLogQuestion.findMany({
+        orderBy: { updatedAt: "desc" },
+        take: 200,
+      }),
     ]);
   } catch (error) {
     if (isPrismaConnectionError(error)) {
@@ -382,6 +398,40 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
     last7DaysSummary.activeDays
   );
 
+  const errorTopicMap = new Map<string, {
+    subject: string;
+    chapter: string | null;
+    topic: string | null;
+    frequency: number;
+    wrong: number;
+    skipped: number;
+    notStudied: number;
+    notes: string | null;
+  }>();
+
+  for (const question of recentErrorQuestions) {
+    const chapter = question.chapter || null;
+    const topic = question.topic || null;
+    const key = `${question.subject}::${chapter || ""}::${topic || ""}`;
+    const current = errorTopicMap.get(key) || {
+      subject: question.subject,
+      chapter,
+      topic,
+      frequency: 0,
+      wrong: 0,
+      skipped: 0,
+      notStudied: 0,
+      notes: null,
+    };
+
+    current.frequency += 1;
+    if (question.outcome === "WRONG") current.wrong += 1;
+    if (question.attemptStatus === "SKIPPED") current.skipped += 1;
+    if (question.notStudied || question.contentStatus === "NOT_STUDIED") current.notStudied += 1;
+    if (!current.notes && question.notes) current.notes = question.notes;
+    errorTopicMap.set(key, current);
+  }
+
   // Cycle phase
   const cyclePhase = {
     currentPhase: cycleIntelligence.currentPhase,
@@ -430,6 +480,9 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
       frequency: e.frequency,
       notes: e.notes
     })),
+    errorTopicAnalysis: [...errorTopicMap.values()]
+      .sort((a, b) => (b.wrong + b.notStudied + b.skipped + b.frequency) - (a.wrong + a.notStudied + a.skipped + a.frequency))
+      .slice(0, 30),
     srsTopicsDue: allTopics.filter(t => t.nextReviewDate && new Date(t.nextReviewDate) <= new Date()).map(t => ({
       topic: t.name,
       subjectId: t.subjectId

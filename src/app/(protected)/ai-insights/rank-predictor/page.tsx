@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Cell
@@ -41,11 +41,21 @@ export default function RankPredictorPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    setAnalysis(null);
+    setLoading(false);
+    setError("");
+  }, []);
+
   const runPrediction = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/ai/rank", { method: "POST" });
+      const res = await fetch("/api/ai/rank", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ intent: "manual-rank-prediction" }),
+      });
       if (res.ok) {
         const data = await res.json();
         setAnalysis(data);

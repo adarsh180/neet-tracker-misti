@@ -10,6 +10,12 @@ import {
   getPreviousAttemptSummary,
   getRankCalibrationPromptSummary,
 } from "@/lib/neet-rank-calibration";
+import {
+  buildChapterRankIntelligence,
+  getRankIntelligencePromptSummary,
+  type ChapterRankSignal,
+  type SubjectRankSignal,
+} from "@/lib/neet-rank-intelligence";
 
 type RankAnalysis = {
   currentScore: number;
@@ -26,6 +32,9 @@ type RankAnalysis = {
     targetLevel: number;
     priority: "HIGH" | "MEDIUM" | "LOW";
   }[];
+  chapterFocus?: ChapterRankSignal[];
+  subjectExamSignals?: SubjectRankSignal[];
+  sourceNotes?: string[];
   bluffFlags: string[];
   weeklyPlan: string;
   overallAnalysis: string;
@@ -65,6 +74,9 @@ type DeterministicEvidence = {
   scoreModelNote: string;
   rankCalibrationNote: string;
   previousAttempts: ReturnType<typeof getPreviousAttemptSummary>;
+  chapterFocus: ChapterRankSignal[];
+  subjectExamSignals: SubjectRankSignal[];
+  sourceNotes: string[];
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -122,24 +134,40 @@ function normalizedNeetScore(test: AIContext["recentTests"][number]) {
   return clamp((test.score / Math.max(test.maxScore, 1)) * NEET_TOTAL_MARKS, 0, NEET_TOTAL_MARKS);
 }
 
+function getLatestValidatedAttemptScore() {
+  return MISTI_PREVIOUS_ATTEMPTS[MISTI_PREVIOUS_ATTEMPTS.length - 1]?.score ?? null;
+}
+
+function getHistoricalScoreFloor(hasFullLengthEvidence: boolean, hasPartialEvidence: boolean, dataUnavailable: boolean) {
+  if (hasFullLengthEvidence) return 0;
+
+  const latestValidatedAttemptScore = getLatestValidatedAttemptScore();
+  if (latestValidatedAttemptScore === null) return 0;
+
+  const regressionAllowance = dataUnavailable ? 130 : hasPartialEvidence ? 90 : 100;
+  return clamp(latestValidatedAttemptScore - regressionAllowance, 0, NEET_TOTAL_MARKS);
+}
+
 function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
+  const rankIntelligence = buildChapterRankIntelligence(context);
+
   const subjectBreakdown = SUBJECT_NAMES.map((subject) => {
-    const currentLevel = getSubjectLevel(context, subject);
+    const smartSubject = rankIntelligence.subjectSignals.find((item) => item.subject === subject);
+    const currentLevel = smartSubject?.mastery ?? getSubjectLevel(context, subject);
     const gap = 90 - currentLevel;
 
     return {
       subject,
       currentLevel,
       targetLevel: 90,
-      priority: gap >= 35 || currentLevel < 55 ? "HIGH" as const : gap >= 18 ? "MEDIUM" as const : "LOW" as const,
+      priority: smartSubject?.priority ?? (gap >= 35 || currentLevel < 55 ? "HIGH" as const : gap >= 18 ? "MEDIUM" as const : "LOW" as const),
     };
   });
 
-  const rawSubjectScore = subjectBreakdown.reduce((sum, subject) => {
+  const skillBasedNeetScore = rankIntelligence.smartScore || subjectBreakdown.reduce((sum, subject) => {
     const maxRaw = SUBJECT_MAX_MARKS[subject.subject as SubjectName];
     return sum + (subject.currentLevel / 100) * maxRaw;
   }, 0);
-  const skillBasedNeetScore = rawSubjectScore;
 
   const fullLengthTests = context.recentTests.filter(isFullLengthTest);
   const partialTests = context.recentTests.filter((test) => !isFullLengthTest(test));
@@ -155,18 +183,25 @@ function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
         weight: Math.max(1, 8 - index),
       })))
     : null;
-  const latestValidatedAttemptScore = MISTI_PREVIOUS_ATTEMPTS[MISTI_PREVIOUS_ATTEMPTS.length - 1]?.score ?? null;
+  const latestValidatedAttemptScore = getLatestValidatedAttemptScore();
   const attemptAdjustedSkillScore = latestValidatedAttemptScore === null
     ? skillBasedNeetScore
-    : skillBasedNeetScore * 0.7 + latestValidatedAttemptScore * 0.3;
+    : skillBasedNeetScore * 0.35 + latestValidatedAttemptScore * 0.65;
 
   const dataUnavailable = context.dataHealth?.databaseAvailable === false;
-  const currentScore = Math.round(clamp(
+  const rawCurrentScore = Math.round(clamp(
     fullTestScore !== null
       ? fullTestScore * 0.72 + skillBasedNeetScore * 0.28
       : partialTestScore !== null
-        ? partialTestScore * 0.45 + skillBasedNeetScore * 0.45 + (latestValidatedAttemptScore ?? skillBasedNeetScore) * 0.1
+        ? partialTestScore * 0.4 + skillBasedNeetScore * 0.25 + (latestValidatedAttemptScore ?? skillBasedNeetScore) * 0.35
         : attemptAdjustedSkillScore * 0.82,
+    0,
+    NEET_TOTAL_MARKS
+  ));
+  const currentScore = Math.round(clamp(
+    fullTestScore !== null
+      ? rawCurrentScore
+      : Math.max(rawCurrentScore, (latestValidatedAttemptScore ?? rawCurrentScore) - (partialTestScore !== null ? 55 : 35)),
     0,
     NEET_TOTAL_MARKS
   ));
@@ -183,8 +218,9 @@ function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
             ? 68
             : 88;
   const band = Math.round(clamp(baseBand - context.last7DaysSummary.activeDays * 1.8 - Math.min(context.consistencyStreak, 7), 24, 115));
-  const predictedScoreMin = Math.round(clamp(currentScore - band, 0, NEET_TOTAL_MARKS));
-  const predictedScoreMax = Math.round(clamp(currentScore + band, 0, NEET_TOTAL_MARKS));
+  const historicalScoreFloor = getHistoricalScoreFloor(fullLengthTests.length > 0, partialTests.length > 0, dataUnavailable);
+  const predictedScoreMin = Math.round(clamp(Math.max(currentScore - band, historicalScoreFloor), 0, NEET_TOTAL_MARKS));
+  const predictedScoreMax = Math.round(clamp(Math.max(currentScore + band, predictedScoreMin + 30), 0, NEET_TOTAL_MARKS));
 
   const uncappedConfidence = dataUnavailable
     ? 12
@@ -215,9 +251,12 @@ function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
     fullLengthTests: fullLengthTests.length,
     partialTests: partialTests.length,
     dataUnavailable,
-    scoreModelNote: `NEET score model: Physics 180, Chemistry 180, Botany 180, Zoology 180, total ${SUBJECT_TOTAL_MARKS}. All score fields are clamped to ${NEET_TOTAL_MARKS}.`,
+    scoreModelNote: `NEET score model: Physics 180, Chemistry 180, Botany 180, Zoology 180, total ${SUBJECT_TOTAL_MARKS}. Skill score is now chapter-weighted using PYQ/ROI priors, logged completion, question depth, revision health, tests, and error logs. All score fields are clamped to ${NEET_TOTAL_MARKS}.`,
     rankCalibrationNote: "Ranks are estimated from source-backed NEET marks-vs-rank anchors from 2016-2025, with recent years weighted more heavily and 2024 down-weighted as anomalous.",
     previousAttempts: getPreviousAttemptSummary(),
+    chapterFocus: rankIntelligence.chapterSignals.slice(0, 12),
+    subjectExamSignals: rankIntelligence.subjectSignals,
+    sourceNotes: rankIntelligence.sourceNotes,
   };
 }
 
@@ -227,7 +266,7 @@ function buildDeterministicRankAnalysis(context: AIContext, reason: unknown): Ra
     ...(evidence.dataUnavailable ? ["Live tracker database was unreachable, so study logs and tests could not be verified."] : []),
     ...(context.recentTests.length === 0 ? ["No recent test records are available, so rank confidence is intentionally capped low."] : []),
     ...(evidence.fullLengthTests === 0 && evidence.partialTests > 0 ? ["Only partial or subject-wise tests are available, so the 720-score estimate is extrapolated."] : []),
-    "Previous validated NEET attempt marks used as historical baseline: 2023 = 192, 2024 = 296, 2025 = 322.",
+    "Previous validated NEET attempt marks are a hard historical anchor: 2023 = 192, 2024 = 296, 2025 = 322.",
   ];
   const failureReason = reason instanceof Error ? reason.message.split("\n")[0] : String(reason);
 
@@ -241,8 +280,11 @@ function buildDeterministicRankAnalysis(context: AIContext, reason: unknown): Ra
     aimsRishikeshGap: Math.max(0, AIIMS_RISHIKESH_SCORE_TARGET - evidence.predictedScoreMax),
     aimsDelhiGap: Math.max(0, AIIMS_DELHI_SCORE_TARGET - evidence.predictedScoreMax),
     subjectBreakdown: evidence.subjectBreakdown,
+    chapterFocus: evidence.chapterFocus,
+    subjectExamSignals: evidence.subjectExamSignals,
+    sourceNotes: evidence.sourceNotes,
     bluffFlags,
-    weeklyPlan: "Use this fallback plan until the AI service is healthy: take one full syllabus diagnostic test out of 720, review every wrong answer the same day, assign two high-priority subject blocks daily, and log study hours plus questions so the next prediction can use real evidence.",
+    weeklyPlan: `Use this fallback plan until the AI service is healthy: take one full syllabus diagnostic test out of 720, review every wrong answer the same day, and attack these chapter bottlenecks first: ${evidence.chapterFocus.slice(0, 5).map((item) => `${item.subject} ${item.chapter}`).join(", ") || "highest-damage chapters from the tracker"}. Log study hours plus questions so the next prediction can use real evidence.`,
     overallAnalysis: `Google AI Studio did not return a usable response (${failureReason}), so this is a deterministic fallback based on the tracker context currently available to the app. ${evidence.scoreModelNote} Rank is recomputed from the score range, not invented by the model.`,
     strictMessage: evidence.dataUnavailable
       ? "The database and AI model are both unavailable right now, so do not treat this as a final rank prediction. Fix connectivity, log real test data, and rerun."
@@ -273,7 +315,11 @@ function normalizeRankAnalysis(modelOutput: RankAnalysis, context: AIContext): R
   const evidence = buildDeterministicEvidence(context);
   const output = modelOutput || ({} as RankAnalysis);
 
-  const currentScore = Math.round(clamp(safeNumber(output.currentScore, evidence.currentScore), 0, NEET_TOTAL_MARKS));
+  const currentScore = Math.round(clamp(
+    safeNumber(output.currentScore, evidence.currentScore),
+    Math.max(0, evidence.currentScore - 35),
+    Math.min(NEET_TOTAL_MARKS, evidence.currentScore + 35)
+  ));
   let predictedScoreMin = Math.round(clamp(safeNumber(output.predictedScoreMin, evidence.predictedScoreMin), 0, NEET_TOTAL_MARKS));
   let predictedScoreMax = Math.round(clamp(safeNumber(output.predictedScoreMax, evidence.predictedScoreMax), 0, NEET_TOTAL_MARKS));
 
@@ -282,8 +328,10 @@ function normalizeRankAnalysis(modelOutput: RankAnalysis, context: AIContext): R
   }
 
   const maxAllowedBand = evidence.band + 30;
-  predictedScoreMin = Math.round(clamp(predictedScoreMin, Math.max(0, evidence.currentScore - maxAllowedBand), Math.min(NEET_TOTAL_MARKS, evidence.currentScore + maxAllowedBand)));
+  const historicalScoreFloor = getHistoricalScoreFloor(evidence.fullLengthTests > 0, evidence.partialTests > 0, evidence.dataUnavailable);
+  predictedScoreMin = Math.round(clamp(predictedScoreMin, Math.max(historicalScoreFloor, evidence.currentScore - maxAllowedBand), Math.min(NEET_TOTAL_MARKS, evidence.currentScore + maxAllowedBand)));
   predictedScoreMax = Math.round(clamp(predictedScoreMax, Math.max(0, evidence.currentScore - maxAllowedBand), Math.min(NEET_TOTAL_MARKS, evidence.currentScore + maxAllowedBand)));
+  predictedScoreMax = Math.max(predictedScoreMax, Math.min(NEET_TOTAL_MARKS, predictedScoreMin + 30));
   if (predictedScoreMin > predictedScoreMax) {
     [predictedScoreMin, predictedScoreMax] = [predictedScoreMax, predictedScoreMin];
   }
@@ -296,6 +344,7 @@ function normalizeRankAnalysis(modelOutput: RankAnalysis, context: AIContext): R
     evidence.dataUnavailable ? "Live tracker database was unreachable, so this prediction cannot verify real logs." : "",
     evidence.fullLengthTests === 0 ? "No recent full-length 720-mark test is available; confidence is capped by design." : "",
     evidence.scoreModelNote,
+    "Validated real NEET attempts are enforced as a historical anchor: 2023 = 192, 2024 = 296, 2025 = 322.",
   ].filter(Boolean);
 
   return {
@@ -318,6 +367,9 @@ function normalizeRankAnalysis(modelOutput: RankAnalysis, context: AIContext): R
         priority: safePriority(modelSubject?.priority, fallbackSubject.priority),
       };
     }),
+    chapterFocus: evidence.chapterFocus,
+    subjectExamSignals: evidence.subjectExamSignals,
+    sourceNotes: evidence.sourceNotes,
     bluffFlags: [...new Set([...modelFlags, ...guardFlags])],
     weeklyPlan: safeText(output.weeklyPlan, "Take one full-length 720-mark diagnostic, review all mistakes the same day, and spend the next six days on the two highest-priority subjects with logged question practice."),
     overallAnalysis: safeText(
@@ -331,15 +383,21 @@ function normalizeRankAnalysis(modelOutput: RankAnalysis, context: AIContext): R
   };
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const session = await getPrivateSession();
     if (!session) return NextResponse.json({ error: "Private session required" }, { status: 401 });
+
+    const body = await request.json().catch(() => null) as { intent?: string } | null;
+    if (body?.intent !== "manual-rank-prediction") {
+      return NextResponse.json({ error: "Rank prediction runs only after a manual button click." }, { status: 400 });
+    }
 
     const context = await buildAIContext(session.userId);
     const systemPrompt = buildSystemPrompt(context, "rank");
     const deterministicEvidence = buildDeterministicEvidence(context);
     const rankCalibration = getRankCalibrationPromptSummary();
+    const rankIntelligence = getRankIntelligencePromptSummary(buildChapterRankIntelligence(context));
 
     const databaseNotice = context.dataHealth?.databaseAvailable === false
       ? "\n\nImportant: The live tracker database is currently unreachable. Treat this as a provisional, low-confidence analysis based only on safe defaults. Clearly say that the real study logs, test records, and completion data could not be loaded, and do not pretend this is a complete data-backed prediction."
@@ -361,6 +419,9 @@ ${JSON.stringify(deterministicEvidence, null, 2)}
 Historical rank calibration available to you:
 ${JSON.stringify(rankCalibration, null, 2)}
 
+Chapter/topic PYQ and ROI intelligence available to you:
+${JSON.stringify(rankIntelligence, null, 2)}
+
 Include:
 
 1. Estimated NEET score range (out of 720)
@@ -373,6 +434,9 @@ Include:
 
 Hallucination guard:
 Use logged tests, syllabus progress, revision state, error patterns, study hours, and consistency only.
+Use chapter/topic intelligence to rank bottlenecks, but do not treat chapter weightage as official future certainty.
+Respect the time-benefit rule: Rotational Motion is medium priority unless there is strong direct test evidence requiring more.
+Treat real NEET attempts as a hard historical anchor: 2023 = 192, 2024 = 296, 2025 = 322. Do not claim the current validated baseline is in the 100s unless a newer full-length 720-mark test proves collapse.
 If evidence is missing, say confidence is low instead of inventing certainty.
 Confidence must be evidence-based, never 100, and must be low when no full-length tests exist.
 PredictedRankMin must be the better rank from predictedScoreMax. PredictedRankMax must be the worse rank from predictedScoreMin.
