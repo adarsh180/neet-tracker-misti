@@ -163,11 +163,7 @@ export default function AIInsightsPage() {
         }
 
         :global(body) {
-          background:
-            radial-gradient(circle at top left, rgba(212, 168, 83, 0.08), transparent 28%),
-            radial-gradient(circle at top right, rgba(91, 156, 245, 0.08), transparent 25%),
-            radial-gradient(circle at bottom left, rgba(184, 118, 217, 0.08), transparent 22%),
-            #07070a;
+          background: var(--bg-void);
         }
 
         .ai-page {
@@ -714,6 +710,124 @@ export default function AIInsightsPage() {
             opacity: 1;
             transform: none;
           }
+        }
+
+        /* ===========================
+           LIGHT MODE OVERRIDES
+           =========================== */
+        :global(html[data-theme="light"]) .ai-page {
+          color: hsl(32, 28%, 13%);
+          background:
+            radial-gradient(circle at 20% 15%, rgba(184, 130, 52, 0.08), transparent 20%),
+            radial-gradient(circle at 85% 0%, rgba(60, 120, 210, 0.07), transparent 18%),
+            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
+        }
+
+        :global(html[data-theme="light"]) .ai-hero-kicker {
+          color: hsl(38, 70%, 36%);
+          background: rgba(184, 130, 52, 0.08);
+          border-color: rgba(184, 130, 52, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .ai-hero-chip {
+          color: hsla(31, 22%, 22%, 0.60);
+          background: rgba(70, 45, 24, 0.05);
+          border-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .ai-title {
+          color: hsl(32, 28%, 10%);
+        }
+
+        :global(html[data-theme="light"]) .ai-desc {
+          color: hsla(31, 22%, 22%, 0.62);
+        }
+
+        :global(html[data-theme="light"]) .ai-metric {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.09);
+          box-shadow: 0 10px 28px rgba(70, 45, 24, 0.08), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+        }
+
+        :global(html[data-theme="light"]) .ai-metric-value {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ai-metric-label {
+          color: hsla(31, 22%, 22%, 0.52);
+        }
+
+        :global(html[data-theme="light"]) .ai-panel {
+          background: rgba(255, 255, 255, 0.86);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 18px 52px rgba(70, 45, 24, 0.10), 0 1px 0 rgba(255, 255, 255, 0.94) inset;
+        }
+
+        :global(html[data-theme="light"]) .ai-panel-label {
+          color: hsla(31, 22%, 22%, 0.40);
+        }
+
+        :global(html[data-theme="light"]) .ai-panel-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ai-panel-note {
+          color: hsla(31, 22%, 22%, 0.52);
+          background: rgba(70, 45, 24, 0.05);
+          border-color: rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .ai-card {
+          background:
+            radial-gradient(circle at 0% 0%, rgba(var(--accent-rgb), 0.12), transparent 34%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.82)),
+            rgba(255, 255, 255, 0.88);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 12px 32px rgba(70, 45, 24, 0.10), 0 1px 0 rgba(255, 255, 255, 0.94) inset;
+        }
+
+        :global(html[data-theme="light"]) .ai-card:hover {
+          border-color: rgba(var(--accent-rgb), 0.24);
+          box-shadow: 0 18px 48px rgba(70, 45, 24, 0.14), 0 1px 0 rgba(255, 255, 255, 0.96) inset;
+        }
+
+        :global(html[data-theme="light"]) .ai-card-icon-wrap {
+          background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.20), rgba(var(--accent-rgb), 0.06));
+          box-shadow: 0 8px 20px rgba(70, 45, 24, 0.12), 0 0 0 1px rgba(70, 45, 24, 0.06) inset;
+        }
+
+        :global(html[data-theme="light"]) .ai-card-icon {
+          background:
+            radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.60), transparent 35%),
+            rgba(var(--accent-rgb), 0.06);
+        }
+
+        :global(html[data-theme="light"]) .ai-card-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ai-card-desc {
+          color: hsla(31, 22%, 22%, 0.64);
+        }
+
+        :global(html[data-theme="light"]) .ai-card-footer {
+          border-top-color: rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .ai-card-action {
+          color: hsla(31, 22%, 22%, 0.72);
+        }
+
+        :global(html[data-theme="light"]) .ai-card-arrow-wrap {
+          background: rgba(70, 45, 24, 0.05);
+          border-color: rgba(70, 45, 24, 0.08);
+          color: hsla(31, 22%, 22%, 0.52);
+        }
+
+        :global(html[data-theme="light"]) .ai-card:hover .ai-card-arrow-wrap {
+          background: rgba(var(--accent-rgb), 0.09);
+          border-color: rgba(var(--accent-rgb), 0.16);
+          color: rgba(var(--accent-rgb), 1);
         }
       `}</style>
     </div>

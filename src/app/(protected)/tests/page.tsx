@@ -716,15 +716,15 @@ export default function TestsPage() {
                       <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis
                     dataKey="date"
-                    tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }}
+                    tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }}
+                    tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                     domain={[0, 100]}
@@ -733,15 +733,15 @@ export default function TestsPage() {
                   <Tooltip content={<ChartTip />} />
                   <ReferenceLine
                     y={97}
-                    stroke="hsla(38,72%,58%,0.4)"
+                    stroke="color-mix(in srgb, var(--gold) 48%, transparent)"
                     strokeDasharray="6 3"
-                    label={{ value: "AIIMS Delhi 97%", fill: "hsla(38,72%,58%,0.6)", fontSize: 10 }}
+                    label={{ value: "AIIMS Delhi 97%", fill: "var(--gold)", fontSize: 10 }}
                   />
                   <ReferenceLine
                     y={91}
-                    stroke="hsla(285,38%,54%,0.4)"
+                    stroke="color-mix(in srgb, var(--lotus-bright) 48%, transparent)"
                     strokeDasharray="6 3"
-                    label={{ value: "AIIMS Rish. 91%", fill: "hsla(285,38%,54%,0.6)", fontSize: 10 }}
+                    label={{ value: "AIIMS Rish. 91%", fill: "var(--lotus-bright)", fontSize: 10 }}
                   />
                   <Area
                     type="natural"
@@ -777,17 +777,17 @@ export default function TestsPage() {
 
                 <ResponsiveContainer width="100%" height={280}>
                   <ScatterChart>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                     <XAxis
                       type="number"
                       dataKey="x"
                       name="Test #"
-                      tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }}
+                      tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                       label={{
                         value: "Test Number →",
-                        fill: "rgba(255,255,255,0.25)",
+                        fill: "var(--chart-axis-muted)",
                         fontSize: 10,
                         position: "insideBottomRight",
                         offset: -5,
@@ -797,7 +797,7 @@ export default function TestsPage() {
                       type="number"
                       dataKey="y"
                       name="Score %"
-                      tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 11 }}
+                      tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                       domain={[0, 100]}
@@ -805,8 +805,8 @@ export default function TestsPage() {
                     />
                     <ZAxis type="number" dataKey="z" range={[60, 240]} />
                     <Tooltip content={<ChartTip />} />
-                    <ReferenceLine y={97} stroke="hsla(38,72%,58%,0.35)" strokeDasharray="6 3" />
-                    <ReferenceLine y={91} stroke="hsla(285,38%,54%,0.35)" strokeDasharray="6 3" />
+                    <ReferenceLine y={97} stroke="color-mix(in srgb, var(--gold) 44%, transparent)" strokeDasharray="6 3" />
+                    <ReferenceLine y={91} stroke="color-mix(in srgb, var(--lotus-bright) 44%, transparent)" strokeDasharray="6 3" />
                     <Scatter data={scatterData}>
                       {scatterData.map((entry, i) => (
                         <Cell
@@ -947,11 +947,7 @@ export default function TestsPage() {
         }
 
         :global(body) {
-          background:
-            radial-gradient(circle at top left, rgba(212, 168, 83, 0.08), transparent 28%),
-            radial-gradient(circle at top right, rgba(91, 156, 245, 0.08), transparent 25%),
-            radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.07), transparent 24%),
-            #07070a;
+          background: var(--bg-void);
         }
 
         .tests-page {
@@ -1686,6 +1682,181 @@ export default function TestsPage() {
             animation: none !important;
             transition: none !important;
           }
+        }
+
+        /* ===========================
+           LIGHT MODE OVERRIDES
+           =========================== */
+        :global(html[data-theme="light"]) .tests-page {
+          color: hsl(32, 28%, 13%);
+          background:
+            radial-gradient(circle at 20% 15%, rgba(184, 130, 52, 0.08), transparent 20%),
+            radial-gradient(circle at 85% 0%, rgba(60, 120, 210, 0.07), transparent 18%),
+            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
+        }
+
+        :global(html[data-theme="light"]) .tests-badge {
+          color: hsl(38, 70%, 36%);
+          background: rgba(184, 130, 52, 0.08);
+          border-color: rgba(184, 130, 52, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .tests-title {
+          color: hsl(32, 28%, 10%);
+        }
+
+        :global(html[data-theme="light"]) .tests-subtitle,
+        :global(html[data-theme="light"]) .tests-section-subtitle {
+          color: hsla(31, 22%, 22%, 0.64);
+        }
+
+        :global(html[data-theme="light"]) .tests-mini-stat {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 10px 28px rgba(70, 45, 24, 0.08), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+        }
+
+        :global(html[data-theme="light"]) .tests-mini-stat-label {
+          color: hsla(31, 22%, 22%, 0.46);
+        }
+
+        :global(html[data-theme="light"]) .tests-mini-stat-value {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .tests-stat-card {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.09);
+          box-shadow: 0 12px 36px rgba(70, 45, 24, 0.09), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+        }
+
+        :global(html[data-theme="light"]) .tests-form-card,
+        :global(html[data-theme="light"]) .tests-chart-card {
+          background: rgba(255, 255, 255, 0.86);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 18px 52px rgba(70, 45, 24, 0.10), 0 1px 0 rgba(255, 255, 255, 0.94) inset;
+        }
+
+        :global(html[data-theme="light"]) .tests-form-card {
+          background:
+            linear-gradient(180deg, rgba(255, 252, 245, 0.88), rgba(246, 235, 218, 0.72)),
+            rgba(246, 235, 218, 0.82);
+          border-color: rgba(70, 45, 24, 0.16);
+          box-shadow:
+            0 22px 58px rgba(70, 45, 24, 0.14),
+            0 1px 0 rgba(255, 255, 255, 0.86) inset;
+        }
+
+        :global(html[data-theme="light"]) .tests-form-card .input {
+          background: rgba(255, 250, 240, 0.78);
+          border-color: rgba(70, 45, 24, 0.15);
+          color: hsl(32, 28%, 12%);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+        }
+
+        :global(html[data-theme="light"]) .tests-form-card .input:hover {
+          background: rgba(255, 255, 255, 0.88);
+          border-color: rgba(70, 45, 24, 0.22);
+        }
+
+        :global(html[data-theme="light"]) .tests-form-card .input:focus {
+          background: rgba(255, 255, 255, 0.94);
+          border-color: rgba(184, 130, 52, 0.48);
+          box-shadow: 0 0 0 3px rgba(184, 130, 52, 0.12), inset 0 1px 0 rgba(255,255,255,0.70);
+        }
+
+        :global(html[data-theme="light"]) .tests-form-card .input::placeholder {
+          color: hsla(31, 22%, 22%, 0.42);
+        }
+
+        :global(html[data-theme="light"]) .tests-section-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .tests-form-chip {
+          color: hsla(31, 22%, 22%, 0.72);
+          background: rgba(70, 45, 24, 0.065);
+          border-color: rgba(70, 45, 24, 0.13);
+        }
+
+        :global(html[data-theme="light"]) .tests-rank-intel-panel {
+          background:
+            linear-gradient(145deg, rgba(60, 120, 210, 0.08), rgba(184, 130, 52, 0.075)),
+            rgba(238, 224, 203, 0.64);
+          border-color: rgba(70, 45, 24, 0.14);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+        }
+
+        :global(html[data-theme="light"]) .test-form-lbl {
+          color: hsla(31, 22%, 22%, 0.58);
+        }
+
+        :global(html[data-theme="light"]) .test-card {
+          background: rgba(255, 255, 255, 0.72);
+          border-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .test-card:hover {
+          background: rgba(255, 255, 255, 0.88);
+          border-color: rgba(70, 45, 24, 0.15);
+        }
+
+        :global(html[data-theme="light"]) .test-card-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .test-card-meta,
+        :global(html[data-theme="light"]) .test-card-notes,
+        :global(html[data-theme="light"]) .test-score-meta {
+          color: hsla(31, 22%, 22%, 0.60);
+        }
+
+        :global(html[data-theme="light"]) .test-del-btn {
+          background: rgba(70, 45, 24, 0.04);
+          border-color: rgba(70, 45, 24, 0.08);
+          color: hsla(31, 22%, 22%, 0.28);
+        }
+
+        :global(html[data-theme="light"]) .test-del-btn:hover {
+          background: rgba(70, 45, 24, 0.07);
+          border-color: rgba(200, 50, 50, 0.20);
+          color: var(--danger);
+        }
+
+        :global(html[data-theme="light"]) .test-filter-pill {
+          background: rgba(255, 255, 255, 0.68);
+          border-color: rgba(70, 45, 24, 0.10);
+          color: hsla(31, 22%, 22%, 0.60);
+        }
+
+        :global(html[data-theme="light"]) .test-filter-pill.active {
+          background: rgba(255, 255, 255, 0.90);
+          border-color: var(--gold);
+          color: var(--gold);
+        }
+
+        :global(html[data-theme="light"]) .chart-tip {
+          background: rgba(253, 248, 240, 0.97);
+          border-color: rgba(70, 45, 24, 0.14);
+          box-shadow: 0 12px 36px rgba(70, 45, 24, 0.14);
+        }
+
+        :global(html[data-theme="light"]) .chart-tip-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .chart-tip-score {
+          color: var(--gold);
+        }
+
+        :global(html[data-theme="light"]) .chart-tip-meta {
+          color: hsla(31, 22%, 22%, 0.52);
+        }
+
+        :global(html[data-theme="light"]) .tests-record-btn.open {
+          background: rgba(184, 130, 52, 0.10);
+          border-color: rgba(184, 130, 52, 0.22);
+          color: var(--gold);
         }
       `}</style>
     </div>

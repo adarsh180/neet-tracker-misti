@@ -1061,6 +1061,115 @@ export default function MoodPage() {
             transition: none !important;
           }
         }
+
+        /* ===========================
+           LIGHT MODE OVERRIDES
+           =========================== */
+        :global(html[data-theme="light"]) .mood-page {
+          color: hsl(32, 28%, 13%);
+          background:
+            radial-gradient(circle at 20% 15%, rgba(184, 130, 52, 0.08), transparent 20%),
+            radial-gradient(circle at 85% 0%, rgba(60, 120, 210, 0.07), transparent 18%),
+            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
+        }
+
+        :global(html[data-theme="light"]) .mood-badge {
+          color: hsl(38, 70%, 36%);
+          background: rgba(184, 130, 52, 0.08);
+          border-color: rgba(184, 130, 52, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .mood-subtitle {
+          color: hsla(31, 22%, 22%, 0.62);
+        }
+
+        :global(html[data-theme="light"]) .mood-date-wrap {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 10px 28px rgba(70, 45, 24, 0.08), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+        }
+
+        :global(html[data-theme="light"]) .mood-date-label {
+          color: hsla(31, 22%, 22%, 0.44);
+        }
+
+        :global(html[data-theme="light"]) .mood-stat-card {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.09);
+          box-shadow: 0 12px 36px rgba(70, 45, 24, 0.09), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+        }
+
+        :global(html[data-theme="light"]) .mood-section-title,
+        :global(html[data-theme="light"]) .mood-card-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .mood-card {
+          background: rgba(255, 255, 255, 0.86);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 18px 52px rgba(70, 45, 24, 0.10), 0 1px 0 rgba(255, 255, 255, 0.94) inset;
+        }
+
+        :global(html[data-theme="light"]) .mood-side-card {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.09);
+          box-shadow: 0 12px 36px rgba(70, 45, 24, 0.09), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+        }
+
+        :global(html[data-theme="light"]) .mood-btn {
+          background: rgba(255, 255, 255, 0.72);
+          border-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .mood-btn:hover {
+          background: var(--mood-bg);
+          border-color: var(--mood-border);
+          box-shadow: 0 10px 24px rgba(70, 45, 24, 0.12);
+        }
+
+        :global(html[data-theme="light"]) .mood-btn-label {
+          color: hsla(31, 22%, 22%, 0.68);
+        }
+
+        :global(html[data-theme="light"]) .mood-slider {
+          background: rgba(255, 255, 255, 0.68);
+          border-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .mood-slider-label {
+          color: hsla(31, 22%, 22%, 0.68);
+        }
+
+        :global(html[data-theme="light"]) .mood-slider-labels span {
+          color: hsla(31, 22%, 22%, 0.45);
+        }
+
+        :global(html[data-theme="light"]) .mood-slider-track {
+          background: rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .mood-display-card {
+          background: rgba(255, 255, 255, 0.86);
+          border-color: rgba(70, 45, 24, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .mood-save {
+          color: hsl(20, 30%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .mood-cal-day {
+          background: rgba(255, 255, 255, 0.60);
+          border-color: rgba(70, 45, 24, 0.07);
+        }
+
+        :global(html[data-theme="light"]) .mood-cal-day:hover {
+          background: rgba(255, 255, 255, 0.90);
+          border-color: rgba(70, 45, 24, 0.15);
+        }
+
+        :global(html[data-theme="light"]) .mood-entry-row:hover {
+          box-shadow: 0 10px 20px rgba(70, 45, 24, 0.10);
+        }
       `}</style>
     </div>
   );

@@ -1796,6 +1796,182 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
             height: 6px;
           }
         }
+
+        /* ─── LIGHT MODE ─── */
+        :global(html[data-theme="light"]) .cycle-page {
+          color: hsl(32, 28%, 13%);
+          background:
+            radial-gradient(circle at 14% 4%, rgba(184, 130, 52, 0.08), transparent 24%),
+            radial-gradient(circle at 92% 8%, rgba(60, 120, 210, 0.07), transparent 22%),
+            radial-gradient(circle at 42% 110%, rgba(232, 114, 138, 0.08), transparent 28%),
+            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
+        }
+
+        :global(html[data-theme="light"]) .cycle-bg {
+          opacity: 0.14;
+          background-image:
+            linear-gradient(rgba(70,45,24,0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(70,45,24,0.08) 1px, transparent 1px);
+        }
+
+        :global(html[data-theme="light"]) .cycle-title,
+        :global(html[data-theme="light"]) .panel-head h2,
+        :global(html[data-theme="light"]) .day-title,
+        :global(html[data-theme="light"]) .ai-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .cycle-kicker {
+          color: hsl(38, 70%, 36%);
+          background: rgba(184, 130, 52, 0.08);
+          border-color: rgba(184, 130, 52, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .cycle-subtitle {
+          color: hsla(31, 22%, 28%, 0.62);
+        }
+
+        :global(html[data-theme="light"]) .cycle-phase-card {
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.18)),
+            var(--phase-bg);
+          box-shadow: 0 20px 56px rgba(0,0,0,0.09);
+        }
+
+        :global(html[data-theme="light"]) .metric-card {
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.88));
+          border-color: rgba(70,45,24,0.10);
+          box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+        }
+
+        :global(html[data-theme="light"]) .metric-top {
+          color: hsla(31, 22%, 28%, 0.52);
+        }
+
+        :global(html[data-theme="light"]) .metric-card strong {
+          color: hsl(32, 28%, 13%);
+        }
+
+        :global(html[data-theme="light"]) .confidence-bar {
+          background: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .icon-btn {
+          background: rgba(70,45,24,0.05);
+          border-color: rgba(70,45,24,0.10);
+        }
+
+        :global(html[data-theme="light"]) .symptom-chip {
+          background: rgba(70,45,24,0.04);
+          border-color: rgba(70,45,24,0.09);
+        }
+
+        :global(html[data-theme="light"]) .symptom-chip.active {
+          background: rgba(232,114,138,0.10);
+          border-color: rgba(232,114,138,0.32);
+        }
+
+        :global(html[data-theme="light"]) .calendar-day {
+          background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.78));
+          border-color: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .calendar-day:hover,
+        :global(html[data-theme="light"]) .calendar-day.selected {
+          box-shadow: 0 8px 20px rgba(0,0,0,0.07);
+        }
+
+        :global(html[data-theme="light"]) .calendar-day.actual {
+          background: linear-gradient(180deg, rgba(232,114,138,0.18), rgba(232,114,138,0.06));
+          border-color: rgba(232,114,138,0.28);
+        }
+
+        :global(html[data-theme="light"]) .calendar-day.predicted:not(.actual) {
+          background: linear-gradient(180deg, rgba(212,168,83,0.15), rgba(212,168,83,0.04));
+          border-color: rgba(212,168,83,0.22);
+        }
+
+        :global(html[data-theme="light"]) .calendar-day.fertile:not(.actual):not(.predicted) {
+          background: linear-gradient(180deg, rgba(74,222,128,0.11), rgba(74,222,128,0.03));
+        }
+
+        :global(html[data-theme="light"]) .calendar-day.today::after {
+          border-color: rgba(70,45,24,0.22);
+        }
+
+        :global(html[data-theme="light"]) .detail-row {
+          border-bottom-color: rgba(70,45,24,0.07);
+        }
+
+        :global(html[data-theme="light"]) .detail-note,
+        :global(html[data-theme="light"]) .mood-box {
+          background: rgba(70,45,24,0.04);
+          border-color: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .mood-mini span {
+          background: rgba(70,45,24,0.05);
+        }
+
+        :global(html[data-theme="light"]) .signal-list div {
+          background: rgba(70,45,24,0.04);
+          border-color: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .history-row {
+          background: rgba(70,45,24,0.04);
+          border-color: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .history-meta span {
+          background: rgba(70,45,24,0.06);
+        }
+
+        :global(html[data-theme="light"]) .ai-card {
+          border-color: rgba(212,168,83,0.18);
+          background:
+            radial-gradient(circle at 0% 0%, rgba(212,168,83,0.08), transparent 32%),
+            radial-gradient(circle at 100% 0%, rgba(232,114,138,0.06), transparent 30%),
+            rgba(255,255,255,0.92);
+        }
+
+        :global(html[data-theme="light"]) .ai-mark {
+          background:
+            radial-gradient(circle at 30% 20%, rgba(255,255,255,0.6), transparent 34%),
+            rgba(212,168,83,0.10);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+        }
+
+        :global(html[data-theme="light"]) .ai-heading span {
+          color: hsl(38, 58%, 36%);
+        }
+
+        :global(html[data-theme="light"]) .ai-context-strip div {
+          background: rgba(70,45,24,0.04);
+          border-color: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .ai-empty,
+        :global(html[data-theme="light"]) .ai-loading {
+          background: rgba(70,45,24,0.04);
+          border-color: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .ai-brief-section {
+          background:
+            linear-gradient(180deg, color-mix(in srgb, var(--brief-color) 5%, transparent), rgba(255,255,255,0.55)),
+            rgba(255,255,255,0.48);
+          border-color: color-mix(in srgb, var(--brief-color) 18%, rgba(70,45,24,0.08));
+        }
+
+        :global(html[data-theme="light"]) .ai-brief-section p {
+          color: hsla(31, 22%, 18%, 0.78);
+        }
+
+        :global(html[data-theme="light"]) .ai-footnote {
+          background: rgba(70,45,24,0.04);
+          border-color: rgba(70,45,24,0.08);
+        }
       `}</style>
     </div>
   );

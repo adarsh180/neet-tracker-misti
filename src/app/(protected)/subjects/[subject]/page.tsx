@@ -620,7 +620,14 @@ export default function SubjectPage() {
           <ArrowLeft size={14} /> Dashboard
         </SmoothLink>
 
-        <section className="hero glass-card premium-card" style={{ borderColor: `color-mix(in srgb, ${meta.varColor} 28%, transparent)`, background: meta.dimBg }}>
+        <section
+          className="hero glass-card premium-card"
+          style={{
+            "--subject-accent": meta.varColor,
+            borderColor: `color-mix(in srgb, ${meta.varColor} 28%, transparent)`,
+            background: meta.dimBg,
+          } as React.CSSProperties}
+        >
           <div className="hero-ambient" style={{ background: `radial-gradient(circle at 80% 40%, ${meta.glow} 0%, transparent 58%)` }} />
 
           <div className="hero-left">
@@ -1064,7 +1071,7 @@ export default function SubjectPage() {
                             className={`topic-row ${topic.isCompleted ? "done" : ""} ${toggling.has(topic.id) ? "toggling" : ""}`}
                             style={{
                               "--tc": meta.varColor,
-                              borderBottom: idx < topics.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                              borderBottom: idx < topics.length - 1 ? "1px solid var(--topic-row-border)" : "none",
                             } as React.CSSProperties}
                           >
                             <button
@@ -1174,7 +1181,7 @@ export default function SubjectPage() {
         }
 
         :global(body) {
-          background: #050507;
+          background: var(--bg-void);
         }
 
         .subject-page {
@@ -1185,6 +1192,7 @@ export default function SubjectPage() {
           --chemistry: #a78bfa;
           --physics: #3b82f6;
           --zoology: #f59e0b;
+          --topic-row-border: rgba(255,255,255,0.04);
 
           min-height: 100vh;
           position: relative;
@@ -2340,6 +2348,150 @@ export default function SubjectPage() {
           .topic-mini-stats {
             justify-content: flex-start;
           }
+        }
+
+        /* ===========================
+           LIGHT MODE OVERRIDES
+           =========================== */
+        :global(html[data-theme="light"]) .subject-page {
+          --topic-row-border: rgba(70, 45, 24, 0.07);
+          color: hsl(32, 28%, 13%);
+          background:
+            radial-gradient(circle at 12% 8%, rgba(184, 130, 52, 0.10), transparent 24%),
+            radial-gradient(circle at 88% 0%, rgba(60, 120, 210, 0.08), transparent 22%),
+            radial-gradient(circle at 45% 100%, rgba(82, 150, 112, 0.08), transparent 26%),
+            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
+        }
+
+        :global(html[data-theme="light"]) .page-grid {
+          opacity: 0.10;
+          background-image:
+            linear-gradient(rgba(70, 45, 24, 0.07) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(70, 45, 24, 0.07) 1px, transparent 1px);
+        }
+
+        :global(html[data-theme="light"]) .page-noise {
+          opacity: 0.025;
+          mix-blend-mode: multiply;
+        }
+
+        :global(html[data-theme="light"]) .page-vignette {
+          background: radial-gradient(circle at center, transparent 42%, rgba(248, 241, 231, 0.58) 100%);
+        }
+
+        :global(html[data-theme="light"]) .glass-card {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow:
+            0 18px 52px rgba(70, 45, 24, 0.10),
+            inset 0 1px 1px rgba(255, 255, 255, 0.88);
+        }
+
+        :global(html[data-theme="light"]) .premium-card::before {
+          background: linear-gradient(120deg, rgba(255,255,255,0.70), transparent 30%, transparent 70%, rgba(70,45,24,0.035));
+          opacity: 0.38;
+        }
+
+        :global(html[data-theme="light"]) .hero {
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.88), rgba(255,255,255,0.64)),
+            color-mix(in srgb, var(--subject-accent) 8%, transparent) !important;
+          border-color: color-mix(in srgb, var(--subject-accent) 24%, rgba(70,45,24,0.08)) !important;
+        }
+
+        :global(html[data-theme="light"]) .back-link,
+        :global(html[data-theme="light"]) .filter-tab,
+        :global(html[data-theme="light"]) .reorder-note,
+        :global(html[data-theme="light"]) .topic-qs-btn,
+        :global(html[data-theme="light"]) .mini-chip,
+        :global(html[data-theme="light"]) .snapshot-pill {
+          background: rgba(255, 255, 255, 0.60);
+          border-color: rgba(70, 45, 24, 0.10);
+          color: hsla(31, 22%, 22%, 0.72);
+        }
+
+        :global(html[data-theme="light"]) .back-link:hover,
+        :global(html[data-theme="light"]) .filter-tab:hover,
+        :global(html[data-theme="light"]) .topic-qs-btn:hover {
+          background: rgba(255, 255, 255, 0.92);
+          border-color: rgba(70, 45, 24, 0.17);
+          color: hsl(32, 28%, 13%);
+        }
+
+        :global(html[data-theme="light"]) .hero-title,
+        :global(html[data-theme="light"]) .hero-score,
+        :global(html[data-theme="light"]) .stat-value,
+        :global(html[data-theme="light"]) .section-head h2,
+        :global(html[data-theme="light"]) .chapter-name,
+        :global(html[data-theme="light"]) .chapter-percent,
+        :global(html[data-theme="light"]) .topic-name,
+        :global(html[data-theme="light"]) .empty-state h2,
+        :global(html[data-theme="light"]) .empty-match h3 {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .hero-subtitle,
+        :global(html[data-theme="light"]) .mini-row,
+        :global(html[data-theme="light"]) .section-head p,
+        :global(html[data-theme="light"]) .chapter-subline,
+        :global(html[data-theme="light"]) .empty-state p,
+        :global(html[data-theme="light"]) .empty-match p {
+          color: hsla(31, 22%, 22%, 0.64);
+        }
+
+        :global(html[data-theme="light"]) .mini-row strong {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .mini-meta,
+        :global(html[data-theme="light"]) .stat-unit,
+        :global(html[data-theme="light"]) .field label,
+        :global(html[data-theme="light"]) .input-shell svg,
+        :global(html[data-theme="light"]) .stat-label {
+          color: hsla(31, 22%, 22%, 0.48);
+        }
+
+        :global(html[data-theme="light"]) .hero-score-card,
+        :global(html[data-theme="light"]) .hero-mini-stats,
+        :global(html[data-theme="light"]) .section-icon,
+        :global(html[data-theme="light"]) .chapter-chevron,
+        :global(html[data-theme="light"]) .chapter-handle,
+        :global(html[data-theme="light"]) .insight-badge,
+        :global(html[data-theme="light"]) .chart-empty {
+          background: rgba(255, 255, 255, 0.58);
+          border-color: rgba(70, 45, 24, 0.09);
+          color: hsla(31, 22%, 22%, 0.72);
+        }
+
+        :global(html[data-theme="light"]) .insight-label,
+        :global(html[data-theme="light"]) .insight-value {
+          color: hsla(31, 22%, 22%, 0.82);
+        }
+
+        :global(html[data-theme="light"]) .insight-track {
+          background: rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .topic-list {
+          border-top-color: rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .chapter-header:hover,
+        :global(html[data-theme="light"]) .topic-row:hover {
+          background: rgba(70, 45, 24, 0.035);
+        }
+
+        :global(html[data-theme="light"]) .topic-row.done {
+          background: rgba(34, 197, 94, 0.035);
+        }
+
+        :global(html[data-theme="light"]) .chapter-card.drop-target {
+          box-shadow: 0 0 0 1px rgba(184, 130, 52, 0.20), 0 18px 42px rgba(70, 45, 24, 0.12);
+        }
+
+        :global(html[data-theme="light"]) .skeleton {
+          background: linear-gradient(90deg, rgba(70,45,24,0.04), rgba(70,45,24,0.10), rgba(70,45,24,0.04));
+          background-size: 200% 100%;
         }
       `}</style>
     </div>

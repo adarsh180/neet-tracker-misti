@@ -74,6 +74,13 @@
   --text-muted:     hsla(38, 5%,  65%, 0.38);
   --text-disabled:  hsla(38, 5%,  55%, 0.22);
 
+  --chart-grid: rgba(255,255,255,0.055);
+  --chart-grid-strong: rgba(255,255,255,0.10);
+  --chart-axis: rgba(255,255,255,0.42);
+  --chart-axis-muted: rgba(255,255,255,0.28);
+  --chart-tooltip-bg: rgba(10,10,14,0.96);
+  --chart-tooltip-border: rgba(255,255,255,0.12);
+
   /* ── Status ── */
   --success:  hsl(142, 60%, 56%);
   --warning:  hsl(42,  90%, 62%);
@@ -164,6 +171,12 @@
   --lotus-dim:     hsla(278, 48%, 45%, 0.10);
   --lotus-glow:    hsla(278, 48%, 45%, 0.15);
 
+  --saffron:       hsl(24, 68%, 44%);
+  --saffron-dim:   hsla(24, 68%, 44%, 0.12);
+
+  --indigo:        hsl(248, 54%, 50%);
+  --indigo-dim:    hsla(248, 54%, 50%, 0.12);
+
   --botany:        hsl(148, 48%, 38%);
   --botany-dim:    hsla(148, 48%, 38%, 0.10);
   --botany-glow:   hsla(148, 48%, 38%, 0.16);
@@ -185,6 +198,13 @@
   --text-muted:     hsla(31, 18%, 32%, 0.48);
   --text-disabled:  hsla(31, 15%, 42%, 0.32);
 
+  --chart-grid: rgba(70, 45, 24, 0.09);
+  --chart-grid-strong: rgba(70, 45, 24, 0.16);
+  --chart-axis: hsla(31, 22%, 22%, 0.62);
+  --chart-axis-muted: hsla(31, 22%, 22%, 0.46);
+  --chart-tooltip-bg: rgba(253, 248, 240, 0.97);
+  --chart-tooltip-border: rgba(70, 45, 24, 0.14);
+
   --success:  hsl(148, 48%, 36%);
   --warning:  hsl(38, 78%, 45%);
   --danger:   hsl(0, 62%, 48%);
@@ -196,6 +216,128 @@
   --shadow-lg:   0 18px 52px rgba(70,45,24,0.15), 0 1px 0 rgba(255,255,255,0.78) inset;
   --shadow-xl:   0 26px 70px rgba(70,45,24,0.18), 0 1px 0 rgba(255,255,255,0.82) inset;
   --shadow-2xl:  0 34px 92px rgba(70,45,24,0.20);
+
+  --glow-gold:    0 0 20px hsla(38,70%,43%,0.22), 0 0 40px hsla(38,70%,43%,0.08);
+  --glow-rose:    0 0 20px hsla(350,58%,50%,0.20), 0 0 40px hsla(350,58%,50%,0.08);
+  --glow-lotus:   0 0 20px hsla(278,42%,47%,0.18), 0 0 40px hsla(278,42%,47%,0.07);
+}
+
+/* ============================================================
+   LIGHT MODE — GLOBAL COMPONENT OVERRIDES
+   ============================================================ */
+
+/* Scrollbar */
+:root[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(70, 45, 24, 0.14);
+}
+:root[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(70, 45, 24, 0.22);
+}
+
+/* Progress track */
+:root[data-theme="light"] .progress-track {
+  background: rgba(70, 45, 24, 0.08);
+}
+
+/* Dividers */
+:root[data-theme="light"] .divider {
+  background: linear-gradient(90deg, transparent, rgba(70, 45, 24, 0.10), transparent);
+}
+:root[data-theme="light"] .divider-v {
+  background: rgba(70, 45, 24, 0.10);
+}
+
+/* Skeleton loader */
+:root[data-theme="light"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(70, 45, 24, 0.04) 25%,
+    rgba(70, 45, 24, 0.09) 50%,
+    rgba(70, 45, 24, 0.04) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* App loading card */
+:root[data-theme="light"] .app-loading-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(70, 45, 24, 0.10);
+}
+:root[data-theme="light"] .app-loading-badge,
+:root[data-theme="light"] .app-loading-title,
+:root[data-theme="light"] .app-loading-copy {
+  background: linear-gradient(
+    90deg,
+    rgba(70, 45, 24, 0.05),
+    rgba(70, 45, 24, 0.10),
+    rgba(70, 45, 24, 0.05)
+  );
+  background-size: 200% 100%;
+}
+
+/* Glass card light overrides */
+:root[data-theme="light"] .glass-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.80) 50%,
+    rgba(255, 255, 255, 0.87) 100%
+  );
+  border-color: rgba(70, 45, 24, 0.10);
+}
+:root[data-theme="light"] .glass-card::before {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.90) 30%,
+    rgba(255, 255, 255, 1.0) 50%,
+    rgba(255, 255, 255, 0.90) 70%,
+    transparent 100%);
+}
+:root[data-theme="light"] .glass-card::after {
+  background: linear-gradient(165deg,
+    rgba(255, 255, 255, 0.50) 0%,
+    transparent 40%,
+    rgba(70, 45, 24, 0.03) 100%);
+}
+:root[data-theme="light"] .glass-card:hover {
+  border-color: rgba(70, 45, 24, 0.17);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Chat bubbles */
+:root[data-theme="light"] .chat-bubble-user {
+  background: linear-gradient(135deg, hsla(38, 72%, 43%, 0.10) 0%, hsla(350, 58%, 50%, 0.07) 100%);
+  border-color: hsla(38, 72%, 43%, 0.18);
+}
+:root[data-theme="light"] .chat-bubble-ai {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(70, 45, 24, 0.12);
+}
+
+/* Tooltip */
+:root[data-theme="light"] [data-tip]::after {
+  background: #fffaf1;
+  border-color: rgba(70, 45, 24, 0.14);
+  color: hsl(32, 28%, 13%);
+}
+
+/* Recharts global chart overrides for light mode */
+:root[data-theme="light"] .recharts-cartesian-grid-horizontal line,
+:root[data-theme="light"] .recharts-cartesian-grid-vertical line {
+  stroke: rgba(70, 45, 24, 0.08);
+}
+:root[data-theme="light"] .recharts-polar-grid-concentric-polygon,
+:root[data-theme="light"] .recharts-polar-grid-angle line {
+  stroke: rgba(70, 45, 24, 0.10);
+}
+
+.recharts-wrapper,
+.recharts-surface {
+  color: var(--text-secondary);
+}
+
+.recharts-tooltip-wrapper {
+  color: var(--text-primary);
 }
 
 /* ============================================================
@@ -482,6 +624,14 @@ h4, h5, h6 { font-family: var(--font-sans); font-weight: 600; }
 }
 .input:focus-visible { outline: none; }
 
+input[type="date"].input {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] input[type="date"].input {
+  color-scheme: light;
+}
+
 .select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23b0a090' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -526,6 +676,7 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .badge-success { background: hsla(142,60%,48%,0.10); color: var(--success); border-color: hsla(142,60%,48%,0.22); }
 .badge-warning { background: hsla(42,90%,62%,0.10); color: var(--warning); border-color: hsla(42,90%,62%,0.22); }
 .badge-danger  { background: hsla(0,72%,62%,0.10);  color: var(--danger);  border-color: hsla(0,72%,62%,0.22); }
+.badge-glass   { background: var(--glass-thin); color: var(--text-secondary); border-color: var(--glass-border-mid); }
 .badge-physics   { background: var(--physics-dim);   color: var(--physics);   border-color: hsla(218,84%,62%,0.20); }
 .badge-chemistry { background: var(--chemistry-dim); color: var(--chemistry); border-color: hsla(270,68%,62%,0.20); }
 .badge-botany    { background: var(--botany-dim);    color: var(--botany);    border-color: hsla(142,60%,48%,0.20); }

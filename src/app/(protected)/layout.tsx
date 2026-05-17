@@ -115,6 +115,17 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
             width: 64%;
           }
 
+          :global(html[data-theme="light"]) .protected-boot-card {
+            background: rgba(255, 255, 255, 0.74);
+            border-color: rgba(70, 45, 24, 0.10);
+            box-shadow: 0 18px 52px rgba(70, 45, 24, 0.12);
+          }
+
+          :global(html[data-theme="light"]) .protected-boot-line {
+            background: linear-gradient(90deg, rgba(70,45,24,0.05), rgba(70,45,24,0.12), rgba(70,45,24,0.05));
+            background-size: 200% 100%;
+          }
+
           @keyframes protectedBoot {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }

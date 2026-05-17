@@ -252,6 +252,73 @@ export default function Topbar() {
         @media (min-width: 861px) {
           .topbar-mobile-menu { display: none; }
         }
+
+        :global(html[data-theme="light"]) .topbar {
+          background: rgba(255, 250, 240, 0.88);
+          border-bottom-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 1px 24px rgba(70, 45, 24, 0.12);
+        }
+
+        :global(html[data-theme="light"]) .topbar-logo-mark {
+          background: linear-gradient(135deg, hsla(38, 72%, 45%, 0.14), hsla(285, 38%, 47%, 0.07));
+          border-color: hsla(38, 72%, 45%, 0.22);
+        }
+
+        :global(html[data-theme="light"]) .topbar-brand {
+          color: hsl(32, 28%, 13%);
+        }
+
+        :global(html[data-theme="light"]) .topbar-sub {
+          color: hsla(38, 65%, 40%, 0.72);
+        }
+
+        :global(html[data-theme="light"]) .topbar-link {
+          color: hsla(31, 22%, 22%, 0.60);
+        }
+
+        :global(html[data-theme="light"]) .topbar-link:hover,
+        :global(html[data-theme="light"]) .topbar-mobile-link:hover,
+        :global(html[data-theme="light"]) .topbar-mobile-link.active {
+          background: rgba(70, 45, 24, 0.06);
+          color: hsl(32, 28%, 13%);
+        }
+
+        :global(html[data-theme="light"]) .topbar-link--active {
+          background: hsla(38, 65%, 43%, 0.10);
+          color: hsl(38, 70%, 34%);
+        }
+
+        :global(html[data-theme="light"]) .topbar-dropdown-menu,
+        :global(html[data-theme="light"]) .topbar-mobile-menu {
+          background: rgba(255, 250, 240, 0.97);
+          border-color: rgba(70, 45, 24, 0.12);
+          box-shadow: 0 16px 48px rgba(70, 45, 24, 0.16);
+        }
+
+        :global(html[data-theme="light"]) .topbar-dropdown-item {
+          color: hsl(32, 28%, 16%);
+        }
+
+        :global(html[data-theme="light"]) .topbar-dropdown-item:hover {
+          background: rgba(70, 45, 24, 0.06);
+        }
+
+        :global(html[data-theme="light"]) .topbar-signout {
+          color: hsla(31, 22%, 22%, 0.40);
+        }
+
+        :global(html[data-theme="light"]) .topbar-signout:hover {
+          background: rgba(70, 45, 24, 0.06);
+          color: var(--danger);
+        }
+
+        :global(html[data-theme="light"]) .topbar-mobile-menu {
+          border-top-color: rgba(70, 45, 24, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .topbar-mobile-divider {
+          background: rgba(70, 45, 24, 0.10);
+        }
       `}</style>
     </>
   );

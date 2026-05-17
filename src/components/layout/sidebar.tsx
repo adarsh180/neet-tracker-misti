@@ -247,6 +247,65 @@ export default function Sidebar({ collapsed, setCollapsed }: Props) {
           .sb { width: 0; border: none; }
           .sb--sm { width: 0; }
         }
+
+        /* ── Light mode ── */
+        :global(html[data-theme="light"]) .sb {
+          background: hsl(38, 30%, 95%);
+          border-right-color: rgba(70, 45, 24, 0.09);
+        }
+        :global(html[data-theme="light"]) .sb-logo-mark {
+          background: linear-gradient(135deg, hsla(38, 72%, 45%, 0.14), hsla(285, 38%, 47%, 0.07));
+          border-color: hsla(38, 72%, 45%, 0.22);
+        }
+        :global(html[data-theme="light"]) .sb-brand {
+          color: hsl(32, 28%, 15%);
+        }
+        :global(html[data-theme="light"]) .sb-sub {
+          color: hsla(38, 65%, 40%, 0.72);
+        }
+        :global(html[data-theme="light"]) .sb-toggle {
+          background: hsl(38, 22%, 91%);
+          border-color: rgba(70, 45, 24, 0.12);
+          color: hsla(31, 22%, 25%, 0.52);
+        }
+        :global(html[data-theme="light"]) .sb-toggle:hover {
+          background: hsl(38, 26%, 87%);
+          color: hsl(32, 28%, 13%);
+          border-color: rgba(70, 45, 24, 0.22);
+        }
+        :global(html[data-theme="light"]) .sb-section {
+          color: hsla(31, 18%, 32%, 0.40);
+        }
+        :global(html[data-theme="light"]) .sb-link {
+          color: hsla(31, 22%, 22%, 0.56);
+        }
+        :global(html[data-theme="light"]) .sb-link:hover {
+          background: rgba(70, 45, 24, 0.06);
+          color: hsl(32, 28%, 13%);
+        }
+        :global(html[data-theme="light"]) .sb-link--active {
+          background: hsla(38, 65%, 43%, 0.10);
+          color: hsl(32, 28%, 14%);
+        }
+        :global(html[data-theme="light"]) .sb-line {
+          background: rgba(70, 45, 24, 0.08);
+        }
+        :global(html[data-theme="light"]) .sb-footer {
+          border-top-color: rgba(70, 45, 24, 0.08);
+        }
+        :global(html[data-theme="light"]) .sb-user-name {
+          color: hsl(32, 28%, 13%);
+        }
+        :global(html[data-theme="light"]) .sb-user-status {
+          color: hsla(148, 48%, 36%, 0.80);
+        }
+        :global(html[data-theme="light"]) .sb-signout {
+          color: hsla(31, 22%, 22%, 0.36);
+        }
+        :global(html[data-theme="light"]) .sb-signout:hover {
+          background: rgba(70, 45, 24, 0.06);
+          color: var(--danger);
+        }
       `}</style>
     </>
   );

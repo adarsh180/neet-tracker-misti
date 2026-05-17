@@ -628,6 +628,24 @@ export default function QuickNav() {
           box-shadow: 0 16px 32px rgba(83, 57, 35, 0.18);
         }
 
+        :global(html[data-theme="light"]) .fab-toggle.active {
+          background: var(--gold);
+          border-color: var(--gold);
+          color: hsl(20, 30%, 12%);
+          box-shadow: 0 16px 32px rgba(83, 57, 35, 0.20), 0 0 22px var(--gold-glow);
+        }
+
+        :global(html[data-theme="light"]) .action-button:hover {
+          background: rgba(255, 255, 255, 0.92);
+          color: hsl(31, 30%, 13%);
+        }
+
+        :global(html[data-theme="light"]) .logout-btn:hover {
+          background: rgba(200, 50, 50, 0.08);
+          border-color: rgba(200, 50, 50, 0.20);
+          color: var(--danger);
+        }
+
         @media (max-width: 600px) {
           .nav-shell {
             width: calc(100vw - 32px);

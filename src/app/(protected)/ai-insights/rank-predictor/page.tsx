@@ -84,7 +84,7 @@ export default function RankPredictorPage() {
   })) || [];
 
   return (
-    <div className="animate-fade-in">
+    <div className="rank-page animate-fade-in">
       <div className="dash-header" style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <SmoothLink href="/ai-insights" className="btn btn-ghost btn-sm" style={{ padding: "6px 10px" }} direction="back">
@@ -143,7 +143,7 @@ export default function RankPredictorPage() {
       )}
 
       {analysis && !loading && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div className="rank-results" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Strict Message */}
           <div className="glass-card" style={{ padding: 22, borderColor: "rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.04)" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -156,7 +156,7 @@ export default function RankPredictorPage() {
           </div>
 
           {/* Rank Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          <div className="rank-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
             <div className="glass-card" style={{ padding: 24, textAlign: "center" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Predicted Score</div>
               <div style={{ fontSize: 36, fontWeight: 700, color: "var(--gold)" }}>
@@ -166,7 +166,7 @@ export default function RankPredictorPage() {
             </div>
             <div className="glass-card" style={{ padding: 24, textAlign: "center" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Predicted Rank</div>
-              <div style={{ fontSize: 32, fontWeight: 700, color: analysis.predictedRankMin < 500 ? "var(--success)" : "var(--rose-light)" }}>
+              <div style={{ fontSize: 32, fontWeight: 700, color: analysis.predictedRankMin < 500 ? "var(--success)" : "var(--rose-bright)" }}>
                 {analysis.predictedRankMin.toLocaleString()}–{analysis.predictedRankMax.toLocaleString()}
               </div>
               <div style={{ fontSize: 13, color: "var(--text-muted)" }}>NEET 2027</div>
@@ -183,13 +183,13 @@ export default function RankPredictorPage() {
           </div>
 
           {/* Gap Analysis */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="rank-gap-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div className="glass-card" style={{ padding: 20, borderColor: "rgba(155,109,176,0.2)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <Target size={16} color="var(--lotus-light)" />
-                <span style={{ fontWeight: 700, color: "var(--lotus-light)", fontSize: 14 }}>AIIMS Rishikesh Gap</span>
+                <Target size={16} color="var(--lotus-bright)" />
+                <span style={{ fontWeight: 700, color: "var(--lotus-bright)", fontSize: 14 }}>AIIMS Rishikesh Gap</span>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: analysis.aimsRishikeshGap <= 0 ? "var(--success)" : "var(--lotus-light)" }}>
+              <div style={{ fontSize: 28, fontWeight: 700, color: analysis.aimsRishikeshGap <= 0 ? "var(--success)" : "var(--lotus-bright)" }}>
                 {analysis.aimsRishikeshGap <= 0 ? "✓ Achieved" : `${analysis.aimsRishikeshGap} marks`}
               </div>
               <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>AIIMS Rishikesh cutoff: ~660 marks</p>
@@ -208,15 +208,15 @@ export default function RankPredictorPage() {
 
           {/* Charts */}
           {radarData.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div className="rank-chart-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
               <div className="glass-card" style={{ padding: 24 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>Subject vs Target (Radar)</h3>
                 <ResponsiveContainer width="100%" height={240}>
                   <RadarChart data={radarData}>
-                    <PolarGrid stroke="rgba(255,255,255,0.06)" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--text-secondary)", fontSize: 12 }} />
-                    <Radar name="Current" dataKey="Current" stroke="#d4a853" fill="#d4a853" fillOpacity={0.2} />
-                    <Radar name="Target" dataKey="Target" stroke="#c2606e" fill="#c2606e" fillOpacity={0.1} strokeDasharray="4 2" />
+                    <PolarGrid stroke="var(--chart-grid)" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} />
+                    <Radar name="Current" dataKey="Current" stroke="var(--gold)" fill="var(--gold)" fillOpacity={0.2} />
+                    <Radar name="Target" dataKey="Target" stroke="var(--rose-bright)" fill="var(--rose-bright)" fillOpacity={0.1} strokeDasharray="4 2" />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
@@ -224,13 +224,13 @@ export default function RankPredictorPage() {
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>Gap Analysis by Subject</h3>
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={barData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis dataKey="name" tick={{ fill: "var(--text-secondary)", fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "var(--text-secondary)", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                    <Tooltip contentStyle={{ background: "var(--bg-raised)", border: "1px solid var(--glass-border)", borderRadius: 10 }} labelStyle={{ color: "var(--text-primary)" }} />
-                    <Bar dataKey="current" name="Current %" fill="#d4a853" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis dataKey="name" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, color: "var(--text-primary)" }} labelStyle={{ color: "var(--text-primary)" }} />
+                    <Bar dataKey="current" name="Current %" fill="var(--gold)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="gap" name="Gap to Target" fill="rgba(248,113,113,0.3)" radius={[4, 4, 0, 0]} />
-                    <ReferenceLine y={90} stroke="rgba(212,168,83,0.3)" strokeDasharray="4 2" />
+                    <ReferenceLine y={90} stroke="color-mix(in srgb, var(--gold) 36%, transparent)" strokeDasharray="4 2" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -287,6 +287,42 @@ export default function RankPredictorPage() {
           )}
         </div>
       )}
+
+      <style jsx>{`
+        .rank-page {
+          min-width: 0;
+        }
+
+        .rank-page :global(.recharts-default-tooltip) {
+          background: var(--chart-tooltip-bg) !important;
+          border-color: var(--chart-tooltip-border) !important;
+          color: var(--text-primary) !important;
+          box-shadow: var(--shadow-md);
+        }
+
+        @media (max-width: 980px) {
+          .rank-kpi-grid,
+          .rank-gap-grid,
+          .rank-chart-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .rank-page :global(.dash-header) {
+            align-items: stretch;
+            gap: 16px;
+          }
+
+          .rank-page :global(.dash-header > div) {
+            align-items: flex-start !important;
+          }
+
+          .rank-page :global(.dash-hero-title) {
+            font-size: clamp(30px, 10vw, 42px);
+          }
+        }
+      `}</style>
     </div>
   );
 }

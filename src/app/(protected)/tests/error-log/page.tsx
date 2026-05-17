@@ -867,11 +867,11 @@ export default function ErrorLogTrackerPage() {
                         <stop offset="95%" stopColor="#d4a853" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.055)" />
-                    <XAxis dataKey="question" tick={{ fill: "rgba(255,255,255,.45)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "rgba(255,255,255,.45)", fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                    <Tooltip contentStyle={{ background: "#0b0b10", border: "1px solid rgba(255,255,255,.12)", borderRadius: 14 }} />
-                    <Area type="monotone" dataKey="accuracy" stroke="#d4a853" strokeWidth={3} fill="url(#accuracyGradient)" animationDuration={1300} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis dataKey="question" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} />
+                    <Area type="monotone" dataKey="accuracy" stroke="var(--gold)" strokeWidth={3} fill="url(#accuracyGradient)" animationDuration={1300} />
                   </AreaChart>
                 </ResponsiveContainer>
               </article>
@@ -886,10 +886,10 @@ export default function ErrorLogTrackerPage() {
                 </div>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={snapshot?.analytics.subjects ?? []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.055)" />
-                    <XAxis dataKey="subject" tick={{ fill: "rgba(255,255,255,.45)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "rgba(255,255,255,.45)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: "#0b0b10", border: "1px solid rgba(255,255,255,.12)", borderRadius: 14 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} />
                     <Bar dataKey="errorRate" radius={[10, 10, 0, 0]} animationDuration={1200}>
                       {(snapshot?.analytics.subjects ?? []).map((_, index) => (
                         <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
@@ -910,11 +910,11 @@ export default function ErrorLogTrackerPage() {
                   </div>
                   <ResponsiveContainer width="100%" height={280}>
                     <ScatterChart>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.055)" />
-                      <XAxis type="number" dataKey="x" name="Seconds" tick={{ fill: "rgba(255,255,255,.45)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis type="number" dataKey="y" name="Difficulty" domain={[0, 4]} tick={{ fill: "rgba(255,255,255,.45)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => v === 1 ? 'EASY' : v === 2 ? 'MEDIUM' : v === 3 ? 'HARD' : ''} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                      <XAxis type="number" dataKey="x" name="Seconds" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis type="number" dataKey="y" name="Difficulty" domain={[0, 4]} tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => v === 1 ? 'EASY' : v === 2 ? 'MEDIUM' : v === 3 ? 'HARD' : ''} />
                       <ZAxis type="number" range={[40, 40]} />
-                      <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ background: "#0b0b10", border: "1px solid rgba(255,255,255,.12)", borderRadius: 14 }} formatter={(v: any, n: any, p: any) => [`${v}s`, `Difficulty: ${p.payload.difficulty} | Outcome: ${p.payload.outcome}`]} />
+                      <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} formatter={(v: any, n: any, p: any) => [`${v}s`, `Difficulty: ${p.payload.difficulty} | Outcome: ${p.payload.outcome}`]} />
                       <Scatter data={timeChartData}>
                         {timeChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} fillOpacity={0.8} />
@@ -1114,7 +1114,7 @@ export default function ErrorLogTrackerPage() {
                           <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ background: "#0b0b10", border: "1px solid rgba(255,255,255,.12)", borderRadius: 14 }} />
+                      <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -1309,6 +1309,176 @@ export default function ErrorLogTrackerPage() {
         .summary-col { min-width: 250px; }
         .reason-col { min-width: 150px; }
         .spin { animation: spin-slow 1s linear infinite; }
+
+        /* ===========================
+           LIGHT MODE OVERRIDES
+           =========================== */
+        :global(html[data-theme="light"]) .error-log-page {
+          color: hsl(32, 28%, 13%);
+        }
+
+        :global(html[data-theme="light"]) .el-bg {
+          background:
+            radial-gradient(circle at 12% 12%, rgba(184, 130, 52, 0.10), transparent 30%),
+            radial-gradient(circle at 86% 20%, rgba(60, 120, 210, 0.08), transparent 30%),
+            linear-gradient(155deg, #fbf5ec 0%, #f7eedc 52%, #f8f1e7 100%);
+        }
+
+        :global(html[data-theme="light"]) .el-bg::after {
+          background-image:
+            linear-gradient(rgba(70, 45, 24, 0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(70, 45, 24, 0.06) 1px, transparent 1px);
+          opacity: 0.38;
+        }
+
+        :global(html[data-theme="light"]) .el-hero,
+        :global(html[data-theme="light"]) .el-history,
+        :global(html[data-theme="light"]) .el-memory,
+        :global(html[data-theme="light"]) .el-chart-card,
+        :global(html[data-theme="light"]) .el-form-card,
+        :global(html[data-theme="light"]) .el-ai-card,
+        :global(html[data-theme="light"]) .el-table-card,
+        :global(html[data-theme="light"]) .el-metric {
+          background: rgba(255, 255, 255, 0.86);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 18px 52px rgba(70, 45, 24, 0.10), inset 0 1px 1px rgba(255,255,255,0.88);
+        }
+
+        :global(html[data-theme="light"]) h2,
+        :global(html[data-theme="light"]) h3,
+        :global(html[data-theme="light"]) .el-title,
+        :global(html[data-theme="light"]) .el-metric strong {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .el-copy,
+        :global(html[data-theme="light"]) .el-pattern p,
+        :global(html[data-theme="light"]) .el-muted,
+        :global(html[data-theme="light"]) .el-table td,
+        :global(html[data-theme="light"]) .el-markdown,
+        :global(html[data-theme="light"]) .el-markdown :global(p) {
+          color: hsla(31, 22%, 22%, 0.72);
+        }
+
+        :global(html[data-theme="light"]) .el-back,
+        :global(html[data-theme="light"]) .el-mini-label,
+        :global(html[data-theme="light"]) .el-history-card span,
+        :global(html[data-theme="light"]) .el-history-card em,
+        :global(html[data-theme="light"]) .el-metric span,
+        :global(html[data-theme="light"]) .el-metric em,
+        :global(html[data-theme="light"]) .el-delta span,
+        :global(html[data-theme="light"]) .el-delta em,
+        :global(html[data-theme="light"]) .el-pattern span,
+        :global(html[data-theme="light"]) .el-pattern em,
+        :global(html[data-theme="light"]) .el-report-meta,
+        :global(html[data-theme="light"]) .el-empty-small {
+          color: hsla(31, 22%, 22%, 0.48);
+        }
+
+        :global(html[data-theme="light"]) .el-eyebrow,
+        :global(html[data-theme="light"]) .el-pill {
+          color: hsl(38, 70%, 36%);
+          background: rgba(184, 130, 52, 0.08);
+          border-color: rgba(184, 130, 52, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .el-hero-meter,
+        :global(html[data-theme="light"]) .el-delta,
+        :global(html[data-theme="light"]) .el-pattern,
+        :global(html[data-theme="light"]) .el-history-card,
+        :global(html[data-theme="light"]) .el-cause-chart,
+        :global(html[data-theme="light"]) .el-report,
+        :global(html[data-theme="light"]) .el-table-wrap,
+        :global(html[data-theme="light"]) .el-grid-scroll,
+        :global(html[data-theme="light"]) .el-reason,
+        :global(html[data-theme="light"]) .el-icon-btn,
+        :global(html[data-theme="light"]) .severity,
+        :global(html[data-theme="light"]) .el-status {
+          background: rgba(255, 255, 255, 0.58);
+          border-color: rgba(70, 45, 24, 0.10);
+          color: hsla(31, 22%, 22%, 0.72);
+        }
+
+        :global(html[data-theme="light"]) .el-hero-meter span,
+        :global(html[data-theme="light"]) .el-hero-meter em {
+          color: hsla(31, 22%, 22%, 0.50);
+        }
+
+        :global(html[data-theme="light"]) .el-history-card:hover,
+        :global(html[data-theme="light"]) .el-history-card.active {
+          border-color: rgba(184, 130, 52, 0.26);
+          background: rgba(184, 130, 52, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .el-field {
+          background: rgba(255, 255, 255, 0.82);
+          border-color: rgba(70, 45, 24, 0.12);
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .el-field::placeholder {
+          color: hsla(31, 22%, 22%, 0.38);
+        }
+
+        :global(html[data-theme="light"]) .el-field:focus {
+          border-color: rgba(184, 130, 52, 0.50);
+          box-shadow: 0 0 0 3px rgba(184, 130, 52, 0.12);
+        }
+
+        :global(html[data-theme="light"]) .el-select,
+        :global(html[data-theme="light"]) .el-select option {
+          background-color: #fffaf1;
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .el-alert {
+          background: rgba(200, 50, 50, 0.06);
+          border-color: rgba(200, 50, 50, 0.18);
+          color: hsl(0, 62%, 44%);
+        }
+
+        :global(html[data-theme="light"]) .el-table th {
+          background: rgba(255, 250, 240, 0.98);
+          border-bottom-color: rgba(70, 45, 24, 0.10);
+          color: hsl(38, 70%, 36%);
+        }
+
+        :global(html[data-theme="light"]) .el-table th,
+        :global(html[data-theme="light"]) .el-table td,
+        :global(html[data-theme="light"]) .el-markdown :global(th),
+        :global(html[data-theme="light"]) .el-markdown :global(td) {
+          border-color: rgba(70, 45, 24, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .el-table tbody tr:hover {
+          background: rgba(70, 45, 24, 0.04);
+        }
+
+        :global(html[data-theme="light"]) .el-markdown :global(th) {
+          background: rgba(184, 130, 52, 0.08);
+          color: hsl(38, 70%, 36%);
+        }
+
+        :global(html[data-theme="light"]) .el-report-meta strong,
+        :global(html[data-theme="light"]) .el-report-meta span {
+          color: hsla(31, 22%, 22%, 0.68);
+        }
+
+        :global(html[data-theme="light"]) .el-report.global {
+          border-color: rgba(60, 120, 210, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .el-reason.on {
+          color: hsl(38, 70%, 36%);
+          border-color: rgba(184, 130, 52, 0.28);
+          background: rgba(184, 130, 52, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .el-icon-btn:hover {
+          color: hsl(38, 70%, 36%);
+          border-color: rgba(184, 130, 52, 0.28);
+        }
+
         @media (max-width: 1240px) { .el-workbench, .el-hero, .el-pattern-grid, .el-charts, .el-editor-grid { grid-template-columns: 1fr; } .el-history { position: static; max-height: none; } .el-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 760px) { .el-shell { padding: 22px 14px 86px; } .el-metrics, .el-delta-grid, .el-form-grid.two, .el-form-grid.three { grid-template-columns: 1fr; } .el-hero, .el-history, .el-memory, .el-chart-card, .el-form-card, .el-ai-card, .el-table-card { border-radius: 22px; } }
       `}</style>

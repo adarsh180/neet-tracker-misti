@@ -826,7 +826,7 @@ export default function NEETGuruPage() {
 
         :global(body) {
           margin: 0;
-          background: #050507;
+          background: var(--bg-void);
         }
 
         .ng-shell {
@@ -2289,6 +2289,339 @@ export default function NEETGuruPage() {
             font-size: 11px;
             margin-top: 10px;
           }
+        }
+
+        /* ===========================
+           LIGHT MODE OVERRIDES
+           =========================== */
+        :global(html[data-theme="light"]) .ng-shell {
+          --panel: rgba(255, 255, 255, 0.60);
+          --panel-strong: rgba(255, 255, 255, 0.80);
+          --border: rgba(70, 45, 24, 0.10);
+          --border-strong: rgba(70, 45, 24, 0.17);
+          --text: hsl(32, 28%, 12%);
+          --muted: hsla(31, 22%, 22%, 0.62);
+          --muted-2: hsla(31, 22%, 22%, 0.44);
+          --accent: hsl(32, 28%, 12%);
+          --accent-soft: rgba(70, 45, 24, 0.08);
+          --shadow: 0 24px 72px rgba(70, 45, 24, 0.14);
+          background:
+            radial-gradient(circle at 10% 10%, rgba(184, 130, 52, 0.08), transparent 30%),
+            radial-gradient(circle at 90% 15%, rgba(148, 94, 196, 0.08), transparent 25%),
+            radial-gradient(circle at 50% 100%, rgba(60, 120, 210, 0.06), transparent 28%),
+            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ng-grid {
+          opacity: 0.09;
+          background-image:
+            linear-gradient(rgba(70, 45, 24, 0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(70, 45, 24, 0.06) 1px, transparent 1px);
+        }
+
+        :global(html[data-theme="light"]) .ng-vignette {
+          background: radial-gradient(circle at center, transparent 36%, rgba(248, 241, 231, 0.60) 100%);
+        }
+
+        :global(html[data-theme="light"]) .ng-sidebar {
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.52));
+          border-right-color: rgba(70, 45, 24, 0.10);
+          box-shadow: inset -1px 0 0 rgba(70, 45, 24, 0.05);
+        }
+
+        :global(html[data-theme="light"]) .ng-brand-mark {
+          background: rgba(70, 45, 24, 0.05);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.80), 0 8px 20px rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .ng-brand-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ng-icon-btn {
+          border-color: rgba(70, 45, 24, 0.10);
+          background: rgba(255, 255, 255, 0.60);
+          color: hsla(31, 22%, 22%, 0.70);
+        }
+
+        :global(html[data-theme="light"]) .ng-icon-btn:hover {
+          background: rgba(255, 255, 255, 0.90);
+          border-color: rgba(70, 45, 24, 0.18);
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ng-sidebar-card {
+          background: rgba(255, 255, 255, 0.64);
+          border-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .ng-sidebar-card-value {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ng-empty-state-sidebar {
+          border-color: rgba(70, 45, 24, 0.10);
+          background: rgba(255, 255, 255, 0.40);
+        }
+
+        :global(html[data-theme="light"]) .ng-empty-icon {
+          color: hsla(31, 22%, 22%, 0.60);
+          background: rgba(255, 255, 255, 0.72);
+          border-color: rgba(70, 45, 24, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .ng-empty-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ng-history-item {
+          color: hsl(32, 28%, 14%);
+          background: rgba(255, 255, 255, 0.48);
+        }
+
+        :global(html[data-theme="light"]) .ng-history-item:hover {
+          background: rgba(255, 255, 255, 0.84);
+          border-color: rgba(70, 45, 24, 0.12);
+        }
+
+        :global(html[data-theme="light"]) .ng-history-item.active {
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.72));
+          border-color: rgba(70, 45, 24, 0.15);
+        }
+
+        :global(html[data-theme="light"]) .ng-history-title {
+          color: hsl(32, 28%, 14%);
+        }
+
+        :global(html[data-theme="light"]) .ng-history-dot {
+          background: linear-gradient(135deg, hsl(32, 28%, 25%), hsl(215, 70%, 50%));
+          box-shadow: 0 0 12px hsla(215, 70%, 50%, 0.20);
+        }
+
+        :global(html[data-theme="light"]) .ng-history-del {
+          color: hsla(31, 22%, 22%, 0.44);
+        }
+
+        :global(html[data-theme="light"]) .ng-history-del:hover {
+          color: var(--danger);
+          background: rgba(200, 50, 50, 0.06);
+        }
+
+        :global(html[data-theme="light"]) .ng-topbar {
+          background: linear-gradient(180deg, rgba(248, 241, 231, 0.92), rgba(248, 241, 231, 0.70));
+          border-bottom-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .ng-welcome-title {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ng-welcome-subtitle {
+          color: hsla(31, 22%, 22%, 0.62);
+        }
+
+        :global(html[data-theme="light"]) .ng-kicker {
+          color: hsl(38, 70%, 40%);
+          background: rgba(184, 130, 52, 0.08);
+          border-color: rgba(184, 130, 52, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .ng-suggestion-card {
+          background: rgba(255, 255, 255, 0.72);
+          border-color: rgba(70, 45, 24, 0.09);
+          color: hsl(32, 28%, 14%);
+          box-shadow: 0 8px 20px rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .ng-suggestion-card:hover {
+          background: rgba(255, 255, 255, 0.94);
+          border-color: rgba(70, 45, 24, 0.16);
+          box-shadow: 0 12px 28px rgba(70, 45, 24, 0.12);
+        }
+
+        :global(html[data-theme="light"]) .ng-suggestion-text {
+          color: hsla(31, 22%, 22%, 0.80);
+        }
+
+        :global(html[data-theme="light"]) .ng-message-shell.assistant {
+          background: rgba(255, 255, 255, 0.78);
+          border-color: rgba(70, 45, 24, 0.09);
+          box-shadow: 0 8px 24px rgba(70, 45, 24, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .ng-message-shell.user {
+          background: linear-gradient(135deg, hsla(38, 72%, 43%, 0.10), hsla(350, 58%, 50%, 0.07));
+          border-color: hsla(38, 72%, 43%, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .ng-message-meta {
+          color: hsla(31, 22%, 22%, 0.42);
+        }
+
+        :global(html[data-theme="light"]) .ng-message-role {
+          color: hsla(31, 22%, 22%, 0.78);
+        }
+
+        :global(html[data-theme="light"]) .ng-message-time {
+          color: hsla(31, 22%, 22%, 0.38);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(h1),
+        :global(html[data-theme="light"]) .markdown-body :global(h2),
+        :global(html[data-theme="light"]) .markdown-body :global(h3),
+        :global(html[data-theme="light"]) .markdown-body :global(h4) {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(strong) {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(blockquote) {
+          border-left-color: rgba(70, 45, 24, 0.22);
+          background: rgba(70, 45, 24, 0.04);
+          color: hsla(31, 22%, 22%, 0.80);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(code) {
+          background: rgba(70, 45, 24, 0.06);
+          border-color: rgba(70, 45, 24, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(pre) {
+          background: rgba(70, 45, 24, 0.04);
+          border-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .ng-table-wrap {
+          border-color: rgba(70, 45, 24, 0.10);
+          background: rgba(255, 255, 255, 0.60);
+        }
+
+        :global(html[data-theme="light"]) .ng-table-wrap::-webkit-scrollbar-thumb {
+          background: rgba(70, 45, 24, 0.18);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(th) {
+          background: rgba(70, 45, 24, 0.05);
+          color: hsl(32, 28%, 12%);
+          border-bottom-color: rgba(70, 45, 24, 0.09);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(td) {
+          border-bottom-color: rgba(70, 45, 24, 0.06);
+          color: hsla(31, 22%, 22%, 0.84);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body :global(a) {
+          color: hsl(215, 70%, 46%);
+        }
+
+        :global(html[data-theme="light"]) .ng-markdown-rule {
+          background: linear-gradient(90deg, transparent, rgba(70, 45, 24, 0.16), transparent);
+        }
+
+        :global(html[data-theme="light"]) .ng-thinking span {
+          background: linear-gradient(180deg, hsl(32, 28%, 28%), hsl(215, 70%, 50%));
+          box-shadow: 0 0 10px hsla(215, 70%, 50%, 0.14);
+        }
+
+        :global(html[data-theme="light"]) .ng-error-banner {
+          background: rgba(200, 50, 50, 0.06);
+          border-color: rgba(200, 50, 50, 0.20);
+          color: hsl(0, 62%, 44%);
+        }
+
+        :global(html[data-theme="light"]) .ng-input-zone {
+          background: linear-gradient(180deg, transparent 0%, rgba(248, 241, 231, 0.88) 28%, #f8f1e7 100%);
+        }
+
+        :global(html[data-theme="light"]) .ng-input-container {
+          background: rgba(255, 255, 255, 0.94);
+          border-color: rgba(70, 45, 24, 0.12);
+          box-shadow: 0 6px 24px rgba(70, 45, 24, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .ng-input-container:focus-within {
+          border-color: rgba(70, 45, 24, 0.24);
+        }
+
+        :global(html[data-theme="light"]) .ng-input-container.drag-active {
+          border-color: rgba(60, 120, 210, 0.40);
+          background: rgba(255, 255, 255, 0.96);
+        }
+
+        :global(html[data-theme="light"]) .ng-textarea {
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .ng-textarea::placeholder {
+          color: hsla(31, 22%, 22%, 0.38);
+        }
+
+        :global(html[data-theme="light"]) .ng-action-btn.send {
+          background: rgba(70, 45, 24, 0.08);
+          color: hsla(31, 22%, 22%, 0.52);
+        }
+
+        :global(html[data-theme="light"]) .ng-action-btn.send.active {
+          background: linear-gradient(135deg, hsl(32, 28%, 18%), hsl(38, 70%, 43%));
+          color: #fff;
+          box-shadow: 0 8px 20px rgba(70, 45, 24, 0.24);
+        }
+
+        :global(html[data-theme="light"]) .ng-attach-btn {
+          background: rgba(70, 45, 24, 0.05);
+          color: hsla(31, 22%, 22%, 0.44);
+        }
+
+        :global(html[data-theme="light"]) .ng-attach-btn:hover:not(:disabled) {
+          background: rgba(70, 45, 24, 0.09);
+          color: hsl(32, 28%, 18%);
+        }
+
+        :global(html[data-theme="light"]) .ng-attach-btn.has-file {
+          background: rgba(60, 120, 210, 0.09);
+          color: hsl(215, 70%, 46%);
+          border-color: rgba(60, 120, 210, 0.22);
+        }
+
+        :global(html[data-theme="light"]) .ng-file-chip {
+          background: rgba(255, 255, 255, 0.72);
+          border-color: rgba(60, 120, 210, 0.20);
+        }
+
+        :global(html[data-theme="light"]) .ng-file-icon-wrap {
+          background: rgba(70, 45, 24, 0.06);
+          color: hsl(215, 70%, 46%);
+        }
+
+        :global(html[data-theme="light"]) .ng-file-chip-name {
+          color: hsl(32, 28%, 14%);
+        }
+
+        :global(html[data-theme="light"]) .ng-file-chip-type {
+          color: hsl(215, 70%, 46%);
+        }
+
+        :global(html[data-theme="light"]) .ng-file-chip-remove {
+          color: hsla(31, 22%, 22%, 0.38);
+        }
+
+        :global(html[data-theme="light"]) .ng-attachment-chip {
+          background: rgba(60, 120, 210, 0.07);
+          border-color: rgba(60, 120, 210, 0.22);
+          color: hsl(215, 70%, 46%);
+        }
+
+        :global(html[data-theme="light"]) .ng-input-footer {
+          color: hsla(31, 22%, 22%, 0.45);
+        }
+
+        :global(html[data-theme="light"]) .ng-model-indicator {
+          color: hsla(31, 22%, 22%, 0.72);
         }
       `}</style>
     </>

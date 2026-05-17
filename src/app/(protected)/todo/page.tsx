@@ -793,6 +793,85 @@ export default function TodoPage() {
           .todo-page { padding: 18px 14px 60px; }
           .board-grid { grid-template-columns: 1fr; }
         }
+
+        /* ===========================
+           LIGHT MODE OVERRIDES
+           =========================== */
+        :global(html[data-theme="light"]) .todo-page {
+          background:
+            radial-gradient(circle at top left, rgba(184, 130, 52, 0.07), transparent 24%),
+            radial-gradient(circle at top right, rgba(60, 120, 210, 0.07), transparent 24%),
+            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
+          color: hsl(32, 28%, 12%);
+        }
+
+        :global(html[data-theme="light"]) .glass-card {
+          background: rgba(255, 255, 255, 0.86);
+          border-color: rgba(70, 45, 24, 0.10);
+          box-shadow: 0 18px 52px rgba(70, 45, 24, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .hero-input {
+          background: rgba(255, 255, 255, 0.80);
+        }
+
+        :global(html[data-theme="light"]) .ai-summary {
+          background: rgba(52, 211, 153, 0.07);
+          border-color: rgba(52, 211, 153, 0.16);
+          color: hsl(148, 48%, 34%);
+        }
+
+        :global(html[data-theme="light"]) .stat-row {
+          border-color: rgba(70, 45, 24, 0.08);
+          background: rgba(255, 255, 255, 0.58);
+        }
+
+        :global(html[data-theme="light"]) .task-card {
+          border-color: rgba(70, 45, 24, 0.08);
+          background: rgba(255, 255, 255, 0.60);
+        }
+
+        :global(html[data-theme="light"]) .task-card:hover,
+        :global(html[data-theme="light"]) .task-card.active {
+          background: rgba(255, 255, 255, 0.88);
+          transform: translateY(-1px);
+        }
+
+        :global(html[data-theme="light"]) .task-card.active,
+        :global(html[data-theme="light"]) .chip.on {
+          border-color: rgba(184, 130, 52, 0.22);
+          background: rgba(184, 130, 52, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .chip {
+          border-color: rgba(70, 45, 24, 0.09);
+          background: rgba(255, 255, 255, 0.56);
+        }
+
+        :global(html[data-theme="light"]) .chip:hover {
+          background: rgba(255, 255, 255, 0.84);
+        }
+
+        :global(html[data-theme="light"]) .markdown-card {
+          border-color: rgba(70, 45, 24, 0.08);
+          background: rgba(255, 255, 255, 0.56);
+        }
+
+        :global(html[data-theme="light"]) .markdown-head {
+          background: linear-gradient(90deg, rgba(184, 130, 52, 0.10), rgba(255, 255, 255, 0.04));
+          border-bottom-color: rgba(70, 45, 24, 0.08);
+          color: hsl(38, 70%, 36%);
+        }
+
+        :global(html[data-theme="light"]) .markdown-body {
+          color: hsla(31, 22%, 22%, 0.86);
+        }
+
+        :global(html[data-theme="light"]) .todo-error {
+          color: hsl(0, 62%, 44%);
+          background: rgba(200, 50, 50, 0.06);
+          border-color: rgba(200, 50, 50, 0.16);
+        }
       `}</style>
     </div>
   );
