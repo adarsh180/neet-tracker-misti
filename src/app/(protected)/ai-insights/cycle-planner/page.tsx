@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addMonths,
+  addDays,
+  differenceInCalendarDays,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -22,6 +24,7 @@ import {
   Heart,
   Lock,
   Moon,
+  Pencil,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -29,6 +32,7 @@ import {
   Sun,
   Target,
   TrendingUp,
+  Trash2,
   Wind,
   Zap,
 } from "lucide-react";
@@ -44,6 +48,7 @@ interface CycleCalendarDay {
   kinds: CalendarDayKind[];
   flowLevel?: string | null;
   symptoms?: string | null;
+  periodDayDetail?: PeriodDayDetail | null;
   cycleEntryId?: string | null;
   mood?: {
     mood: string;
@@ -52,6 +57,17 @@ interface CycleCalendarDay {
     stress: number;
     note: string | null;
   } | null;
+}
+
+interface PeriodDayDetail {
+  day: number;
+  date: string | null;
+  flowLevel: string | null;
+  pain: number | null;
+  energy: number | null;
+  mood: string | null;
+  symptoms: string[];
+  notes: string | null;
 }
 
 interface CycleLog {
@@ -64,6 +80,7 @@ interface CycleLog {
   notes: string | null;
   lengthFromPrevious: number | null;
   periodDays: number | null;
+  dayDetails: PeriodDayDetail[];
 }
 
 interface CycleIntelligence {
@@ -92,8 +109,31 @@ interface CycleIntelligence {
     cycleCount: number;
     completedCycleCount: number;
     moodEntriesMapped: number;
+    periodDayDetailCount: number;
+    ignoredOutliers: number[];
+    recentTrendDays: number;
+    accuracyMeanErrorDays: number | null;
+    dataNeeded: string[];
     method: string;
     privacy: string;
+  };
+  predictionQuality: {
+    averageMissDays: number | null;
+    backtestedCycles: number;
+    ignoredOutliers: number[];
+    recentTrendDays: number;
+    modelBlend: string;
+  };
+  healthSignals: {
+    cycleRegularity: "learning" | "regular" | "variable" | "irregular";
+    periodLengthPattern: string;
+    flowPattern: string;
+    symptomBurden: "learning" | "low" | "moderate" | "high";
+    averagePain: number | null;
+    heavyFlowDaysAverage: number | null;
+    detailDaysLogged: number;
+    redFlags: string[];
+    insight: string;
   };
   studySignals: {
     avgEnergy: number | null;
@@ -111,6 +151,7 @@ interface CycleIntelligence {
 const FLOW_LEVELS = ["LIGHT", "MODERATE", "HEAVY", "SPOTTING"];
 const CYCLE_MOODS = ["NORMAL", "HAPPY", "ANXIOUS", "TIRED", "CRAMPY"];
 const SYMPTOMS_OPTIONS = ["Cramps", "Bloating", "Headache", "Back Pain", "Fatigue", "Mood Swings", "Nausea", "Tenderness", "None"];
+const PERIOD_DAY_LIMIT = 10;
 
 const PHASE_META: Record<CyclePhase, { label: string; short: string; icon: typeof Heart; color: string; bg: string; border: string; study: string }> = {
   menstrual: {
@@ -180,6 +221,46 @@ function displayDate(value: string | null) {
   return format(parseISO(`${value}T12:00:00`), "d MMM yyyy");
 }
 
+function compactDate(value: string | null) {
+  if (!value) return "";
+  return format(parseISO(`${value}T12:00:00`), "d MMM");
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getPeriodDayCount(start: string, end: string, today = format(new Date(), "yyyy-MM-dd")) {
+  if (!start) return 1;
+  const startDate = parseISO(`${start}T12:00:00`);
+  const fallbackEnd = parseISO(`${today}T12:00:00`) < startDate ? start : today;
+  const endDate = parseISO(`${end || fallbackEnd}T12:00:00`);
+  const days = differenceInCalendarDays(endDate, startDate) + 1;
+  return clampNumber(Number.isFinite(days) ? days : 5, 1, PERIOD_DAY_LIMIT);
+}
+
+function createPeriodDayDetail(day: number, start: string): PeriodDayDetail {
+  const date = start ? format(addDays(parseISO(`${start}T12:00:00`), day - 1), "yyyy-MM-dd") : null;
+  return {
+    day,
+    date,
+    flowLevel: null,
+    pain: null,
+    energy: null,
+    mood: null,
+    symptoms: [],
+    notes: null,
+  };
+}
+
+function hasPeriodDaySignal(detail: PeriodDayDetail) {
+  return Boolean(detail.flowLevel || detail.pain !== null || detail.energy !== null || detail.mood || detail.symptoms.length || detail.notes?.trim());
+}
+
+function splitCsv(value: string | null) {
+  return (value || "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
 function clean(text: string) {
   return text.replace(/\*\*/g, "").replace(/\*/g, "").replace(/^#+\s*/gm, "").replace(/^[-–]\s/gm, "").trim();
 }
@@ -233,6 +314,7 @@ export default function CyclePlannerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showLog, setShowLog] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [month, setMonth] = useState(startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [advice, setAdvice] = useState("");
@@ -245,7 +327,11 @@ export default function CyclePlannerPage() {
   const [logMood, setLogMood] = useState("NORMAL");
   const [logSymptoms, setLogSymptoms] = useState<string[]>([]);
   const [logNotes, setLogNotes] = useState("");
+  const [logDayDetails, setLogDayDetails] = useState<PeriodDayDetail[]>(() =>
+    Array.from({ length: 1 }, (_, index) => createPeriodDayDetail(index + 1, format(new Date(), "yyyy-MM-dd")))
+  );
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchCycle = useCallback(async () => {
     setLoading(true);
@@ -265,6 +351,21 @@ export default function CyclePlannerPage() {
   useEffect(() => {
     fetchCycle();
   }, [fetchCycle]);
+
+  useEffect(() => {
+    setLogDayDetails((current) =>
+      Array.from({ length: getPeriodDayCount(logStart, logEnd) }, (_, index) => {
+        const day = index + 1;
+        const previous = current.find((detail) => detail.day === day);
+        return {
+          ...createPeriodDayDetail(day, logStart),
+          ...previous,
+          day,
+          date: logStart ? format(addDays(parseISO(`${logStart}T12:00:00`), index), "yyyy-MM-dd") : null,
+        };
+      })
+    );
+  }, [logStart, logEnd]);
 
   const daysByDate = useMemo(() => {
     const map = new Map<string, CycleCalendarDay>();
@@ -289,35 +390,117 @@ export default function CyclePlannerPage() {
       : `${displayDate(data.predictedStart)} with window ${displayDate(data.predictedWindowStart)} to ${displayDate(data.predictedWindowEnd)}`
     : "Log cycle starts to unlock prediction.";
 
+  const resetLogForm = () => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    setEditingLogId(null);
+    setLogStart(today);
+    setLogEnd("");
+    setLogFlow("MODERATE");
+    setLogMood("NORMAL");
+    setLogSymptoms([]);
+    setLogNotes("");
+    setLogDayDetails(Array.from({ length: 1 }, (_, index) => createPeriodDayDetail(index + 1, today)));
+  };
+
+  const openNewLog = () => {
+    resetLogForm();
+    setShowLog(true);
+  };
+
+  const openEditLog = (log: CycleLog) => {
+    const baseCount = getPeriodDayCount(log.startDate, log.endDate || "");
+    const detailCount = log.dayDetails.reduce((max, detail) => Math.max(max, detail.day), 0);
+    const count = clampNumber(Math.max(baseCount, detailCount, 1), 1, PERIOD_DAY_LIMIT);
+
+    setEditingLogId(log.id);
+    setLogStart(log.startDate);
+    setLogEnd(log.endDate || "");
+    setLogFlow(log.flowLevel || "MODERATE");
+    setLogMood(log.mood || "NORMAL");
+    setLogSymptoms(splitCsv(log.symptoms));
+    setLogNotes(log.notes || "");
+    setLogDayDetails(
+      Array.from({ length: count }, (_, index) => {
+        const day = index + 1;
+        const existing = log.dayDetails.find((detail) => detail.day === day);
+        return {
+          ...createPeriodDayDetail(day, log.startDate),
+          ...existing,
+          day,
+          date: format(addDays(parseISO(`${log.startDate}T12:00:00`), index), "yyyy-MM-dd"),
+        };
+      })
+    );
+    setShowLog(true);
+  };
+
+  const editSelectedPeriod = () => {
+    if (!selectedDay?.cycleEntryId || !data) return;
+    const log = data.logs.find((item) => item.id === selectedDay.cycleEntryId);
+    if (log) openEditLog(log);
+  };
+
+  const updatePeriodDay = (day: number, patch: Partial<PeriodDayDetail>) => {
+    setLogDayDetails((current) =>
+      current.map((detail) => detail.day === day ? { ...detail, ...patch } : detail)
+    );
+  };
+
   const saveLog = async () => {
     setSaving(true);
     setError("");
     try {
+      const method = editingLogId ? "PATCH" : "POST";
       const res = await fetch("/api/cycle", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...(editingLogId ? { id: editingLogId } : {}),
           startDate: logStart,
           endDate: logEnd || null,
           flowLevel: logFlow,
           mood: logMood,
           symptoms: logSymptoms.join(", ") || null,
           notes: logNotes || null,
+          dayDetails: logDayDetails.filter(hasPeriodDaySignal),
         }),
       });
       const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || "Unable to save cycle log");
+      if (!res.ok) throw new Error(payload.error || "Unable to sync cycle log");
       setData(payload.intelligence);
       setSelectedDate(logStart);
       setMonth(startOfMonth(parseISO(`${logStart}T12:00:00`)));
       setShowLog(false);
-      setLogEnd("");
-      setLogNotes("");
-      setLogSymptoms([]);
+      setAdvice("");
+      setAdviceModel("");
+      resetLogForm();
     } catch (err) {
       setError(String(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteLog = async () => {
+    if (!editingLogId) return;
+    const confirmed = window.confirm("Delete this period log permanently?");
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/cycle?id=${encodeURIComponent(editingLogId)}`, { method: "DELETE" });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "Unable to delete cycle log");
+      setData(payload.intelligence);
+      setShowLog(false);
+      setAdvice("");
+      setAdviceModel("");
+      resetLogForm();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -328,7 +511,7 @@ export default function CyclePlannerPage() {
     setAdviceModel("");
     setError("");
 
-    const prompt = `Use this private cycle intelligence JSON to create a NEET study plan for today. Do not diagnose medical conditions. Do not claim exact ovulation. Use the prediction confidence honestly.
+    const prompt = `Use this private cycle intelligence JSON to create a NEET study plan for today. Align the advice with the prediction evidence, period-day details, health signals, and confidence. Do not diagnose medical conditions or prescribe treatment. Do not claim exact ovulation. Be practical, direct, and specific; mention clinician support when red-flag symptoms are severe, new, or disruptive.
 
 ${JSON.stringify(
   {
@@ -341,6 +524,9 @@ ${JSON.stringify(
     confidenceLabel: data.confidenceLabel,
     averageCycleLength: data.averageCycleLength,
     cycleVariability: data.cycleVariability,
+    predictionQuality: data.predictionQuality,
+    healthSignals: data.healthSignals,
+    evidence: data.evidence,
     studySignals: data.studySignals,
     lastLogs: data.logs.slice(0, 6),
   },
@@ -414,7 +600,7 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
               <RefreshCw size={14} className={loading ? "spin" : ""} />
               Refresh
             </button>
-            <button className="btn btn-primary btn-sm" onClick={() => setShowLog((value) => !value)} type="button">
+            <button className="btn btn-primary btn-sm" onClick={openNewLog} type="button">
               <Plus size={14} />
               Log Period
             </button>
@@ -489,14 +675,55 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
               </div>
             </section>
 
+            <section className="intelligence-strip">
+              <article className="glass-card intel-card">
+                <div className="intel-top">
+                  <TrendingUp size={16} />
+                  <span>Prediction Quality</span>
+                </div>
+                <strong>{data.predictionQuality.averageMissDays === null ? "Learning" : `+/- ${data.predictionQuality.averageMissDays} days`}</strong>
+                <p>
+                  {data.predictionQuality.backtestedCycles
+                    ? `Backtested on ${data.predictionQuality.backtestedCycles} previous cycle${data.predictionQuality.backtestedCycles === 1 ? "" : "s"}.`
+                    : "More completed cycles will unlock measured accuracy."}
+                  {data.predictionQuality.ignoredOutliers.length ? ` Ignored outlier lengths: ${data.predictionQuality.ignoredOutliers.join(", ")}.` : ""}
+                </p>
+              </article>
+
+              <article className="glass-card intel-card">
+                <div className="intel-top">
+                  <Heart size={16} />
+                  <span>Period Health Pattern</span>
+                </div>
+                <strong>{data.healthSignals.cycleRegularity}</strong>
+                <p>{data.healthSignals.periodLengthPattern}. {data.healthSignals.flowPattern}.</p>
+              </article>
+
+              <article className="glass-card intel-card">
+                <div className="intel-top">
+                  <Activity size={16} />
+                  <span>Day Details</span>
+                </div>
+                <strong>{data.healthSignals.detailDaysLogged} days logged</strong>
+                <p>
+                  Pain {data.healthSignals.averagePain ?? "?"}/10, symptom burden {data.healthSignals.symptomBurden}.
+                  {data.evidence.dataNeeded[0] ? ` Next: ${data.evidence.dataNeeded[0]}` : " The model has enough detail for richer analysis."}
+                </p>
+              </article>
+            </section>
+
             {showLog && (
               <section className="glass-card log-panel">
                 <div className="panel-head">
                   <div>
-                    <h2>Log Period Window</h2>
-                    <p>Start date is required. End date improves prediction precision.</p>
+                    <h2>{editingLogId ? "Edit Period Window" : "Log Period Window"}</h2>
+                    <p>
+                      {editingLogId
+                        ? "Update start, end, flow, and each known day. Saving immediately retrains the prediction."
+                        : "Start with today's known detail. Add later days when they actually happen."}
+                    </p>
                   </div>
-                  <Lock size={17} />
+                  {editingLogId ? <Pencil size={17} /> : <Lock size={17} />}
                 </div>
 
                 <div className="log-grid">
@@ -538,6 +765,72 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                   </div>
                 </div>
 
+                <div className="period-days-wrap">
+                  <div className="period-days-head">
+                    <div>
+                      <span>Optional day-by-day period detail</span>
+                      <p>Only known days are shown for active periods. Set the end date later to close the window or edit older logs fully.</p>
+                    </div>
+                    <small>{logEnd ? `${logDayDetails.length} day period` : `${logDayDetails.length} known day${logDayDetails.length === 1 ? "" : "s"}`}</small>
+                  </div>
+
+                  <div className="period-day-list">
+                    {logDayDetails.map((detail) => (
+                      <div key={detail.day} className="period-day-row">
+                        <div className="period-day-title">
+                          <strong>Day {detail.day}</strong>
+                          <span>{compactDate(detail.date)}</span>
+                        </div>
+
+                        <label>
+                          <span>Flow</span>
+                          <select className="input select" value={detail.flowLevel ?? ""} onChange={(event) => updatePeriodDay(detail.day, { flowLevel: event.target.value || null })}>
+                            <option value="">Skip</option>
+                            {FLOW_LEVELS.map((flow) => <option key={flow}>{flow}</option>)}
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>Pain</span>
+                          <select className="input select" value={detail.pain ?? ""} onChange={(event) => updatePeriodDay(detail.day, { pain: event.target.value ? Number(event.target.value) : null })}>
+                            <option value="">Skip</option>
+                            {Array.from({ length: 11 }, (_, value) => <option key={value} value={value}>{value}/10</option>)}
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>Energy</span>
+                          <select className="input select" value={detail.energy ?? ""} onChange={(event) => updatePeriodDay(detail.day, { energy: event.target.value ? Number(event.target.value) : null })}>
+                            <option value="">Skip</option>
+                            {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}/10</option>)}
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>Mood</span>
+                          <select className="input select" value={detail.mood ?? ""} onChange={(event) => updatePeriodDay(detail.day, { mood: event.target.value || null })}>
+                            <option value="">Skip</option>
+                            {CYCLE_MOODS.map((mood) => <option key={mood}>{mood}</option>)}
+                          </select>
+                        </label>
+
+                        <label className="period-day-notes">
+                          <span>Symptoms / notes</span>
+                          <input
+                            className="input"
+                            value={[...detail.symptoms, detail.notes].filter(Boolean).join(", ")}
+                            onChange={(event) => {
+                              const parts = event.target.value.split(",").map((item) => item.trim()).filter(Boolean);
+                              updatePeriodDay(detail.day, { symptoms: parts.slice(0, 6), notes: parts.length > 6 ? parts.slice(6).join(", ") : null });
+                            }}
+                            placeholder="cramps, fatigue..."
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <label className="notes-label">
                   <span>Notes</span>
                   <textarea className="input" value={logNotes} onChange={(event) => setLogNotes(event.target.value)} placeholder="Pain, sleep, cravings, study impact, medicines, or anything worth remembering." />
@@ -545,9 +838,15 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
 
                 <div className="log-actions">
                   <button className="btn btn-primary btn-sm" onClick={saveLog} disabled={saving} type="button">
-                    {saving ? "Saving..." : "Save Private Log"}
+                    {saving ? "Syncing..." : editingLogId ? "Save Changes" : "Save Private Log"}
                   </button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setShowLog(false)} type="button">Cancel</button>
+                  {editingLogId && (
+                    <button className="btn btn-ghost btn-sm danger-action" onClick={deleteLog} disabled={deleting || saving} type="button">
+                      <Trash2 size={14} />
+                      {deleting ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setShowLog(false); resetLogForm(); }} type="button">Cancel</button>
                 </div>
               </section>
             )}
@@ -642,10 +941,24 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                           <strong>{selectedDay.flowLevel}</strong>
                         </div>
                       )}
+                      {selectedDay.periodDayDetail && (
+                        <>
+                          <div className="detail-row">
+                            <span>Period Day Detail</span>
+                            <strong>Day {selectedDay.periodDayDetail.day}</strong>
+                          </div>
+                          {(selectedDay.periodDayDetail.pain !== null || selectedDay.periodDayDetail.energy !== null) && (
+                            <div className="mood-mini">
+                              {selectedDay.periodDayDetail.pain !== null && <span>Pain {selectedDay.periodDayDetail.pain}/10</span>}
+                              {selectedDay.periodDayDetail.energy !== null && <span>Energy {selectedDay.periodDayDetail.energy}/10</span>}
+                            </div>
+                          )}
+                        </>
+                      )}
                       {selectedDay.symptoms && (
                         <div className="detail-note">
                           <span>Symptoms</span>
-                          <p>{selectedDay.symptoms}</p>
+                          <p>{[selectedDay.symptoms, selectedDay.periodDayDetail?.notes].filter(Boolean).join(" | ")}</p>
                         </div>
                       )}
                       {selectedDay.mood && (
@@ -660,6 +973,12 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                             <span>Stress {selectedDay.mood.stress}</span>
                           </div>
                         </div>
+                      )}
+                      {selectedDay.cycleEntryId && (
+                        <button className="btn btn-glass btn-sm edit-period-btn" onClick={editSelectedPeriod} type="button">
+                          <Pencil size={14} />
+                          Edit This Period
+                        </button>
                       )}
                     </div>
                   ) : (
@@ -692,6 +1011,16 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                     </div>
                   </div>
                 </div>
+
+                <div className="glass-card health-card">
+                  <h3>Wellness Signals</h3>
+                  <p>{data.healthSignals.insight}</p>
+                  {data.healthSignals.redFlags.length > 0 && (
+                    <div className="red-flag-list">
+                      {data.healthSignals.redFlags.slice(0, 3).map((flag) => <span key={flag}>{flag}</span>)}
+                    </div>
+                  )}
+                </div>
               </aside>
             </section>
 
@@ -711,8 +1040,13 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                   ) : data.logs.slice(0, 10).map((log) => (
                     <div key={log.id} className="history-row">
                       <div className="history-date">
-                        <strong>{displayDate(log.startDate)}</strong>
-                        <span>{log.endDate ? `Ended ${displayDate(log.endDate)}` : "End date not logged"}</span>
+                        <div>
+                          <strong>{displayDate(log.startDate)}</strong>
+                          <span>{log.endDate ? `Ended ${displayDate(log.endDate)}` : "End date not logged"}</span>
+                        </div>
+                        <button className="icon-btn history-edit-btn" onClick={() => openEditLog(log)} type="button" aria-label={`Edit period starting ${displayDate(log.startDate)}`}>
+                          <Pencil size={15} />
+                        </button>
                       </div>
                       <div className="history-meta">
                         <span>{log.flowLevel}</span>
@@ -722,6 +1056,17 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                       </div>
                       {(log.symptoms || log.notes) && (
                         <p>{[log.symptoms, log.notes].filter(Boolean).join(" | ")}</p>
+                      )}
+                      {log.dayDetails.length > 0 && (
+                        <div className="day-detail-pills">
+                          {log.dayDetails.slice(0, 5).map((detail) => (
+                            <span key={detail.day}>
+                              D{detail.day}
+                              {detail.flowLevel ? ` ${detail.flowLevel}` : ""}
+                              {detail.pain !== null ? ` pain ${detail.pain}` : ""}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
                   ))}
@@ -948,6 +1293,48 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           margin-bottom: 20px;
         }
 
+        .intelligence-strip {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin-bottom: 20px;
+        }
+
+        .intel-card {
+          padding: 18px;
+          border-radius: 22px;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)),
+            rgba(14, 14, 18, 0.66);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .intel-top {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          margin-bottom: 10px;
+        }
+
+        .intel-card strong {
+          display: block;
+          color: var(--text-primary);
+          font-size: 20px;
+          text-transform: capitalize;
+          margin-bottom: 7px;
+        }
+
+        .intel-card p {
+          color: var(--text-secondary);
+          font-size: 12.5px;
+          line-height: 1.62;
+        }
+
         .cycle-phase-card {
           display: grid;
           grid-template-columns: auto minmax(0, 1fr) minmax(260px, 420px);
@@ -1094,6 +1481,7 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
         }
 
         .symptom-wrap,
+        .period-days-wrap,
         .notes-label {
           margin-top: 15px;
         }
@@ -1126,9 +1514,94 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           resize: vertical;
         }
 
+        .period-days-wrap {
+          padding: 15px;
+          border-radius: 20px;
+          background: rgba(255,255,255,0.035);
+          border: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .period-days-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 14px;
+          margin-bottom: 13px;
+        }
+
+        .period-days-head span,
+        .period-day-row label span {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .period-days-head p {
+          margin-top: 6px;
+          color: var(--text-secondary);
+          font-size: 12.5px;
+          line-height: 1.55;
+        }
+
+        .period-days-head small {
+          flex-shrink: 0;
+          padding: 6px 9px;
+          border-radius: 999px;
+          color: var(--rose-bright);
+          background: rgba(232,114,138,0.10);
+          border: 1px solid rgba(232,114,138,0.18);
+          font-size: 11px;
+          font-weight: 750;
+        }
+
+        .period-day-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .period-day-row {
+          display: grid;
+          grid-template-columns: 92px repeat(4, minmax(86px, 0.7fr)) minmax(160px, 1.3fr);
+          gap: 10px;
+          align-items: end;
+          padding: 12px;
+          border-radius: 17px;
+          background: rgba(255,255,255,0.035);
+          border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .period-day-title strong {
+          display: block;
+          color: var(--text-primary);
+          font-size: 13px;
+          margin-bottom: 4px;
+        }
+
+        .period-day-title span {
+          color: var(--text-muted);
+          font-size: 11px;
+        }
+
+        .period-day-row label {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 0;
+        }
+
         .log-actions {
           gap: 9px;
           margin-top: 16px;
+          flex-wrap: wrap;
+        }
+
+        .danger-action {
+          color: var(--danger);
+          border-color: hsla(0,72%,62%,0.24);
+          background: hsla(0,72%,62%,0.08);
         }
 
         .calendar-layout {
@@ -1373,6 +1846,12 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           font-size: 11px;
         }
 
+        .edit-period-btn {
+          justify-content: center;
+          width: 100%;
+          margin-top: 2px;
+        }
+
         .privacy-card {
           display: flex;
           gap: 13px;
@@ -1413,6 +1892,35 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           line-height: 1.5;
         }
 
+        .health-card h3 {
+          margin: 0 0 8px;
+          font-size: 16px;
+        }
+
+        .health-card p {
+          color: var(--text-secondary);
+          font-size: 12.8px;
+          line-height: 1.62;
+        }
+
+        .red-flag-list,
+        .day-detail-pills {
+          display: flex;
+          gap: 7px;
+          flex-wrap: wrap;
+          margin-top: 10px;
+        }
+
+        .red-flag-list span {
+          padding: 6px 8px;
+          border-radius: 999px;
+          color: var(--warning);
+          background: hsla(42,90%,62%,0.10);
+          border: 1px solid hsla(42,90%,62%,0.18);
+          font-size: 11px;
+          line-height: 1.35;
+        }
+
         .history-ai-grid {
           grid-template-columns: minmax(0, 0.92fr) minmax(360px, 0.7fr);
           align-items: start;
@@ -1440,6 +1948,18 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           flex-wrap: wrap;
         }
 
+        .history-date > div {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .history-edit-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 12px;
+        }
+
         .history-date strong {
           font-size: 14px;
         }
@@ -1465,6 +1985,16 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           color: var(--text-secondary);
           font-size: 12.5px;
           line-height: 1.6;
+        }
+
+        .day-detail-pills span {
+          padding: 5px 8px;
+          border-radius: 999px;
+          color: var(--rose-bright);
+          background: rgba(232,114,138,0.09);
+          border: 1px solid rgba(232,114,138,0.16);
+          font-size: 11px;
+          font-weight: 700;
         }
 
         .ai-card {
@@ -1707,7 +2237,8 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
         }
 
         @media (max-width: 1180px) {
-          .prediction-grid {
+          .prediction-grid,
+          .intelligence-strip {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
@@ -1718,7 +2249,15 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
 
           .side-stack {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .period-day-row {
+            grid-template-columns: 88px repeat(2, minmax(120px, 1fr));
+          }
+
+          .period-day-notes {
+            grid-column: 2 / -1;
           }
         }
 
@@ -1736,6 +2275,15 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
             grid-template-columns: 1fr;
           }
 
+          .period-day-row {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .period-day-title,
+          .period-day-notes {
+            grid-column: 1 / -1;
+          }
+
           .calendar-day {
             min-height: 74px;
             border-radius: 14px;
@@ -1748,7 +2296,8 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
         }
 
         @media (max-width: 620px) {
-          .prediction-grid {
+          .prediction-grid,
+          .intelligence-strip {
             grid-template-columns: 1fr;
           }
 
@@ -1844,6 +2393,13 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           box-shadow: 0 8px 28px rgba(0,0,0,0.06);
         }
 
+        :global(html[data-theme="light"]) .intel-card,
+        :global(html[data-theme="light"]) .period-days-wrap,
+        :global(html[data-theme="light"]) .period-day-row {
+          background: rgba(255,255,255,0.82);
+          border-color: rgba(70,45,24,0.09);
+        }
+
         :global(html[data-theme="light"]) .metric-top {
           color: hsla(31, 22%, 28%, 0.52);
         }
@@ -1916,6 +2472,10 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
         :global(html[data-theme="light"]) .signal-list div {
           background: rgba(70,45,24,0.04);
           border-color: rgba(70,45,24,0.08);
+        }
+
+        :global(html[data-theme="light"]) .health-card p {
+          color: hsla(31, 22%, 18%, 0.72);
         }
 
         :global(html[data-theme="light"]) .history-row {

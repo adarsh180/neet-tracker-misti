@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Serif_Devanagari, Playfair_Display } from "next/font/google";
+import Script from "next/script";
 import ThemeToggle from "@/components/theme-toggle";
 import "./globals.css";
 
@@ -42,7 +43,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <meta name="theme-color" content="#050508" />
-        <script
+        <Script
+          id="theme-bootstrap"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {

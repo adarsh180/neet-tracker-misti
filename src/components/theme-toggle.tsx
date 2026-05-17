@@ -29,13 +29,22 @@ function readTheme(): ThemeMode {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>(() => readTheme());
+  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    const initialTheme = readTheme();
+    setTheme(initialTheme);
+    setMounted(true);
+    applyTheme(initialTheme);
+  }, []);
 
-  const nextTheme = theme === "dark" ? "light" : "dark";
+  useEffect(() => {
+    if (mounted) applyTheme(theme);
+  }, [mounted, theme]);
+
+  const renderedTheme = mounted ? theme : "dark";
+  const nextTheme = renderedTheme === "dark" ? "light" : "dark";
 
   return (
     <button
@@ -50,9 +59,9 @@ export default function ThemeToggle() {
       suppressHydrationWarning
     >
       <span className="theme-toggle-icon" aria-hidden="true">
-        {theme === "light" ? <Sun size={18} /> : <Moon size={18} />}
+        {renderedTheme === "light" ? <Sun size={18} /> : <Moon size={18} />}
       </span>
-      <span>{theme === "light" ? "Light" : "Dark"}</span>
+      <span>{renderedTheme === "light" ? "Light" : "Dark"}</span>
 
       <style jsx>{`
         .theme-toggle {

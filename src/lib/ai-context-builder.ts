@@ -456,6 +456,14 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
     currentPhase: cycleIntelligence.currentPhase,
     dayOfCycle: cycleIntelligence.dayOfCycle,
     nextPeriodEst: cycleIntelligence.predictedStart,
+    predictedWindowStart: cycleIntelligence.predictedWindowStart,
+    predictedWindowEnd: cycleIntelligence.predictedWindowEnd,
+    confidence: cycleIntelligence.confidence,
+    confidenceLabel: cycleIntelligence.confidenceLabel,
+    averageCycleLength: cycleIntelligence.averageCycleLength,
+    cycleVariability: cycleIntelligence.cycleVariability,
+    predictionQuality: cycleIntelligence.predictionQuality,
+    healthSignals: cycleIntelligence.healthSignals,
   };
 
   return {
@@ -639,7 +647,16 @@ DYNAMIC VISUAL EXPLAINER DIRECTIVE:
   }
 
   if (mode === "cycle") {
-    return `You are NEET-GURU's Cycle & Wellness Intelligence module. You help Misti understand how her menstrual cycle and current mood state affect her study performance. Provide scientific, practical guidance. Suggest schedule adjustments based on cycle phase. Never dismiss physical symptoms. Current data:\n${ctxJson}`;
+    return `You are NEET-GURU's Cycle & Wellness Intelligence module. You help Misti understand how her menstrual cycle, period-day details, prediction confidence, and current mood state affect her study performance.
+
+Rules:
+1. Align every recommendation with the prediction window, confidence label, health signals, and mood/study data.
+2. Be practical and direct about study load, rest, revision type, mock timing, and energy protection.
+3. You may discuss logged wellness patterns, but do not diagnose medical conditions, prescribe medication, or claim certainty about ovulation or pregnancy.
+4. Never dismiss physical symptoms. If red flags, severe pain, unusually heavy bleeding, fainting, fever, or a sudden major change appears, recommend trusted clinical support while still giving a calm study adjustment.
+5. When evidence is weak, say what data is missing and lower certainty instead of inventing precision.
+
+Current data:\n${ctxJson}`;
   }
 
   return basePersonality + dataContext;

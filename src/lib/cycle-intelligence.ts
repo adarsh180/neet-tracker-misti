@@ -9,6 +9,7 @@ type CycleRow = {
   symptoms: string | null;
   mood: string | null;
   notes: string | null;
+  dayDetails: unknown | null;
   createdAt: Date;
 };
 
@@ -39,6 +40,7 @@ export type CycleCalendarDay = {
   kinds: CalendarDayKind[];
   flowLevel?: string | null;
   symptoms?: string | null;
+  periodDayDetail?: PeriodDayDetail | null;
   cycleEntryId?: string | null;
   mood?: {
     mood: string;
@@ -47,6 +49,17 @@ export type CycleCalendarDay = {
     stress: number;
     note: string | null;
   } | null;
+};
+
+export type PeriodDayDetail = {
+  day: number;
+  date: string | null;
+  flowLevel: string | null;
+  pain: number | null;
+  energy: number | null;
+  mood: string | null;
+  symptoms: string[];
+  notes: string | null;
 };
 
 export type CycleIntelligence = {
@@ -75,8 +88,31 @@ export type CycleIntelligence = {
     cycleCount: number;
     completedCycleCount: number;
     moodEntriesMapped: number;
+    periodDayDetailCount: number;
+    ignoredOutliers: number[];
+    recentTrendDays: number;
+    accuracyMeanErrorDays: number | null;
+    dataNeeded: string[];
     method: string;
     privacy: string;
+  };
+  predictionQuality: {
+    averageMissDays: number | null;
+    backtestedCycles: number;
+    ignoredOutliers: number[];
+    recentTrendDays: number;
+    modelBlend: string;
+  };
+  healthSignals: {
+    cycleRegularity: "learning" | "regular" | "variable" | "irregular";
+    periodLengthPattern: string;
+    flowPattern: string;
+    symptomBurden: "learning" | "low" | "moderate" | "high";
+    averagePain: number | null;
+    heavyFlowDaysAverage: number | null;
+    detailDaysLogged: number;
+    redFlags: string[];
+    insight: string;
   };
   studySignals: {
     avgEnergy: number | null;
@@ -97,6 +133,7 @@ export type CycleIntelligence = {
     notes: string | null;
     lengthFromPrevious: number | null;
     periodDays: number | null;
+    dayDetails: PeriodDayDetail[];
   }[];
   calendar: CycleCalendarDay[];
 };
@@ -146,6 +183,122 @@ function variability(values: number[]) {
   return Math.max(1, median(deviations) * 1.4826);
 }
 
+function round1(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function normalizePeriodDayDetails(value: unknown): PeriodDayDetail[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const day = typeof row.day === "number" ? row.day : Number(row.day);
+      if (!Number.isFinite(day) || day < 1 || day > 12) return null;
+
+      const symptoms = Array.isArray(row.symptoms)
+        ? row.symptoms.filter((symptom): symptom is string => typeof symptom === "string").map((symptom) => symptom.trim()).filter(Boolean)
+        : typeof row.symptoms === "string"
+          ? row.symptoms.split(",").map((symptom) => symptom.trim()).filter(Boolean)
+          : [];
+
+      const pain = typeof row.pain === "number" ? row.pain : Number(row.pain);
+      const energy = typeof row.energy === "number" ? row.energy : Number(row.energy);
+
+      return {
+        day: Math.round(day),
+        date: typeof row.date === "string" && row.date ? row.date : null,
+        flowLevel: typeof row.flowLevel === "string" && row.flowLevel ? row.flowLevel : null,
+        pain: Number.isFinite(pain) ? clamp(Math.round(pain), 0, 10) : null,
+        energy: Number.isFinite(energy) ? clamp(Math.round(energy), 1, 10) : null,
+        mood: typeof row.mood === "string" && row.mood ? row.mood : null,
+        symptoms: [...new Set(symptoms)].slice(0, 10),
+        notes: typeof row.notes === "string" && row.notes ? row.notes.slice(0, 360) : null,
+      };
+    })
+    .filter((item): item is PeriodDayDetail => Boolean(item))
+    .sort((a, b) => a.day - b.day);
+}
+
+function getDayDetails(entry: CycleRow) {
+  return normalizePeriodDayDetails(entry.dayDetails);
+}
+
+function buildCycleModel(lengths: number[]) {
+  const valid = lengths.filter((days) => days >= 15 && days <= 60);
+  if (!valid.length) {
+    return {
+      usableLengths: [] as number[],
+      ignoredOutliers: [] as number[],
+      recentTrendDays: 0,
+      predictedLength: 28,
+      variation: 5,
+    };
+  }
+
+  const center = median(valid);
+  const spread = variability(valid);
+  const outlierThreshold = Math.max(7, spread * 2.6);
+  const usableLengths = valid.length >= 4 ? valid.filter((days) => Math.abs(days - center) <= outlierThreshold) : valid;
+  const ignoredOutliers = valid.filter((days) => !usableLengths.includes(days));
+  const modelLengths = usableLengths.length >= 2 ? usableLengths : valid;
+  const recent = modelLengths.slice(-3);
+  const earlier = modelLengths.slice(0, -3);
+  const recentTrendDays = earlier.length >= 2 ? round1(clamp(average(recent) - average(earlier), -4, 4)) : 0;
+  const weighted = weightedAverageRecent(modelLengths);
+  const robustCenter = median(modelLengths);
+  const recentCenter = median(recent);
+  const blended = (weighted * 0.54) + (robustCenter * 0.28) + (recentCenter * 0.18) + (recentTrendDays * 0.25);
+
+  return {
+    usableLengths: modelLengths,
+    ignoredOutliers,
+    recentTrendDays,
+    predictedLength: clamp(blended, 21, 45),
+    variation: variability(modelLengths),
+  };
+}
+
+function backtestPredictionAccuracy(ascEntries: CycleRow[]) {
+  const errors: number[] = [];
+
+  for (let targetIndex = 3; targetIndex < ascEntries.length; targetIndex += 1) {
+    const trainingLengths = ascEntries
+      .slice(1, targetIndex)
+      .map((entry, index) => differenceInCalendarDays(dateOnly(entry.startDate), dateOnly(ascEntries[index].startDate)))
+      .filter((days) => days >= 15 && days <= 60);
+
+    if (trainingLengths.length < 2) continue;
+
+    const previousStart = dateOnly(ascEntries[targetIndex - 1].startDate);
+    const actualStart = dateOnly(ascEntries[targetIndex].startDate);
+    const model = buildCycleModel(trainingLengths);
+    const predictedStart = addDays(previousStart, Math.round(model.predictedLength));
+    errors.push(Math.abs(differenceInCalendarDays(actualStart, predictedStart)));
+  }
+
+  const recentErrors = errors.slice(-8);
+  return {
+    errors: recentErrors,
+    averageMissDays: recentErrors.length ? round1(average(recentErrors)) : null,
+  };
+}
+
+function buildDataNeeded(input: {
+  completedCycleCount: number;
+  periodDayDetailCount: number;
+  logsWithEndDate: number;
+  backtestedCycles: number;
+}) {
+  const needed: string[] = [];
+  if (input.completedCycleCount < 6) needed.push("Log at least 6 completed cycles for a steadier personal rhythm.");
+  if (input.logsWithEndDate < 3) needed.push("Add end dates for at least 3 periods to learn real period length.");
+  if (input.periodDayDetailCount < 12) needed.push("Add Day 1, Day 2, Day 3 flow/pain/energy details for richer health patterns.");
+  if (input.backtestedCycles < 3) needed.push("More cycles are needed before the app can measure its own prediction accuracy.");
+  return needed;
+}
+
 function confidenceLabel(confidence: number): CycleIntelligence["confidenceLabel"] {
   if (confidence >= 78) return "High";
   if (confidence >= 56) return "Medium";
@@ -153,10 +306,12 @@ function confidenceLabel(confidence: number): CycleIntelligence["confidenceLabel
   return "Very low";
 }
 
-function buildConfidence(completedCycleCount: number, variation: number) {
+function buildConfidence(completedCycleCount: number, variation: number, averageMissDays: number | null, detailDays: number) {
   const dataScore = clamp(completedCycleCount / 8, 0, 1) * 72;
   const stabilityPenalty = clamp((variation - 2) * 5, 0, 30);
-  const confidence = Math.round(clamp(18 + dataScore - stabilityPenalty, 18, 92));
+  const accuracyPenalty = averageMissDays === null ? 6 : clamp((averageMissDays - 2) * 5, 0, 24);
+  const detailBonus = clamp(detailDays / 20, 0, 1) * 5;
+  const confidence = Math.round(clamp(18 + dataScore + detailBonus - stabilityPenalty - accuracyPenalty, 18, 94));
   return confidence;
 }
 
@@ -184,6 +339,69 @@ function getExpectedPeriodLength(entries: CycleRow[]) {
     .filter((days) => days >= 2 && days <= 10);
 
   return Math.round(clamp(median(durations) || 5, 3, 8));
+}
+
+function buildHealthSignals(input: {
+  entries: CycleRow[];
+  cycleLengths: number[];
+  usableCycleLengths: number[];
+  expectedPeriodLength: number;
+  cycleVariability: number;
+}): CycleIntelligence["healthSignals"] {
+  const details = input.entries.flatMap(getDayDetails);
+  const painValues = details.map((detail) => detail.pain).filter((pain): pain is number => typeof pain === "number");
+  const heavyDays = details.filter((detail) => detail.flowLevel === "HEAVY").length;
+  const periodsWithDetails = input.entries.filter((entry) => getDayDetails(entry).length > 0).length;
+  const symptomMentions = details.reduce((sum, detail) => sum + detail.symptoms.filter((symptom) => symptom.toLowerCase() !== "none").length, 0);
+  const avgPain = painValues.length ? round1(average(painValues)) : null;
+  const heavyFlowDaysAverage = periodsWithDetails ? round1(heavyDays / periodsWithDetails) : null;
+
+  let cycleRegularity: CycleIntelligence["healthSignals"]["cycleRegularity"] = "learning";
+  if (input.usableCycleLengths.length >= 3) {
+    cycleRegularity = input.cycleVariability <= 3 ? "regular" : input.cycleVariability <= 6 ? "variable" : "irregular";
+  }
+
+  let symptomBurden: CycleIntelligence["healthSignals"]["symptomBurden"] = "learning";
+  if (details.length >= 3) {
+    const burdenScore = (avgPain ?? 0) + (heavyFlowDaysAverage ?? 0) + symptomMentions / Math.max(1, periodsWithDetails);
+    symptomBurden = burdenScore >= 10 ? "high" : burdenScore >= 5 ? "moderate" : "low";
+  }
+
+  const periodLengths = input.entries
+    .filter((entry) => entry.endDate)
+    .map((entry) => differenceInCalendarDays(dateOnly(entry.endDate!), dateOnly(entry.startDate)) + 1)
+    .filter((days) => days > 0 && days <= 14);
+  const redFlags: string[] = [];
+  if (periodLengths.some((days) => days > 8)) redFlags.push("Periods longer than 8 days appear in the log.");
+  if (periodLengths.some((days) => days < 2)) redFlags.push("Very short bleeding windows appear in the log.");
+  if (input.cycleLengths.some((days) => days < 21 || days > 45)) redFlags.push("Some cycle lengths are outside the common 21-45 day range.");
+  if ((avgPain ?? 0) >= 8) redFlags.push("Pain has averaged very high on logged period days.");
+  if ((heavyFlowDaysAverage ?? 0) >= 2) redFlags.push("Heavy flow is appearing across multiple days per period.");
+
+  const periodLengthPattern = periodLengths.length
+    ? `${Math.round(median(periodLengths))} day median from ${periodLengths.length} logged end date${periodLengths.length === 1 ? "" : "s"}`
+    : "Learning from future end dates";
+  const flowPattern = details.length
+    ? `${heavyFlowDaysAverage ?? 0} heavy day${heavyFlowDaysAverage === 1 ? "" : "s"} per detailed period on average`
+    : "Add optional day-by-day flow for stronger pattern reading";
+
+  const insight = redFlags.length
+    ? "The model can guide study load, but these logged body signals deserve careful attention and clinical help if they feel severe, new, or disruptive."
+    : details.length
+      ? "Day-level details are now part of the intelligence layer, improving period length, workload, and wellness pattern analysis."
+      : "Prediction is active, but day-level period details will make the wellness analysis more personal.";
+
+  return {
+    cycleRegularity,
+    periodLengthPattern,
+    flowPattern,
+    symptomBurden,
+    averagePain: avgPain,
+    heavyFlowDaysAverage,
+    detailDaysLogged: details.length,
+    redFlags,
+    insight,
+  };
 }
 
 function findCycleForDate(date: Date, ascEntries: CycleRow[]) {
@@ -315,6 +533,9 @@ function buildCalendar(input: {
       const entryEnd = entry.endDate ? dateOnly(entry.endDate) : addDays(entryStart, expectedPeriodLength - 1);
       return isWithinInterval(cursor, { start: entryStart, end: entryEnd });
     });
+    const loggedDetail = loggedEntry
+      ? getDayDetails(loggedEntry).find((detail) => detail.date === key || detail.day === differenceInCalendarDays(cursor, dateOnly(loggedEntry.startDate)) + 1)
+      : null;
     const mood = moodByDate.get(key);
 
     if (loggedEntry) addKind(kinds, "logged-period");
@@ -344,8 +565,9 @@ function buildCalendar(input: {
       dayOfCycle: phase.dayOfCycle,
       phase: phase.phase,
       kinds,
-      flowLevel: loggedEntry?.flowLevel ?? null,
-      symptoms: loggedEntry?.symptoms ?? null,
+      flowLevel: loggedDetail?.flowLevel ?? loggedEntry?.flowLevel ?? null,
+      symptoms: loggedDetail?.symptoms.length ? loggedDetail.symptoms.join(", ") : loggedEntry?.symptoms ?? null,
+      periodDayDetail: loggedDetail ?? null,
       cycleEntryId: loggedEntry?.id ?? null,
       mood: mood
         ? {
@@ -380,18 +602,21 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
   const today = dateOnly(new Date());
   const last = entries[0] ?? null;
 
-  const cycleLengths = ascEntries
+  const rawCycleLengths = ascEntries
     .slice(1)
     .map((entry, index) => differenceInCalendarDays(dateOnly(entry.startDate), dateOnly(ascEntries[index].startDate)))
     .filter((days) => days >= 15 && days <= 60);
 
-  const completedCycleCount = cycleLengths.length;
-  const rawAverageLength = weightedAverageRecent(cycleLengths);
-  const averageCycleLength = Math.round(clamp(rawAverageLength, 21, 45));
-  const cycleVariability = Math.round(variability(cycleLengths) * 10) / 10;
+  const model = buildCycleModel(rawCycleLengths);
+  const completedCycleCount = rawCycleLengths.length;
+  const averageCycleLength = Math.round(model.predictedLength);
+  const cycleVariability = round1(model.variation);
   const expectedPeriodLength = getExpectedPeriodLength(entries);
-  const confidence = buildConfidence(completedCycleCount, cycleVariability);
-  const halfWindow = Math.round(clamp(Math.max(2, cycleVariability, completedCycleCount < 3 ? 5 : 2), 2, 8));
+  const backtest = backtestPredictionAccuracy(ascEntries);
+  const periodDayDetailCount = entries.reduce((sum, entry) => sum + getDayDetails(entry).length, 0);
+  const confidence = buildConfidence(completedCycleCount, cycleVariability, backtest.averageMissDays, periodDayDetailCount);
+  const accuracyWindow = backtest.averageMissDays ?? 0;
+  const halfWindow = Math.round(clamp(Math.max(2, cycleVariability, accuracyWindow, completedCycleCount < 3 ? 5 : 2), 2, 9));
 
   const lastStart = last ? dateOnly(last.startDate) : null;
   const lastEnd = last?.endDate ? dateOnly(last.endDate) : lastStart ? addDays(lastStart, expectedPeriodLength - 1) : null;
@@ -415,6 +640,19 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
   });
 
   const studySignals = buildStudySignals(moods as MoodRow[], ascEntries, entries);
+  const healthSignals = buildHealthSignals({
+    entries,
+    cycleLengths: rawCycleLengths,
+    usableCycleLengths: model.usableLengths,
+    expectedPeriodLength,
+    cycleVariability,
+  });
+  const dataNeeded = buildDataNeeded({
+    completedCycleCount,
+    periodDayDetailCount,
+    logsWithEndDate: entries.filter((entry) => entry.endDate).length,
+    backtestedCycles: backtest.errors.length,
+  });
   const calendar = buildCalendar({
     today,
     entries,
@@ -451,6 +689,7 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
       notes: entry.notes,
       lengthFromPrevious,
       periodDays,
+      dayDetails: getDayDetails(entry),
     };
   });
 
@@ -479,7 +718,7 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
     expectedPeriodLength,
     averageCycleLength,
     cycleVariability,
-    cycleLengths,
+    cycleLengths: rawCycleLengths,
     confidence,
     confidenceLabel: confidenceLabel(confidence),
     status,
@@ -489,9 +728,22 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
       cycleCount: entries.length,
       completedCycleCount,
       moodEntriesMapped: moods.length,
-      method: "Personalized deterministic model using only logged start dates, end dates, symptoms, and mood/focus signals.",
+      periodDayDetailCount,
+      ignoredOutliers: model.ignoredOutliers,
+      recentTrendDays: model.recentTrendDays,
+      accuracyMeanErrorDays: backtest.averageMissDays,
+      dataNeeded,
+      method: "Robust personalized model using weighted recency, median stability, outlier filtering, backtested error, period end dates, day-level flow/pain details, and mood/focus signals.",
       privacy: "Computed server-side for the signed-in private session only.",
     },
+    predictionQuality: {
+      averageMissDays: backtest.averageMissDays,
+      backtestedCycles: backtest.errors.length,
+      ignoredOutliers: model.ignoredOutliers,
+      recentTrendDays: model.recentTrendDays,
+      modelBlend: "54% recent-weighted average, 28% robust median, 18% recent median, with limited drift adjustment.",
+    },
+    healthSignals,
     studySignals,
     logs,
     calendar,

@@ -194,6 +194,7 @@ model CycleEntry {
   symptoms    String?   @db.Text
   mood        String?   // HAPPY, ANXIOUS, TIRED, NORMAL, CRAMPY
   notes       String?   @db.Text
+  dayDetails  Json?
   createdAt   DateTime  @default(now())
 
   @@index([userId, startDate])

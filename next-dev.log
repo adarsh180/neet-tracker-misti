@@ -1,0 +1,15 @@
+▲ Next.js 16.2.3 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env.local, .env
+✓ Ready in 1334ms
+Creating turbopack project { dir: 'E:\\projects\\neet-tracker', testMode: true }
+- Experiments (use with caution):
+  · serverActions
+  ✓ viewTransition
+
+ PATCH /api/cycle 200 in 434ms (next.js: 376ms, application-code: 58ms)
+ GET /ai-insights/cycle-planner 200 in 1719ms (next.js: 520ms, application-code: 1198ms)
+ GET /api/auth/session 200 in 97ms (next.js: 78ms, application-code: 20ms)
+ GET /api/cycle 200 in 2.5s (next.js: 8ms, application-code: 2.5s)
+ GET /api/cycle 200 in 2.7s (next.js: 18ms, application-code: 2.7s)
