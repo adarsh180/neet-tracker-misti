@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Serif_Devanagari, Playfair_Display } from "next/font/google";
+import ThemeToggle from "@/components/theme-toggle";
 import "./globals.css";
 
 const inter = Inter({
@@ -41,8 +42,32 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <meta name="theme-color" content="#050508" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem("neet-theme");
+                  var theme = stored === "light" || stored === "dark"
+                    ? stored
+                    : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+                  document.documentElement.dataset.theme = theme;
+                  document.documentElement.style.colorScheme = theme;
+                  var meta = document.querySelector('meta[name="theme-color"]');
+                  if (meta) meta.setAttribute("content", theme === "light" ? "#f8f1e7" : "#050508");
+                } catch (error) {
+                  document.documentElement.dataset.theme = "dark";
+                  document.documentElement.style.colorScheme = "dark";
+                }
+              })();
+            `,
+          }}
+        />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ThemeToggle />
+      </body>
     </html>
   );
 }

@@ -550,6 +550,84 @@ export default function QuickNav() {
           border-color: #d4a853;
         }
 
+        :global(html[data-theme="light"]) .nav-backdrop {
+          background:
+            radial-gradient(circle at 20% 20%, rgba(151, 97, 41, 0.10), transparent 28%),
+            radial-gradient(circle at 80% 80%, rgba(75, 133, 98, 0.10), transparent 24%),
+            rgba(250, 242, 229, 0.44);
+        }
+
+        :global(html[data-theme="light"]) .nav-panel {
+          background:
+            linear-gradient(145deg, rgba(255, 252, 245, 0.84), rgba(246, 235, 218, 0.74)),
+            rgba(255, 250, 240, 0.7);
+          border-color: rgba(83, 57, 35, 0.14);
+          box-shadow:
+            0 40px 80px rgba(83, 57, 35, 0.18),
+            inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        }
+
+        :global(html[data-theme="light"]) .nav-panel::before {
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.58), transparent 28%),
+            radial-gradient(circle at top left, rgba(212,168,83,0.16), transparent 35%),
+            radial-gradient(circle at bottom right, rgba(91,156,245,0.10), transparent 30%);
+        }
+
+        :global(html[data-theme="light"]) .nav-header,
+        :global(html[data-theme="light"]) .nav-footer {
+          border-color: rgba(83, 57, 35, 0.10);
+        }
+
+        :global(html[data-theme="light"]) .nav-footer {
+          background: rgba(83, 57, 35, 0.045);
+        }
+
+        :global(html[data-theme="light"]) .nav-title,
+        :global(html[data-theme="light"]) .user-name {
+          color: hsl(31, 30%, 13%);
+        }
+
+        :global(html[data-theme="light"]) .nav-subtitle,
+        :global(html[data-theme="light"]) .section-title,
+        :global(html[data-theme="light"]) .item-label,
+        :global(html[data-theme="light"]) .action-button,
+        :global(html[data-theme="light"]) .fab-toggle {
+          color: hsla(31, 22%, 22%, 0.68);
+        }
+
+        :global(html[data-theme="light"]) .item-container {
+          background: rgba(255, 255, 255, 0.48);
+          border-color: rgba(83, 57, 35, 0.10);
+          color: hsla(31, 22%, 22%, 0.72);
+        }
+
+        :global(html[data-theme="light"]) .item-container:hover,
+        :global(html[data-theme="light"]) .item-container.active {
+          background: rgba(255, 255, 255, 0.78);
+          border-color: var(--accent);
+          color: hsl(31, 30%, 13%);
+          box-shadow: 0 8px 20px rgba(83, 57, 35, 0.12);
+        }
+
+        :global(html[data-theme="light"]) .item-icon-wrapper {
+          background: rgba(83, 57, 35, 0.07);
+          color: hsla(31, 22%, 22%, 0.58);
+        }
+
+        :global(html[data-theme="light"]) .action-button,
+        :global(html[data-theme="light"]) .fab-toggle {
+          background: rgba(255, 250, 240, 0.84);
+          border-color: rgba(83, 57, 35, 0.14);
+          box-shadow: 0 12px 24px rgba(83, 57, 35, 0.14);
+        }
+
+        :global(html[data-theme="light"]) .fab-toggle:hover {
+          background: rgba(255, 255, 255, 0.92);
+          border-color: rgba(83, 57, 35, 0.22);
+          box-shadow: 0 16px 32px rgba(83, 57, 35, 0.18);
+        }
+
         @media (max-width: 600px) {
           .nav-shell {
             width: calc(100vw - 32px);

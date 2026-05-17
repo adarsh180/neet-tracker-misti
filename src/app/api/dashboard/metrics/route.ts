@@ -59,6 +59,7 @@ export async function GET() {
 
     const now = new Date();
     const sevenAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     const thirtyAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const dailyGoals = await db.dailyGoal.findMany({
@@ -138,7 +139,7 @@ export async function GET() {
     const overallPct = totalTopicsAll > 0 ? Math.round((completedTopicsAll / totalTopicsAll) * 100) : 0;
     const activeDays14 = new Set(
       allGoals
-        .filter((goal) => goal.date >= sevenAgo)
+        .filter((goal) => goal.date >= fourteenAgo)
         .map((goal) => goal.date.toISOString().split("T")[0])
     ).size;
     const recentHours7 = allGoals.filter((goal) => goal.date >= sevenAgo).reduce((sum, goal) => sum + goal.hoursStudied, 0);
