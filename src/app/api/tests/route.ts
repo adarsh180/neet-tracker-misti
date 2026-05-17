@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
+function optionalFloat(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function optionalInt(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.round(numeric) : null;
+}
+
+function optionalText(value: unknown) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text || null;
+}
+
 export async function GET() {
   try {
     const tests = await db.testRecord.findMany({
@@ -16,7 +34,35 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { subjectId, testType, testName, score, maxScore, rank, totalStudents, institute, takenAt, notes } = body;
+    const {
+      subjectId,
+      testType,
+      testName,
+      score,
+      maxScore,
+      rank,
+      totalStudents,
+      institute,
+      takenAt,
+      notes,
+      staminaDecay,
+      correctCount,
+      wrongCount,
+      skippedCount,
+      guessedCount,
+      negativeMarksLost,
+      physicsScore,
+      chemistryScore,
+      botanyScore,
+      zoologyScore,
+      physicsTimeMinutes,
+      chemistryTimeMinutes,
+      botanyTimeMinutes,
+      zoologyTimeMinutes,
+      difficultyLevel,
+      reliabilityLevel,
+      linkedErrorLogTestId,
+    } = body;
 
     const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100 * 10) / 10 : 0;
 
@@ -31,6 +77,23 @@ export async function POST(req: NextRequest) {
         rank: rank ? parseInt(rank) : null,
         totalStudents: totalStudents ? parseInt(totalStudents) : null,
         institute: institute || null,
+        staminaDecay: optionalInt(staminaDecay),
+        correctCount: optionalInt(correctCount),
+        wrongCount: optionalInt(wrongCount),
+        skippedCount: optionalInt(skippedCount),
+        guessedCount: optionalInt(guessedCount),
+        negativeMarksLost: optionalFloat(negativeMarksLost),
+        physicsScore: optionalFloat(physicsScore),
+        chemistryScore: optionalFloat(chemistryScore),
+        botanyScore: optionalFloat(botanyScore),
+        zoologyScore: optionalFloat(zoologyScore),
+        physicsTimeMinutes: optionalInt(physicsTimeMinutes),
+        chemistryTimeMinutes: optionalInt(chemistryTimeMinutes),
+        botanyTimeMinutes: optionalInt(botanyTimeMinutes),
+        zoologyTimeMinutes: optionalInt(zoologyTimeMinutes),
+        difficultyLevel: optionalText(difficultyLevel),
+        reliabilityLevel: optionalText(reliabilityLevel),
+        linkedErrorLogTestId: optionalText(linkedErrorLogTestId),
         takenAt: new Date(takenAt),
         notes: notes || null,
       },

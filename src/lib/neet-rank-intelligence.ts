@@ -197,21 +197,39 @@ function weightedAverage(items: { value: number; weight: number }[]) {
   return items.reduce((sum, item) => sum + item.value * item.weight, 0) / totalWeight;
 }
 
+function reliabilityWeight(level: string | null | undefined) {
+  if (level === "HIGH") return 1.15;
+  if (level === "LOW") return 0.7;
+  return 1;
+}
+
+function sectionScoreForSubject(test: AIContext["recentTests"][number], subject: SubjectName) {
+  const score = {
+    Physics: test.physicsScore,
+    Chemistry: test.chemistryScore,
+    Botany: test.botanyScore,
+    Zoology: test.zoologyScore,
+  }[subject];
+
+  if (score === null || score === undefined) return null;
+  return clamp((score / SUBJECT_MAX_MARKS[subject]) * 100, 0, 100);
+}
+
 function getSubjectTestSignal(context: AIContext, subject: SubjectName) {
   const directTests = context.recentTests.filter((test) => test.subjectName === subject);
   if (directTests.length) {
     return weightedAverage(directTests.map((test, index) => ({
       value: clamp(test.percentage, 0, 100),
-      weight: Math.max(1, 10 - index),
+      weight: Math.max(1, 10 - index) * reliabilityWeight(test.reliabilityLevel),
     })));
   }
 
   const fullLikeTests = context.recentTests.filter((test) => !test.subjectName || test.maxScore >= 500);
   if (!fullLikeTests.length) return 0;
   return weightedAverage(fullLikeTests.map((test, index) => ({
-    value: clamp(test.percentage, 0, 100),
-    weight: Math.max(1, 7 - index),
-  }))) * 0.65;
+    value: sectionScoreForSubject(test, subject) ?? clamp(test.percentage, 0, 100) * 0.65,
+    weight: Math.max(1, 7 - index) * reliabilityWeight(test.reliabilityLevel),
+  })));
 }
 
 function getChapterErrorPenalty(context: AIContext, subject: SubjectName, chapter: string) {

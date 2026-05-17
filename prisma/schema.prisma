@@ -91,10 +91,27 @@ model TestRecord {
   totalStudents Int?
   institute   String?
   staminaDecay Int?       // 1-10 rating on mental fatigue post-test
+  correctCount Int?
+  wrongCount   Int?
+  skippedCount Int?
+  guessedCount Int?
+  negativeMarksLost Float?
+  physicsScore    Float?
+  chemistryScore  Float?
+  botanyScore     Float?
+  zoologyScore    Float?
+  physicsTimeMinutes   Int?
+  chemistryTimeMinutes Int?
+  botanyTimeMinutes    Int?
+  zoologyTimeMinutes   Int?
+  difficultyLevel String?
+  reliabilityLevel String?
+  linkedErrorLogTestId String?
   takenAt     DateTime
   notes       String?    @db.Text
   createdAt   DateTime   @default(now())
 
+  @@index([linkedErrorLogTestId])
   @@map("test_records")
 }
 

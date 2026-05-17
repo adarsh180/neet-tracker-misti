@@ -134,6 +134,56 @@ function normalizedNeetScore(test: AIContext["recentTests"][number]) {
   return clamp((test.score / Math.max(test.maxScore, 1)) * NEET_TOTAL_MARKS, 0, NEET_TOTAL_MARKS);
 }
 
+function reliabilityWeight(level: string | null | undefined) {
+  if (level === "HIGH") return 1.15;
+  if (level === "LOW") return 0.7;
+  return 1;
+}
+
+function difficultyAdjustment(level: string | null | undefined) {
+  if (level === "HARD") return 1.04;
+  if (level === "EASY") return 0.97;
+  return 1;
+}
+
+function adjustedNeetScore(test: AIContext["recentTests"][number]) {
+  return clamp(normalizedNeetScore(test) * difficultyAdjustment(test.difficultyLevel), 0, NEET_TOTAL_MARKS);
+}
+
+function hasDetailedRankSignals(test: AIContext["recentTests"][number]) {
+  return [
+    test.correctCount,
+    test.wrongCount,
+    test.skippedCount,
+    test.guessedCount,
+    test.negativeMarksLost,
+    test.staminaDecay,
+    test.physicsScore,
+    test.chemistryScore,
+    test.botanyScore,
+    test.zoologyScore,
+    test.physicsTimeMinutes,
+    test.chemistryTimeMinutes,
+    test.botanyTimeMinutes,
+    test.zoologyTimeMinutes,
+    test.difficultyLevel,
+    test.reliabilityLevel,
+    test.linkedErrorLogTestId,
+  ].some((value) => value !== null && value !== undefined && value !== "");
+}
+
+function hasAllSectionScores(test: AIContext["recentTests"][number]) {
+  return [test.physicsScore, test.chemistryScore, test.botanyScore, test.zoologyScore]
+    .every((value) => typeof value === "number" && Number.isFinite(value));
+}
+
+function testRiskPenalty(test: AIContext["recentTests"][number]) {
+  const guessPenalty = Math.min(test.guessedCount ?? 0, 40) * 0.25;
+  const negativePenalty = Math.min(test.negativeMarksLost ?? 0, 120) * 0.08;
+  const staminaPenalty = Math.max(0, (test.staminaDecay ?? 0) - 6) * 2.5;
+  return guessPenalty + negativePenalty + staminaPenalty;
+}
+
 function getLatestValidatedAttemptScore() {
   return MISTI_PREVIOUS_ATTEMPTS[MISTI_PREVIOUS_ATTEMPTS.length - 1]?.score ?? null;
 }
@@ -173,14 +223,14 @@ function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
   const partialTests = context.recentTests.filter((test) => !isFullLengthTest(test));
   const fullTestScore = fullLengthTests.length
     ? weightedAverage(fullLengthTests.map((test, index) => ({
-        value: normalizedNeetScore(test),
-        weight: Math.max(1, 12 - index * 2),
+        value: adjustedNeetScore(test),
+        weight: Math.max(1, 12 - index * 2) * reliabilityWeight(test.reliabilityLevel),
       })))
     : null;
   const partialTestScore = partialTests.length
     ? weightedAverage(partialTests.map((test, index) => ({
-        value: normalizedNeetScore(test),
-        weight: Math.max(1, 8 - index),
+        value: adjustedNeetScore(test),
+        weight: Math.max(1, 8 - index) * reliabilityWeight(test.reliabilityLevel),
       })))
     : null;
   const latestValidatedAttemptScore = getLatestValidatedAttemptScore();
@@ -206,6 +256,10 @@ function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
     NEET_TOTAL_MARKS
   ));
 
+  const detailedTestSignals = context.recentTests.filter(hasDetailedRankSignals).length;
+  const sectionScoreTests = context.recentTests.filter(hasAllSectionScores).length;
+  const linkedErrorLogTests = context.recentTests.filter((test) => test.linkedErrorLogTestId).length;
+  const recentRiskPenalty = context.recentTests.slice(0, 5).reduce((sum, test) => sum + testRiskPenalty(test), 0);
   const baseBand = dataUnavailable
     ? 110
     : fullLengthTests.length >= 3
@@ -217,7 +271,16 @@ function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
           : partialTests.length
             ? 68
             : 88;
-  const band = Math.round(clamp(baseBand - context.last7DaysSummary.activeDays * 1.8 - Math.min(context.consistencyStreak, 7), 24, 115));
+  const band = Math.round(clamp(
+    baseBand -
+      context.last7DaysSummary.activeDays * 1.8 -
+      Math.min(context.consistencyStreak, 7) -
+      sectionScoreTests * 7 -
+      detailedTestSignals * 2 +
+      recentRiskPenalty * 0.35,
+    22,
+    115
+  ));
   const historicalScoreFloor = getHistoricalScoreFloor(fullLengthTests.length > 0, partialTests.length > 0, dataUnavailable);
   const predictedScoreMin = Math.round(clamp(Math.max(currentScore - band, historicalScoreFloor), 0, NEET_TOTAL_MARKS));
   const predictedScoreMax = Math.round(clamp(Math.max(currentScore + band, predictedScoreMin + 30), 0, NEET_TOTAL_MARKS));
@@ -227,9 +290,13 @@ function buildDeterministicEvidence(context: AIContext): DeterministicEvidence {
     : 24 +
       fullLengthTests.length * 14 +
       partialTests.length * 4 +
+      detailedTestSignals * 5 +
+      sectionScoreTests * 8 +
+      linkedErrorLogTests * 4 +
       context.last7DaysSummary.activeDays * 3 +
       Math.min(context.consistencyStreak, 10) * 2 +
-      Math.min((context.errorAnalysis || []).length, 6);
+      Math.min((context.errorAnalysis || []).length, 6) -
+      Math.min(Math.round(recentRiskPenalty / 4), 10);
   const confidenceCap = dataUnavailable
     ? 15
     : fullLengthTests.length === 0

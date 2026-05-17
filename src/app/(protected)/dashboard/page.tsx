@@ -69,13 +69,14 @@ interface DashboardMetrics {
   momentumScore: number;
 }
 
-function getEmoji(pct: number) {
-  if (pct >= 90) return "🏆";
-  if (pct >= 75) return "🔥";
-  if (pct >= 60) return "⭐";
-  if (pct >= 40) return "📈";
-  if (pct >= 20) return "🌱";
-  return "🌀";
+interface PrepConfidence {
+  exam: string;
+  score: number;
+  label: string;
+  reliability: number;
+  updatedAt: string;
+  source?: string;
+  signals: string[];
 }
 
 function getMessage(pct: number) {
@@ -89,6 +90,15 @@ function getMessage(pct: number) {
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
+}
+
+function getReadinessBand(pct: number) {
+  if (pct >= 90) return "Mastery";
+  if (pct >= 75) return "High control";
+  if (pct >= 60) return "Rising";
+  if (pct >= 40) return "Building";
+  if (pct >= 20) return "Early";
+  return "Unstarted";
 }
 
 function buildSparkline(values: number[], width = 320, height = 96) {
@@ -141,7 +151,20 @@ const SUBJECT_META: Record<string, { gradient: string; glow: string; soft: strin
   },
 };
 
-const QUICK_SECTIONS = [
+type QuickSection = {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  desc: string;
+  color: string;
+  glow: string;
+  bg: string;
+  border: string;
+  signal: string;
+  connected?: "upsc";
+};
+
+const QUICK_SECTIONS: QuickSection[] = [
   {
     href: "/daily-goals",
     icon: Target,
@@ -151,7 +174,7 @@ const QUICK_SECTIONS = [
     glow: "var(--rose-glow)",
     bg: "var(--rose-dim)",
     border: "hsla(352,65%,60%,0.24)",
-    emoji: "🎯",
+    signal: "Daily operating log",
   },
   {
     href: "/tests",
@@ -162,7 +185,7 @@ const QUICK_SECTIONS = [
     glow: "var(--physics-glow)",
     bg: "var(--physics-dim)",
     border: "hsla(218,84%,62%,0.24)",
-    emoji: "📊",
+    signal: "Mock + error loop",
   },
   {
     href: "/ai-insights",
@@ -173,7 +196,7 @@ const QUICK_SECTIONS = [
     glow: "var(--gold-glow)",
     bg: "var(--gold-dim)",
     border: "hsla(38,72%,58%,0.24)",
-    emoji: "✨",
+    signal: "AI command layer",
   },
   {
     href: "/mood",
@@ -184,7 +207,7 @@ const QUICK_SECTIONS = [
     glow: "var(--lotus-glow)",
     bg: "var(--lotus-dim)",
     border: "hsla(285,50%,60%,0.24)",
-    emoji: "🌙",
+    signal: "Focus + recovery",
   },
   {
     href: "/ai-insights/neet-guru",
@@ -195,7 +218,7 @@ const QUICK_SECTIONS = [
     glow: "var(--gold-glow)",
     bg: "var(--gold-dim)",
     border: "hsla(38,72%,58%,0.24)",
-    emoji: "🧠",
+    signal: "Mentor memory",
   },
   {
     href: "/ai-insights/cycle-planner",
@@ -206,7 +229,7 @@ const QUICK_SECTIONS = [
     glow: "var(--rose-glow)",
     bg: "var(--rose-dim)",
     border: "hsla(352,65%,60%,0.24)",
-    emoji: "🩷",
+    signal: "Adaptive calendar",
   },
   {
     href: "https://upsc-cse-tracker-adarsh.vercel.app/",
@@ -217,12 +240,14 @@ const QUICK_SECTIONS = [
     glow: "var(--physics-glow)",
     bg: "var(--physics-dim)",
     border: "hsla(218,84%,62%,0.24)",
-    emoji: "🏛️",
+    signal: "Connected platform",
+    connected: "upsc",
   },
 ];
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [upscConfidence, setUpscConfidence] = useState<PrepConfidence | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = useCallback(async () => {
@@ -237,9 +262,22 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const fetchUpscConfidence = useCallback(async () => {
+    try {
+      const res = await fetch("/api/prep-confidence?target=upsc", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setUpscConfidence(data.source === "unavailable" ? null : data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchMetrics();
-  }, [fetchMetrics]);
+    fetchUpscConfidence();
+  }, [fetchMetrics, fetchUpscConfidence]);
 
   const overall = metrics?.overallPct ?? 0;
   const safeOverall = clamp(overall, 0, 100);
@@ -299,8 +337,8 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="db-point">
-                <span className="db-point-label">Current Mood</span>
-                <span className="db-point-value">{getEmoji(safeOverall)}</span>
+                <span className="db-point-label">Readiness Band</span>
+                <span className="db-point-value db-band-value">{getReadinessBand(safeOverall)}</span>
               </div>
             </div>
 
@@ -319,7 +357,14 @@ export default function DashboardPage() {
                   <div className="db-mini-title">Your study pulse at a glance</div>
                 </div>
 
-                <button className="btn-refresh" onClick={fetchMetrics} disabled={loading}>
+                <button
+                  className="btn-refresh"
+                  onClick={() => {
+                    fetchMetrics();
+                    fetchUpscConfidence();
+                  }}
+                  disabled={loading}
+                >
                   <RefreshCw size={16} className={loading ? "spinning" : ""} />
                   <span>Refresh</span>
                 </button>
@@ -463,7 +508,7 @@ export default function DashboardPage() {
             <div className="db-score-badge">
               <span className="db-score-value">{safeOverall}</span>
               <span className="db-score-suffix">%</span>
-              <span className="db-score-emoji">{getEmoji(safeOverall)}</span>
+              <span className="db-score-band">{getReadinessBand(safeOverall)}</span>
             </div>
           </div>
 
@@ -537,6 +582,7 @@ export default function DashboardPage() {
               {(metrics?.subjects ?? []).map((sub, index) => {
                 const Icon = SUBJECT_ICONS[sub.slug] || BookOpen;
                 const meta = SUBJECT_META[sub.slug] || SUBJECT_META.botany;
+                const band = getReadinessBand(sub.completionPct);
 
                 return (
                   <SmoothLink
@@ -553,55 +599,85 @@ export default function DashboardPage() {
                     }
                   >
                     <div className="db-sub-card-border" />
+                    <div className="db-sub-card-depth" />
+                    <div className="db-sub-laser" />
                     <div
                       className="db-sub-card-glow"
                       style={{ background: `radial-gradient(circle at 85% 15%, ${meta.soft} 0%, transparent 60%)` }}
                     />
 
                     <div className="db-sub-top">
-                      <div className="db-sub-icon" style={{ background: meta.gradient, boxShadow: `0 8px 24px ${meta.glow}` }}>
-                        <Icon size={24} color="white" />
+                      <div className="db-sub-icon-cluster">
+                        <div className="db-sub-icon" style={{ background: meta.gradient, boxShadow: `0 12px 34px ${meta.glow}` }}>
+                          <Icon size={25} color="white" strokeWidth={2.15} />
+                        </div>
+                        <div className="db-sub-icon-halo" style={{ borderColor: meta.ring }} />
                       </div>
-                      <div className="db-sub-emoji">{getEmoji(sub.completionPct)}</div>
+                      <div className="db-sub-status" style={{ color: sub.color, borderColor: meta.ring, background: meta.soft }}>
+                        <Activity size={12} />
+                        {band}
+                      </div>
+                    </div>
+
+                    <div className="db-sub-watermark" aria-hidden="true">
+                      <Icon size={132} strokeWidth={1.2} />
                     </div>
 
                     <div className="db-sub-body">
+                      <div className="db-sub-cue">
+                        <span>NCERT Core</span>
+                        <span>{sub.pendingRevisions > 0 ? `${sub.pendingRevisions} revision alerts` : "Revision clear"}</span>
+                      </div>
                       <div className="db-sub-name-lg">{sub.name}</div>
                       <div className="db-sub-meta">
                         {sub.completedTopics} / {sub.totalTopics} topics · {sub.completedChapters} / {sub.totalChapters} chapters
                       </div>
 
-                      <div className="db-sub-big-pct">
-                        {sub.completionPct}
-                        <span>%</span>
+                      <div className="db-sub-control-row">
+                        <div>
+                          <div className="db-sub-control-label">Mastery index</div>
+                          <div className="db-sub-big-pct">
+                            {sub.completionPct}
+                            <span>%</span>
+                          </div>
+                        </div>
+                        <div className="db-sub-mini-ring" style={{ background: `conic-gradient(${sub.color} 0 ${sub.completionPct}%, rgba(255,255,255,0.08) ${sub.completionPct}% 100%)` }}>
+                          <span>{Math.round(sub.completionPct)}</span>
+                        </div>
                       </div>
 
                       <div className="progress-track db-sub-progress-bar">
                         <div className="progress-fill" style={{ width: `${sub.completionPct}%`, background: meta.gradient }} />
                       </div>
+                      <div className="db-sub-progress-ticks" aria-hidden="true">
+                        <span />
+                        <span />
+                        <span />
+                        <span />
+                      </div>
 
                       <div className="db-sub-foot">
-                        <span>
+                        <span className="db-sub-metric">
                           <CheckSquare size={12} />
-                          {sub.totalQuestions} Qs
+                          <strong>{sub.totalQuestions}</strong> Qs
                         </span>
-                        <span>
+                        <span className="db-sub-metric">
                           <RefreshCw size={12} />
-                          {sub.pendingRevisions} rev
+                          <strong>{sub.pendingRevisions}</strong> rev
                         </span>
-                        <span>
+                        <span className="db-sub-metric">
                           <Layers3 size={12} />
-                          {sub.totalChapters} ch
+                          <strong>{sub.totalChapters}</strong> ch
                         </span>
-                        <span>
+                        <span className="db-sub-metric">
                           <Clock size={12} />
-                          {sub.last7DaysHours}h
+                          <strong>{sub.last7DaysHours}</strong>h
                         </span>
                       </div>
                     </div>
 
                     <div className="db-sub-cta">
-                      <span>Explore Subject</span>
+                      <span>Open subject cockpit</span>
                       <ChevronRight size={16} />
                     </div>
                   </SmoothLink>
@@ -620,29 +696,67 @@ export default function DashboardPage() {
           </div>
 
           <div className="db-quick-grid">
-            {QUICK_SECTIONS.map((sec, index) => (
-              <SmoothLink
-                key={sec.href}
-                href={sec.href}
-                className="db-quick-card glass-panel interactive-card"
-                style={{ "--qc": sec.color, "--qg": sec.glow, animationDelay: `${index * 70}ms` } as CSSProperties}
-              >
-                <div className="db-quick-sheen" />
-                <div className="db-quick-top">
-                  <div className="db-quick-icon" style={{ background: sec.bg, border: `1px solid ${sec.border}` }}>
-                    {sec.emoji}
-                  </div>
-                  <ArrowRight size={20} className="db-quick-arrow" style={{ color: sec.color }} />
-                </div>
+            {QUICK_SECTIONS.map((sec, index) => {
+              const SectionIcon = sec.icon;
+              const connectedConfidence = sec.connected === "upsc" ? upscConfidence : null;
+              const connectedScore = clamp(connectedConfidence?.score ?? 0, 0, 100);
 
-                <div className="db-quick-content">
-                  <div className="db-quick-title" style={{ color: sec.color }}>
-                    {sec.label}
+              return (
+                <SmoothLink
+                  key={sec.href}
+                  href={sec.href}
+                  className={`db-quick-card glass-panel interactive-card ${sec.connected ? "db-quick-card-connected" : ""}`}
+                  style={{ "--qc": sec.color, "--qg": sec.glow, animationDelay: `${index * 70}ms` } as CSSProperties}
+                >
+                  <div className="db-quick-sheen" />
+                  <div className="db-quick-aura" />
+                  <div className="db-quick-index">0{index + 1}</div>
+                  <div className="db-quick-top">
+                    <div className="db-quick-icon" style={{ background: sec.bg, border: `1px solid ${sec.border}`, color: sec.color }}>
+                      <SectionIcon size={24} strokeWidth={2.1} />
+                    </div>
+                    <ArrowRight size={20} className="db-quick-arrow" style={{ color: sec.color }} />
                   </div>
-                  <p className="db-quick-desc">{sec.desc}</p>
-                </div>
-              </SmoothLink>
-            ))}
+
+                  <div className="db-quick-content">
+                    <div className="db-quick-kicker">{sec.signal}</div>
+                    <div className="db-quick-title" style={{ color: sec.color }}>
+                      {sec.label}
+                    </div>
+                    <p className="db-quick-desc">{sec.desc}</p>
+                  </div>
+
+                  {connectedConfidence ? (
+                    <div className="db-connected-confidence">
+                      <div className="db-connected-head">
+                        <span>Prep confidence</span>
+                        <strong>{connectedScore}/100</strong>
+                      </div>
+                      <div className="db-connected-track" aria-label={`${connectedConfidence.exam} confidence ${connectedScore} out of 100`}>
+                        <span style={{ width: `${connectedScore}%`, background: `linear-gradient(90deg, ${sec.color}, var(--gold))` }} />
+                      </div>
+                      <div className="db-connected-meta">
+                        <span>{connectedConfidence.label}</span>
+                        <span>{connectedConfidence.reliability}% reliability</span>
+                      </div>
+                    </div>
+                  ) : sec.connected ? (
+                    <div className="db-connected-confidence muted">
+                      <div className="db-connected-head">
+                        <span>Prep confidence</span>
+                        <strong>Live sync</strong>
+                      </div>
+                      <div className="db-connected-track db-connected-track-empty" />
+                    </div>
+                  ) : (
+                    <div className="db-quick-bottom">
+                      <span>Ready module</span>
+                      <span className="db-quick-line" />
+                    </div>
+                  )}
+                </SmoothLink>
+              );
+            })}
           </div>
         </section>
       </main>
@@ -1240,7 +1354,23 @@ export default function DashboardPage() {
           margin: 0 8px 0 4px;
         }
 
-        .db-score-emoji { font-size: 32px; }
+        .db-score-band {
+          align-self: center;
+          padding: 7px 10px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.055);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: rgba(255, 255, 255, 0.72);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .db-band-value {
+          font-size: clamp(20px, 3vw, 30px);
+          letter-spacing: -0.03em;
+        }
 
         .db-overall-main {
           display: grid;
@@ -1346,8 +1476,9 @@ export default function DashboardPage() {
 
         .db-subject-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 24px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 22px;
+          perspective: 1200px;
         }
 
         .db-skeleton {
@@ -1364,13 +1495,32 @@ export default function DashboardPage() {
 
         .db-sub-card {
           position: relative;
-          padding: 32px 24px 24px;
+          padding: 26px 22px 22px;
           display: flex;
           flex-direction: column;
-          min-height: 320px;
+          min-height: 386px;
           text-decoration: none;
           overflow: hidden;
           animation: cardIn 0.7s ease both;
+          isolation: isolate;
+          background:
+            linear-gradient(160deg, rgba(255, 255, 255, 0.082), rgba(255, 255, 255, 0.026) 48%, rgba(255, 255, 255, 0.058)),
+            radial-gradient(circle at 82% 16%, color-mix(in srgb, var(--sub-color) 20%, transparent), transparent 39%),
+            radial-gradient(circle at 18% 92%, color-mix(in srgb, var(--sub-color) 9%, transparent), transparent 45%);
+          transform-style: preserve-3d;
+          transition:
+            transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+            border-color 240ms var(--ease-out),
+            box-shadow 280ms var(--ease-out);
+        }
+
+        .db-sub-card:hover {
+          transform: translateY(-8px) rotateX(1.5deg);
+          border-color: color-mix(in srgb, var(--sub-color) 34%, rgba(255, 255, 255, 0.08));
+          box-shadow:
+            0 28px 76px rgba(0, 0, 0, 0.48),
+            0 0 52px color-mix(in srgb, var(--sub-glow) 64%, transparent),
+            inset 0 1px 1px rgba(255, 255, 255, 0.11);
         }
 
         @keyframes cardIn {
@@ -1382,7 +1532,34 @@ export default function DashboardPage() {
           position: absolute;
           inset: 0;
           border-radius: inherit;
-          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sub-ring) 20%, transparent);
+          box-shadow:
+            inset 0 0 0 1px color-mix(in srgb, var(--sub-ring) 26%, transparent),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+          pointer-events: none;
+        }
+
+        .db-sub-card-depth {
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          pointer-events: none;
+          background:
+            linear-gradient(90deg, rgba(255,255,255,0.09), transparent 18%, transparent 82%, rgba(255,255,255,0.055)),
+            linear-gradient(180deg, rgba(255,255,255,0.08), transparent 30%, rgba(0,0,0,0.14));
+          opacity: 0.7;
+          z-index: 0;
+        }
+
+        .db-sub-laser {
+          position: absolute;
+          left: 22px;
+          right: 22px;
+          top: 0;
+          height: 2px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, transparent, var(--sub-color), transparent);
+          opacity: 0.64;
+          filter: drop-shadow(0 0 10px var(--sub-color));
           pointer-events: none;
         }
 
@@ -1397,20 +1574,75 @@ export default function DashboardPage() {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 24px;
+          margin-bottom: 26px;
           position: relative;
           z-index: 2;
         }
 
-        .db-sub-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: 16px;
+        .db-sub-icon-cluster {
+          position: relative;
+          width: 70px;
+          height: 70px;
           display: grid;
           place-items: center;
         }
 
-        .db-sub-emoji { font-size: 28px; }
+        .db-sub-icon {
+          width: 58px;
+          height: 58px;
+          border-radius: 20px;
+          display: grid;
+          place-items: center;
+          position: relative;
+          z-index: 2;
+          transition: transform 260ms var(--ease-out), filter 240ms var(--ease-out), box-shadow 260ms var(--ease-out);
+        }
+
+        .db-sub-card:hover .db-sub-icon {
+          transform: scale(1.06) rotate(-2deg);
+          filter: saturate(1.15);
+        }
+
+        .db-sub-icon-halo {
+          position: absolute;
+          inset: 0;
+          border-radius: 25px;
+          border: 1px solid;
+          opacity: 0.58;
+          transform: rotate(11deg);
+        }
+
+        .db-sub-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 8px 10px;
+          border-radius: 999px;
+          border: 1px solid;
+          max-width: 150px;
+          font-size: 10.5px;
+          font-weight: 850;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+          backdrop-filter: blur(12px);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        .db-sub-watermark {
+          position: absolute;
+          right: -22px;
+          top: 70px;
+          color: var(--sub-color);
+          opacity: 0.055;
+          transform: rotate(-8deg);
+          pointer-events: none;
+          transition: opacity 260ms var(--ease-out), transform 260ms var(--ease-out);
+        }
+
+        .db-sub-card:hover .db-sub-watermark {
+          opacity: 0.095;
+          transform: rotate(-5deg) scale(1.04);
+        }
 
         .db-sub-body {
           flex: 1;
@@ -1418,26 +1650,64 @@ export default function DashboardPage() {
           z-index: 2;
         }
 
+        .db-sub-cue {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 12px;
+          color: rgba(255, 255, 255, 0.46);
+          font-size: 10px;
+          font-weight: 850;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .db-sub-cue span:last-child {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .db-sub-name-lg {
-          font-size: 20px;
+          font-size: 22px;
           font-weight: 800;
           color: #ffffff;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
+          letter-spacing: -0.025em;
         }
 
         .db-sub-meta {
           font-size: 13px;
           color: rgba(255, 255, 255, 0.52);
-          margin-bottom: 24px;
+          margin-bottom: 20px;
+        }
+
+        .db-sub-control-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          margin-bottom: 14px;
+        }
+
+        .db-sub-control-label {
+          color: rgba(255, 255, 255, 0.42);
+          font-size: 10px;
+          font-weight: 850;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          margin-bottom: 8px;
         }
 
         .db-sub-big-pct {
-          font-size: 42px;
+          font-size: 48px;
           font-weight: 900;
           color: var(--sub-color);
           line-height: 1;
-          margin-bottom: 12px;
           letter-spacing: -0.05em;
+          text-shadow: 0 0 22px color-mix(in srgb, var(--sub-color) 28%, transparent);
         }
 
         .db-sub-big-pct span {
@@ -1445,20 +1715,79 @@ export default function DashboardPage() {
           opacity: 0.6;
         }
 
-        .db-sub-progress-bar { height: 8px; margin-bottom: 20px; }
+        .db-sub-mini-ring {
+          width: 58px;
+          height: 58px;
+          border-radius: 999px;
+          padding: 6px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+          box-shadow:
+            0 14px 28px rgba(0,0,0,0.22),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .db-sub-mini-ring span {
+          width: 100%;
+          height: 100%;
+          border-radius: inherit;
+          display: grid;
+          place-items: center;
+          background: rgba(6, 6, 10, 0.78);
+          border: 1px solid rgba(255,255,255,0.08);
+          color: rgba(255,255,255,0.82);
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .db-sub-progress-bar {
+          height: 9px;
+          margin-bottom: 8px;
+          background: rgba(255, 255, 255, 0.065);
+          box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.26);
+        }
+
+        .db-sub-progress-ticks {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+          margin-bottom: 18px;
+          padding: 0 2px;
+        }
+
+        .db-sub-progress-ticks span {
+          height: 2px;
+          border-radius: 999px;
+          background: color-mix(in srgb, var(--sub-color) 32%, rgba(255, 255, 255, 0.08));
+          opacity: 0.7;
+        }
 
         .db-sub-foot {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px 16px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
           font-size: 12px;
           color: rgba(255, 255, 255, 0.54);
         }
 
-        .db-sub-foot span {
+        .db-sub-metric {
           display: flex;
           align-items: center;
           gap: 6px;
+          min-width: 0;
+          min-height: 38px;
+          padding: 9px 10px;
+          border-radius: 14px;
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022));
+          border: 1px solid rgba(255, 255, 255, 0.055);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.045);
+        }
+
+        .db-sub-metric strong {
+          color: rgba(255, 255, 255, 0.88);
+          font-weight: 850;
         }
 
         .db-sub-cta {
@@ -1473,33 +1802,55 @@ export default function DashboardPage() {
           color: rgba(255, 255, 255, 0.62);
           position: relative;
           z-index: 2;
-          transition: color 0.3s;
+          transition: color 0.3s, transform 0.3s;
         }
 
-        .db-sub-card:hover .db-sub-cta { color: #ffffff; }
+        .db-sub-card:hover .db-sub-cta {
+          color: #ffffff;
+          transform: translateX(2px);
+        }
 
         .db-quick-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 24px;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 18px;
         }
 
         .db-quick-card {
           position: relative;
-          padding: 30px 26px;
+          grid-column: span 2;
+          padding: 24px;
           text-decoration: none;
-          display: flex;
-          flex-direction: column;
+          display: grid;
+          grid-template-rows: auto 1fr auto;
           overflow: hidden;
-          min-height: 180px;
+          min-height: 224px;
           animation: cardIn 0.7s ease both;
+          isolation: isolate;
+          background:
+            linear-gradient(155deg, rgba(255,255,255,0.074), rgba(255,255,255,0.026) 52%, rgba(255,255,255,0.052)),
+            radial-gradient(circle at 86% 16%, color-mix(in srgb, var(--qc) 13%, transparent), transparent 38%);
+          transition:
+            transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+            border-color 220ms var(--ease-out),
+            box-shadow 260ms var(--ease-out);
+        }
+
+        .db-quick-card-connected {
+          grid-column: span 3;
+          min-height: 272px;
+          background:
+            radial-gradient(circle at 86% 12%, color-mix(in srgb, var(--qc) 20%, transparent), transparent 36%),
+            radial-gradient(circle at 14% 95%, rgba(251,191,36,0.08), transparent 46%),
+            linear-gradient(155deg, rgba(255, 255, 255, 0.086), rgba(255, 255, 255, 0.028));
         }
 
         .db-quick-card:hover {
+          transform: translateY(-6px);
           border-color: color-mix(in srgb, var(--qc) 40%, transparent);
           box-shadow:
-            0 16px 40px rgba(0, 0, 0, 0.42),
-            0 0 32px color-mix(in srgb, var(--qg) 22%, transparent),
+            0 24px 62px rgba(0, 0, 0, 0.44),
+            0 0 42px color-mix(in srgb, var(--qg) 32%, transparent),
             inset 0 1px 1px rgba(255, 255, 255, 0.1);
         }
 
@@ -1514,6 +1865,38 @@ export default function DashboardPage() {
 
         .db-quick-card:hover .db-quick-sheen { transform: translateX(100%); }
 
+        .db-quick-aura {
+          position: absolute;
+          right: -48px;
+          top: -46px;
+          width: 170px;
+          height: 170px;
+          border-radius: 999px;
+          background: radial-gradient(circle, color-mix(in srgb, var(--qc) 22%, transparent), transparent 66%);
+          opacity: 0.78;
+          filter: blur(4px);
+          pointer-events: none;
+          transition: transform 320ms var(--ease-out), opacity 220ms var(--ease-out);
+        }
+
+        .db-quick-card:hover .db-quick-aura {
+          transform: scale(1.12) translate(-8px, 8px);
+          opacity: 1;
+        }
+
+        .db-quick-index {
+          position: absolute;
+          right: 22px;
+          bottom: 16px;
+          z-index: 0;
+          color: rgba(255,255,255,0.055);
+          font-size: 58px;
+          font-weight: 950;
+          letter-spacing: -0.08em;
+          line-height: 1;
+          pointer-events: none;
+        }
+
         .db-quick-top {
           display: flex;
           justify-content: space-between;
@@ -1524,13 +1907,19 @@ export default function DashboardPage() {
         }
 
         .db-quick-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: 18px;
+          width: 58px;
+          height: 58px;
+          border-radius: 20px;
           display: grid;
           place-items: center;
-          font-size: 26px;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+          box-shadow:
+            0 12px 28px rgba(0, 0, 0, 0.24),
+            inset 0 1px 0 rgba(255,255,255,0.08);
+          transition: transform 240ms var(--ease-out), background 220ms var(--ease-out);
+        }
+
+        .db-quick-card:hover .db-quick-icon {
+          transform: translateY(-2px) scale(1.04);
         }
 
         .db-quick-arrow {
@@ -1552,10 +1941,18 @@ export default function DashboardPage() {
           z-index: 1;
         }
 
+        .db-quick-kicker {
+          color: rgba(255, 255, 255, 0.45);
+          font-size: 10px;
+          font-weight: 850;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+
         .db-quick-title {
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 800;
-          letter-spacing: -0.01em;
+          letter-spacing: -0.025em;
         }
 
         .db-quick-desc {
@@ -1563,6 +1960,90 @@ export default function DashboardPage() {
           font-size: 14px;
           line-height: 1.7;
           color: rgba(255, 255, 255, 0.52);
+          max-width: 34ch;
+        }
+
+        .db-quick-bottom {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          margin-top: 22px;
+          color: rgba(255, 255, 255, 0.52);
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .db-quick-line {
+          flex: 1;
+          height: 1px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, color-mix(in srgb, var(--qc) 50%, transparent), transparent);
+          opacity: 0.72;
+        }
+
+        .db-connected-confidence {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          gap: 10px;
+          margin-top: 22px;
+          padding: 14px;
+          border-radius: 18px;
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025));
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.045);
+        }
+
+        .db-connected-head,
+        .db-connected-meta {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .db-connected-head span,
+        .db-connected-meta {
+          color: rgba(255, 255, 255, 0.52);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .db-connected-head strong {
+          color: #ffffff;
+          font-size: 22px;
+          line-height: 1;
+          letter-spacing: -0.04em;
+        }
+
+        .db-connected-track {
+          width: 100%;
+          height: 10px;
+          border-radius: 999px;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.07);
+          box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.22);
+        }
+
+        .db-connected-track span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          transition: width 700ms var(--ease-out);
+        }
+
+        .db-connected-track-empty {
+          background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+          background-size: 200% 100%;
+          animation: shimmer-bar 1.8s ease-in-out infinite;
         }
 
         @keyframes floatOrb {
@@ -1595,6 +2076,9 @@ export default function DashboardPage() {
           .db-sub-progress-list { grid-template-columns: 1fr; }
           .db-cta-strip { flex-direction: column; align-items: flex-start; }
           .db-cta-strip-right { width: 100%; grid-template-columns: repeat(3, 1fr); }
+          .db-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .db-quick-card { grid-column: span 1; }
+          .db-quick-card-connected { grid-column: span 2; }
         }
 
         @media (max-width: 640px) {
@@ -1606,6 +2090,12 @@ export default function DashboardPage() {
           .db-stats-grid,
           .db-subject-grid,
           .db-quick-grid { grid-template-columns: 1fr; }
+          .db-quick-card,
+          .db-quick-card-connected { grid-column: span 1; }
+          .db-sub-card { min-height: 360px; }
+          .db-sub-status { max-width: 132px; }
+          .db-sub-control-row { align-items: flex-end; }
+          .db-sub-foot { grid-template-columns: 1fr 1fr; }
           .db-score-badge { padding: 12px 16px; }
           .db-score-value { font-size: 36px; }
           .db-panel-head { flex-direction: column; align-items: flex-start; }

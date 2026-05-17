@@ -47,6 +47,25 @@ export interface AIContext {
     score: number;
     maxScore: number;
     percentage: number;
+    rank: number | null;
+    totalStudents: number | null;
+    staminaDecay: number | null;
+    correctCount: number | null;
+    wrongCount: number | null;
+    skippedCount: number | null;
+    guessedCount: number | null;
+    negativeMarksLost: number | null;
+    physicsScore: number | null;
+    chemistryScore: number | null;
+    botanyScore: number | null;
+    zoologyScore: number | null;
+    physicsTimeMinutes: number | null;
+    chemistryTimeMinutes: number | null;
+    botanyTimeMinutes: number | null;
+    zoologyTimeMinutes: number | null;
+    difficultyLevel: string | null;
+    reliabilityLevel: string | null;
+    linkedErrorLogTestId: string | null;
     takenAt: string;
   }[];
   cyclePhase: {
@@ -465,6 +484,25 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
       score: t.score,
       maxScore: t.maxScore,
       percentage: t.percentage,
+      rank: t.rank,
+      totalStudents: t.totalStudents,
+      staminaDecay: t.staminaDecay,
+      correctCount: t.correctCount,
+      wrongCount: t.wrongCount,
+      skippedCount: t.skippedCount,
+      guessedCount: t.guessedCount,
+      negativeMarksLost: t.negativeMarksLost,
+      physicsScore: t.physicsScore,
+      chemistryScore: t.chemistryScore,
+      botanyScore: t.botanyScore,
+      zoologyScore: t.zoologyScore,
+      physicsTimeMinutes: t.physicsTimeMinutes,
+      chemistryTimeMinutes: t.chemistryTimeMinutes,
+      botanyTimeMinutes: t.botanyTimeMinutes,
+      zoologyTimeMinutes: t.zoologyTimeMinutes,
+      difficultyLevel: t.difficultyLevel,
+      reliabilityLevel: t.reliabilityLevel,
+      linkedErrorLogTestId: t.linkedErrorLogTestId,
       takenAt: getISTDateString(t.takenAt),
     })),
     cyclePhase,

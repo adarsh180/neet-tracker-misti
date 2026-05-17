@@ -43,9 +43,33 @@ interface TestRecord {
   rank: number | null;
   totalStudents: number | null;
   institute: string | null;
+  staminaDecay: number | null;
+  correctCount: number | null;
+  wrongCount: number | null;
+  skippedCount: number | null;
+  guessedCount: number | null;
+  negativeMarksLost: number | null;
+  physicsScore: number | null;
+  chemistryScore: number | null;
+  botanyScore: number | null;
+  zoologyScore: number | null;
+  physicsTimeMinutes: number | null;
+  chemistryTimeMinutes: number | null;
+  botanyTimeMinutes: number | null;
+  zoologyTimeMinutes: number | null;
+  difficultyLevel: string | null;
+  reliabilityLevel: string | null;
+  linkedErrorLogTestId: string | null;
   takenAt: string;
   notes: string | null;
   subject: { name: string; color: string } | null;
+}
+
+interface ErrorLogOption {
+  id: string;
+  testName: string;
+  testType: string;
+  takenAt: string;
 }
 
 interface SubjectMini {
@@ -67,6 +91,8 @@ const TEST_COLORS: Record<string, string> = {
   AITS: "#a855f7",
   UNIT_TEST: "#22c55e",
 };
+const DIFFICULTY_LEVELS = ["", "EASY", "MEDIUM", "HARD"];
+const RELIABILITY_LEVELS = ["", "LOW", "MEDIUM", "HIGH"];
 
 /* Recharts custom tooltip */
 function ChartTip({
@@ -95,6 +121,7 @@ function ChartTip({
 export default function TestsPage() {
   const [tests, setTests] = useState<TestRecord[]>([]);
   const [subjects, setSubjects] = useState<SubjectMini[]>([]);
+  const [errorLogs, setErrorLogs] = useState<ErrorLogOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("ALL");
@@ -107,6 +134,23 @@ export default function TestsPage() {
     rank: "",
     totalStudents: "",
     institute: "",
+    staminaDecay: "",
+    correctCount: "",
+    wrongCount: "",
+    skippedCount: "",
+    guessedCount: "",
+    negativeMarksLost: "",
+    physicsScore: "",
+    chemistryScore: "",
+    botanyScore: "",
+    zoologyScore: "",
+    physicsTimeMinutes: "",
+    chemistryTimeMinutes: "",
+    botanyTimeMinutes: "",
+    zoologyTimeMinutes: "",
+    difficultyLevel: "",
+    reliabilityLevel: "",
+    linkedErrorLogTestId: "",
     takenAt: format(new Date(), "yyyy-MM-dd"),
     notes: "",
   });
@@ -114,9 +158,10 @@ export default function TestsPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [tR, sR] = await Promise.all([fetch("/api/tests"), fetch("/api/subjects")]);
+    const [tR, sR, eR] = await Promise.all([fetch("/api/tests"), fetch("/api/subjects"), fetch("/api/error-logs")]);
     if (tR.ok) setTests(await tR.json());
     if (sR.ok) setSubjects(await sR.json());
+    if (eR.ok) setErrorLogs(await eR.json());
     setLoading(false);
   }, []);
 
@@ -143,6 +188,23 @@ export default function TestsPage() {
       rank: "",
       totalStudents: "",
       institute: "",
+      staminaDecay: "",
+      correctCount: "",
+      wrongCount: "",
+      skippedCount: "",
+      guessedCount: "",
+      negativeMarksLost: "",
+      physicsScore: "",
+      chemistryScore: "",
+      botanyScore: "",
+      zoologyScore: "",
+      physicsTimeMinutes: "",
+      chemistryTimeMinutes: "",
+      botanyTimeMinutes: "",
+      zoologyTimeMinutes: "",
+      difficultyLevel: "",
+      reliabilityLevel: "",
+      linkedErrorLogTestId: "",
       takenAt: format(new Date(), "yyyy-MM-dd"),
       notes: "",
     });
@@ -395,6 +457,203 @@ export default function TestsPage() {
                     value={form.institute}
                     onChange={(e) => setForm((f) => ({ ...f, institute: e.target.value }))}
                   />
+                </div>
+              </div>
+
+              <div className="tests-rank-intel-panel">
+                <div className="tests-form-head tests-rank-intel-head">
+                  <div>
+                    <h3 className="tests-section-title">Rank Intelligence Details</h3>
+                    <p className="tests-section-subtitle">Optional fields used only when real test data is entered</p>
+                  </div>
+                  <div className="tests-form-chip">
+                    <Target size={14} />
+                    Optional
+                  </div>
+                </div>
+
+                <div className="tests-form-grid">
+                  <div>
+                    <label className="test-form-lbl">Physics Score</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="/180"
+                      value={form.physicsScore}
+                      onChange={(e) => setForm((f) => ({ ...f, physicsScore: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Chemistry Score</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="/180"
+                      value={form.chemistryScore}
+                      onChange={(e) => setForm((f) => ({ ...f, chemistryScore: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Botany Score</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="/180"
+                      value={form.botanyScore}
+                      onChange={(e) => setForm((f) => ({ ...f, botanyScore: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Zoology Score</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="/180"
+                      value={form.zoologyScore}
+                      onChange={(e) => setForm((f) => ({ ...f, zoologyScore: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Correct</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Count"
+                      value={form.correctCount}
+                      onChange={(e) => setForm((f) => ({ ...f, correctCount: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Wrong</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Count"
+                      value={form.wrongCount}
+                      onChange={(e) => setForm((f) => ({ ...f, wrongCount: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Skipped</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Count"
+                      value={form.skippedCount}
+                      onChange={(e) => setForm((f) => ({ ...f, skippedCount: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Guessed</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Count"
+                      value={form.guessedCount}
+                      onChange={(e) => setForm((f) => ({ ...f, guessedCount: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Negative Lost</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Marks"
+                      value={form.negativeMarksLost}
+                      onChange={(e) => setForm((f) => ({ ...f, negativeMarksLost: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Stamina Decay</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      className="input"
+                      placeholder="1-10"
+                      value={form.staminaDecay}
+                      onChange={(e) => setForm((f) => ({ ...f, staminaDecay: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Difficulty</label>
+                    <select
+                      className="input select"
+                      value={form.difficultyLevel}
+                      onChange={(e) => setForm((f) => ({ ...f, difficultyLevel: e.target.value }))}
+                    >
+                      {DIFFICULTY_LEVELS.map((level) => (
+                        <option key={level || "blank"} value={level}>{level || "Not set"}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Reliability</label>
+                    <select
+                      className="input select"
+                      value={form.reliabilityLevel}
+                      onChange={(e) => setForm((f) => ({ ...f, reliabilityLevel: e.target.value }))}
+                    >
+                      {RELIABILITY_LEVELS.map((level) => (
+                        <option key={level || "blank"} value={level}>{level || "Not set"}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Physics Time</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Minutes"
+                      value={form.physicsTimeMinutes}
+                      onChange={(e) => setForm((f) => ({ ...f, physicsTimeMinutes: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Chemistry Time</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Minutes"
+                      value={form.chemistryTimeMinutes}
+                      onChange={(e) => setForm((f) => ({ ...f, chemistryTimeMinutes: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Botany Time</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Minutes"
+                      value={form.botanyTimeMinutes}
+                      onChange={(e) => setForm((f) => ({ ...f, botanyTimeMinutes: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="test-form-lbl">Zoology Time</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="Minutes"
+                      value={form.zoologyTimeMinutes}
+                      onChange={(e) => setForm((f) => ({ ...f, zoologyTimeMinutes: e.target.value }))}
+                    />
+                  </div>
+                  <div className="tests-span-2">
+                    <label className="test-form-lbl">Linked Error Log</label>
+                    <select
+                      className="input select"
+                      value={form.linkedErrorLogTestId}
+                      onChange={(e) => setForm((f) => ({ ...f, linkedErrorLogTestId: e.target.value }))}
+                    >
+                      <option value="">Not linked</option>
+                      {errorLogs.map((log) => (
+                        <option key={log.id} value={log.id}>
+                          {log.testName} - {log.testType} - {format(new Date(log.takenAt), "d MMM yyyy")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -926,6 +1185,20 @@ export default function TestsPage() {
 
         .tests-form-card {
           margin-bottom: 24px;
+        }
+
+        .tests-rank-intel-panel {
+          margin-top: 18px;
+          padding: 18px;
+          border-radius: 22px;
+          background:
+            linear-gradient(145deg, rgba(91, 156, 245, 0.08), rgba(212, 168, 83, 0.04)),
+            rgba(255, 255, 255, 0.025);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tests-rank-intel-head {
+          margin-bottom: 14px;
         }
 
         .tests-form-head,
