@@ -9,3 +9,5 @@ Creating turbopack project { dir: 'E:\\projects\\neet-tracker', testMode: true }
   ✓ viewTransition
 
  GET /manifest.webmanifest 200 in 779ms (next.js: 701ms, application-code: 77ms)
+ GET /api/push-subscriptions 401 in 1085ms (next.js: 1020ms, application-code: 65ms)
+  Reload env: .env.local
