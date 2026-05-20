@@ -1,0 +1,11 @@
+▲ Next.js 16.2.3 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env.local, .env
+✓ Ready in 1121ms
+Creating turbopack project { dir: 'E:\\projects\\neet-tracker', testMode: true }
+- Experiments (use with caution):
+  · serverActions
+  ✓ viewTransition
+
+ GET /manifest.webmanifest 200 in 779ms (next.js: 701ms, application-code: 77ms)

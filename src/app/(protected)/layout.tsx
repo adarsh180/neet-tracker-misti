@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
 import QuickNav from "@/components/layout/quick-nav";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 import RouteTransition from "@/components/layout/route-transition";
 
 const PREFETCH_ROUTES = [
@@ -138,6 +139,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
       <RouteTransition className="protected-route-frame">{children}</RouteTransition>
+      <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" />
       <QuickNav />
     </div>
   );

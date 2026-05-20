@@ -262,6 +262,34 @@ model AiMemoryProfile {
   @@map("ai_memory_profiles")
 }
 
+model AppNotification {
+  id             String   @id @default(cuid())
+  title          String
+  body           String   @db.Text
+  tone           String   @default("focus")
+  senderLabel    String
+  senderClientId String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([senderClientId])
+  @@map("app_notifications")
+}
+
+model PushSubscription {
+  id             String   @id @default(cuid())
+  endpoint       String   @unique @db.VarChar(768)
+  p256dh         String   @db.VarChar(255)
+  auth           String   @db.VarChar(255)
+  senderClientId String?  @db.VarChar(80)
+  userAgent      String?  @db.VarChar(320)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([senderClientId])
+  @@map("push_subscriptions")
+}
+
 model RankPrediction {
   id              String   @id @default(cuid())
   predictedRank   Int

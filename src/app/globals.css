@@ -1160,3 +1160,656 @@ textarea.input { resize: vertical; line-height: 1.5; }
   transform: scale(1.3);
   filter: grayscale(0) drop-shadow(0 0 8px rgba(255,220,100,0.4));
 }
+
+/* ============================================================
+   MOBILE PARITY LAYER
+   Preserves the desktop dashboard feel on phones without overlap.
+   ============================================================ */
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+}
+
+:where(.protected-route-frame, .page-content, .glass-card, .glass, .input, .btn) {
+  min-width: 0;
+}
+
+.protected-route-frame :where(
+  .grid,
+  .grid-2,
+  .grid-3,
+  .grid-4,
+  [class*="grid"],
+  [class*="Grid"],
+  [class*="layout"],
+  [class*="Layout"],
+  [class*="panel"],
+  [class*="Panel"],
+  [class*="card"],
+  [class*="Card"]
+) {
+  min-width: 0;
+}
+
+.protected-route-frame :where(
+  .grid,
+  .grid-2,
+  .grid-3,
+  .grid-4,
+  [class*="grid"],
+  [class*="Grid"],
+  [class*="layout"],
+  [class*="Layout"]
+) > * {
+  min-width: 0;
+}
+
+.protected-route-frame :where(
+  .page-header,
+  [class*="header"],
+  [class*="Header"],
+  [class*="head"],
+  [class*="Head"],
+  [class*="actions"],
+  [class*="Actions"],
+  [class*="toolbar"],
+  [class*="Toolbar"],
+  [class*="row"],
+  [class*="Row"]
+) > * {
+  min-width: 0;
+}
+
+:where(.page-title, .stat-value, [class*="title"], [class*="Title"], [class*="value"], [class*="Value"]) {
+  overflow-wrap: anywhere;
+}
+
+:where(.input, .select, textarea.input, .btn, button, select, input, textarea) {
+  max-width: 100%;
+}
+
+.protected-route-frame :where(
+  table,
+  [class*="table"],
+  [class*="Table"],
+  [class*="chart"],
+  [class*="Chart"],
+  [class*="scroll"],
+  [class*="Scroll"]
+) {
+  max-width: 100%;
+}
+
+.protected-route-frame :where(
+  [class*="table-wrap"],
+  [class*="TableWrap"],
+  [class*="chart-wrap"],
+  [class*="ChartWrap"],
+  [class*="scroll-area"],
+  [class*="ScrollArea"]
+) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1100px) {
+  .page-content {
+    max-width: 100vw;
+    padding: 28px 22px 92px;
+  }
+
+  .protected-route-frame :where(
+    .grid-4,
+    .grid-3,
+    .grid-2,
+    [class*="metrics"],
+    [class*="Metrics"],
+    [class*="stats"],
+    [class*="Stats"],
+    [class*="cards"],
+    [class*="Cards"],
+    [class*="summary"],
+    [class*="Summary"]
+  ) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  }
+
+  .protected-route-frame :where(
+    [class*="hero-grid"],
+    [class*="HeroGrid"],
+    [class*="dashboard-grid"],
+    [class*="DashboardGrid"],
+    [class*="main-grid"],
+    [class*="MainGrid"],
+    [class*="split"],
+    [class*="Split"],
+    [class*="content-grid"],
+    [class*="ContentGrid"]
+  ) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 18px 14px 88px;
+  }
+
+  .page-header,
+  .protected-route-frame :where(
+    [class*="header"],
+    [class*="Header"],
+    [class*="head"],
+    [class*="Head"],
+    [class*="actions"],
+    [class*="Actions"],
+    [class*="toolbar"],
+    [class*="Toolbar"],
+    [class*="row"],
+    [class*="Row"]
+  ) {
+    flex-wrap: wrap;
+  }
+
+  .page-title {
+    font-size: clamp(24px, 8vw, 32px);
+    letter-spacing: 0;
+  }
+
+  .glass-card {
+    border-radius: 22px;
+  }
+
+  .grid-4,
+  .grid-3,
+  .grid-2,
+  .protected-route-frame :where(
+    [class*="metric-grid"],
+    [class*="MetricGrid"],
+    [class*="metrics-grid"],
+    [class*="MetricsGrid"],
+    [class*="stats-grid"],
+    [class*="StatsGrid"],
+    [class*="card-grid"],
+    [class*="CardGrid"],
+    [class*="cards-grid"],
+    [class*="CardsGrid"],
+    [class*="subject-grid"],
+    [class*="SubjectGrid"],
+    [class*="summary-grid"],
+    [class*="SummaryGrid"],
+    [class*="quick-grid"],
+    [class*="QuickGrid"]
+  ) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)) !important;
+  }
+
+  .protected-route-frame :where(
+    [class*="hero-grid"],
+    [class*="HeroGrid"],
+    [class*="dashboard-grid"],
+    [class*="DashboardGrid"],
+    [class*="main-grid"],
+    [class*="MainGrid"],
+    [class*="split-grid"],
+    [class*="SplitGrid"],
+    [class*="content-grid"],
+    [class*="ContentGrid"],
+    [class*="planner-grid"],
+    [class*="PlannerGrid"],
+    [class*="analysis-grid"],
+    [class*="AnalysisGrid"]
+  ) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 292px), 1fr)) !important;
+  }
+
+  .protected-route-frame :where(
+    [class*="form-grid"],
+    [class*="FormGrid"],
+    [class*="field-grid"],
+    [class*="FieldGrid"],
+    [class*="input-grid"],
+    [class*="InputGrid"]
+  ) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 142px), 1fr)) !important;
+  }
+
+  .chat-bubble-user,
+  .chat-bubble-ai {
+    max-width: 96%;
+  }
+
+  .nav-shell {
+    width: min(440px, calc(100vw - 24px)) !important;
+    right: 12px !important;
+    bottom: 78px !important;
+    height: min(720px, calc(100vh - 104px)) !important;
+  }
+
+  .nav-panel {
+    border-radius: 24px !important;
+  }
+
+  .nav-header,
+  .nav-scroll-area,
+  .nav-footer {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .section-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)) !important;
+  }
+
+  .fab-toggle {
+    right: 12px !important;
+    bottom: 12px !important;
+    max-width: calc(100vw - 24px);
+  }
+}
+
+@media (max-width: 420px) {
+  .page-content {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .grid-4,
+  .grid-3,
+  .grid-2,
+  .protected-route-frame :where(
+    [class*="metric-grid"],
+    [class*="MetricGrid"],
+    [class*="metrics-grid"],
+    [class*="MetricsGrid"],
+    [class*="stats-grid"],
+    [class*="StatsGrid"],
+    [class*="card-grid"],
+    [class*="CardGrid"],
+    [class*="cards-grid"],
+    [class*="CardsGrid"],
+    [class*="summary-grid"],
+    [class*="SummaryGrid"]
+  ) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 136px), 1fr)) !important;
+  }
+
+  .protected-route-frame :where(
+    [class*="hero-grid"],
+    [class*="HeroGrid"],
+    [class*="dashboard-grid"],
+    [class*="DashboardGrid"],
+    [class*="main-grid"],
+    [class*="MainGrid"],
+    [class*="split-grid"],
+    [class*="SplitGrid"],
+    [class*="content-grid"],
+    [class*="ContentGrid"],
+    [class*="planner-grid"],
+    [class*="PlannerGrid"],
+    [class*="analysis-grid"],
+    [class*="AnalysisGrid"]
+  ) {
+    grid-template-columns: 1fr !important;
+  }
+
+  .glass-card,
+  .protected-route-frame :where([class*="panel"], [class*="Panel"], [class*="card"], [class*="Card"]) {
+    border-radius: 20px;
+  }
+
+  .btn {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+/* ============================================================
+   PHONE COMPOSITION PASS
+   Keeps the app feeling like the desktop product on narrow screens.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  :where(.ld, .signin-page, .protected-route-frame) {
+    overflow-x: clip;
+  }
+
+  :where(.ld, .signin-page, .protected-route-frame) :where(
+    p,
+    span,
+    strong,
+    small,
+    h1,
+    h2,
+    h3,
+    label,
+    button,
+    a
+  ) {
+    min-width: 0;
+  }
+
+  :where(.ld, .signin-page, .protected-route-frame) :where(
+    h1,
+    h2,
+    h3,
+    p,
+    .page-title,
+    .page-subtitle,
+    [class*="title"],
+    [class*="Title"],
+    [class*="subtitle"],
+    [class*="Subtitle"],
+    [class*="copy"],
+    [class*="Copy"],
+    [class*="label"],
+    [class*="Label"]
+  ) {
+    overflow-wrap: anywhere;
+  }
+
+  .ld-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .ld-features {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .ld-feat {
+    padding: 18px 14px !important;
+  }
+
+  .ld-countdown {
+    max-width: 100%;
+    padding: 14px 18px !important;
+    gap: 12px !important;
+  }
+
+  .ld-days-num {
+    font-size: clamp(38px, 13vw, 56px) !important;
+  }
+
+  .ld-terminal {
+    padding: 14px 16px !important;
+  }
+
+  .signin-wrap {
+    max-width: min(430px, 100%) !important;
+    padding: 32px 24px !important;
+    border-radius: 28px !important;
+  }
+
+  .protected-route-frame :where(
+    .stat-rail,
+    .metrics-grid,
+    .tests-stats-grid,
+    .subject-analytics,
+    .form-summary-strip,
+    .heatmap-meta-row,
+    .closing-strip,
+    .hero-mini-deck,
+    .command-bar,
+    .board-grid,
+    .section-grid,
+    .el-metrics,
+    .el-delta-grid,
+    [class*="stats-grid"],
+    [class*="StatsGrid"],
+    [class*="metrics-grid"],
+    [class*="MetricsGrid"],
+    [class*="summary-grid"],
+    [class*="SummaryGrid"],
+    [class*="cards-grid"],
+    [class*="CardsGrid"]
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .protected-route-frame :where(
+    .tests-form-grid,
+    .manual-grid,
+    [class*="form-grid"],
+    [class*="FormGrid"],
+    [class*="field-grid"],
+    [class*="FieldGrid"]
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .protected-route-frame :where(
+    .tests-span-2,
+    .manual-field-wide,
+    [class*="span-2"],
+    [class*="Span2"]
+  ) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .protected-route-frame :where(
+    .dashboard-page,
+    .todo-page,
+    .tests-shell,
+    .goals-page,
+    .el-shell,
+    .ai-page,
+    .mood-page,
+    .subject-page,
+    .cycle-page,
+    .visual-lab-page,
+    .neet-guru-page
+  ) {
+    padding-left: clamp(10px, 3.6vw, 18px) !important;
+    padding-right: clamp(10px, 3.6vw, 18px) !important;
+  }
+
+  .protected-route-frame :where(.studio-hero, .hero-band, .glass-panel, .panel, .glass-card, .tests-form-card, .tests-chart-card) {
+    border-radius: 20px !important;
+  }
+
+  .protected-route-frame :where(.hero-focus, .readiness-main) {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .protected-route-frame .focus-ring {
+    width: clamp(108px, 31vw, 132px) !important;
+    height: clamp(108px, 31vw, 132px) !important;
+  }
+
+  .protected-route-frame .focus-ring-inner {
+    width: clamp(78px, 23vw, 98px) !important;
+    height: clamp(78px, 23vw, 98px) !important;
+  }
+
+  .protected-route-frame .focus-ring-inner span {
+    font-size: clamp(28px, 8.8vw, 38px) !important;
+  }
+
+  .protected-route-frame .subject-lane {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+  }
+
+  .protected-route-frame .subject-meta {
+    grid-column: 2 / -1 !important;
+    grid-template-columns: repeat(2, minmax(0, max-content)) !important;
+    justify-content: start !important;
+  }
+
+  .protected-route-frame .subject-row {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .protected-route-frame .command-link,
+  .protected-route-frame .stat-tile,
+  .protected-route-frame .metric-card,
+  .protected-route-frame .test-card,
+  .protected-route-frame .stat-row {
+    min-height: 0 !important;
+  }
+
+  .protected-route-frame .command-link {
+    padding: 14px 12px !important;
+    gap: 10px !important;
+  }
+
+  .protected-route-frame .command-index {
+    font-size: 22px !important;
+  }
+
+  .protected-route-frame .test-card {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .protected-route-frame .test-card-right {
+    justify-content: flex-end !important;
+  }
+
+  .protected-route-frame .test-score-block {
+    align-items: flex-end !important;
+  }
+
+  .protected-route-frame .test-score-meta {
+    text-align: right !important;
+  }
+
+  .protected-route-frame :where(.line-chart, .el-table, .el-table-edit) {
+    min-width: min(720px, calc(100vw + 220px)) !important;
+  }
+
+  .protected-route-frame :where(.chart-shell, .chart-card, .tests-chart-card, .el-table-card, .heatmap-panel, [class*="chart"], [class*="Chart"], [class*="table"], [class*="Table"]) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 430px) {
+  .protected-route-frame :where(
+    .stat-rail,
+    .metrics-grid,
+    .tests-stats-grid,
+    .subject-analytics,
+    .form-summary-strip,
+    .heatmap-meta-row,
+    .closing-strip,
+    .command-bar,
+    .board-grid,
+    .section-grid,
+    .el-metrics,
+    .el-delta-grid
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .protected-route-frame .hero-mini-deck {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .protected-route-frame .hero-mini-deck div {
+    min-height: 58px !important;
+    padding: 10px 8px !important;
+  }
+
+  .protected-route-frame .hero-mini-deck strong {
+    font-size: 13px !important;
+  }
+
+  .protected-route-frame .hero-mini-deck span {
+    font-size: 8.5px !important;
+  }
+
+  .protected-route-frame :where(.tests-form-grid, .manual-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .protected-route-frame :where(.hero-actions, .manual-actions, .chip-row, .tests-form-actions, .tests-header-actions) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100%;
+    gap: 9px !important;
+  }
+
+  .protected-route-frame :where(.hero-actions, .manual-actions, .chip-row, .tests-form-actions, .tests-header-actions) > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .protected-route-frame :where(.btn, .chip, .test-filter-pill) {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    font-size: 12px !important;
+  }
+
+  .protected-route-frame .subject-mark {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .protected-route-frame .subject-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .protected-route-frame .subject-meta span {
+    text-align: center;
+    white-space: normal;
+  }
+
+  .protected-route-frame .test-card {
+    gap: 10px !important;
+    padding: 14px !important;
+  }
+
+  .protected-route-frame .test-card-left {
+    gap: 10px !important;
+  }
+
+  .protected-route-frame .test-card-strip {
+    height: 34px !important;
+  }
+
+  .protected-route-frame .test-score {
+    font-size: 18px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .ld-grid,
+  .protected-route-frame :where(
+    .stat-rail,
+    .metrics-grid,
+    .tests-stats-grid,
+    .subject-analytics,
+    .form-summary-strip,
+    .heatmap-meta-row,
+    .closing-strip,
+    .command-bar,
+    .board-grid,
+    .section-grid,
+    .tests-form-grid,
+    .manual-grid,
+    .el-metrics,
+    .el-delta-grid
+  ) {
+    grid-template-columns: 1fr !important;
+  }
+
+  .protected-route-frame .hero-mini-deck {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .protected-route-frame :where(.hero-actions, .manual-actions, .chip-row, .tests-form-actions, .tests-header-actions) {
+    grid-template-columns: 1fr !important;
+  }
+}

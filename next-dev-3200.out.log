@@ -1,0 +1,6 @@
+▲ Next.js 16.2.3 (Turbopack)
+- Local:         http://localhost:3200
+- Network:       http://10.55.253.92:3200
+- Environments: .env.local, .env
+✓ Ready in 1420ms
+Creating turbopack project { dir: 'E:\\projects\\neet-tracker', testMode: true }

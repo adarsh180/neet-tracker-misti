@@ -2263,7 +2263,7 @@ export default function SubjectPage() {
 
         @media (max-width: 900px) {
           .content-shell {
-            padding: 28px 18px 92px;
+            padding: 28px 18px 140px;
           }
 
           .hero,
@@ -2298,6 +2298,10 @@ export default function SubjectPage() {
         }
 
         @media (max-width: 720px) {
+          .content-shell {
+            padding: 22px 12px 156px;
+          }
+
           .hero-title-row {
             align-items: flex-start;
           }
@@ -2321,11 +2325,24 @@ export default function SubjectPage() {
           }
 
           .chapter-header,
-          .topic-row,
           .chapter-left,
           .topic-topline {
             flex-direction: column;
             align-items: flex-start;
+          }
+
+          .chapter-header {
+            gap: 14px;
+            padding: 16px;
+          }
+
+          .chapter-toggle {
+            width: 100%;
+          }
+
+          .chapter-name {
+            font-size: 14px;
+            line-height: 1.35;
           }
 
           .chapter-right,
@@ -2334,11 +2351,39 @@ export default function SubjectPage() {
           }
 
           .chapter-right {
+            display: grid;
+            grid-template-columns: auto auto auto minmax(0, 1fr);
+            align-items: center;
+            gap: 8px;
             min-width: 0;
+          }
+
+          .chapter-actions {
+            gap: 4px;
+          }
+
+          .chapter-action-btn {
+            min-width: 34px;
+            height: 34px;
+            padding-inline: 9px;
+          }
+
+          .chapter-percent {
+            min-width: 42px;
+            font-size: 18px;
+            text-align: left;
           }
 
           .chapter-track {
             width: 100%;
+          }
+
+          .topic-row {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: start;
+            gap: 12px;
+            padding: 14px;
           }
 
           .topic-topline {
@@ -2347,6 +2392,65 @@ export default function SubjectPage() {
 
           .topic-mini-stats {
             justify-content: flex-start;
+          }
+
+          .topic-actions {
+            grid-column: 2 / -1;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, max-content));
+            justify-content: start;
+            gap: 8px;
+          }
+
+          .topic-qs-btn,
+          .action-btn,
+          .topic-actions .danger-btn {
+            min-height: 34px;
+          }
+
+          .question-editor {
+            grid-column: 1 / -1;
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 430px) {
+          .hero,
+          .add-topic,
+          .toolbar,
+          .chapter-card {
+            border-radius: 22px;
+          }
+
+          .chapter-right {
+            grid-template-columns: auto auto minmax(0, 1fr);
+          }
+
+          .chapter-handle {
+            width: 32px;
+            height: 32px;
+          }
+
+          .chapter-actions {
+            order: 2;
+          }
+
+          .chapter-percent {
+            order: 3;
+            min-width: 0;
+          }
+
+          .chapter-track {
+            order: 4;
+            grid-column: 1 / -1;
+          }
+
+          .topic-actions {
+            grid-template-columns: repeat(2, minmax(0, max-content));
+          }
+
+          .topic-actions .danger-btn {
+            padding-inline: 10px;
           }
         }
 

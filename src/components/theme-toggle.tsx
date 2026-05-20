@@ -113,7 +113,7 @@ export default function ThemeToggle() {
         @media (max-width: 600px) {
           .theme-toggle {
             left: 16px;
-            bottom: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom));
             width: 46px;
             padding: 0;
             justify-content: center;

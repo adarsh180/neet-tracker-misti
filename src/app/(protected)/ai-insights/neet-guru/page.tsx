@@ -227,6 +227,17 @@ export default function NEETGuruPage() {
   }, [fetchConversations]);
 
   useEffect(() => {
+    const mq = window.matchMedia("(max-width: 920px)");
+    const syncSidebar = () => {
+      if (mq.matches) setSidebarOpen(false);
+    };
+
+    syncSidebar();
+    mq.addEventListener("change", syncSidebar);
+    return () => mq.removeEventListener("change", syncSidebar);
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingText, streaming]);
 
@@ -2159,13 +2170,13 @@ export default function NEETGuruPage() {
             position: absolute;
             z-index: 200;
             height: 100%;
-            width: 304px;
+            width: min(304px, calc(100vw - 22px));
             box-shadow: 12px 0 34px rgba(0, 0, 0, 0.5);
           }
 
           .ng-sidebar-closed {
             transform: translateX(-100%);
-            width: 304px;
+            width: min(304px, calc(100vw - 22px));
           }
 
           .ng-sidebar-backdrop {
@@ -2179,6 +2190,7 @@ export default function NEETGuruPage() {
           .ng-chat-container {
             width: min(100%, var(--chat-max-width));
             padding-top: 84px;
+            padding-bottom: 300px;
           }
         }
 
@@ -2194,7 +2206,7 @@ export default function NEETGuruPage() {
 
           .ng-chat-container {
             padding-top: 80px;
-            padding-bottom: 290px;
+            padding-bottom: 330px;
           }
 
           .ng-suggestions-grid {
@@ -2217,12 +2229,13 @@ export default function NEETGuruPage() {
           .ng-input-zone {
             padding-left: var(--chat-side-padding);
             padding-right: var(--chat-side-padding);
-            padding-bottom: 18px;
+            padding-bottom: 92px;
           }
 
           .ng-input-container {
             border-radius: 24px;
             padding: 10px 10px 10px 14px;
+            align-items: center;
           }
         }
 
@@ -2274,7 +2287,13 @@ export default function NEETGuruPage() {
           }
 
           .ng-input-zone {
-            padding-bottom: 14px;
+            padding-bottom: 96px;
+          }
+
+          .ng-input-container {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 8px;
           }
 
           .ng-file-chip {

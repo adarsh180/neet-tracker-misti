@@ -650,7 +650,8 @@ export default function QuickNav() {
           .nav-shell {
             width: calc(100vw - 32px);
             right: 16px;
-            bottom: 84px;
+            bottom: calc(84px + env(safe-area-inset-bottom));
+            height: min(660px, calc(100svh - 112px - env(safe-area-inset-bottom)));
           }
 
           .section-grid {
@@ -659,7 +660,7 @@ export default function QuickNav() {
 
           .fab-toggle {
             right: 16px;
-            bottom: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom));
           }
         }
       `}</style>

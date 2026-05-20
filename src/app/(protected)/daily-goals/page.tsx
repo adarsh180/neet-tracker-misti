@@ -29,6 +29,15 @@ interface DailyGoalEntry {
   subject: { id: string; name: string; slug: string; color: string };
 }
 
+interface QueuedDailyGoal {
+  id: string;
+  subjectId: string;
+  date: string;
+  hoursStudied: number;
+  questionsSolved: number;
+  notes: string | null;
+}
+
 interface Subject {
   id: string;
   name: string;
@@ -84,6 +93,7 @@ const TRACKER_START_KEY = format(TRACKER_START, "yyyy-MM-dd");
 const TRACKER_END_KEY = format(TRACKER_END, "yyyy-MM-dd");
 const TRACKER_DAYS = differenceInCalendarDays(TRACKER_END, TRACKER_START) + 1;
 const LIVE_REFRESH_MS = 30000;
+const OFFLINE_DAILY_GOALS_KEY = "neet_offline_daily_goals_v1";
 
 function dateKey(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -212,6 +222,30 @@ function getCurrentStreak(goals: DailyGoalEntry[]): number {
   return streak;
 }
 
+function readOfflineDailyGoals(): QueuedDailyGoal[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(localStorage.getItem(OFFLINE_DAILY_GOALS_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeOfflineDailyGoals(queue: QueuedDailyGoal[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(OFFLINE_DAILY_GOALS_KEY, JSON.stringify(queue));
+}
+
+function queueOfflineDailyGoals(entries: QueuedDailyGoal[]) {
+  const merged = new Map(readOfflineDailyGoals().map((entry) => [entry.id, entry]));
+  entries.forEach((entry) => merged.set(entry.id, entry));
+  const queue = Array.from(merged.values());
+  writeOfflineDailyGoals(queue);
+  return queue.length;
+}
+
 export default function DailyGoalsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [goals, setGoals] = useState<DailyGoalEntry[]>([]);
@@ -223,6 +257,7 @@ export default function DailyGoalsPage() {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [hoveredHeat, setHoveredHeat] = useState<HeatCell | null>(null);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [pendingOffline, setPendingOffline] = useState(0);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -264,6 +299,39 @@ export default function DailyGoalsPage() {
     fetchData();
   }, [fetchData]);
 
+  const syncOfflineGoals = useCallback(async () => {
+    const queue = readOfflineDailyGoals();
+    setPendingOffline(queue.length);
+
+    if (!queue.length || !navigator.onLine) return;
+
+    const remaining: QueuedDailyGoal[] = [];
+
+    for (const entry of queue) {
+      try {
+        const response = await fetch("/api/daily-goals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry),
+        });
+
+        if (!response.ok) remaining.push(entry);
+      } catch {
+        remaining.push(entry);
+      }
+    }
+
+    writeOfflineDailyGoals(remaining);
+    setPendingOffline(remaining.length);
+    if (remaining.length < queue.length) fetchData(true);
+  }, [fetchData]);
+
+  useEffect(() => {
+    syncOfflineGoals();
+    window.addEventListener("online", syncOfflineGoals);
+    return () => window.removeEventListener("online", syncOfflineGoals);
+  }, [syncOfflineGoals]);
+
   useEffect(() => {
     const id = window.setInterval(() => fetchData(true), LIVE_REFRESH_MS);
     return () => window.clearInterval(id);
@@ -275,28 +343,45 @@ export default function DailyGoalsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const entries = Object.entries(form).filter(([, v]) => v.hours !== "" || v.questions !== "");
+    const entries: QueuedDailyGoal[] = Object.entries(form)
+      .filter(([, v]) => v.hours !== "" || v.questions !== "")
+      .map(([subjectId, v]) => ({
+        id: `${selectedDate}:${subjectId}`,
+        subjectId,
+        date: selectedDate,
+        hoursStudied: parseFloat(v.hours) || 0,
+        questionsSolved: parseInt(v.questions) || 0,
+        notes: v.notes || null,
+      }));
+
+    const failedEntries: QueuedDailyGoal[] = [];
 
     await Promise.all(
-      entries.map(([subjectId, v]) =>
-        fetch("/api/daily-goals", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subjectId,
-            date: selectedDate,
-            hoursStudied: parseFloat(v.hours) || 0,
-            questionsSolved: parseInt(v.questions) || 0,
-            notes: v.notes || null,
-          }),
-        }).catch(console.error)
-      )
+      entries.map(async (entry) => {
+        try {
+          const response = await fetch("/api/daily-goals", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(entry),
+          });
+
+          if (!response.ok) failedEntries.push(entry);
+        } catch {
+          failedEntries.push(entry);
+        }
+      })
     );
+
+    if (failedEntries.length) {
+      setPendingOffline(queueOfflineDailyGoals(failedEntries));
+    } else {
+      await syncOfflineGoals();
+    }
 
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
-    fetchData();
+    if (!failedEntries.length) fetchData();
   };
 
   const changeDate = (days: number) => {
@@ -630,6 +715,7 @@ export default function DailyGoalsPage() {
                 <p className="panel-desc">Capture work subject by subject so the graph and heatmap stay honest.</p>
               </div>
               {loading && <span className="loading-pulse">Restoring...</span>}
+              {pendingOffline > 0 && !loading && <span className="offline-sync-pill">{pendingOffline} queued offline</span>}
             </div>
 
             <div className="form-summary-strip">
@@ -700,7 +786,7 @@ export default function DailyGoalsPage() {
             <button className={`save-btn ${saved ? "saved" : ""}`} onClick={handleSave} disabled={saving || loading}>
               {saved ? (
                 <>
-                  <CheckCircle2 size={18} /> Recorded
+                  <CheckCircle2 size={18} /> {pendingOffline > 0 ? "Queued" : "Recorded"}
                 </>
               ) : saving ? (
                 <>
@@ -708,7 +794,7 @@ export default function DailyGoalsPage() {
                 </>
               ) : (
                 <>
-                  <Save size={18} /> Forge Daily Goal
+                  <Save size={18} /> {pendingOffline > 0 ? "Save / Sync Later" : "Forge Daily Goal"}
                 </>
               )}
             </button>
@@ -1127,6 +1213,16 @@ export default function DailyGoalsPage() {
         .panel-desc { font-size: 15px; color: var(--text-secondary); margin: 0; line-height: 1.6; }
         .inline-icon { color: var(--gold); }
         .loading-pulse { font-size: 13px; color: var(--gold); font-weight: 700; animation: pulse 1.5s infinite; }
+        .offline-sync-pill {
+          flex: 0 0 auto;
+          border: 1px solid hsla(38,72%,58%,0.28);
+          border-radius: 999px;
+          padding: 7px 11px;
+          color: var(--gold);
+          background: var(--gold-dim);
+          font-size: 12px;
+          font-weight: 800;
+        }
 
         .chart-panel {
           padding-bottom: 24px;
@@ -1587,7 +1683,7 @@ export default function DailyGoalsPage() {
         }
 
         @media (max-width: 900px) {
-          .goals-page { padding: 32px 18px 80px; }
+          .goals-page { padding: 32px 18px 136px; }
           .content-wrapper { gap: 22px; }
           .hero-band { grid-template-columns: 1fr; padding: 24px; }
           .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1596,25 +1692,34 @@ export default function DailyGoalsPage() {
           .panel-header { gap: 14px; flex-wrap: wrap; }
           .chart-header { align-items: flex-start; }
           .heatmap-callout { align-items: flex-start; }
+          .main-grid { grid-template-columns: 1fr !important; }
+          .form-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+          .heatmap-meta-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
         }
 
         @media (max-width: 700px) {
-          .goals-page { padding: 24px 14px 72px; }
+          .goals-page { padding: 24px 12px 148px; }
           .page-header { align-items: stretch; gap: 16px; }
           .date-picker-glass { width: 100%; justify-content: space-between; }
           .date-display { flex: 1; min-width: 0; justify-content: center; padding: 0 10px; font-size: 14px; }
-          .metrics-grid { grid-template-columns: 1fr; gap: 14px; }
+          .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
           .metric-card { padding: 20px; }
           .metric-icon-wrap { width: 56px; height: 56px; border-radius: 18px; }
           .metric-val { font-size: 30px; }
-          .glass-panel { padding: 20px; gap: 18px; }
+          .glass-panel { padding: 18px; gap: 18px; border-radius: 22px; }
           .panel-header h3 { font-size: 18px; }
           .panel-desc { font-size: 14px; }
           .chart-stat-badge { align-self: flex-start; }
-          .form-summary-strip { grid-template-columns: 1fr; }
+          .form-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; }
+          .summary-pill { padding: 12px 10px; border-radius: 16px; }
+          .summary-pill-label { font-size: 9px; letter-spacing: 0.08em; }
+          .summary-pill strong { font-size: 18px; }
           .subject-analytics { grid-template-columns: 1fr; }
-          .heatmap-meta-row { grid-template-columns: 1fr; }
-          .subject-row { flex-direction: column; align-items: stretch; gap: 14px; padding: 14px 16px; }
+          .heatmap-meta-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; }
+          .heatmap-meta-card { padding: 12px 10px; border-radius: 16px; }
+          .heatmap-meta-kicker { font-size: 9px; letter-spacing: 0.08em; }
+          .heatmap-meta-card strong { font-size: 15px; line-height: 1.2; }
+          .subject-row { flex-direction: column; align-items: stretch; gap: 14px; padding: 14px; }
           .inputs-group { width: 100%; gap: 10px; }
           .input-field { flex: 1; }
           .glass-input { width: 100%; }
@@ -1638,10 +1743,26 @@ export default function DailyGoalsPage() {
           .name { font-size: 14px; }
           .glass-input { padding: 10px 30px 10px 12px; font-size: 14px; }
           .input-suffix { right: 10px; top: 34px; }
+          .form-summary-strip,
+          .heatmap-meta-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+          .form-summary-strip > :last-child,
+          .heatmap-meta-row > :last-child {
+            grid-column: 1 / -1;
+          }
           .heatmap-grid { gap: 4px; }
           .heatmap-col { gap: 4px; }
           .heat-cell,
           .legend-cell { width: 12px; height: 12px; }
+        }
+
+        @media (max-width: 380px) {
+          .metrics-grid,
+          .form-summary-strip,
+          .heatmap-meta-row {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
     </div>

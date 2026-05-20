@@ -291,6 +291,7 @@ export default function RankPredictorPage() {
       <style jsx>{`
         .rank-page {
           min-width: 0;
+          padding-bottom: 140px;
         }
 
         .rank-page :global(.recharts-default-tooltip) {
@@ -306,9 +307,17 @@ export default function RankPredictorPage() {
           .rank-chart-grid {
             grid-template-columns: 1fr !important;
           }
+
+          .rank-page :global(.glass-card) {
+            min-width: 0;
+          }
         }
 
         @media (max-width: 720px) {
+          .rank-page {
+            padding-bottom: 156px;
+          }
+
           .rank-page :global(.dash-header) {
             align-items: stretch;
             gap: 16px;
@@ -320,6 +329,20 @@ export default function RankPredictorPage() {
 
           .rank-page :global(.dash-hero-title) {
             font-size: clamp(30px, 10vw, 42px);
+          }
+
+          .rank-results {
+            gap: 16px !important;
+          }
+
+          .rank-kpi-grid,
+          .rank-gap-grid,
+          .rank-chart-grid {
+            gap: 12px !important;
+          }
+
+          .rank-page :global(.recharts-wrapper) {
+            min-width: 0 !important;
           }
         }
       `}</style>

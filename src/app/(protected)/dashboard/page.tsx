@@ -985,6 +985,7 @@ export default function DashboardPage() {
         .dashboard-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.18fr) minmax(330px, 0.82fr);
+          align-items: start;
           gap: 14px;
           margin-bottom: 14px;
         }
@@ -992,6 +993,10 @@ export default function DashboardPage() {
         .panel {
           padding: 24px;
           min-width: 0;
+        }
+
+        .panel-timer {
+          overflow: hidden;
         }
 
         .section-head {
@@ -1595,6 +1600,19 @@ export default function DashboardPage() {
             padding: 20px;
           }
 
+          .dashboard-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+            align-items: start;
+          }
+
+          .panel {
+            padding: 18px;
+          }
+
+          .panel-timer :global(.ct-card) {
+            padding: 18px 16px;
+          }
+
           h1 {
             font-size: 42px;
           }
@@ -1626,6 +1644,12 @@ export default function DashboardPage() {
             grid-column: 2 / -1;
             grid-template-columns: 1fr;
             justify-content: start;
+          }
+        }
+
+        @media (max-width: 680px) {
+          .dashboard-grid {
+            grid-template-columns: 1fr !important;
           }
         }
 
@@ -1672,10 +1696,31 @@ export default function DashboardPage() {
             min-height: 78px;
           }
 
-          .pulse-notes,
           .section-head {
-            align-items: flex-start;
-            flex-direction: column;
+            align-items: center;
+            flex-direction: row;
+            flex-wrap: wrap;
+          }
+
+          .pulse-notes {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            align-items: start;
+            gap: 8px;
+          }
+
+          .pulse-notes div {
+            min-width: 0;
+          }
+
+          .pulse-notes span {
+            font-size: 10px;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+          }
+
+          .pulse-notes strong {
+            font-size: clamp(19px, 6vw, 24px);
           }
 
           .pulse-chart {

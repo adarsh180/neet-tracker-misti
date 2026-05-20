@@ -108,7 +108,8 @@ export default function CountdownTimer() {
 
       <style jsx>{`
         .ct-card {
-          padding: 28px 32px;
+          container-type: inline-size;
+          padding: clamp(18px, 5cqw, 28px) clamp(18px, 6cqw, 32px);
           position: relative;
           overflow: hidden;
         }
@@ -122,18 +123,23 @@ export default function CountdownTimer() {
           display: flex; align-items: flex-start; justify-content: space-between;
           margin-bottom: 24px; gap: 16px;
         }
+        .ct-top > div:first-child { min-width: 0; }
         .ct-badge {
           display: inline-flex; align-items: center; gap: 6px;
           font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
           color: var(--text-muted); padding: 4px 10px;
           background: var(--glass-ultra); border: 1px solid var(--glass-border);
           border-radius: var(--r-pill); margin-bottom: 8px;
+          max-width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .ct-title {
-          font-size: 26px; font-weight: 800; color: var(--text-primary);
+          font-size: clamp(22px, 7cqw, 26px); font-weight: 800; color: var(--text-primary);
           margin-bottom: 4px;
         }
-        .ct-sub { font-size: 13px; color: var(--text-secondary); }
+        .ct-sub { font-size: clamp(12px, 3.5cqw, 13px); color: var(--text-secondary); line-height: 1.45; }
         .ct-pct-badge { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
         .ct-pct-ring { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
         .ct-pct-val {
@@ -145,8 +151,10 @@ export default function CountdownTimer() {
           display: flex; align-items: center; justify-content: flex-start;
           gap: 8px; margin-bottom: 20px;
         }
-        .ct-unit { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .ct-unit { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
         .ct-ring-wrap { position: relative; width: 76px; height: 76px; }
+        .ct-ring-wrap svg,
+        .ct-pct-ring svg { width: 100%; height: 100%; display: block; }
         .ct-ring-val {
           position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
           font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums;
@@ -154,9 +162,75 @@ export default function CountdownTimer() {
         .ct-ring-label {
           font-size: 9.5px; font-weight: 800; letter-spacing: 0.10em; text-transform: uppercase;
           color: var(--text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
         }
         .ct-sep { font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.12); align-self: center; padding-bottom: 20px; }
         .ct-bar-wrap { margin-top: 4px; }
+
+        @container (max-width: 430px) {
+          .ct-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            margin-bottom: 20px;
+          }
+
+          .ct-badge {
+            max-width: min(100%, 150px);
+            font-size: 9px;
+            letter-spacing: 0.05em;
+            padding: 4px 8px;
+          }
+
+          .ct-pct-badge {
+            gap: 6px;
+          }
+
+          .ct-pct-ring {
+            width: 48px;
+            height: 48px;
+          }
+
+          .ct-pct-label {
+            display: none;
+          }
+
+          .ct-units {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            align-items: start;
+            gap: 8px;
+          }
+
+          .ct-sep {
+            display: none;
+          }
+
+          .ct-ring-wrap {
+            width: min(100%, 58px);
+            height: auto;
+            aspect-ratio: 1;
+          }
+
+          .ct-ring-val {
+            font-size: clamp(15px, 5.6cqw, 19px);
+          }
+
+          .ct-ring-label {
+            font-size: 7.5px;
+            letter-spacing: 0.04em;
+          }
+        }
+
+        @container (max-width: 300px) {
+          .ct-units {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            row-gap: 12px;
+          }
+        }
       `}</style>
     </div>
   );

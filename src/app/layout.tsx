@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Serif_Devanagari, Playfair_Display } from "next/font/google";
 import Script from "next/script";
+import PwaRegister from "@/components/pwa-register";
 import ThemeToggle from "@/components/theme-toggle";
 import "./globals.css";
 
@@ -26,6 +27,21 @@ export const metadata: Metadata = {
   title: "Sacred Path — NEET 2027",
   description: "Divyani's sacred journey to AIIMS Delhi MBBS. A personalized NEET UG 2027 preparation platform.",
   keywords: "NEET 2027, AIIMS Delhi, MBBS, study tracker, Divyani",
+  applicationName: "Sacred Path",
+  appleWebApp: {
+    capable: true,
+    title: "NEET Tracker",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [
+      { url: "/app-icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
@@ -68,6 +84,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <PwaRegister />
         {children}
         <ThemeToggle />
       </body>
