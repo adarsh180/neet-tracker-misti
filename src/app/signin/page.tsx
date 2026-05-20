@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
+import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
 import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
 
 export default function SignInPage() {
@@ -75,11 +76,11 @@ export default function SignInPage() {
       <div className="signin-wrap animate-scale-in">
         {/* Logo mark */}
         <div className="signin-logo animate-pulse-glow">
-          <span className="devanagari" style={{ fontSize: 22, color: "var(--gold)" }}>ॐ</span>
+          <NeetLogoMark size={30} />
         </div>
 
         <div className="signin-brand">
-          <h1 className="signin-title gradient-text">Sacred Path</h1>
+          <h1 className="signin-title gradient-text">NEET DOCTOR</h1>
           <div className="signin-shloka devanagari">सरस्वत्यै नमः</div>
         </div>
 
@@ -142,7 +143,7 @@ export default function SignInPage() {
                 <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
               </span>
             ) : (
-              <>Enter Sacred Path <ArrowRight size={18} /></>
+              <>Enter NEET DOCTOR <ArrowRight size={18} /></>
             )}
           </button>
         </form>

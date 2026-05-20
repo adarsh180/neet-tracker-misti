@@ -55,9 +55,11 @@ function urlBase64ToUint8Array(base64String: string) {
 export function NotificationCenter({
   appLabel,
   defaultSender,
+  partnerLabel = "Partner app",
 }: {
   appLabel: string;
   defaultSender: string;
+  partnerLabel?: string;
 }) {
   const keyPrefix = useMemo(() => appLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-"), [appLabel]);
   const clientIdKey = `${keyPrefix}-notification-client`;
@@ -219,6 +221,7 @@ export function NotificationCenter({
     const title = String(form.get("title") || "").trim();
     const body = String(form.get("body") || "").trim();
     const tone = String(form.get("tone") || "focus");
+    const target = String(form.get("target") || "local");
     const sender = String(form.get("senderLabel") || defaultSender).trim() || defaultSender;
     if (!title || !body) return;
 
@@ -230,7 +233,7 @@ export function NotificationCenter({
       const response = await fetch("/api/notifications", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, body, tone, senderLabel: sender, senderClientId: clientId }),
+        body: JSON.stringify({ title, body, tone, target, senderLabel: sender, senderClientId: clientId }),
       });
       if (response.ok) {
         event.currentTarget.reset();
@@ -249,7 +252,13 @@ export function NotificationCenter({
   return (
     <>
       <div className="notify-dock">
-        <button className="notify-button" type="button" onClick={() => setOpen((value) => !value)} aria-label="Open notifications">
+        <button
+          className="notify-button"
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-label="Open notifications"
+          aria-expanded={open}
+        >
           <Bell size={18} />
           {unread.length > 0 ? <span>{Math.min(unread.length, 9)}</span> : null}
         </button>
@@ -298,6 +307,11 @@ export function NotificationCenter({
               <input name="senderLabel" defaultValue={senderLabel} placeholder="Your name" maxLength={42} />
               <input name="title" placeholder="Short title" maxLength={90} required />
               <textarea name="body" placeholder="Write a useful, non-spammy nudge..." maxLength={420} required />
+              <select name="target" defaultValue="partner" aria-label="Notification destination">
+                <option value="partner">{partnerLabel}</option>
+                <option value="local">This app only</option>
+                <option value="both">Both apps</option>
+              </select>
               <div className="notify-compose-row">
                 <select name="tone" defaultValue="focus">
                   <option value="focus">Focus</option>
@@ -339,8 +353,8 @@ export function NotificationCenter({
 
         .notify-dock {
           position: fixed;
-          right: 92px;
-          bottom: calc(24px + env(safe-area-inset-bottom));
+          top: calc(20px + env(safe-area-inset-top));
+          right: 22px;
           z-index: 9998;
         }
 
@@ -360,11 +374,28 @@ export function NotificationCenter({
 
         .notify-button {
           position: relative;
-          width: 56px;
-          height: 56px;
+          width: 52px;
+          height: 52px;
           border-radius: 999px;
           display: grid;
           place-items: center;
+          background:
+            linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)),
+            rgba(8,10,22,0.78);
+          border-color: rgba(255,255,255,0.16);
+          box-shadow:
+            0 18px 42px rgba(0,0,0,0.38),
+            inset 0 1px 0 rgba(255,255,255,0.14);
+          transition: transform 180ms var(--ease-out), border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+        }
+
+        .notify-button:hover {
+          transform: translateY(-2px);
+          border-color: rgba(212,168,83,0.38);
+          box-shadow:
+            0 22px 48px rgba(0,0,0,0.44),
+            0 0 24px rgba(212,168,83,0.14),
+            inset 0 1px 0 rgba(255,255,255,0.18);
         }
 
         .notify-button span {
@@ -384,11 +415,11 @@ export function NotificationCenter({
 
         .notify-panel {
           position: fixed;
-          right: 24px;
-          bottom: calc(92px + env(safe-area-inset-bottom));
+          top: calc(84px + env(safe-area-inset-top));
+          right: 22px;
           z-index: 10000;
           width: min(420px, calc(100vw - 28px));
-          max-height: min(680px, calc(100svh - 118px));
+          max-height: min(680px, calc(100svh - 108px - env(safe-area-inset-top)));
           display: grid;
           grid-template-rows: auto auto auto minmax(0, 1fr);
           gap: 12px;
@@ -562,8 +593,8 @@ export function NotificationCenter({
 
         .notify-toast {
           position: fixed;
-          right: 24px;
-          bottom: calc(92px + env(safe-area-inset-bottom));
+          top: calc(84px + env(safe-area-inset-top));
+          right: 22px;
           z-index: 10001;
           max-width: min(360px, calc(100vw - 28px));
           display: flex;
@@ -606,26 +637,26 @@ export function NotificationCenter({
 
         @media (max-width: 560px) {
           .notify-dock {
-            right: 84px;
-            bottom: calc(18px + env(safe-area-inset-bottom));
+            top: calc(12px + env(safe-area-inset-top));
+            right: 12px;
           }
 
           .notify-button {
-            width: 52px;
-            height: 52px;
+            width: 48px;
+            height: 48px;
           }
 
           .notify-panel {
+            top: calc(72px + env(safe-area-inset-top));
             right: 10px;
-            bottom: calc(82px + env(safe-area-inset-bottom));
             width: calc(100vw - 20px);
-            max-height: calc(100svh - 100px);
+            max-height: calc(100svh - 86px - env(safe-area-inset-top));
             border-radius: 22px;
           }
 
           .notify-toast {
+            top: calc(72px + env(safe-area-inset-top));
             right: 10px;
-            bottom: calc(82px + env(safe-area-inset-bottom));
           }
         }
       `}</style>

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Sacred Path - NEET 2027",
-    short_name: "NEET Tracker",
+    name: "NEET DOCTOR - NEET 2027",
+    short_name: "NEET DOCTOR",
     description: "A focused NEET 2027 preparation app for syllabus, tests, error logs, AI guidance, and wellness.",
     start_url: "/dashboard",
     scope: "/",
@@ -14,6 +14,12 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["education", "productivity"],
     icons: [
       {
+        src: "/favicon.ico",
+        sizes: "any",
+        type: "image/x-icon",
+        purpose: "any",
+      },
+      {
         src: "/icon-192.png",
         sizes: "192x192",
         type: "image/png",
@@ -22,6 +28,12 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         src: "/icon-512.png",
         sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/apple-icon.png",
+        sizes: "180x180",
         type: "image/png",
         purpose: "any",
       },

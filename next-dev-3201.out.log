@@ -1,0 +1,10 @@
+
+> neet-tracker@0.1.0 dev
+> next dev --port 3201
+
+▲ Next.js 16.2.3 (Turbopack)
+- Local:         http://localhost:3201
+- Network:       http://10.55.253.92:3201
+- Environments: .env.local, .env
+✓ Ready in 1536ms
+[?25h

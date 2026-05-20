@@ -139,7 +139,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
       <RouteTransition className="protected-route-frame">{children}</RouteTransition>
-      <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" />
+      <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" partnerLabel="Adarsh's UPSC phone" />
       <QuickNav />
     </div>
   );

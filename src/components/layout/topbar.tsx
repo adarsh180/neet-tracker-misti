@@ -8,6 +8,7 @@ import {
   LogOut, Menu, X, ChevronDown, ListTodo
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
+import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
 import SmoothLink from "@/components/layout/smooth-link";
 
 const NAV_LINKS = [
@@ -44,10 +45,10 @@ export default function Topbar() {
           {/* Logo */}
           <SmoothLink href="/dashboard" className="topbar-logo">
             <div className="topbar-logo-mark">
-              <span className="devanagari" style={{ fontSize: 14, color: "var(--gold-bright)" }}>ॐ</span>
+              <NeetLogoMark size={18} />
             </div>
             <div className="topbar-logo-text">
-              <span className="topbar-brand">Sacred Path</span>
+              <span className="topbar-brand">NEET DOCTOR</span>
               <span className="topbar-sub">NEET 2027</span>
             </div>
           </SmoothLink>

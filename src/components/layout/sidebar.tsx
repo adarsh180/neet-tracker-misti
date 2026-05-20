@@ -7,6 +7,7 @@ import {
   SmilePlus, ListTodo
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
+import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
 import SmoothLink from "@/components/layout/smooth-link";
 
 const NAV_MAIN = [
@@ -39,11 +40,11 @@ export default function Sidebar({ collapsed, setCollapsed }: Props) {
         {/* ── Logo ── */}
         <div className="sb-logo">
           <div className="sb-logo-mark">
-            <span className="devanagari" style={{ fontSize: 16, color: "var(--gold-bright)" }}>ॐ</span>
+            <NeetLogoMark size={20} />
           </div>
           {!collapsed && (
             <div className="sb-logo-text">
-              <span className="sb-brand">Sacred Path</span>
+              <span className="sb-brand">NEET DOCTOR</span>
               <span className="sb-sub">NEET 2027</span>
             </div>
           )}

@@ -1,7 +1,7 @@
 import SmoothLink from "@/components/layout/smooth-link";
 
 export const metadata = {
-  title: "Offline | Sacred Path",
+  title: "Offline | NEET DOCTOR",
 };
 
 export default function OfflinePage() {
@@ -38,7 +38,7 @@ export default function OfflinePage() {
           Offline mode
         </p>
         <h1 style={{ margin: 0, fontSize: "clamp(32px, 8vw, 48px)", lineHeight: 1.05 }}>
-          Sacred Path is installed. Live study data needs internet.
+          NEET DOCTOR is installed. Live study data needs internet.
         </h1>
         <p style={{ margin: "18px 0 24px", color: "var(--text-secondary)", lineHeight: 1.75 }}>
           You can open cached pages and queue study logs while offline. TiDB sync, NEET-GURU, rank analysis, and fresh analytics need internet.

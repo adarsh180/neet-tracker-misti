@@ -7,9 +7,38 @@ import { sendWebPushNotification } from "@/lib/web-push";
 export const dynamic = "force-dynamic";
 
 const TONES = new Set(["focus", "urgent", "care", "win"]);
+const TARGETS = new Set(["local", "partner", "both"]);
 
 function clean(value: unknown, fallback = "") {
   return String(value ?? fallback).replace(/\s+/g, " ").trim();
+}
+
+async function forwardToPartner(input: {
+  title: string;
+  body: string;
+  tone: string;
+  senderLabel: string;
+  senderClientId: string | null;
+}) {
+  const endpoint = process.env.PARTNER_NOTIFY_ENDPOINT;
+  const secret = process.env.CROSS_APP_NOTIFY_SECRET;
+  if (!endpoint || !secret) return { forwarded: false, reason: "missing-config" };
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-cross-app-secret": secret,
+      },
+      body: JSON.stringify(input),
+      cache: "no-store",
+    });
+
+    return { forwarded: response.ok, status: response.status };
+  } catch {
+    return { forwarded: false, reason: "network" };
+  }
 }
 
 function defaultSender(userId: string) {
@@ -38,22 +67,35 @@ export async function POST(request: NextRequest) {
   const senderLabel = clean(payload.senderLabel, defaultSender(session.userId)).slice(0, 42);
   const senderClientId = clean(payload.senderClientId).slice(0, 80) || null;
   const tone = TONES.has(clean(payload.tone)) ? clean(payload.tone) : "focus";
+  const target = TARGETS.has(clean(payload.target)) ? clean(payload.target) : "local";
 
   if (!title || !body) {
     return NextResponse.json({ error: "Title and message are required" }, { status: 400 });
   }
 
-  const notification = await db.appNotification.create({
-    data: {
-      title,
-      body,
-      tone,
-      senderLabel,
-      senderClientId,
-    },
-  });
+  let notification = null;
+  let push = null;
 
-  const push = await sendWebPushNotification(notification, senderClientId);
+  if (target === "local" || target === "both") {
+    notification = await db.appNotification.create({
+      data: {
+        title,
+        body,
+        tone,
+        senderLabel,
+        senderClientId,
+      },
+    });
+    push = await sendWebPushNotification(notification, senderClientId);
+  }
 
-  return NextResponse.json({ notification, push }, { status: 201 });
+  const partner = target === "partner" || target === "both"
+    ? await forwardToPartner({ title, body, tone, senderLabel, senderClientId })
+    : { forwarded: false };
+
+  if (target === "partner" && !partner.forwarded) {
+    return NextResponse.json({ error: "Partner notification could not be delivered", partner }, { status: 502 });
+  }
+
+  return NextResponse.json({ notification, push, partner }, { status: 201 });
 }

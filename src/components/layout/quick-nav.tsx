@@ -21,6 +21,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
+import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
 import SmoothLink from "@/components/layout/smooth-link";
 
 type NavItem = {
@@ -102,9 +103,9 @@ export default function QuickNav() {
 
           <header className="nav-header">
             <div className="nav-brand">
-              <div className="nav-brand-icon">ॐ</div>
+              <div className="nav-brand-icon"><NeetLogoMark size={24} /></div>
               <div className="nav-brand-text">
-                <h2 className="nav-title">Sacred Path</h2>
+                <h2 className="nav-title">NEET DOCTOR</h2>
                 <p className="nav-subtitle">NEET 2027 Workspace</p>
               </div>
             </div>

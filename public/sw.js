@@ -1,9 +1,12 @@
-const CACHE_NAME = "neet-tracker-pwa-v2";
+const CACHE_NAME = "neet-tracker-pwa-v4";
 const OFFLINE_URL = "/offline";
 const APP_SHELL_ASSETS = [
   OFFLINE_URL,
   "/app-icon.svg",
   "/maskable-icon.svg",
+  "/favicon.ico",
+  "/favicon-32.png",
+  "/apple-icon.png",
   "/icon-192.png",
   "/icon-512.png",
   "/maskable-512.png",

@@ -24,10 +24,10 @@ const devanagari = Noto_Serif_Devanagari({
 });
 
 export const metadata: Metadata = {
-  title: "Sacred Path — NEET 2027",
-  description: "Divyani's sacred journey to AIIMS Delhi MBBS. A personalized NEET UG 2027 preparation platform.",
-  keywords: "NEET 2027, AIIMS Delhi, MBBS, study tracker, Divyani",
-  applicationName: "Sacred Path",
+  title: "NEET DOCTOR — NEET 2027",
+  description: "Divyani's premium journey to AIIMS Delhi MBBS. A personalized NEET UG 2027 preparation platform.",
+  keywords: "NEET 2027, AIIMS Delhi, MBBS, study tracker, Divyani, NEET DOCTOR",
+  applicationName: "NEET DOCTOR",
   appleWebApp: {
     capable: true,
     title: "NEET Tracker",
@@ -35,11 +35,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/app-icon.svg", type: "image/svg+xml" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/icon-192.png",
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.webmanifest",
 };
@@ -57,7 +59,8 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} ${devanagari.variable}`}
     >
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
         <meta name="theme-color" content="#050508" />
         <Script
           id="theme-bootstrap"

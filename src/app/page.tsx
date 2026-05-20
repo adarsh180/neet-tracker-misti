@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Shield, Sparkles } from "lucide-react";
 import { getStoredAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
 import SmoothLink from "@/components/layout/smooth-link";
 
 const EXAM_DATE = new Date("2027-05-02T09:00:00+05:30");
@@ -117,7 +118,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="ld-hero">
         <div className="ld-badge animate-fade-in">
-          <span className="devanagari" style={{ color: "var(--gold-bright)", fontSize: 14 }}>ॐ</span>
+          <NeetLogoMark size={17} />
           <div className="dot-online" />
           <span>Sacred Study Platform · NEET 2027</span>
         </div>
