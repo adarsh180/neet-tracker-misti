@@ -1,4 +1,4 @@
-const CACHE_NAME = "neet-tracker-pwa-v6";
+const CACHE_NAME = "neet-tracker-pwa-v7";
 const OFFLINE_URL = "/offline";
 const APP_SHELL_ASSETS = [
   OFFLINE_URL,
@@ -16,7 +16,18 @@ const APP_SHELL_ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL_ASSETS)).then(() => self.skipWaiting()),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) =>
+        Promise.all(
+          APP_SHELL_ASSETS.map((asset) =>
+            cache.add(new Request(asset, { cache: "reload" })).catch((error) => {
+              console.warn("[sw] skipped cache asset", asset, error);
+            }),
+          ),
+        ),
+      )
+      .then(() => self.skipWaiting()),
   );
 });
 

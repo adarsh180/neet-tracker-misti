@@ -36,7 +36,12 @@ async function forwardToPartner(input: {
       cache: "no-store",
     });
 
-    return { forwarded: response.ok, status: response.status };
+    const data = await response.json().catch(() => null);
+    return {
+      forwarded: response.ok,
+      status: response.status,
+      push: data?.push,
+    };
   } catch {
     return { forwarded: false, reason: "network" };
   }
