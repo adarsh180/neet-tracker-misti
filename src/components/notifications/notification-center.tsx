@@ -17,6 +17,7 @@ type DeviceNotificationOptions = NotificationOptions & {
   badge?: string;
   data?: unknown;
   renotify?: boolean;
+  requireInteraction?: boolean;
   vibrate?: number[];
 };
 
@@ -269,12 +270,14 @@ export function NotificationCenter({
         badge: "/icon-192.png",
         tag: item.id,
         renotify: true,
+        requireInteraction: true,
         data: {
           id: item.id,
           url: "/dashboard",
           tone: item.tone,
+          urgent: true,
         },
-        vibrate: [90, 35, 90],
+        vibrate: [160, 70, 160, 70, 240],
       };
 
       try {

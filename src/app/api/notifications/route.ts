@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         senderClientId,
       },
     });
-    push = await sendWebPushNotification(notification, target === "local" ? null : senderClientId);
+    push = await sendWebPushNotification(notification, senderClientId);
   }
 
   const partner = target === "partner" || target === "both"
