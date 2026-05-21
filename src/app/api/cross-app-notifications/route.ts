@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { pruneExpiredNotifications } from "@/lib/notification-retention";
 import { sendWebPushNotification } from "@/lib/web-push";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
   if (!authorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  await pruneExpiredNotifications();
 
   const payload = await request.json().catch(() => ({}));
   const title = clean(payload.title).slice(0, 90);

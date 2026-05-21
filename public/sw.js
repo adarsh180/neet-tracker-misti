@@ -1,21 +1,27 @@
-const CACHE_NAME = "neet-tracker-pwa-v4";
+const CACHE_NAME = "neet-tracker-pwa-v6";
 const OFFLINE_URL = "/offline";
 const APP_SHELL_ASSETS = [
   OFFLINE_URL,
-  "/app-icon.svg",
-  "/maskable-icon.svg",
   "/favicon.ico",
   "/favicon-32.png",
   "/apple-icon.png",
   "/icon-192.png",
   "/icon-512.png",
   "/maskable-512.png",
+  "/doctor-logo.png",
+  "/doctor-logo-mark.png",
+  "/brand/neet-doctor-logo.png",
+  "/brand/neet-doctor-logo-mark.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL_ASSETS)).then(() => self.skipWaiting()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -73,6 +79,8 @@ self.addEventListener("push", (event) => {
     badge: payload.badge || "/icon-192.png",
     tag: payload.tag || "neet-tracker-notification",
     data: payload.data || { url: "/dashboard" },
+    timestamp: Date.now(),
+    vibrate: [80, 40, 80],
     renotify: false,
     silent: false,
   };

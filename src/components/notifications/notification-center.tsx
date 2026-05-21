@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, Check, Send, Sparkles, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 
 type AppNotification = {
   id: string;
@@ -14,6 +14,7 @@ type AppNotification = {
 };
 
 const POLL_MS = 5000;
+const DISMISS_LIMIT = 240;
 
 function safeJson<T>(key: string, fallback: T): T {
   try {
@@ -52,6 +53,125 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+function NotificationRow({
+  item,
+  read,
+  onRead,
+  onDismiss,
+}: {
+  item: AppNotification;
+  read: boolean;
+  onRead: () => void;
+  onDismiss: () => void;
+}) {
+  const [dragX, setDragX] = useState(0);
+  const [isPressed, setIsPressed] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const startXRef = useRef<number | null>(null);
+  const lastPointRef = useRef({ x: 0, time: 0 });
+  const velocityRef = useRef(0);
+  const movedRef = useRef(false);
+  const hapticRef = useRef(false);
+
+  const progress = Math.min(Math.abs(dragX) / 118, 1);
+  const side = dragX >= 0 ? 1 : -1;
+
+  const dismissWithMotion = useCallback(
+    (direction: number) => {
+      if (isExiting) return;
+      setIsExiting(true);
+      setDragX(direction * 460);
+      navigator.vibrate?.(18);
+      window.setTimeout(onDismiss, 190);
+    },
+    [isExiting, onDismiss],
+  );
+
+  function endDrag() {
+    if (startXRef.current === null || isExiting) return;
+    const shouldDismiss = Math.abs(dragX) > 92 || Math.abs(velocityRef.current) > 0.72;
+
+    if (shouldDismiss) {
+      dismissWithMotion(side);
+    } else {
+      setDragX(0);
+    }
+
+    setIsPressed(false);
+    startXRef.current = null;
+    hapticRef.current = false;
+  }
+
+  return (
+    <article
+      className={`notify-item tone-${item.tone} ${read ? "read" : ""} ${isPressed ? "dragging" : ""} ${isExiting ? "exiting" : ""}`}
+      style={
+        {
+          "--drag-x": `${dragX}px`,
+          "--drag-progress": progress,
+          "--drag-tilt": `${Math.max(-2.4, Math.min(2.4, dragX / 44))}deg`,
+          "--drag-scale": 1 - progress * 0.018,
+        } as CSSProperties
+      }
+    >
+      <div className="notify-dismiss-bg notify-dismiss-bg-left" aria-hidden="true">
+        <span>Clear</span>
+      </div>
+      <div className="notify-dismiss-bg notify-dismiss-bg-right" aria-hidden="true">
+        <span>Clear</span>
+      </div>
+      <button
+        type="button"
+        className="notify-item-card"
+        onClick={() => {
+          if (!movedRef.current && !isExiting) onRead();
+        }}
+        onPointerDown={(event) => {
+          if (isExiting) return;
+          startXRef.current = event.clientX;
+          lastPointRef.current = { x: event.clientX, time: event.timeStamp };
+          velocityRef.current = 0;
+          movedRef.current = false;
+          hapticRef.current = false;
+          setIsPressed(true);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (startXRef.current === null || isExiting) return;
+          const raw = event.clientX - startXRef.current;
+          const magnitude = Math.abs(raw);
+          const resistance = magnitude > 148 ? 148 + (magnitude - 148) * 0.24 : magnitude;
+          const next = Math.sign(raw || 1) * Math.min(resistance, 214);
+          const elapsed = Math.max(event.timeStamp - lastPointRef.current.time, 1);
+          velocityRef.current = (event.clientX - lastPointRef.current.x) / elapsed;
+          lastPointRef.current = { x: event.clientX, time: event.timeStamp };
+
+          if (Math.abs(next) > 4) movedRef.current = true;
+          if (Math.abs(next) > 74 && !hapticRef.current) {
+            navigator.vibrate?.(8);
+            hapticRef.current = true;
+          }
+          if (Math.abs(next) < 42) hapticRef.current = false;
+
+          setDragX(next);
+        }}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
+        <span className="notify-dot" />
+        <span>
+          <strong>{item.title}</strong>
+          <em>{item.body}</em>
+          <small>{item.senderLabel} / {toneLabel(item.tone)} / {relativeTime(item.createdAt)}</small>
+        </span>
+      </button>
+      <button type="button" className="notify-dismiss-btn" onClick={() => dismissWithMotion(-1)} aria-label={`Clear ${item.title}`}>
+        <X size={14} />
+      </button>
+    </article>
+  );
+}
+
 export function NotificationCenter({
   appLabel,
   defaultSender,
@@ -64,6 +184,7 @@ export function NotificationCenter({
   const keyPrefix = useMemo(() => appLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-"), [appLabel]);
   const clientIdKey = `${keyPrefix}-notification-client`;
   const readKey = `${keyPrefix}-notification-read`;
+  const dismissedKey = `${keyPrefix}-notification-dismissed`;
   const notifiedKey = `${keyPrefix}-notification-system-shown`;
   const senderKey = `${keyPrefix}-notification-sender`;
 
@@ -71,6 +192,7 @@ export function NotificationCenter({
   const [senderLabel, setSenderLabel] = useState(defaultSender);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
@@ -81,7 +203,8 @@ export function NotificationCenter({
   const [toast, setToast] = useState<AppNotification | null>(null);
   const previousIdsRef = useRef<Set<string>>(new Set());
 
-  const unread = notifications.filter((item) => !readIds.has(item.id));
+  const visibleNotifications = notifications.filter((item) => !dismissedIds.has(item.id));
+  const unread = visibleNotifications.filter((item) => !readIds.has(item.id));
 
   const persistRead = useCallback(
     (next: Set<string>) => {
@@ -89,6 +212,22 @@ export function NotificationCenter({
       localStorage.setItem(readKey, JSON.stringify(Array.from(next).slice(-160)));
     },
     [readKey],
+  );
+
+  const persistDismissed = useCallback(
+    (next: Set<string>) => {
+      setDismissedIds(next);
+      localStorage.setItem(dismissedKey, JSON.stringify(Array.from(next).slice(-DISMISS_LIMIT)));
+    },
+    [dismissedKey],
+  );
+
+  const dismissNotification = useCallback(
+    (id: string) => {
+      persistDismissed(new Set([...dismissedIds, id]));
+      persistRead(new Set([...readIds, id]));
+    },
+    [dismissedIds, persistDismissed, persistRead, readIds],
   );
 
   const fetchNotifications = useCallback(async () => {
@@ -101,6 +240,8 @@ export function NotificationCenter({
     const known = previousIdsRef.current;
     const fresh = next
       .filter((item) => !known.has(item.id))
+      .filter((item) => !dismissedIds.has(item.id))
+      .filter((item) => !readIds.has(item.id))
       .filter((item) => item.senderClientId !== clientId)
       .reverse();
 
@@ -121,7 +262,7 @@ export function NotificationCenter({
     }
 
     previousIdsRef.current = new Set(next.map((item) => item.id));
-  }, [clientId, notifiedKey, permission]);
+  }, [clientId, dismissedIds, notifiedKey, permission, readIds]);
 
   useEffect(() => {
     let id = localStorage.getItem(clientIdKey);
@@ -132,9 +273,10 @@ export function NotificationCenter({
     setClientId(id);
     setSenderLabel(localStorage.getItem(senderKey) || defaultSender);
     setReadIds(new Set(safeJson<string[]>(readKey, [])));
+    setDismissedIds(new Set(safeJson<string[]>(dismissedKey, [])));
     setBrowserAlertsSupported("Notification" in window && "serviceWorker" in navigator && "PushManager" in window);
     if ("Notification" in window) setPermission(Notification.permission);
-  }, [clientIdKey, defaultSender, readKey, senderKey]);
+  }, [clientIdKey, defaultSender, dismissedKey, readKey, senderKey]);
 
   useEffect(() => {
     if (!clientId || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
@@ -194,12 +336,18 @@ export function NotificationCenter({
 
     const registration = await navigator.serviceWorker.ready;
     const existing = await registration.pushManager.getSubscription();
-    const subscription =
-      existing ||
-      (await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(config.publicKey),
-      }));
+    if (existing) {
+      await fetch("/api/push-subscriptions", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ endpoint: existing.endpoint }),
+      }).catch(() => {});
+      await existing.unsubscribe().catch(() => false);
+    }
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(config.publicKey),
+    });
 
     const saveResponse = await fetch("/api/push-subscriptions", {
       method: "POST",
@@ -209,7 +357,7 @@ export function NotificationCenter({
 
     if (saveResponse.ok) {
       setPushEnabled(true);
-      setPushStatus("Phone push is enabled.");
+      setPushStatus("Phone push is enabled on this device.");
     } else {
       setPushStatus("Could not save this device for push.");
     }
@@ -246,7 +394,13 @@ export function NotificationCenter({
   }
 
   function markAllRead() {
-    persistRead(new Set([...readIds, ...notifications.map((item) => item.id)]));
+    persistRead(new Set([...readIds, ...visibleNotifications.map((item) => item.id)]));
+  }
+
+  function clearRead() {
+    const readVisible = visibleNotifications.filter((item) => readIds.has(item.id)).map((item) => item.id);
+    const idsToClear = readVisible.length ? readVisible : visibleNotifications.map((item) => item.id);
+    persistDismissed(new Set([...dismissedIds, ...idsToClear]));
   }
 
   return (
@@ -295,6 +449,10 @@ export function NotificationCenter({
               <Check size={14} />
               Read
             </button>
+            <button type="button" onClick={clearRead} disabled={!visibleNotifications.length}>
+              <X size={14} />
+              Clear
+            </button>
             {browserAlertsSupported ? (
               <button type="button" onClick={enablePushAlerts}>{pushEnabled ? "Push on" : "Phone push"}</button>
             ) : null}
@@ -328,17 +486,14 @@ export function NotificationCenter({
           )}
 
           <div className="notify-list">
-            {notifications.length ? notifications.map((item) => (
-              <article key={item.id} className={`notify-item tone-${item.tone} ${readIds.has(item.id) ? "read" : ""}`}>
-                <button type="button" onClick={() => persistRead(new Set([...readIds, item.id]))}>
-                  <span className="notify-dot" />
-                  <span>
-                    <strong>{item.title}</strong>
-                    <em>{item.body}</em>
-                    <small>{item.senderLabel} · {toneLabel(item.tone)} · {relativeTime(item.createdAt)}</small>
-                  </span>
-                </button>
-              </article>
+            {visibleNotifications.length ? visibleNotifications.map((item) => (
+              <NotificationRow
+                key={item.id}
+                item={item}
+                read={readIds.has(item.id)}
+                onRead={() => persistRead(new Set([...readIds, item.id]))}
+                onDismiss={() => dismissNotification(item.id)}
+              />
             )) : <div className="notify-empty">No notifications yet.</div>}
           </div>
         </section>
@@ -532,22 +687,166 @@ export function NotificationCenter({
           padding-right: 2px;
         }
 
-        .notify-item button {
+        .notify-item {
+          --drag-x: 0px;
+          --drag-progress: 0;
+          --drag-tilt: 0deg;
+          --drag-scale: 1;
+          position: relative;
+          overflow: hidden;
+          border-radius: 20px;
+          isolation: isolate;
+          transform-origin: center;
+          transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1), margin 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+        }
+
+        .notify-item.exiting {
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .notify-dismiss-bg {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          border-radius: inherit;
+          opacity: var(--drag-progress);
+          transform: scale(calc(0.96 + (var(--drag-progress) * 0.04)));
+          transition: opacity 180ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .notify-dismiss-bg::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background:
+            radial-gradient(circle at var(--clear-glow-x, 90%) 50%, rgba(255,255,255,0.18), transparent 34%),
+            linear-gradient(135deg, rgba(232,114,138,0.28), rgba(255,111,122,0.13));
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+
+        .notify-dismiss-bg-left {
+          justify-content: flex-start;
+          padding-left: 18px;
+          --clear-glow-x: 10%;
+        }
+
+        .notify-dismiss-bg-right {
+          justify-content: flex-end;
+          padding-right: 18px;
+          --clear-glow-x: 90%;
+        }
+
+        .notify-dismiss-bg span {
+          position: relative;
+          z-index: 1;
+          min-width: 62px;
+          min-height: 34px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.12);
+          color: #fff8f8;
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 14px 28px rgba(0,0,0,0.18);
+        }
+
+        .notify-item-card {
+          position: relative;
+          z-index: 1;
           width: 100%;
           display: grid;
           grid-template-columns: auto minmax(0, 1fr);
-          gap: 10px;
-          padding: 12px;
+          gap: 11px;
+          padding: 13px;
           text-align: left;
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 18px;
-          background: rgba(255,255,255,0.045);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px;
+          background:
+            linear-gradient(145deg, rgba(255,255,255,0.112), rgba(255,255,255,0.04)),
+            rgba(9,11,22,0.66);
           color: var(--text);
           cursor: pointer;
+          box-shadow:
+            0 18px 34px rgba(0,0,0,0.2),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+          transform: translate3d(var(--drag-x), 0, 0) rotateZ(var(--drag-tilt)) scale(var(--drag-scale));
+          transition:
+            transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            background 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+          touch-action: pan-y;
+          will-change: transform;
         }
 
-        .notify-item.read {
-          opacity: 0.56;
+        .notify-item.dragging .notify-item-card,
+        .notify-item.exiting .notify-item-card {
+          transition:
+            transform 180ms cubic-bezier(0.2, 0.86, 0.22, 1),
+            opacity 160ms ease,
+            border-color 160ms ease,
+            background 160ms ease;
+        }
+
+        .notify-item-card:hover {
+          border-color: rgba(212,168,83,0.28);
+          background:
+            linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.055)),
+            rgba(9,11,22,0.72);
+          box-shadow:
+            0 22px 42px rgba(0,0,0,0.26),
+            0 0 22px rgba(212,168,83,0.08),
+            inset 0 1px 0 rgba(255,255,255,0.12);
+        }
+
+        .notify-dismiss-btn {
+          position: absolute;
+          right: 9px;
+          top: 50%;
+          z-index: 2;
+          width: 30px !important;
+          height: 30px;
+          min-height: 30px;
+          display: grid !important;
+          place-items: center;
+          padding: 0 !important;
+          border-radius: 999px !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          background: rgba(0,0,0,0.32) !important;
+          color: var(--text-secondary) !important;
+          transform: translateY(-50%) scale(0.9);
+          opacity: 0;
+          backdrop-filter: blur(18px) saturate(150%);
+          -webkit-backdrop-filter: blur(18px) saturate(150%);
+          transition: opacity 180ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.22, 1, 0.36, 1), color 160ms ease, border-color 160ms ease;
+        }
+
+        .notify-item:hover .notify-dismiss-btn,
+        .notify-item:focus-within .notify-dismiss-btn {
+          opacity: 1;
+          transform: translateY(-50%) scale(1);
+        }
+
+        .notify-dismiss-btn:hover {
+          color: #fff8f8 !important;
+          border-color: rgba(232,114,138,0.38) !important;
+        }
+
+        .notify-item-card > span:nth-child(2) {
+          min-width: 0;
+          padding-right: 28px;
+        }
+
+        .notify-item.read .notify-item-card {
+          opacity: 0.58;
         }
 
         .notify-dot {

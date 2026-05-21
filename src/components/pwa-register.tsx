@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, RefreshCw, Wifi, WifiOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   flushOfflineQueue,
   getOfflineQueueCount,
@@ -19,6 +19,7 @@ export default function PwaRegister() {
   const [queueCount, setQueueCount] = useState(0);
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const refreshingRef = useRef(false);
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -56,19 +57,59 @@ export default function PwaRegister() {
     if (!("serviceWorker" in navigator)) return;
     if (!window.isSecureContext && window.location.hostname !== "localhost") return;
 
+    const handleControllerChange = () => {
+      if (refreshingRef.current) return;
+      refreshingRef.current = true;
+      window.location.reload();
+    };
+
+    let updateCleanup: (() => void) | undefined;
+
     const register = () => {
-      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
+        void registration.update();
+
+        const update = () => {
+          if (document.visibilityState === "visible") void registration.update();
+        };
+
+        document.addEventListener("visibilitychange", update);
+        const timer = window.setInterval(update, 30 * 60 * 1000);
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              worker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+
+        updateCleanup = () => {
+          document.removeEventListener("visibilitychange", update);
+          window.clearInterval(timer);
+        };
+      }).catch((error) => {
         console.warn("[pwa] service worker registration failed", error);
       });
     };
 
+    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+
     if (document.readyState === "complete") {
       register();
-      return;
+      return () => {
+        updateCleanup?.();
+        navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+      };
     }
 
     window.addEventListener("load", register, { once: true });
-    return () => window.removeEventListener("load", register);
+    return () => {
+      updateCleanup?.();
+      window.removeEventListener("load", register);
+      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+    };
   }, []);
 
   const showStatus = queueCount > 0 || !online || syncing || installPrompt;

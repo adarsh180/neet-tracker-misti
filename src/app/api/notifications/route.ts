@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { notificationRetentionCutoff, pruneExpiredNotifications } from "@/lib/notification-retention";
 import { getPrivateSession } from "@/lib/server-auth";
 import { sendWebPushNotification } from "@/lib/web-push";
 
@@ -49,7 +50,14 @@ export async function GET() {
   const session = await getPrivateSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  await pruneExpiredNotifications();
+
   const notifications = await db.appNotification.findMany({
+    where: {
+      createdAt: {
+        gte: notificationRetentionCutoff(),
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: 40,
   });
@@ -60,6 +68,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const session = await getPrivateSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  await pruneExpiredNotifications();
 
   const payload = await request.json().catch(() => ({}));
   const title = clean(payload.title).slice(0, 90);
@@ -86,7 +96,7 @@ export async function POST(request: NextRequest) {
         senderClientId,
       },
     });
-    push = await sendWebPushNotification(notification, senderClientId);
+    push = await sendWebPushNotification(notification, target === "local" ? null : senderClientId);
   }
 
   const partner = target === "partner" || target === "both"
