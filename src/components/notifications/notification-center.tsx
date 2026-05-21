@@ -13,14 +13,6 @@ type AppNotification = {
   createdAt: string;
 };
 
-type DeviceNotificationOptions = NotificationOptions & {
-  badge?: string;
-  data?: unknown;
-  renotify?: boolean;
-  requireInteraction?: boolean;
-  vibrate?: number[];
-};
-
 const POLL_MS = 5000;
 const DISMISS_LIMIT = 240;
 
@@ -203,7 +195,6 @@ export function NotificationCenter({
   const clientIdKey = `${keyPrefix}-notification-client`;
   const readKey = `${keyPrefix}-notification-read`;
   const dismissedKey = `${keyPrefix}-notification-dismissed`;
-  const notifiedKey = `${keyPrefix}-notification-system-shown`;
   const senderKey = `${keyPrefix}-notification-sender`;
 
   const [clientId, setClientId] = useState("");
@@ -260,46 +251,6 @@ export function NotificationCenter({
     [dismissedIds, persistDismissed, persistRead, readIds],
   );
 
-  const showDeviceNotification = useCallback(
-    async (item: AppNotification, allowed: NotificationPermission = permission) => {
-      if (allowed !== "granted") return false;
-
-      const options: DeviceNotificationOptions = {
-        body: `${item.body}\nFrom ${item.senderLabel} | ${toneLabel(item.tone)} | ${relativeTime(item.createdAt)}`,
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
-        tag: item.id,
-        renotify: true,
-        requireInteraction: true,
-        data: {
-          id: item.id,
-          url: "/dashboard",
-          tone: item.tone,
-          urgent: true,
-        },
-        vibrate: [160, 70, 160, 70, 240],
-      };
-
-      try {
-        if ("serviceWorker" in navigator) {
-          const registration = await navigator.serviceWorker.ready;
-          await registration.showNotification(`${appLabel}: ${item.title}`, options);
-          return true;
-        }
-
-        if ("Notification" in window) {
-          new Notification(`${appLabel}: ${item.title}`, options);
-          return true;
-        }
-      } catch (error) {
-        console.warn("[notifications] device notification failed", error);
-      }
-
-      return false;
-    },
-    [appLabel, permission],
-  );
-
   const fetchNotifications = useCallback(async () => {
     const response = await fetch("/api/notifications", { cache: "no-store" });
     if (!response.ok) return;
@@ -317,20 +268,10 @@ export function NotificationCenter({
 
     if (known.size > 0 && fresh.length > 0) {
       setToast(fresh[fresh.length - 1]);
-      if (permission === "granted") {
-        void (async () => {
-          const shown = new Set(safeJson<string[]>(notifiedKey, []));
-          for (const item of fresh) {
-            if (shown.has(item.id)) continue;
-            if (await showDeviceNotification(item)) shown.add(item.id);
-          }
-          localStorage.setItem(notifiedKey, JSON.stringify(Array.from(shown).slice(-160)));
-        })();
-      }
     }
 
     previousIdsRef.current = new Set(next.map((item) => item.id));
-  }, [clientId, dismissedIds, notifiedKey, permission, readIds, showDeviceNotification]);
+  }, [clientId, dismissedIds, readIds]);
 
   useEffect(() => {
     let id = localStorage.getItem(clientIdKey);
@@ -425,19 +366,12 @@ export function NotificationCenter({
 
     if (saveResponse.ok) {
       setPushEnabled(true);
-      const testShown = await showDeviceNotification(
-        {
-          id: `push-ready-${Date.now()}`,
-          title: "Device push is ready",
-          body: "Future nudges can appear in your laptop, phone, or tablet notification panel.",
-          tone: "win",
-          senderLabel: appLabel,
-          senderClientId: null,
-          createdAt: new Date().toISOString(),
-        },
-        next,
-      );
-      setPushStatus(testShown ? copy.pushReady : "Push is saved, but the OS did not show the test alert. Check device notification settings for this browser.");
+      const testResponse = await fetch("/api/push-subscriptions/test", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint, senderClientId: clientId }),
+      });
+      setPushStatus(testResponse.ok ? copy.pushReady : "Push is saved, but the server push test failed. Check VAPID env keys and device notification settings.");
     } else {
       setPushStatus("Could not save this device for push.");
     }
