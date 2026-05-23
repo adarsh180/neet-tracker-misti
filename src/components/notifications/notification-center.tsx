@@ -204,7 +204,7 @@ export function NotificationCenter({
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [, setPermission] = useState<NotificationPermission>("default");
   const [browserAlertsSupported, setBrowserAlertsSupported] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushStatus, setPushStatus] = useState("");
@@ -432,7 +432,7 @@ export function NotificationCenter({
 
   return (
     <>
-      <div className="notify-dock">
+      <div className={`notify-dock ${isNeetDesk ? "notify-dock-offset" : ""}`}>
         <button
           className="notify-button"
           type="button"
@@ -446,7 +446,7 @@ export function NotificationCenter({
       </div>
 
       {toast && (
-        <button className={`notify-toast tone-${toast.tone}`} type="button" onClick={() => setOpen(true)}>
+        <button className={`notify-toast tone-${toast.tone} ${isNeetDesk ? "notify-toast-offset" : ""}`} type="button" onClick={() => setOpen(true)}>
           <Sparkles size={15} />
           <span>
             <strong>{toast.title}</strong>
@@ -456,19 +456,20 @@ export function NotificationCenter({
       )}
 
       {open && (
-        <section className="notify-panel" aria-label={`${appLabel} notification center`}>
+        <section className={`notify-panel ${isNeetDesk ? "notify-panel-offset" : ""}`} aria-label={`${appLabel} notification center`}>
           <header className="notify-head">
-            <div>
+            <div className="notify-head-copy">
               <div className="notify-kicker">{copy.kicker}</div>
               <h2>{appLabel}</h2>
             </div>
+            <span className="notify-count">{unread.length ? `${unread.length} unread` : "All clear"}</span>
             <button type="button" className="notify-icon" onClick={() => setOpen(false)} aria-label="Close notifications">
               <X size={16} />
             </button>
           </header>
 
           <div className="notify-actions">
-            <button type="button" onClick={() => setComposerOpen((value) => !value)}>
+            <button type="button" onClick={() => setComposerOpen((value) => !value)} aria-pressed={composerOpen}>
               <Send size={14} />
               Compose
             </button>
@@ -495,7 +496,7 @@ export function NotificationCenter({
               <input name="senderLabel" defaultValue={senderLabel} placeholder="Your name" maxLength={42} />
               <input name="title" placeholder={copy.titlePlaceholder} maxLength={90} required />
               <textarea name="body" placeholder={copy.bodyPlaceholder} maxLength={420} required />
-              <select name="target" defaultValue="partner" aria-label="Notification destination">
+              <select className="notify-target-select" name="target" defaultValue="partner" aria-label="Notification destination">
                 <option value="partner">{partnerLabel}</option>
                 <option value="local">This app only</option>
                 <option value="both">Both apps</option>
@@ -533,14 +534,18 @@ export function NotificationCenter({
         .notify-dock,
         .notify-panel,
         .notify-toast {
-          --text: var(--text-primary);
+          --text: var(--text-primary, var(--text));
         }
 
         .notify-dock {
           position: fixed;
-          top: calc(20px + env(safe-area-inset-top));
+          top: calc(18px + env(safe-area-inset-top));
           right: 22px;
           z-index: 9998;
+        }
+
+        .notify-dock-offset {
+          top: calc(70px + env(safe-area-inset-top));
         }
 
         .notify-button,
@@ -606,27 +611,32 @@ export function NotificationCenter({
 
         .notify-panel {
           position: fixed;
-          top: calc(84px + env(safe-area-inset-top));
+          top: calc(82px + env(safe-area-inset-top));
           right: 22px;
           z-index: 10000;
-          width: min(420px, calc(100vw - 28px));
+          width: min(404px, calc(100vw - 28px));
           max-height: min(680px, calc(100svh - 108px - env(safe-area-inset-top)));
-          display: grid;
-          grid-template-rows: auto auto auto minmax(0, 1fr);
+          display: flex;
+          flex-direction: column;
           gap: 12px;
           padding: 16px;
-          border-radius: 28px;
+          border-radius: 24px;
           overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.18);
+          border: 1px solid rgba(255,255,255,0.14);
           background:
-            linear-gradient(150deg, rgba(255,255,255,0.20), rgba(255,255,255,0.075) 34%, rgba(255,255,255,0.035) 68%),
-            rgba(6,8,20,0.78);
+            linear-gradient(150deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06) 36%, rgba(255,255,255,0.025) 72%),
+            rgba(6,8,20,0.88);
           box-shadow:
-            0 30px 90px rgba(0,0,0,0.55),
-            inset 0 1px 0 rgba(255,255,255,0.24),
+            0 24px 70px rgba(0,0,0,0.48),
+            inset 0 1px 0 rgba(255,255,255,0.18),
             inset 0 -1px 0 rgba(255,255,255,0.06);
           backdrop-filter: blur(38px) saturate(190%);
           -webkit-backdrop-filter: blur(38px) saturate(190%);
+        }
+
+        .notify-panel-offset {
+          top: calc(130px + env(safe-area-inset-top));
+          max-height: min(640px, calc(100svh - 148px - env(safe-area-inset-top)));
         }
 
         .notify-panel::before {
@@ -647,12 +657,16 @@ export function NotificationCenter({
         }
 
         .notify-head,
-        .notify-actions,
-        .notify-compose-row {
+        .notify-actions {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 10px;
+        }
+
+        .notify-head-copy {
+          min-width: 0;
+          flex: 1 1 auto;
         }
 
         .notify-kicker {
@@ -674,11 +688,31 @@ export function NotificationCenter({
           border-radius: 12px;
           display: grid;
           place-items: center;
+          flex: 0 0 auto;
         }
 
         .notify-actions {
-          justify-content: flex-start;
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          align-items: stretch;
+          gap: 8px;
+        }
+
+        .notify-count {
+          flex: 0 0 auto;
+          min-height: 26px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 0 10px;
+          border: 1px solid rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.055);
+          color: rgba(255,242,218,0.68);
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
         }
 
         .notify-push-status {
@@ -696,13 +730,25 @@ export function NotificationCenter({
         .notify-actions button,
         .notify-compose button {
           min-height: 34px;
-          border-radius: 999px;
+          border-radius: 14px;
           padding: 0 12px;
           display: inline-flex;
           align-items: center;
+          justify-content: center;
           gap: 7px;
           font-size: 12px;
           font-weight: 850;
+          min-width: 0;
+          line-height: 1.15;
+          text-align: center;
+          white-space: normal;
+        }
+
+        .notify-actions button[aria-pressed="true"] {
+          border-color: rgba(255,235,190,0.34);
+          background:
+            linear-gradient(135deg, rgba(212,168,83,0.24), rgba(255,255,255,0.06)),
+            rgba(8,10,22,0.76);
         }
 
         .notify-actions button:disabled {
@@ -712,16 +758,16 @@ export function NotificationCenter({
 
         .notify-compose {
           display: grid;
-          gap: 9px;
+          gap: 10px;
           padding: 12px;
-          border-radius: 20px;
-          border: 1px solid rgba(255,255,255,0.16);
+          border-radius: 18px;
+          border: 1px solid rgba(255,255,255,0.12);
           background:
-            linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.045)),
-            rgba(0,0,0,0.18);
+            linear-gradient(145deg, rgba(255,255,255,0.11), rgba(255,255,255,0.035)),
+            rgba(0,0,0,0.20);
           box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.18),
-            0 16px 32px rgba(0,0,0,0.16);
+            inset 0 1px 0 rgba(255,255,255,0.12),
+            0 12px 26px rgba(0,0,0,0.14);
         }
 
         .notify-compose input,
@@ -729,7 +775,7 @@ export function NotificationCenter({
         .notify-compose select {
           width: 100%;
           border: 1px solid rgba(255,255,255,0.16);
-          border-radius: 14px;
+          border-radius: 13px;
           background:
             linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025)),
             rgba(0,0,0,0.28);
@@ -738,6 +784,7 @@ export function NotificationCenter({
           font: inherit;
           outline: none;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+          min-width: 0;
         }
 
         .notify-compose textarea {
@@ -746,14 +793,33 @@ export function NotificationCenter({
         }
 
         .notify-compose select {
-          max-width: 128px;
+          max-width: none;
+          appearance: none;
+          -webkit-appearance: none;
+          background-image:
+            linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025));
+        }
+
+        .notify-target-select {
+          width: 100%;
+        }
+
+        .notify-compose-row {
+          display: grid;
+          grid-template-columns: minmax(104px, 0.42fr) minmax(0, 1fr);
+          gap: 10px;
+          align-items: stretch;
         }
 
         .notify-list {
+          min-height: 86px;
+          flex: 1 1 auto;
           overflow-y: auto;
           display: grid;
+          align-content: start;
           gap: 8px;
           padding-right: 2px;
+          scrollbar-gutter: stable;
         }
 
         .notify-item {
@@ -1061,6 +1127,10 @@ export function NotificationCenter({
           animation: notifyIn 240ms var(--ease-out);
         }
 
+        .notify-toast-offset {
+          top: calc(130px + env(safe-area-inset-top));
+        }
+
         .notify-toast strong,
         .notify-toast small {
           display: block;
@@ -1096,6 +1166,10 @@ export function NotificationCenter({
             right: 12px;
           }
 
+          .notify-dock-offset {
+            top: calc(66px + env(safe-area-inset-top));
+          }
+
           .notify-button {
             width: 48px;
             height: 48px;
@@ -1107,11 +1181,26 @@ export function NotificationCenter({
             width: calc(100vw - 20px);
             max-height: calc(100svh - 86px - env(safe-area-inset-top));
             border-radius: 22px;
+            padding: 14px;
+          }
+
+          .notify-panel-offset {
+            top: calc(124px + env(safe-area-inset-top));
+            max-height: calc(100svh - 136px - env(safe-area-inset-top));
+          }
+
+          .notify-actions,
+          .notify-compose-row {
+            grid-template-columns: 1fr;
           }
 
           .notify-toast {
             top: calc(72px + env(safe-area-inset-top));
             right: 10px;
+          }
+
+          .notify-toast-offset {
+            top: calc(124px + env(safe-area-inset-top));
           }
         }
       `}</style>
