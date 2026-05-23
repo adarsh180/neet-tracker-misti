@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceDot,
   ScatterChart,
   Scatter,
   ZAxis,
@@ -246,6 +247,7 @@ export default function TestsPage() {
     date: format(new Date(t.takenAt), "d MMM"),
     percentage: t.percentage,
   }));
+  const hasSingleTest = lineData.length === 1;
 
   const avgPct =
     tests.length > 0 ? Math.round((tests.reduce((s, t) => s + t.percentage, 0) / tests.length) * 10) / 10 : 0;
@@ -744,7 +746,7 @@ export default function TestsPage() {
                     label={{ value: "AIIMS Rish. 91%", fill: "var(--lotus-bright)", fontSize: 10 }}
                   />
                   <Area
-                    type="natural"
+                    type="monotone"
                     dataKey="percentage"
                     stroke="url(#lineGradient)"
                     strokeWidth={3}
@@ -757,11 +759,27 @@ export default function TestsPage() {
                     animationEasing="ease-out"
                     style={{ filter: "url(#glow)" }}
                   />
+                  {hasSingleTest && (
+                    <ReferenceDot
+                      x={lineData[0].date}
+                      y={lineData[0].percentage}
+                      r={7}
+                      fill="#fff8e6"
+                      stroke="#d4a853"
+                      strokeWidth={3}
+                      label={{
+                        value: `${lineData[0].percentage.toFixed(1)}%`,
+                        fill: "var(--gold-bright)",
+                        fontSize: 11,
+                        position: "top",
+                      }}
+                    />
+                  )}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
 
-            {tests.length >= 3 && (
+            {tests.length >= 1 && (
               <div className="glass-card tests-chart-card">
                 <div className="tests-card-head">
                   <div className="tests-card-title-wrap">
@@ -769,8 +787,10 @@ export default function TestsPage() {
                       <Target size={15} />
                     </div>
                     <div>
-                      <h3 className="tests-section-title">Test Distribution</h3>
-                      <p className="tests-section-subtitle">Percent spread by attempt number</p>
+                      <h3 className="tests-section-title">{tests.length < 3 ? "First Test Marker" : "Test Distribution"}</h3>
+                      <p className="tests-section-subtitle">
+                        {tests.length < 3 ? "Your first score plotted against AIIMS cutoffs" : "Percent spread by attempt number"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -785,6 +805,7 @@ export default function TestsPage() {
                       tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
+                      domain={[0, Math.max(scatterData.length + 1, 2)]}
                       label={{
                         value: "Test Number →",
                         fill: "var(--chart-axis-muted)",

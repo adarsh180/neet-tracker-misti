@@ -397,45 +397,24 @@ export function NotificationCenter({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ title, body, tone, target, senderLabel: sender, senderClientId: clientId }),
       });
-      const result = (await response.json().catch(() => null)) as {
-        error?: string;
-        push?: { sent?: number; failed?: number };
-        partner?: { push?: { sent?: number; failed?: number }; forwarded?: boolean; reason?: string; status?: number };
-      } | null;
-
-      if (!response.ok) {
-        setPushStatus(result?.error || "Notification could not be delivered.");
-        return;
-      }
-
-      const localSent = result?.push?.sent ?? 0;
-      const localFailed = result?.push?.failed ?? 0;
-      const partnerSent = result?.partner?.push?.sent ?? 0;
-      const partnerFailed = result?.partner?.push?.failed ?? 0;
-      const totalSent = localSent + partnerSent;
-      const totalFailed = localFailed + partnerFailed;
-
-      if (target === "partner") {
-        if (partnerSent > 0) {
-          setPushStatus(`Receiver device push sent to ${pushCountLabel(partnerSent)}${partnerFailed ? `; ${partnerFailed} failed` : ""}.`);
-        } else if (result?.partner?.forwarded) {
-          setPushStatus(`${partnerLabel} got the website notification, but 0 receiver devices were registered for push. Open that app on the phone and press Device push.`);
+      if (response.ok) {
+        const result = (await response.json().catch(() => null)) as {
+          push?: { sent?: number; failed?: number };
+          partner?: { push?: { sent?: number; failed?: number }; forwarded?: boolean };
+        } | null;
+        const sent = (result?.push?.sent ?? 0) + (result?.partner?.push?.sent ?? 0);
+        const failed = (result?.push?.failed ?? 0) + (result?.partner?.push?.failed ?? 0);
+        if (sent > 0) {
+          setPushStatus(`Device push sent to ${pushCountLabel(sent)}${failed ? `; ${failed} failed` : ""}.`);
+        } else if (target !== "local" && result?.partner?.forwarded) {
+          setPushStatus(`Sent to ${partnerLabel}. Enable device push there to see it in the notification panel.`);
         } else {
-          setPushStatus(`Could not reach ${partnerLabel}. Check partner endpoint and secret.`);
+          setPushStatus("Saved in the notification center. Enable device push on the receiving device for OS alerts.");
         }
-      } else if (target === "both") {
-        setPushStatus(
-          `Push result: this app ${localSent} sent${localFailed ? `, ${localFailed} failed` : ""}; ${partnerLabel} ${partnerSent} sent${partnerFailed ? `, ${partnerFailed} failed` : ""}.`,
-        );
-      } else if (totalSent > 0) {
-        setPushStatus(`Device push sent to ${pushCountLabel(totalSent)}${totalFailed ? `; ${totalFailed} failed` : ""}.`);
-      } else {
-        setPushStatus("Saved in the notification center, but no device push subscriptions are registered.");
+        event.currentTarget.reset();
+        setComposerOpen(false);
+        await fetchNotifications();
       }
-
-      event.currentTarget.reset();
-      setComposerOpen(false);
-      await fetchNotifications();
     } finally {
       setSending(false);
     }

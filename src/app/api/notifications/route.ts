@@ -23,9 +23,13 @@ async function forwardToPartner(input: {
 }) {
   const endpoint = process.env.PARTNER_NOTIFY_ENDPOINT;
   const secret = process.env.CROSS_APP_NOTIFY_SECRET;
-  if (!endpoint || !secret) return { forwarded: false, reason: "missing-config" };
+  if (!endpoint || !secret) {
+    console.error("[notifications] Cannot forward to partner: PARTNER_NOTIFY_ENDPOINT or CROSS_APP_NOTIFY_SECRET is not configured on the server.");
+    return { forwarded: false, reason: "missing-config" };
+  }
 
   try {
+    console.log(`[notifications] Forwarding notification to partner endpoint: ${endpoint}`);
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -36,13 +40,18 @@ async function forwardToPartner(input: {
       cache: "no-store",
     });
 
+    if (!response.ok) {
+      console.error(`[notifications] Partner forward failed with status: ${response.status} ${response.statusText}`);
+    }
+
     const data = await response.json().catch(() => null);
     return {
       forwarded: response.ok,
       status: response.status,
       push: data?.push,
     };
-  } catch {
+  } catch (error) {
+    console.error("[notifications] Network/fetch error while forwarding to partner:", error);
     return { forwarded: false, reason: "network" };
   }
 }

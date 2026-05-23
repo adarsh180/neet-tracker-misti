@@ -15,7 +15,11 @@ function clean(value: unknown, fallback = "") {
 function authorized(request: NextRequest) {
   const secret = process.env.CROSS_APP_NOTIFY_SECRET;
   const header = request.headers.get("x-cross-app-secret");
-  return Boolean(secret && header && header === secret);
+  const isAuth = Boolean(secret && header && header === secret);
+  if (!isAuth) {
+    console.error("[cross-app-notifications] Authorization failed. Secret configured on server:", secret ? "Yes" : "No", "Secret header received:", header ? "Yes" : "No");
+  }
+  return isAuth;
 }
 
 export async function POST(request: NextRequest) {

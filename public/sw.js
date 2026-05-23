@@ -85,10 +85,11 @@ self.addEventListener("push", (event) => {
 
   const title = payload.title || "NEET Tracker";
   const urgent = payload.urgent || payload.data?.urgent || payload.data?.tone === "urgent";
+  const origin = self.location.origin;
   const options = {
     body: payload.body || "Open your tracker for the latest update.",
-    icon: payload.icon || "/icon-192.png",
-    badge: payload.badge || "/icon-192.png",
+    icon: payload.icon ? new URL(payload.icon, origin).href : new URL("/icon-192.png", origin).href,
+    badge: payload.badge ? new URL(payload.badge, origin).href : new URL("/icon-192.png", origin).href,
     tag: payload.tag || "neet-tracker-notification",
     data: payload.data || { url: "/dashboard" },
     timestamp: Date.now(),
