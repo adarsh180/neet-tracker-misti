@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { chatWithAI, streamWithAI } from "@/lib/openrouter";
 import type { TutorRequestPayload } from "@/lib/visual-lab/types";
 
@@ -52,6 +53,9 @@ ${payload.question}`;
 }
 
 export async function POST(req: Request) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(req.url);
   const stream = searchParams.get("stream") === "1";
 

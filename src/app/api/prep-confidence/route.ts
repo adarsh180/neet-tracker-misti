@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { getNeetPrepConfidence } from "@/lib/prep-confidence";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
 
@@ -35,6 +36,9 @@ function getUnavailableConfidence(exam: "UPSC CSE 2027" | "NEET UG 2027", note: 
 }
 
 export async function GET(request: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   const target = request.nextUrl.searchParams.get("target");
 
   try {

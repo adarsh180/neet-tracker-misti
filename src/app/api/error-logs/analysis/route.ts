@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { generateGlobalErrorLogReport } from "@/lib/error-log-analysis";
 
@@ -9,6 +10,9 @@ const prisma = db as unknown as {
 };
 
 export async function GET() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const latest = await prisma.errorLogGlobalAnalysis.findFirst({
       orderBy: { createdAt: "desc" },
@@ -20,6 +24,9 @@ export async function GET() {
 }
 
 export async function POST() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const analysis = await generateGlobalErrorLogReport();
     return NextResponse.json(analysis, { status: 201 });

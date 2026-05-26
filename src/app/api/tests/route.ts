@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 function optionalFloat(value: unknown) {
@@ -20,6 +21,9 @@ function optionalText(value: unknown) {
 }
 
 export async function GET() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const tests = await db.testRecord.findMany({
       include: { subject: { select: { id: true, name: true, slug: true, color: true } } },
@@ -32,6 +36,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const {
@@ -106,6 +113,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const { id } = await req.json();
     await db.testRecord.delete({ where: { id } });

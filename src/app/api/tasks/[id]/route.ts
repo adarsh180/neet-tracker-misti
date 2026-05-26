@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { startOfLocalDay } from "@/lib/tasks";
 import { stripTaskReason } from "@/lib/todo-workspace";
@@ -8,6 +9,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const cutoff = getTaskWindowCutoff();
     const { id } = await params;
@@ -87,6 +91,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const { id } = await params;
     await db.task.delete({ where: { id } });

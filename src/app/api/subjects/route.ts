@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 // GET all subjects with topics
 export async function GET() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const subjects = await db.subject.findMany({
       include: {

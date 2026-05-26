@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { TaskStatus, TaskTimelineEventType } from "@prisma/client";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { getTaskWindowCutoff } from "@/lib/todo-workspace";
 
 const STATUS_EVENT_MAP: Record<TaskStatus, { type: TaskTimelineEventType; label: string }> = {
@@ -14,6 +15,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const cutoff = getTaskWindowCutoff();
     const { id } = await params;

@@ -6,6 +6,7 @@ import { list, put } from "@vercel/blob";
 const sourceRoot = path.resolve(process.argv[2] || "D:\\NEET\\PYQ\\JEE");
 const token = process.env.BLOB_READ_WRITE_TOKEN;
 const uploadConcurrency = Number.parseInt(process.env.PYQ_UPLOAD_CONCURRENCY || "4", 10);
+const blobAccess = process.env.PYQ_BLOB_ACCESS === "public" ? "public" : "private";
 
 if (!token) {
   throw new Error(
@@ -64,7 +65,7 @@ async function uploadWorker() {
     nextIndex += 1;
     const file = pendingFiles[index];
     const blob = await put(file.pathname, createReadStream(file.fullPath), {
-      access: "public",
+      access: blobAccess,
       addRandomSuffix: false,
       allowOverwrite: false,
       cacheControlMaxAge: 2592000,
@@ -87,4 +88,4 @@ await Promise.all(
 );
 
 console.log(`Uploaded ${uploadedCount} new PDF files.`);
-console.log(`Set NEXT_PUBLIC_PYQ_BLOB_BASE_URL=${storeOrigin}`);
+console.log(`Stored files with ${blobAccess} access in ${storeOrigin || "the connected Blob store"}.`);

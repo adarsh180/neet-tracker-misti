@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { TaskAgentTrigger } from "@prisma/client";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { generateTaskAgentResponse } from "@/lib/task-agent";
 import { summarizeTaskRun } from "@/lib/tasks";
@@ -9,6 +10,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     await refreshTodoWorkspace();
     const { id } = await params;

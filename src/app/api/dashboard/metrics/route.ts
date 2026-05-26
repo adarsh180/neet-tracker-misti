@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
 
@@ -46,6 +47,9 @@ function getUnavailableMetrics() {
 }
 
 export async function GET() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const subjects = await db.subject.findMany({
       include: {

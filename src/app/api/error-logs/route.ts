@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 const prisma = db as unknown as {
@@ -11,6 +12,9 @@ const prisma = db as unknown as {
 const TEST_TYPES = new Set(["AITS", "SECTIONAL", "UNIT", "FLT", "PYQ", "REAL_ATTEMPT"]);
 
 export async function GET() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const logs = await prisma.errorLogTest.findMany({
       include: {
@@ -50,6 +54,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const testName = String(body.testName || "").trim();

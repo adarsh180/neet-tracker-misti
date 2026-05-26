@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import type { TaskPriority } from "@prisma/client";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { chatWithAI } from "@/lib/openrouter";
 import { startOfLocalDay } from "@/lib/tasks";
@@ -449,6 +450,9 @@ async function generateAgentPayload(prompt: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     await refreshTodoWorkspace();
     const body = await req.json();
@@ -600,6 +604,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     await db.$transaction([
       db.taskAgentRun.deleteMany(),

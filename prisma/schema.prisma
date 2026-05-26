@@ -318,6 +318,22 @@ model MoodEntry {
   @@map("mood_entries")
 }
 
+model PyqYearProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  exam          String
+  year          String
+  completed     Boolean   @default(false)
+  revisionCount Int       @default(0)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, exam, year])
+  @@index([userId, exam])
+  @@map("pyq_year_progress")
+}
+
 model QuizSession {
   id          String   @id @default(cuid())
   subject     String
@@ -476,4 +492,14 @@ model MissionSession {
 
   @@index([kind, createdAt])
   @@map("mission_sessions")
+}
+
+model PyqDocument {
+  id        String   @id @default(cuid())
+  pathname  String   @unique
+  fileData  Bytes    @db.LongBlob
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pyq_documents")
 }

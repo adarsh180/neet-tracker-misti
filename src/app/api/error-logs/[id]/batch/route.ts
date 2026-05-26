@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { buildErrorLogAnalytics, getErrorLogMemory } from "@/lib/error-log-analysis";
 
@@ -57,6 +58,9 @@ function normalizeQuestion(input: Record<string, unknown>) {
 }
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const { id } = await ctx.params;
     const body = await req.json();
@@ -65,7 +69,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       return NextResponse.json({ error: "Expected questions array" }, { status: 400 });
     }
 
-    const updates = body.questions.map((q: any) => {
+    const updates = body.questions.map((q: Record<string, unknown>) => {
       return prisma.errorLogQuestion.update({
         where: { id: String(q.id) },
         data: normalizeQuestion(q),

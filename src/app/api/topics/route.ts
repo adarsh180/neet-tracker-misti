@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { createTopicRecord } from "@/lib/topic-manager";
 
@@ -10,6 +11,9 @@ function normalizeChapterValue(value: unknown) {
 
 // POST — add topic, PATCH — update topic, DELETE — delete topic
 export async function POST(req: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const { action, ...data } = body;

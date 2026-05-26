@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { MissionKind } from "@prisma/client";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { generateMissionSession, getMissionSessions } from "@/lib/mission-control";
 
 export async function GET() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const sessions = await getMissionSessions();
     return NextResponse.json(sessions);
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const {

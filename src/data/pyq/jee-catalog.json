@@ -1,9 +1,77 @@
 {
   "exam": "JEE Main",
   "firstYear": "2015",
-  "lastYear": "2025",
-  "totalPapers": 165,
+  "lastYear": "2026",
+  "totalPapers": 174,
   "years": [
+    {
+      "year": "2026",
+      "papers": [
+        {
+          "id": "jee-2026-01",
+          "year": "2026",
+          "title": "JEE Main 2026 02 April Evening Shift Questions",
+          "fileName": "JEE Main 2026 02 April Evening Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 02 April Evening Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-02",
+          "year": "2026",
+          "title": "JEE Main 2026 02 April Morning Shift Questions",
+          "fileName": "JEE Main 2026 02 April Morning Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 02 April Morning Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-03",
+          "year": "2026",
+          "title": "JEE Main 2026 04 April Evening Shift Questions",
+          "fileName": "JEE Main 2026 04 April Evening Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 04 April Evening Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-04",
+          "year": "2026",
+          "title": "JEE Main 2026 04 April Morning Shift Questions",
+          "fileName": "JEE Main 2026 04 April Morning Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 04 April Morning Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-05",
+          "year": "2026",
+          "title": "JEE Main 2026 05 April Evening Shift Questions",
+          "fileName": "JEE Main 2026 05 April Evening Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 05 April Evening Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-06",
+          "year": "2026",
+          "title": "JEE Main 2026 05 April Morning Shift Questions",
+          "fileName": "JEE Main 2026 05 April Morning Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 05 April Morning Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-07",
+          "year": "2026",
+          "title": "JEE Main 2026 06 April Evening Shift Questions",
+          "fileName": "JEE Main 2026 06 April Evening Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 06 April Evening Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-08",
+          "year": "2026",
+          "title": "JEE Main 2026 06 April Morning Shift Questions",
+          "fileName": "JEE Main 2026 06 April Morning Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 06 April Morning Shift Questions.pdf"
+        },
+        {
+          "id": "jee-2026-09",
+          "year": "2026",
+          "title": "JEE Main 2026 08 April Evening Shift Questions",
+          "fileName": "JEE Main 2026 08 April Evening Shift Questions.pdf",
+          "pathname": "pyq/jee/2026/JEE Main 2026 08 April Evening Shift Questions.pdf"
+        }
+      ]
+    },
     {
       "year": "2025",
       "papers": [

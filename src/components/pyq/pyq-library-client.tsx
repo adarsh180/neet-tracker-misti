@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
   BookMarked,
+  Check,
   Download,
   FileText,
   Folder,
   FolderOpen,
+  Minus,
+  Plus,
   Search,
 } from "lucide-react";
 
@@ -35,41 +38,138 @@ type JeeCatalog = {
 
 type Props = {
   jeeCatalog: JeeCatalog;
-  assetBaseUrl: string;
 };
 
-function buildDocumentUrl(baseUrl: string, pathname: string) {
-  const normalizedBase = baseUrl.trim().replace(/\/+$/, "");
-  if (!normalizedBase) return null;
+type YearProgress = {
+  year: string;
+  completed: boolean;
+  revisionCount: number;
+  updatedAt?: string;
+};
 
-  const encodedPath = pathname
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/");
-
-  return `${normalizedBase}/${encodedPath}`;
+function buildDocumentUrl(pathname: string, download = false) {
+  const params = new URLSearchParams({ pathname });
+  if (download) params.set("download", "1");
+  return `/api/pyq/document?${params.toString()}`;
 }
 
-export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
+export default function PyqLibraryClient({ jeeCatalog }: Props) {
   const [activeArchive, setActiveArchive] = useState<"jee" | "neet" | null>(null);
   const [selectedYear, setSelectedYear] = useState(jeeCatalog.years[0]?.year ?? "");
   const [query, setQuery] = useState("");
+  const [yearProgress, setYearProgress] = useState<Record<string, YearProgress>>({});
+  const [progressLoading, setProgressLoading] = useState(true);
+  const [savingYears, setSavingYears] = useState<Set<string>>(() => new Set());
+  const [progressError, setProgressError] = useState("");
+  const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
+  const pendingYearsRef = useRef(new Set<string>());
 
   const currentYear = jeeCatalog.years.find((folder) => folder.year === selectedYear);
   const normalizedQuery = query.trim().toLowerCase();
+  const completedYears = jeeCatalog.years.filter((folder) => yearProgress[folder.year]?.completed).length;
+  const revisionRounds = jeeCatalog.years.reduce(
+    (total, folder) => total + (yearProgress[folder.year]?.revisionCount ?? 0),
+    0,
+  );
 
   const visiblePapers = useMemo(() => {
-    if (!normalizedQuery) return currentYear?.papers ?? [];
+    let papers = !normalizedQuery
+      ? currentYear?.papers ?? []
+      : jeeCatalog.years
+          .flatMap((folder) => folder.papers)
+          .filter((paper) => {
+            const searchable = `${paper.year} ${paper.title} ${paper.fileName}`.toLowerCase();
+            return searchable.includes(normalizedQuery);
+          });
 
-    return jeeCatalog.years
-      .flatMap((folder) => folder.papers)
-      .filter((paper) => {
-        const searchable = `${paper.year} ${paper.title} ${paper.fileName}`.toLowerCase();
-        return searchable.includes(normalizedQuery);
+    if (filter === "completed") {
+      papers = papers.filter((paper) => yearProgress[paper.year]?.completed);
+    } else if (filter === "pending") {
+      papers = papers.filter((paper) => !yearProgress[paper.year]?.completed);
+    }
+
+    return papers;
+  }, [currentYear, jeeCatalog.years, normalizedQuery, filter, yearProgress]);
+
+  const loadProgress = useCallback(async (quiet = false) => {
+    if (!quiet) setProgressLoading(true);
+
+    try {
+      const response = await fetch("/api/pyq/progress?exam=jee-main", { cache: "no-store" });
+      if (!response.ok) throw new Error("Unable to load PYQ progress");
+
+      const records = (await response.json()) as YearProgress[];
+      setYearProgress((current) => {
+        const synced = Object.fromEntries(records.map((record) => [record.year, record]));
+        pendingYearsRef.current.forEach((year) => {
+          if (current[year]) synced[year] = current[year];
+        });
+        return synced;
       });
-  }, [currentYear, jeeCatalog.years, normalizedQuery]);
+      setProgressError("");
+    } catch {
+      setProgressError("Progress could not be synced right now.");
+    } finally {
+      if (!quiet) setProgressLoading(false);
+    }
+  }, []);
 
-  const hasDocumentOrigin = Boolean(assetBaseUrl.trim());
+  useEffect(() => {
+    void loadProgress();
+
+    const intervalId = window.setInterval(() => {
+      void loadProgress(true);
+    }, 5000);
+    const handleFocus = () => void loadProgress(true);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void loadProgress(true);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [loadProgress]);
+
+  async function saveProgress(year: string, changes: Partial<Pick<YearProgress, "completed" | "revisionCount">>) {
+    const previous = yearProgress[year] ?? { year, completed: false, revisionCount: 0 };
+    const next = { ...previous, ...changes };
+
+    pendingYearsRef.current.add(year);
+    setYearProgress((current) => ({ ...current, [year]: next }));
+    setSavingYears((current) => new Set(current).add(year));
+    setProgressError("");
+
+    try {
+      const response = await fetch("/api/pyq/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exam: "jee-main",
+          year,
+          completed: next.completed,
+          revisionCount: next.revisionCount,
+        }),
+      });
+      if (!response.ok) throw new Error("Unable to save PYQ progress");
+
+      const saved = (await response.json()) as YearProgress;
+      setYearProgress((current) => ({ ...current, [year]: saved }));
+    } catch {
+      setYearProgress((current) => ({ ...current, [year]: previous }));
+      setProgressError("Progress could not be saved. Please try again.");
+    } finally {
+      pendingYearsRef.current.delete(year);
+      setSavingYears((current) => {
+        const nextSaving = new Set(current);
+        nextSaving.delete(year);
+        return nextSaving;
+      });
+    }
+  }
 
   return (
     <main className="archive-page">
@@ -94,6 +194,14 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           <div>
             <strong>{jeeCatalog.firstYear}-{jeeCatalog.lastYear}</strong>
             <span>Collected years</span>
+          </div>
+          <div>
+            <strong>{completedYears}/{jeeCatalog.years.length}</strong>
+            <span>Years completed</span>
+          </div>
+          <div>
+            <strong>{revisionRounds}</strong>
+            <span>Revision rounds</span>
           </div>
         </div>
       </header>
@@ -143,20 +251,45 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
             <button className="back-button" onClick={() => { setActiveArchive(null); setQuery(""); }} type="button">
               <ArrowLeft size={15} /> All collections
             </button>
-            <label className="search-box">
-              <Search size={16} />
-              <input
-                type="search"
-                placeholder="Find a year, date, shift or subject"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
+            <div className="explorer-controls">
+              <label className="search-box">
+                <Search size={16} />
+                <input
+                  type="search"
+                  placeholder="Find a year, date, shift or subject"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <div className="filter-pills" aria-label="Paper filters">
+                <button
+                  className={`filter-pill ${filter === "all" ? "is-active" : ""}`}
+                  onClick={() => setFilter("all")}
+                  type="button"
+                >
+                  All
+                </button>
+                <button
+                  className={`filter-pill ${filter === "completed" ? "is-active" : ""}`}
+                  onClick={() => setFilter("completed")}
+                  type="button"
+                >
+                  Completed
+                </button>
+                <button
+                  className={`filter-pill ${filter === "pending" ? "is-active" : ""}`}
+                  onClick={() => setFilter("pending")}
+                  type="button"
+                >
+                  Pending
+                </button>
+              </div>
+            </div>
           </div>
 
-          {!hasDocumentOrigin && (
-            <div className="delivery-note" role="status">
-              Paper index is ready. PDF delivery activates once the Vercel Blob library sync completes.
+          {progressError && (
+            <div className="delivery-note delivery-note-error" role="status">
+              {progressError}
             </div>
           )}
 
@@ -165,23 +298,68 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
               <div className="year-rail-head">
                 <span className="archive-eyebrow">JEE Main</span>
                 <strong>Year folders</strong>
+                <p>Tick a year after completing every paper. Revision rounds stay saved for Misti.</p>
               </div>
               {jeeCatalog.years.map((folder, index) => {
                 const active = !normalizedQuery && folder.year === selectedYear;
+                const status = yearProgress[folder.year] ?? {
+                  year: folder.year,
+                  completed: false,
+                  revisionCount: 0,
+                };
+                const saving = savingYears.has(folder.year);
                 return (
-                  <button
+                  <div
                     className={`year-folder ${active ? "is-active" : ""}`}
                     key={folder.year}
-                    onClick={() => { setSelectedYear(folder.year); setQuery(""); }}
                     style={{ "--folder-index": index } as CSSProperties}
-                    type="button"
                   >
-                    {active ? <FolderOpen size={19} /> : <Folder size={19} />}
-                    <span>
-                      <strong>{folder.year}</strong>
-                      <small>{folder.papers.length} files</small>
+                    <button
+                      className="year-folder-open"
+                      onClick={() => { setSelectedYear(folder.year); setQuery(""); }}
+                      type="button"
+                    >
+                      {active ? <FolderOpen size={19} /> : <Folder size={19} />}
+                      <span>
+                        <strong>{folder.year}</strong>
+                        <small>{folder.papers.length} files</small>
+                      </span>
+                    </button>
+                    <div className="progress-controls">
+                      <label className={`completion-check ${status.completed ? "is-checked" : ""}`}>
+                        <input
+                          checked={status.completed}
+                          disabled={progressLoading || saving}
+                          onChange={(event) => void saveProgress(folder.year, { completed: event.target.checked })}
+                          type="checkbox"
+                        />
+                        <span className="check-box"><Check size={12} /></span>
+                        Done end-to-end
+                      </label>
+                      <div className="revision-control" aria-label={`${folder.year} revision rounds`}>
+                        <button
+                          aria-label={`Decrease ${folder.year} revision count`}
+                          disabled={progressLoading || saving || status.revisionCount === 0}
+                          onClick={() => void saveProgress(folder.year, { revisionCount: Math.max(0, status.revisionCount - 1) })}
+                          type="button"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <span><strong>{status.revisionCount}</strong> Rev</span>
+                        <button
+                          aria-label={`Increase ${folder.year} revision count`}
+                          disabled={progressLoading || saving || status.revisionCount === 99}
+                          onClick={() => void saveProgress(folder.year, { revisionCount: Math.min(99, status.revisionCount + 1) })}
+                          type="button"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                    </div>
+                    <span className={`sync-status ${saving ? "is-saving" : ""}`}>
+                      {saving ? "Saving..." : status.completed ? "Completed" : "Ready"}
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </aside>
@@ -197,7 +375,7 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
 
               <div className="paper-list">
                 {visiblePapers.map((paper, index) => {
-                  const documentUrl = buildDocumentUrl(assetBaseUrl, paper.pathname);
+                  const documentUrl = buildDocumentUrl(paper.pathname);
                   return (
                     <article className="paper-row" key={paper.id} style={{ "--paper-index": Math.min(index, 14) } as CSSProperties}>
                       <div className="paper-icon">
@@ -208,18 +386,12 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
                         <span>{paper.year} / PDF</span>
                       </div>
                       <div className="paper-actions">
-                        {documentUrl ? (
-                          <>
-                            <a className="open-paper" href={documentUrl} rel="noreferrer" target="_blank">
-                              Open PDF <ArrowUpRight size={14} />
-                            </a>
-                            <a className="download-paper" href={`${documentUrl}?download=1`} aria-label={`Download ${paper.title}`}>
-                              <Download size={15} />
-                            </a>
-                          </>
-                        ) : (
-                          <span className="awaiting">Awaiting sync</span>
-                        )}
+                        <a className="open-paper" href={documentUrl} rel="noreferrer" target="_blank">
+                          Open PDF <ArrowUpRight size={14} />
+                        </a>
+                        <a className="download-paper" href={buildDocumentUrl(paper.pathname, true)} aria-label={`Download ${paper.title}`}>
+                          <Download size={15} />
+                        </a>
                       </div>
                     </article>
                   );
@@ -500,6 +672,53 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           font-size: 13.5px;
         }
         .search-box input::placeholder { color: var(--text-muted); }
+        .explorer-controls {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+          justify-content: flex-end;
+        }
+        .filter-pills {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          border: 1px solid rgba(255,255,255,0.07);
+          padding: 3px;
+          border-radius: 9px;
+          background: rgba(255,255,255,0.02);
+        }
+        .filter-pill {
+          height: 36px;
+          padding: 0 14px;
+          border: 1px solid transparent;
+          border-radius: 6px;
+          color: var(--text-muted);
+          font-size: 12.5px;
+          font-weight: 600;
+          background: transparent;
+          cursor: pointer;
+          transition: var(--t-fast);
+        }
+        .filter-pill:hover {
+          color: var(--text-primary);
+          background: rgba(255,255,255,0.045);
+        }
+        .filter-pill.is-active {
+          color: var(--gold-bright);
+          background: rgba(212,168,83,0.11);
+          border-color: rgba(212,168,83,0.18);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        :global(html[data-theme="light"]) .filter-pills {
+          border-color: rgba(70,45,24,0.08);
+          background: rgba(70,45,24,0.02);
+        }
+        :global(html[data-theme="light"]) .filter-pill.is-active {
+          color: var(--gold-bright);
+          background: rgba(212,168,83,0.1);
+          border-color: rgba(212,168,83,0.2);
+        }
         .delivery-note {
           margin-bottom: 14px;
           border: 1px solid rgba(212,168,83,0.18);
@@ -509,16 +728,25 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           color: var(--text-secondary);
           background: rgba(212,168,83,0.055);
         }
+        .delivery-note-error {
+          border-color: rgba(232,114,138,0.22);
+          color: hsl(352, 75%, 79%);
+          background: rgba(232,114,138,0.07);
+        }
         .explorer-shell {
           display: grid;
-          grid-template-columns: 268px minmax(0, 1fr);
-          min-height: min(670px, calc(100vh - 260px));
+          grid-template-columns: minmax(302px, 322px) minmax(0, 1fr);
+          height: clamp(560px, calc(100vh - 260px), 700px);
           overflow: hidden;
         }
         .year-rail {
+          min-height: 0;
           padding: 20px 13px;
           border-right: 1px solid rgba(255,255,255,0.065);
           background: rgba(255,255,255,0.016);
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(212,168,83,0.25) transparent;
         }
         .year-rail-head {
           padding: 3px 8px 16px;
@@ -527,20 +755,22 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           font-size: 17px;
           font-weight: 550;
         }
+        .year-rail-head p {
+          margin: 8px 0 0;
+          color: var(--text-muted);
+          font-size: 11px;
+          line-height: 1.45;
+        }
         .year-folder {
           width: 100%;
-          min-height: 52px;
-          margin-bottom: 5px;
+          min-height: 102px;
+          margin-bottom: 7px;
           border: 1px solid transparent;
           border-radius: 8px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 7px 9px;
+          padding: 7px 8px 8px;
           background: transparent;
           color: var(--text-secondary);
           text-align: left;
-          cursor: pointer;
           animation: riseIn 250ms var(--ease-out) both;
           animation-delay: calc(var(--folder-index) * 18ms);
           transition: var(--t-fast);
@@ -554,21 +784,139 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           border-color: rgba(212,168,83,0.22);
           background: rgba(212,168,83,0.09);
         }
-        .year-folder span { flex: 1; min-width: 0; }
-        .year-folder strong {
+        .year-folder-open {
+          width: 100%;
+          min-height: 42px;
+          padding: 0 3px;
+          border: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: inherit;
+          background: transparent;
+          text-align: left;
+          cursor: pointer;
+        }
+        .year-folder-open span { flex: 1; min-width: 0; }
+        .year-folder-open strong {
           display: block;
           color: inherit;
           font-size: 14px;
         }
-        .year-folder small {
+        .year-folder-open small {
           display: block;
           font-size: 11px;
           color: var(--text-muted);
           margin-top: 2px;
         }
+        .progress-controls {
+          min-height: 31px;
+          margin-top: 4px;
+          padding-top: 7px;
+          border-top: 1px solid rgba(255,255,255,0.055);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+        }
+        .completion-check {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--text-muted);
+          font-size: 10.5px;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .completion-check input {
+          position: absolute;
+          opacity: 0;
+          pointer-events: none;
+        }
+        .check-box {
+          width: 16px;
+          height: 16px;
+          flex: none;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(255,255,255,0.18);
+          border-radius: 5px;
+          color: transparent;
+          background: rgba(255,255,255,0.035);
+          transition: var(--t-fast);
+        }
+        .completion-check:hover .check-box,
+        .completion-check input:focus-visible + .check-box {
+          border-color: rgba(212,168,83,0.42);
+        }
+        .completion-check input:focus-visible + .check-box {
+          box-shadow: 0 0 0 3px rgba(212,168,83,0.11);
+        }
+        .completion-check.is-checked { color: var(--success); }
+        .completion-check.is-checked .check-box {
+          color: hsl(142, 60%, 87%);
+          border-color: rgba(77,200,125,0.38);
+          background: rgba(77,200,125,0.19);
+        }
+        .completion-check:has(input:disabled) { opacity: 0.58; cursor: wait; }
+        .revision-control {
+          height: 25px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 2px;
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 999px;
+          background: rgba(255,255,255,0.025);
+        }
+        .revision-control button {
+          width: 20px;
+          height: 20px;
+          border: 0;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          color: var(--text-secondary);
+          background: transparent;
+          cursor: pointer;
+          transition: var(--t-fast);
+        }
+        .revision-control button:hover:not(:disabled) {
+          color: var(--gold-bright);
+          background: rgba(212,168,83,0.14);
+        }
+        .revision-control button:disabled {
+          opacity: 0.34;
+          cursor: not-allowed;
+        }
+        .revision-control span {
+          min-width: 38px;
+          color: var(--text-muted);
+          font-size: 10px;
+          text-align: center;
+        }
+        .revision-control strong {
+          display: inline;
+          margin-right: 2px;
+          color: var(--text-primary);
+          font-size: 11px;
+        }
+        .sync-status {
+          display: block;
+          margin: 5px 3px 0;
+          color: var(--text-muted);
+          font-size: 9.5px;
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+        }
+        .sync-status.is-saving { color: var(--gold-bright); }
         .file-pane {
           min-width: 0;
+          min-height: 0;
           padding: clamp(17px, 2.3vw, 25px);
+          display: flex;
+          flex-direction: column;
         }
         .file-pane-header {
           display: flex;
@@ -593,8 +941,9 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           white-space: nowrap;
         }
         .paper-list {
-          max-height: calc(100vh - 363px);
-          min-height: 270px;
+          flex: 1;
+          max-height: none;
+          min-height: 0;
           margin-right: -8px;
           padding: 13px 8px 13px 0;
           overflow-y: auto;
@@ -679,11 +1028,6 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           border-color: rgba(212,168,83,0.33);
           background: rgba(212,168,83,0.14);
         }
-        .awaiting {
-          color: var(--text-muted);
-          font-size: 11px;
-          padding-right: 6px;
-        }
         .no-results {
           min-height: 250px;
           display: grid;
@@ -756,29 +1100,51 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           border-color: rgba(70,45,24,0.08);
           background: rgba(70,45,24,0.025);
         }
+        :global(html[data-theme="light"]) .progress-controls {
+          border-color: rgba(70,45,24,0.08);
+        }
+        :global(html[data-theme="light"]) .check-box,
+        :global(html[data-theme="light"]) .revision-control {
+          border-color: rgba(70,45,24,0.14);
+          background: rgba(255,255,255,0.48);
+        }
         @media (max-width: 980px) {
           .archive-hero { flex-wrap: wrap; }
           .archive-overview { width: 100%; margin-top: 7px; }
-          .explorer-shell { grid-template-columns: 1fr; }
+          .explorer-shell { grid-template-columns: 1fr; height: auto; }
           .year-rail {
             display: flex;
             gap: 6px;
             overflow-x: auto;
+            overflow-y: hidden;
             border-right: 0;
             border-bottom: 1px solid rgba(255,255,255,0.06);
           }
-          .year-rail-head { min-width: 122px; }
-          .year-folder { min-width: 140px; margin: 0; }
-          .paper-list { max-height: none; }
+          .year-rail-head { min-width: 206px; max-width: 206px; }
+          .year-folder { min-width: 280px; margin: 0; }
+          .file-pane { display: block; }
+          .paper-list { min-height: 270px; }
         }
         @media (max-width: 640px) {
           .archive-page { padding: 16px; padding-bottom: 92px; }
           .archive-hero { align-items: flex-start; }
           .archive-heading { flex-basis: calc(100% - 74px); }
-          .archive-overview { overflow-x: auto; }
-          .archive-overview div { min-width: 106px; }
+          .archive-overview {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            overflow: visible;
+          }
+          .archive-overview div { min-width: 0; }
           .collection-grid { grid-template-columns: 1fr; }
           .explorer-toolbar { flex-direction: column; align-items: stretch; }
+          .year-rail {
+            display: block;
+            max-height: 410px;
+            overflow-x: hidden;
+            overflow-y: auto;
+          }
+          .year-rail-head { min-width: 0; max-width: none; }
+          .year-folder { min-width: 0; margin-bottom: 7px; }
           .paper-row { align-items: flex-start; flex-wrap: wrap; }
           .paper-name { width: calc(100% - 54px); flex: none; }
           .paper-actions { width: 100%; padding-left: 54px; }

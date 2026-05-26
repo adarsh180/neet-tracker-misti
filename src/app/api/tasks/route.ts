@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { startOfLocalDay } from "@/lib/tasks";
 import { getTaskWindowCutoff, getVisibleBoardTasks, refreshTodoWorkspace } from "@/lib/todo-workspace";
 
 export async function GET() {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     await refreshTodoWorkspace();
     const cutoff = getTaskWindowCutoff();
@@ -30,6 +34,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const unauthorized = await requirePrivateApiSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const {
