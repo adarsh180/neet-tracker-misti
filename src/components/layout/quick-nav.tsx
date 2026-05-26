@@ -19,6 +19,7 @@ import {
   Heart,
   TrendingUp,
   ListTodo,
+  FolderOpen,
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
 import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
@@ -56,8 +57,13 @@ const SUBJECT_ITEMS: NavItem[] = [
   { href: "/subjects/chemistry", icon: Atom, label: "Chemistry", accent: "#b680d9" },
 ] ;
 
+const LIBRARY_ITEMS: NavItem[] = [
+  { href: "/pyq", icon: FolderOpen, label: "PYQ Library", accent: "#d4a853" },
+];
+
 const GROUPS = [
   { label: "Execution", items: EXECUTION_ITEMS },
+  { label: "Library", items: LIBRARY_ITEMS },
   { label: "AI Tools", items: AI_ITEMS },
   { label: "Subjects", items: SUBJECT_ITEMS },
 ];

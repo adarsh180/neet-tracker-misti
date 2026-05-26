@@ -15,6 +15,7 @@ const PREFETCH_ROUTES = [
   "/tests/error-log",
   "/mood",
   "/visual-lab",
+  "/pyq",
   "/ai-insights",
   "/ai-insights/neet-guru",
   "/ai-insights/rank-predictor",
