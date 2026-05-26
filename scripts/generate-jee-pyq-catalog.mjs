@@ -1,4 +1,4 @@
-import { readdir, stat, mkdir, writeFile } from "node:fs/promises";
+import { readdir, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const sourceRoot = path.resolve(process.argv[2] || "D:\\NEET\\PYQ\\JEE");
@@ -43,25 +43,17 @@ for (const year of yearNames) {
     continue;
   }
 
-  const papers = await Promise.all(
-    files.map(async (file, index) => {
-      const details = await stat(path.join(yearRoot, file.name));
-
-      return {
-        id: `jee-${year}-${String(index + 1).padStart(2, "0")}`,
-        year,
-        title: cleanTitle(file.name),
-        fileName: file.name,
-        pathname: `pyq/jee/${year}/${file.name}`,
-        bytes: details.size,
-      };
-    }),
-  );
+  const papers = files.map((file, index) => ({
+    id: `jee-${year}-${String(index + 1).padStart(2, "0")}`,
+    year,
+    title: cleanTitle(file.name),
+    fileName: file.name,
+    pathname: `pyq/jee/${year}/${file.name}`,
+  }));
 
   years.push({
     year,
     papers,
-    totalBytes: papers.reduce((total, paper) => total + paper.bytes, 0),
   });
 }
 
@@ -70,7 +62,6 @@ const catalog = {
   firstYear: years.at(-1)?.year ?? null,
   lastYear: years.at(0)?.year ?? null,
   totalPapers: years.reduce((total, year) => total + year.papers.length, 0),
-  totalBytes: years.reduce((total, year) => total + year.totalBytes, 0),
   years,
 };
 

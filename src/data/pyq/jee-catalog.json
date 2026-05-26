@@ -3,7 +3,6 @@
   "firstYear": "2015",
   "lastYear": "2025",
   "totalPapers": 165,
-  "totalBytes": 684585536,
   "years": [
     {
       "year": "2025",
@@ -13,91 +12,79 @@
           "year": "2025",
           "title": "JEE Main 2025 (22 Jan Shift 1)",
           "fileName": "JEE Main 2025 (22 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (22 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 1247073
+          "pathname": "pyq/jee/2025/JEE Main 2025 (22 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-02",
           "year": "2025",
           "title": "JEE Main 2025 (22 Jan Shift 2)",
           "fileName": "JEE Main 2025 (22 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (22 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 1087702
+          "pathname": "pyq/jee/2025/JEE Main 2025 (22 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-03",
           "year": "2025",
           "title": "JEE Main 2025 (23 Jan Shift 1)",
           "fileName": "JEE Main 2025 (23 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (23 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 907106
+          "pathname": "pyq/jee/2025/JEE Main 2025 (23 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-04",
           "year": "2025",
           "title": "JEE Main 2025 (23 Jan Shift 2)",
           "fileName": "JEE Main 2025 (23 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (23 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 808948
+          "pathname": "pyq/jee/2025/JEE Main 2025 (23 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-05",
           "year": "2025",
           "title": "JEE Main 2025 (24 Jan Shift 1)",
           "fileName": "JEE Main 2025 (24 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (24 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 677580
+          "pathname": "pyq/jee/2025/JEE Main 2025 (24 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-06",
           "year": "2025",
           "title": "JEE Main 2025 (24 Jan Shift 2)",
           "fileName": "JEE Main 2025 (24 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (24 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 1824374
+          "pathname": "pyq/jee/2025/JEE Main 2025 (24 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-07",
           "year": "2025",
           "title": "JEE Main 2025 (28 Jan Shift 1)",
           "fileName": "JEE Main 2025 (28 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (28 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 1137785
+          "pathname": "pyq/jee/2025/JEE Main 2025 (28 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-08",
           "year": "2025",
           "title": "JEE Main 2025 (28 Jan Shift 2)",
           "fileName": "JEE Main 2025 (28 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (28 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 1225543
+          "pathname": "pyq/jee/2025/JEE Main 2025 (28 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-09",
           "year": "2025",
           "title": "JEE Main 2025 (29 Jan Shift 1)",
           "fileName": "JEE Main 2025 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 1151166
+          "pathname": "pyq/jee/2025/JEE Main 2025 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-10",
           "year": "2025",
           "title": "JEE Main 2025 (29 Jan Shift 2)",
           "fileName": "JEE Main 2025 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/JEE Main 2025 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 1063580
+          "pathname": "pyq/jee/2025/JEE Main 2025 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2025-11",
           "year": "2025",
           "title": "Physics JEE Main 2025 April Chapter Wise Question Bank MathonGo",
           "fileName": "Physics - JEE Main 2025 April Chapter-wise Question Bank - MathonGo.pdf",
-          "pathname": "pyq/jee/2025/Physics - JEE Main 2025 April Chapter-wise Question Bank - MathonGo.pdf",
-          "bytes": 10707801
+          "pathname": "pyq/jee/2025/Physics - JEE Main 2025 April Chapter-wise Question Bank - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 21838658
+      ]
     },
     {
       "year": "2024",
@@ -107,163 +94,142 @@
           "year": "2024",
           "title": "JEE Main 2024 (01 Feb Shift 1)",
           "fileName": "JEE Main 2024 (01 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (01 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3944034
+          "pathname": "pyq/jee/2024/JEE Main 2024 (01 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-02",
           "year": "2024",
           "title": "JEE Main 2024 (01 Feb Shift 2)",
           "fileName": "JEE Main 2024 (01 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (01 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3895697
+          "pathname": "pyq/jee/2024/JEE Main 2024 (01 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-03",
           "year": "2024",
           "title": "JEE Main 2024 (04 Apr Shift 1)",
           "fileName": "JEE Main 2024 (04 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (04 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4660021
+          "pathname": "pyq/jee/2024/JEE Main 2024 (04 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-04",
           "year": "2024",
           "title": "JEE Main 2024 (04 Apr Shift 2)",
           "fileName": "JEE Main 2024 (04 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (04 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4047599
+          "pathname": "pyq/jee/2024/JEE Main 2024 (04 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-05",
           "year": "2024",
           "title": "JEE Main 2024 (05 Apr Shift 1)",
           "fileName": "JEE Main 2024 (05 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (05 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4340482
+          "pathname": "pyq/jee/2024/JEE Main 2024 (05 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-06",
           "year": "2024",
           "title": "JEE Main 2024 (05 Apr Shift 2)",
           "fileName": "JEE Main 2024 (05 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (05 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4347279
+          "pathname": "pyq/jee/2024/JEE Main 2024 (05 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-07",
           "year": "2024",
           "title": "JEE Main 2024 (06 Apr Shift 1)",
           "fileName": "JEE Main 2024 (06 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (06 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4224370
+          "pathname": "pyq/jee/2024/JEE Main 2024 (06 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-08",
           "year": "2024",
           "title": "JEE Main 2024 (06 Apr Shift 2)",
           "fileName": "JEE Main 2024 (06 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (06 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4670270
+          "pathname": "pyq/jee/2024/JEE Main 2024 (06 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-09",
           "year": "2024",
           "title": "JEE Main 2024 (08 Apr Shift 1)",
           "fileName": "JEE Main 2024 (08 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (08 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4663329
+          "pathname": "pyq/jee/2024/JEE Main 2024 (08 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-10",
           "year": "2024",
           "title": "JEE Main 2024 (08 Apr Shift 2)",
           "fileName": "JEE Main 2024 (08 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (08 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3986814
+          "pathname": "pyq/jee/2024/JEE Main 2024 (08 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-11",
           "year": "2024",
           "title": "JEE Main 2024 (09 Apr Shift 1)",
           "fileName": "JEE Main 2024 (09 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (09 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4402105
+          "pathname": "pyq/jee/2024/JEE Main 2024 (09 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-12",
           "year": "2024",
           "title": "JEE Main 2024 (09 Apr Shift 2)",
           "fileName": "JEE Main 2024 (09 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (09 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4258388
+          "pathname": "pyq/jee/2024/JEE Main 2024 (09 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-13",
           "year": "2024",
           "title": "JEE Main 2024 (27 Jan Shift 1)",
           "fileName": "JEE Main 2024 (27 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (27 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3858274
+          "pathname": "pyq/jee/2024/JEE Main 2024 (27 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-14",
           "year": "2024",
           "title": "JEE Main 2024 (27 Jan Shift 2)",
           "fileName": "JEE Main 2024 (27 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (27 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4255317
+          "pathname": "pyq/jee/2024/JEE Main 2024 (27 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-15",
           "year": "2024",
           "title": "JEE Main 2024 (29 Jan Shift 1)",
           "fileName": "JEE Main 2024 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3943012
+          "pathname": "pyq/jee/2024/JEE Main 2024 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-16",
           "year": "2024",
           "title": "JEE Main 2024 (29 Jan Shift 2)",
           "fileName": "JEE Main 2024 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4249816
+          "pathname": "pyq/jee/2024/JEE Main 2024 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-17",
           "year": "2024",
           "title": "JEE Main 2024 (30 Jan Shift 1)",
           "fileName": "JEE Main 2024 (30 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (30 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4480119
+          "pathname": "pyq/jee/2024/JEE Main 2024 (30 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-18",
           "year": "2024",
           "title": "JEE Main 2024 (30 Jan Shift 2)",
           "fileName": "JEE Main 2024 (30 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (30 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4381850
+          "pathname": "pyq/jee/2024/JEE Main 2024 (30 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-19",
           "year": "2024",
           "title": "JEE Main 2024 (31 Jan Shift 1)",
           "fileName": "JEE Main 2024 (31 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (31 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3966635
+          "pathname": "pyq/jee/2024/JEE Main 2024 (31 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2024-20",
           "year": "2024",
           "title": "JEE Main 2024 (31 Jan Shift 2)",
           "fileName": "JEE Main 2024 (31 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2024/JEE Main 2024 (31 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4749928
+          "pathname": "pyq/jee/2024/JEE Main 2024 (31 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 85325339
+      ]
     },
     {
       "year": "2023",
@@ -273,195 +239,170 @@
           "year": "2023",
           "title": "JEE Main 2023 (01 Feb Shift 1)",
           "fileName": "JEE Main 2023 (01 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (01 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5392822
+          "pathname": "pyq/jee/2023/JEE Main 2023 (01 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-02",
           "year": "2023",
           "title": "JEE Main 2023 (01 Feb Shift 2)",
           "fileName": "JEE Main 2023 (01 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (01 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6563313
+          "pathname": "pyq/jee/2023/JEE Main 2023 (01 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-03",
           "year": "2023",
           "title": "JEE Main 2023 (06 Apr Shift 1)",
           "fileName": "JEE Main 2023 (06 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (06 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4712602
+          "pathname": "pyq/jee/2023/JEE Main 2023 (06 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-04",
           "year": "2023",
           "title": "JEE Main 2023 (06 Apr Shift 2)",
           "fileName": "JEE Main 2023 (06 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (06 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4998634
+          "pathname": "pyq/jee/2023/JEE Main 2023 (06 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-05",
           "year": "2023",
           "title": "JEE Main 2023 (08 Apr Shift 1)",
           "fileName": "JEE Main 2023 (08 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (08 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5764606
+          "pathname": "pyq/jee/2023/JEE Main 2023 (08 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-06",
           "year": "2023",
           "title": "JEE Main 2023 (08 Apr Shift 2)",
           "fileName": "JEE Main 2023 (08 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (08 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5330148
+          "pathname": "pyq/jee/2023/JEE Main 2023 (08 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-07",
           "year": "2023",
           "title": "JEE Main 2023 (10 Apr Shift 1)",
           "fileName": "JEE Main 2023 (10 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (10 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4631259
+          "pathname": "pyq/jee/2023/JEE Main 2023 (10 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-08",
           "year": "2023",
           "title": "JEE Main 2023 (10 Apr Shift 2)",
           "fileName": "JEE Main 2023 (10 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (10 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5230866
+          "pathname": "pyq/jee/2023/JEE Main 2023 (10 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-09",
           "year": "2023",
           "title": "JEE Main 2023 (11 Apr Shift 1)",
           "fileName": "JEE Main 2023 (11 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (11 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4696100
+          "pathname": "pyq/jee/2023/JEE Main 2023 (11 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-10",
           "year": "2023",
           "title": "JEE Main 2023 (11 Apr Shift 2)",
           "fileName": "JEE Main 2023 (11 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (11 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4912932
+          "pathname": "pyq/jee/2023/JEE Main 2023 (11 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-11",
           "year": "2023",
           "title": "JEE Main 2023 (12 Apr Shift 1)",
           "fileName": "JEE Main 2023 (12 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (12 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5002435
+          "pathname": "pyq/jee/2023/JEE Main 2023 (12 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-12",
           "year": "2023",
           "title": "JEE Main 2023 (13 Apr Shift 1)",
           "fileName": "JEE Main 2023 (13 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (13 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6272923
+          "pathname": "pyq/jee/2023/JEE Main 2023 (13 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-13",
           "year": "2023",
           "title": "JEE Main 2023 (13 Apr Shift 2)",
           "fileName": "JEE Main 2023 (13 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (13 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4149067
+          "pathname": "pyq/jee/2023/JEE Main 2023 (13 Apr Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-14",
           "year": "2023",
           "title": "JEE Main 2023 (15 Apr Shift 1)",
           "fileName": "JEE Main 2023 (15 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (15 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4479574
+          "pathname": "pyq/jee/2023/JEE Main 2023 (15 Apr Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-15",
           "year": "2023",
           "title": "JEE Main 2023 (24 Jan Shift 1)",
           "fileName": "JEE Main 2023 (24 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (24 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4471364
+          "pathname": "pyq/jee/2023/JEE Main 2023 (24 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-16",
           "year": "2023",
           "title": "JEE Main 2023 (24 Jan Shift 2)",
           "fileName": "JEE Main 2023 (24 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (24 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5447801
+          "pathname": "pyq/jee/2023/JEE Main 2023 (24 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-17",
           "year": "2023",
           "title": "JEE Main 2023 (25 Jan Shift 1)",
           "fileName": "JEE Main 2023 (25 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (25 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6615723
+          "pathname": "pyq/jee/2023/JEE Main 2023 (25 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-18",
           "year": "2023",
           "title": "JEE Main 2023 (25 Jan Shift 2)",
           "fileName": "JEE Main 2023 (25 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (25 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5576546
+          "pathname": "pyq/jee/2023/JEE Main 2023 (25 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-19",
           "year": "2023",
           "title": "JEE Main 2023 (29 Jan Shift 1)",
           "fileName": "JEE Main 2023 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5379323
+          "pathname": "pyq/jee/2023/JEE Main 2023 (29 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-20",
           "year": "2023",
           "title": "JEE Main 2023 (29 Jan Shift 2)",
           "fileName": "JEE Main 2023 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5127000
+          "pathname": "pyq/jee/2023/JEE Main 2023 (29 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-21",
           "year": "2023",
           "title": "JEE Main 2023 (30 Jan Shift 1)",
           "fileName": "JEE Main 2023 (30 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (30 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4967316
+          "pathname": "pyq/jee/2023/JEE Main 2023 (30 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-22",
           "year": "2023",
           "title": "JEE Main 2023 (30 Jan Shift 2)",
           "fileName": "JEE Main 2023 (30 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (30 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5443960
+          "pathname": "pyq/jee/2023/JEE Main 2023 (30 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-23",
           "year": "2023",
           "title": "JEE Main 2023 (31 Jan Shift 1)",
           "fileName": "JEE Main 2023 (31 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (31 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4882157
+          "pathname": "pyq/jee/2023/JEE Main 2023 (31 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2023-24",
           "year": "2023",
           "title": "JEE Main 2023 (31 Jan Shift 2)",
           "fileName": "JEE Main 2023 (31 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2023/JEE Main 2023 (31 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4500814
+          "pathname": "pyq/jee/2023/JEE Main 2023 (31 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 124549285
+      ]
     },
     {
       "year": "2022",
@@ -471,179 +412,156 @@
           "year": "2022",
           "title": "JEE Main 2022 (24 Jun Shift 1)",
           "fileName": "JEE Main 2022 (24 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (24 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4910522
+          "pathname": "pyq/jee/2022/JEE Main 2022 (24 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-02",
           "year": "2022",
           "title": "JEE Main 2022 (24 Jun Shift 2)",
           "fileName": "JEE Main 2022 (24 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (24 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3665414
+          "pathname": "pyq/jee/2022/JEE Main 2022 (24 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-03",
           "year": "2022",
           "title": "JEE Main 2022 (25 Jul Shift 1)",
           "fileName": "JEE Main 2022 (25 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6062999
+          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-04",
           "year": "2022",
           "title": "JEE Main 2022 (25 Jul Shift 2)",
           "fileName": "JEE Main 2022 (25 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5661895
+          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-05",
           "year": "2022",
           "title": "JEE Main 2022 (25 Jun Shift 1)",
           "fileName": "JEE Main 2022 (25 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5060936
+          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-06",
           "year": "2022",
           "title": "JEE Main 2022 (25 Jun Shift 2)",
           "fileName": "JEE Main 2022 (25 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4930955
+          "pathname": "pyq/jee/2022/JEE Main 2022 (25 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-07",
           "year": "2022",
           "title": "JEE Main 2022 (26 Jul Shift 1)",
           "fileName": "JEE Main 2022 (26 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6666906
+          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-08",
           "year": "2022",
           "title": "JEE Main 2022 (26 Jul Shift 2)",
           "fileName": "JEE Main 2022 (26 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5253582
+          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-09",
           "year": "2022",
           "title": "JEE Main 2022 (26 Jun Shift 1)",
           "fileName": "JEE Main 2022 (26 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5211383
+          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-10",
           "year": "2022",
           "title": "JEE Main 2022 (26 Jun Shift 2)",
           "fileName": "JEE Main 2022 (26 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4940929
+          "pathname": "pyq/jee/2022/JEE Main 2022 (26 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-11",
           "year": "2022",
           "title": "JEE Main 2022 (27 Jul Shift 1)",
           "fileName": "JEE Main 2022 (27 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5526810
+          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-12",
           "year": "2022",
           "title": "JEE Main 2022 (27 Jul Shift 2)",
           "fileName": "JEE Main 2022 (27 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 7091029
+          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-13",
           "year": "2022",
           "title": "JEE Main 2022 (27 Jun Shift 1)",
           "fileName": "JEE Main 2022 (27 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4834276
+          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-14",
           "year": "2022",
           "title": "JEE Main 2022 (27 Jun Shift 2)",
           "fileName": "JEE Main 2022 (27 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4446569
+          "pathname": "pyq/jee/2022/JEE Main 2022 (27 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-15",
           "year": "2022",
           "title": "JEE Main 2022 (28 Jul Shift 1)",
           "fileName": "JEE Main 2022 (28 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6361487
+          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-16",
           "year": "2022",
           "title": "JEE Main 2022 (28 Jul Shift 2)",
           "fileName": "JEE Main 2022 (28 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 7967218
+          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-17",
           "year": "2022",
           "title": "JEE Main 2022 (28 Jun Shift 1)",
           "fileName": "JEE Main 2022 (28 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5358108
+          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-18",
           "year": "2022",
           "title": "JEE Main 2022 (28 Jun Shift 2)",
           "fileName": "JEE Main 2022 (28 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4999074
+          "pathname": "pyq/jee/2022/JEE Main 2022 (28 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-19",
           "year": "2022",
           "title": "JEE Main 2022 (29 Jul Shift 1)",
           "fileName": "JEE Main 2022 (29 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 8592540
+          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-20",
           "year": "2022",
           "title": "JEE Main 2022 (29 Jul Shift 2)",
           "fileName": "JEE Main 2022 (29 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5992100
+          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-21",
           "year": "2022",
           "title": "JEE Main 2022 (29 Jun Shift 1)",
           "fileName": "JEE Main 2022 (29 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5968215
+          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jun Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2022-22",
           "year": "2022",
           "title": "JEE Main 2022 (29 Jun Shift 2)",
           "fileName": "JEE Main 2022 (29 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4820902
+          "pathname": "pyq/jee/2022/JEE Main 2022 (29 Jun Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 124323849
+      ]
     },
     {
       "year": "2021",
@@ -653,211 +571,184 @@
           "year": "2021",
           "title": "JEE Main 2021 (01 Sep Shift 2)",
           "fileName": "JEE Main 2021 (01 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (01 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4553384
+          "pathname": "pyq/jee/2021/JEE Main 2021 (01 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-02",
           "year": "2021",
           "title": "JEE Main 2021 (16 Mar Shift 1)",
           "fileName": "JEE Main 2021 (16 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (16 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4600427
+          "pathname": "pyq/jee/2021/JEE Main 2021 (16 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-03",
           "year": "2021",
           "title": "JEE Main 2021 (16 Mar Shift 2)",
           "fileName": "JEE Main 2021 (16 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (16 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4469401
+          "pathname": "pyq/jee/2021/JEE Main 2021 (16 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-04",
           "year": "2021",
           "title": "JEE Main 2021 (17 Mar Shift 1)",
           "fileName": "JEE Main 2021 (17 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (17 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5260298
+          "pathname": "pyq/jee/2021/JEE Main 2021 (17 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-05",
           "year": "2021",
           "title": "JEE Main 2021 (17 Mar Shift 2)",
           "fileName": "JEE Main 2021 (17 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (17 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4426931
+          "pathname": "pyq/jee/2021/JEE Main 2021 (17 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-06",
           "year": "2021",
           "title": "JEE Main 2021 (18 Mar Shift 1)",
           "fileName": "JEE Main 2021 (18 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (18 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4777449
+          "pathname": "pyq/jee/2021/JEE Main 2021 (18 Mar Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-07",
           "year": "2021",
           "title": "JEE Main 2021 (18 Mar Shift 2)",
           "fileName": "JEE Main 2021 (18 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (18 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4834701
+          "pathname": "pyq/jee/2021/JEE Main 2021 (18 Mar Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-08",
           "year": "2021",
           "title": "JEE Main 2021 (20 Jul Shift 1)",
           "fileName": "JEE Main 2021 (20 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (20 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4508737
+          "pathname": "pyq/jee/2021/JEE Main 2021 (20 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-09",
           "year": "2021",
           "title": "JEE Main 2021 (20 Jul Shift 2)",
           "fileName": "JEE Main 2021 (20 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (20 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4281386
+          "pathname": "pyq/jee/2021/JEE Main 2021 (20 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-10",
           "year": "2021",
           "title": "JEE Main 2021 (22 Jul Shift 1)",
           "fileName": "JEE Main 2021 (22 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (22 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6210654
+          "pathname": "pyq/jee/2021/JEE Main 2021 (22 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-11",
           "year": "2021",
           "title": "JEE Main 2021 (24 Feb Shift 1)",
           "fileName": "JEE Main 2021 (24 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (24 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4866617
+          "pathname": "pyq/jee/2021/JEE Main 2021 (24 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-12",
           "year": "2021",
           "title": "JEE Main 2021 (24 Feb Shift 2)",
           "fileName": "JEE Main 2021 (24 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (24 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4323999
+          "pathname": "pyq/jee/2021/JEE Main 2021 (24 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-13",
           "year": "2021",
           "title": "JEE Main 2021 (25 Feb Shift 1)",
           "fileName": "JEE Main 2021 (25 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4938477
+          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-14",
           "year": "2021",
           "title": "JEE Main 2021 (25 Feb Shift 2)",
           "fileName": "JEE Main 2021 (25 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4209797
+          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-15",
           "year": "2021",
           "title": "JEE Main 2021 (25 Jul Shift 1)",
           "fileName": "JEE Main 2021 (25 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4683258
+          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-16",
           "year": "2021",
           "title": "JEE Main 2021 (25 Jul Shift 2)",
           "fileName": "JEE Main 2021 (25 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4824566
+          "pathname": "pyq/jee/2021/JEE Main 2021 (25 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-17",
           "year": "2021",
           "title": "JEE Main 2021 (26 Aug Shift 1)",
           "fileName": "JEE Main 2021 (26 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4693777
+          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-18",
           "year": "2021",
           "title": "JEE Main 2021 (26 Aug Shift 2)",
           "fileName": "JEE Main 2021 (26 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4664236
+          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-19",
           "year": "2021",
           "title": "JEE Main 2021 (26 Feb Shift 1)",
           "fileName": "JEE Main 2021 (26 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4616313
+          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Feb Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-20",
           "year": "2021",
           "title": "JEE Main 2021 (26 Feb Shift 2)",
           "fileName": "JEE Main 2021 (26 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4553744
+          "pathname": "pyq/jee/2021/JEE Main 2021 (26 Feb Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-21",
           "year": "2021",
           "title": "JEE Main 2021 (27 Aug Shift 1)",
           "fileName": "JEE Main 2021 (27 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5398202
+          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-22",
           "year": "2021",
           "title": "JEE Main 2021 (27 Aug Shift 2)",
           "fileName": "JEE Main 2021 (27 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6392622
+          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-23",
           "year": "2021",
           "title": "JEE Main 2021 (27 Jul Shift 1)",
           "fileName": "JEE Main 2021 (27 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5061643
+          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Jul Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-24",
           "year": "2021",
           "title": "JEE Main 2021 (27 Jul Shift 2)",
           "fileName": "JEE Main 2021 (27 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5198843
+          "pathname": "pyq/jee/2021/JEE Main 2021 (27 Jul Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-25",
           "year": "2021",
           "title": "JEE Main 2021 (31 Aug Shift 1)",
           "fileName": "JEE Main 2021 (31 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (31 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4589482
+          "pathname": "pyq/jee/2021/JEE Main 2021 (31 Aug Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2021-26",
           "year": "2021",
           "title": "JEE Main 2021 (31 Aug Shift 2)",
           "fileName": "JEE Main 2021 (31 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2021/JEE Main 2021 (31 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4637058
+          "pathname": "pyq/jee/2021/JEE Main 2021 (31 Aug Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 125576002
+      ]
     },
     {
       "year": "2020",
@@ -867,131 +758,114 @@
           "year": "2020",
           "title": "JEE Main 2020 (02 Sep Shift 1)",
           "fileName": "JEE Main 2020 (02 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (02 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4525650
+          "pathname": "pyq/jee/2020/JEE Main 2020 (02 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-02",
           "year": "2020",
           "title": "JEE Main 2020 (02 Sep Shift 2)",
           "fileName": "JEE Main 2020 (02 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (02 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4020674
+          "pathname": "pyq/jee/2020/JEE Main 2020 (02 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-03",
           "year": "2020",
           "title": "JEE Main 2020 (03 Sep Shift 1)",
           "fileName": "JEE Main 2020 (03 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (03 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3353193
+          "pathname": "pyq/jee/2020/JEE Main 2020 (03 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-04",
           "year": "2020",
           "title": "JEE Main 2020 (03 Sep Shift 2)",
           "fileName": "JEE Main 2020 (03 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (03 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3682575
+          "pathname": "pyq/jee/2020/JEE Main 2020 (03 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-05",
           "year": "2020",
           "title": "JEE Main 2020 (04 Sep Shift 1)",
           "fileName": "JEE Main 2020 (04 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (04 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4099397
+          "pathname": "pyq/jee/2020/JEE Main 2020 (04 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-06",
           "year": "2020",
           "title": "JEE Main 2020 (04 Sep Shift 2)",
           "fileName": "JEE Main 2020 (04 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (04 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3965381
+          "pathname": "pyq/jee/2020/JEE Main 2020 (04 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-07",
           "year": "2020",
           "title": "JEE Main 2020 (05 Sep Shift 1)",
           "fileName": "JEE Main 2020 (05 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (05 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3875699
+          "pathname": "pyq/jee/2020/JEE Main 2020 (05 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-08",
           "year": "2020",
           "title": "JEE Main 2020 (05 Sep Shift 2)",
           "fileName": "JEE Main 2020 (05 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (05 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4246680
+          "pathname": "pyq/jee/2020/JEE Main 2020 (05 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-09",
           "year": "2020",
           "title": "JEE Main 2020 (06 Sep Shift 1)",
           "fileName": "JEE Main 2020 (06 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (06 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4370693
+          "pathname": "pyq/jee/2020/JEE Main 2020 (06 Sep Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-10",
           "year": "2020",
           "title": "JEE Main 2020 (06 Sep Shift 2)",
           "fileName": "JEE Main 2020 (06 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (06 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4164640
+          "pathname": "pyq/jee/2020/JEE Main 2020 (06 Sep Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-11",
           "year": "2020",
           "title": "JEE Main 2020 (07 Jan Shift 1)",
           "fileName": "JEE Main 2020 (07 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (07 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4074846
+          "pathname": "pyq/jee/2020/JEE Main 2020 (07 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-12",
           "year": "2020",
           "title": "JEE Main 2020 (07 Jan Shift 2)",
           "fileName": "JEE Main 2020 (07 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (07 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3960125
+          "pathname": "pyq/jee/2020/JEE Main 2020 (07 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-13",
           "year": "2020",
           "title": "JEE Main 2020 (08 Jan Shift 1)",
           "fileName": "JEE Main 2020 (08 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (08 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4983071
+          "pathname": "pyq/jee/2020/JEE Main 2020 (08 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-14",
           "year": "2020",
           "title": "JEE Main 2020 (08 Jan Shift 2)",
           "fileName": "JEE Main 2020 (08 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (08 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4801730
+          "pathname": "pyq/jee/2020/JEE Main 2020 (08 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-15",
           "year": "2020",
           "title": "JEE Main 2020 (09 Jan Shift 1)",
           "fileName": "JEE Main 2020 (09 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (09 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4597715
+          "pathname": "pyq/jee/2020/JEE Main 2020 (09 Jan Shift 1) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2020-16",
           "year": "2020",
           "title": "JEE Main 2020 (09 Jan Shift 2)",
           "fileName": "JEE Main 2020 (09 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2020/JEE Main 2020 (09 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 3951243
+          "pathname": "pyq/jee/2020/JEE Main 2020 (09 Jan Shift 2) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 66673312
+      ]
     },
     {
       "year": "2019",
@@ -1001,259 +875,226 @@
           "year": "2019",
           "title": "08 April 2019 Shift 1 English Chemistry",
           "fileName": "08-april-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/08-april-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1829545
+          "pathname": "pyq/jee/2019/08-april-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-02",
           "year": "2019",
           "title": "08 April 2019 Shift 1 English Physics",
           "fileName": "08-april-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/08-april-2019-shift-1-english-physics.pdf",
-          "bytes": 2292101
+          "pathname": "pyq/jee/2019/08-april-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-03",
           "year": "2019",
           "title": "08 April 2019 Shift 2 English Chemistry",
           "fileName": "08-april-2019-shift-2-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/08-april-2019-shift-2-english-chemistry.pdf",
-          "bytes": 1721547
+          "pathname": "pyq/jee/2019/08-april-2019-shift-2-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-04",
           "year": "2019",
           "title": "08 April 2019 Shift 2 English Physics",
           "fileName": "08-april-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/08-april-2019-shift-2-english-physics.pdf",
-          "bytes": 2248961
+          "pathname": "pyq/jee/2019/08-april-2019-shift-2-english-physics.pdf"
         },
         {
           "id": "jee-2019-05",
           "year": "2019",
           "title": "09 April 2019 Shift 1 English Chemistry",
           "fileName": "09-april-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/09-april-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1521820
+          "pathname": "pyq/jee/2019/09-april-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-06",
           "year": "2019",
           "title": "09 April 2019 Shift 1 English Physics",
           "fileName": "09-april-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/09-april-2019-shift-1-english-physics.pdf",
-          "bytes": 2079911
+          "pathname": "pyq/jee/2019/09-april-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-07",
           "year": "2019",
           "title": "09 April 2019 Shift 2 English Chemistry",
           "fileName": "09-april-2019-shift-2-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/09-april-2019-shift-2-english-chemistry.pdf",
-          "bytes": 1480701
+          "pathname": "pyq/jee/2019/09-april-2019-shift-2-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-08",
           "year": "2019",
           "title": "09 April 2019 Shift 2 English Physics",
           "fileName": "09-april-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/09-april-2019-shift-2-english-physics.pdf",
-          "bytes": 1842567
+          "pathname": "pyq/jee/2019/09-april-2019-shift-2-english-physics.pdf"
         },
         {
           "id": "jee-2019-09",
           "year": "2019",
           "title": "09 Jan 2019 Shift 1 English Chemistry",
           "fileName": "09-jan-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/09-jan-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1553993
+          "pathname": "pyq/jee/2019/09-jan-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-10",
           "year": "2019",
           "title": "09 Jan 2019 Shift 1 English Physics",
           "fileName": "09-jan-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/09-jan-2019-shift-1-english-physics.pdf",
-          "bytes": 2486055
+          "pathname": "pyq/jee/2019/09-jan-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-11",
           "year": "2019",
           "title": "09 Jan 2019 Shift 2 English Chemistry",
           "fileName": "09-jan-2019-shift-2-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/09-jan-2019-shift-2-english-chemistry.pdf",
-          "bytes": 1578912
+          "pathname": "pyq/jee/2019/09-jan-2019-shift-2-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-12",
           "year": "2019",
           "title": "09 Jan 2019 Shift 2 English Physics",
           "fileName": "09-jan-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/09-jan-2019-shift-2-english-physics.pdf",
-          "bytes": 2327745
+          "pathname": "pyq/jee/2019/09-jan-2019-shift-2-english-physics.pdf"
         },
         {
           "id": "jee-2019-13",
           "year": "2019",
           "title": "10 April 2019 Shift 1 English Chemistry",
           "fileName": "10-april-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/10-april-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1612357
+          "pathname": "pyq/jee/2019/10-april-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-14",
           "year": "2019",
           "title": "10 April 2019 Shift 1 English Physics",
           "fileName": "10-april-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/10-april-2019-shift-1-english-physics.pdf",
-          "bytes": 1953812
+          "pathname": "pyq/jee/2019/10-april-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-15",
           "year": "2019",
           "title": "10 April 2019 Shift 2 English Chemistry",
           "fileName": "10-april-2019-shift-2-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/10-april-2019-shift-2-english-chemistry.pdf",
-          "bytes": 1643148
+          "pathname": "pyq/jee/2019/10-april-2019-shift-2-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-16",
           "year": "2019",
           "title": "10 April 2019 Shift 2 English Physics",
           "fileName": "10-april-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/10-april-2019-shift-2-english-physics.pdf",
-          "bytes": 2072235
+          "pathname": "pyq/jee/2019/10-april-2019-shift-2-english-physics.pdf"
         },
         {
           "id": "jee-2019-17",
           "year": "2019",
           "title": "10 Jan 2019 Shift 1 English Chemistry",
           "fileName": "10-jan-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/10-jan-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1868415
+          "pathname": "pyq/jee/2019/10-jan-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-18",
           "year": "2019",
           "title": "10 Jan 2019 Shift 1 English Physics",
           "fileName": "10-jan-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/10-jan-2019-shift-1-english-physics.pdf",
-          "bytes": 1903045
+          "pathname": "pyq/jee/2019/10-jan-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-19",
           "year": "2019",
           "title": "10 Jan 2019 Shift 2 English Chemistry",
           "fileName": "10-jan-2019-shift-2-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/10-jan-2019-shift-2-english-chemistry.pdf",
-          "bytes": 1334565
+          "pathname": "pyq/jee/2019/10-jan-2019-shift-2-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-20",
           "year": "2019",
           "title": "10 Jan 2019 Shift 2 English Physics",
           "fileName": "10-jan-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/10-jan-2019-shift-2-english-physics.pdf",
-          "bytes": 2043621
+          "pathname": "pyq/jee/2019/10-jan-2019-shift-2-english-physics.pdf"
         },
         {
           "id": "jee-2019-21",
           "year": "2019",
           "title": "11 Jan 2019 Shift 1 English Chemistry",
           "fileName": "11-jan-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/11-jan-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1833644
+          "pathname": "pyq/jee/2019/11-jan-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-22",
           "year": "2019",
           "title": "11 Jan 2019 Shift 1 English Physics",
           "fileName": "11-jan-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/11-jan-2019-shift-1-english-physics.pdf",
-          "bytes": 2146482
+          "pathname": "pyq/jee/2019/11-jan-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-23",
           "year": "2019",
           "title": "11 Jan 2019 Shift 2 English Chemistry",
           "fileName": "11-jan-2019-shift-2-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/11-jan-2019-shift-2-english-chemistry.pdf",
-          "bytes": 1859486
+          "pathname": "pyq/jee/2019/11-jan-2019-shift-2-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-24",
           "year": "2019",
           "title": "11 Jan 2019 Shift 2 English Physics",
           "fileName": "11-jan-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/11-jan-2019-shift-2-english-physics.pdf",
-          "bytes": 2025186
+          "pathname": "pyq/jee/2019/11-jan-2019-shift-2-english-physics.pdf"
         },
         {
           "id": "jee-2019-25",
           "year": "2019",
           "title": "12 April 2019 Shift 1 English Chemistry",
           "fileName": "12-april-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/12-april-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1477472
+          "pathname": "pyq/jee/2019/12-april-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-26",
           "year": "2019",
           "title": "12 April 2019 Shift 1 English Physics",
           "fileName": "12-april-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/12-april-2019-shift-1-english-physics.pdf",
-          "bytes": 2597157
+          "pathname": "pyq/jee/2019/12-april-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-27",
           "year": "2019",
           "title": "12 April 2019 Shift 2 English Physics (1)",
           "fileName": "12-april-2019-shift-2-english-physics (1).pdf",
-          "pathname": "pyq/jee/2019/12-april-2019-shift-2-english-physics (1).pdf",
-          "bytes": 2535055
+          "pathname": "pyq/jee/2019/12-april-2019-shift-2-english-physics (1).pdf"
         },
         {
           "id": "jee-2019-28",
           "year": "2019",
           "title": "12 April 2019 Shift 2 English Physics",
           "fileName": "12-april-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/12-april-2019-shift-2-english-physics.pdf",
-          "bytes": 2535055
+          "pathname": "pyq/jee/2019/12-april-2019-shift-2-english-physics.pdf"
         },
         {
           "id": "jee-2019-29",
           "year": "2019",
           "title": "12 Jan 2019 Shift 1 English Chemistry",
           "fileName": "12-jan-2019-shift-1-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/12-jan-2019-shift-1-english-chemistry.pdf",
-          "bytes": 1662902
+          "pathname": "pyq/jee/2019/12-jan-2019-shift-1-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-30",
           "year": "2019",
           "title": "12 Jan 2019 Shift 1 English Physics",
           "fileName": "12-jan-2019-shift-1-english-physics.pdf",
-          "pathname": "pyq/jee/2019/12-jan-2019-shift-1-english-physics.pdf",
-          "bytes": 2266724
+          "pathname": "pyq/jee/2019/12-jan-2019-shift-1-english-physics.pdf"
         },
         {
           "id": "jee-2019-31",
           "year": "2019",
           "title": "12 Jan 2019 Shift 2 English Chemistry",
           "fileName": "12-jan-2019-shift-2-english-chemistry.pdf",
-          "pathname": "pyq/jee/2019/12-jan-2019-shift-2-english-chemistry.pdf",
-          "bytes": 1711644
+          "pathname": "pyq/jee/2019/12-jan-2019-shift-2-english-chemistry.pdf"
         },
         {
           "id": "jee-2019-32",
           "year": "2019",
           "title": "12 Jan 2019 Shift 2 English Physics",
           "fileName": "12-jan-2019-shift-2-english-physics.pdf",
-          "pathname": "pyq/jee/2019/12-jan-2019-shift-2-english-physics.pdf",
-          "bytes": 2139174
+          "pathname": "pyq/jee/2019/12-jan-2019-shift-2-english-physics.pdf"
         }
-      ],
-      "totalBytes": 62185037
+      ]
     },
     {
       "year": "2018",
@@ -1263,43 +1104,37 @@
           "year": "2018",
           "title": "JEE Main 2018 (08 Apr)",
           "fileName": "JEE Main 2018 (08 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2018/JEE Main 2018 (08 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4591452
+          "pathname": "pyq/jee/2018/JEE Main 2018 (08 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2018-02",
           "year": "2018",
           "title": "JEE Main 2018 (15 Apr Shift 1 Online)",
           "fileName": "JEE Main 2018 (15 Apr Shift 1 Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2018/JEE Main 2018 (15 Apr Shift 1 Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5123777
+          "pathname": "pyq/jee/2018/JEE Main 2018 (15 Apr Shift 1 Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2018-03",
           "year": "2018",
           "title": "JEE Main 2018 (15 Apr Shift 2 Online)",
           "fileName": "JEE Main 2018 (15 Apr Shift 2 Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2018/JEE Main 2018 (15 Apr Shift 2 Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4842592
+          "pathname": "pyq/jee/2018/JEE Main 2018 (15 Apr Shift 2 Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2018-04",
           "year": "2018",
           "title": "JEE Main 2018 (15 Apr)",
           "fileName": "JEE Main 2018 (15 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2018/JEE Main 2018 (15 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5934639
+          "pathname": "pyq/jee/2018/JEE Main 2018 (15 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2018-05",
           "year": "2018",
           "title": "JEE Main 2018 (16 Apr Online)",
           "fileName": "JEE Main 2018 (16 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2018/JEE Main 2018 (16 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4829064
+          "pathname": "pyq/jee/2018/JEE Main 2018 (16 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 25321524
+      ]
     },
     {
       "year": "2017",
@@ -1309,27 +1144,23 @@
           "year": "2017",
           "title": "JEE Main 2017 (02 Apr)",
           "fileName": "JEE Main 2017 (02 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2017/JEE Main 2017 (02 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5313305
+          "pathname": "pyq/jee/2017/JEE Main 2017 (02 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2017-02",
           "year": "2017",
           "title": "JEE Main 2017 (08 Apr Online)",
           "fileName": "JEE Main 2017 (08 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2017/JEE Main 2017 (08 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5339457
+          "pathname": "pyq/jee/2017/JEE Main 2017 (08 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2017-03",
           "year": "2017",
           "title": "JEE Main 2017 (09 Apr Online)",
           "fileName": "JEE Main 2017 (09 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2017/JEE Main 2017 (09 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5606132
+          "pathname": "pyq/jee/2017/JEE Main 2017 (09 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 16258894
+      ]
     },
     {
       "year": "2016",
@@ -1339,27 +1170,23 @@
           "year": "2016",
           "title": "JEE Main 2016 (03 Apr)",
           "fileName": "JEE Main 2016 (03 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2016/JEE Main 2016 (03 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4681061
+          "pathname": "pyq/jee/2016/JEE Main 2016 (03 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2016-02",
           "year": "2016",
           "title": "JEE Main 2016 (09 Apr Online)",
           "fileName": "JEE Main 2016 (09 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2016/JEE Main 2016 (09 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4878817
+          "pathname": "pyq/jee/2016/JEE Main 2016 (09 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2016-03",
           "year": "2016",
           "title": "JEE Main 2016 (10 Apr Online)",
           "fileName": "JEE Main 2016 (10 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2016/JEE Main 2016 (10 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 4979521
+          "pathname": "pyq/jee/2016/JEE Main 2016 (10 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 14539399
+      ]
     },
     {
       "year": "2015",
@@ -1369,27 +1196,23 @@
           "year": "2015",
           "title": "JEE Main 2015 (04 Apr)",
           "fileName": "JEE Main 2015 (04 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2015/JEE Main 2015 (04 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5936198
+          "pathname": "pyq/jee/2015/JEE Main 2015 (04 Apr) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2015-02",
           "year": "2015",
           "title": "JEE Main 2015 (10 Apr Online)",
           "fileName": "JEE Main 2015 (10 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2015/JEE Main 2015 (10 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 6315904
+          "pathname": "pyq/jee/2015/JEE Main 2015 (10 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         },
         {
           "id": "jee-2015-03",
           "year": "2015",
           "title": "JEE Main 2015 (11 Apr Online)",
           "fileName": "JEE Main 2015 (11 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "pathname": "pyq/jee/2015/JEE Main 2015 (11 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf",
-          "bytes": 5742135
+          "pathname": "pyq/jee/2015/JEE Main 2015 (11 Apr Online) Previous Year Paper with Answer Keys - MathonGo.pdf"
         }
-      ],
-      "totalBytes": 17994237
+      ]
     }
   ]
 }

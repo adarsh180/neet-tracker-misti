@@ -18,12 +18,10 @@ type Paper = {
   title: string;
   fileName: string;
   pathname: string;
-  bytes: number;
 };
 
 type YearFolder = {
   year: string;
-  totalBytes: number;
   papers: Paper[];
 };
 
@@ -32,7 +30,6 @@ type JeeCatalog = {
   firstYear: string | null;
   lastYear: string | null;
   totalPapers: number;
-  totalBytes: number;
   years: YearFolder[];
 };
 
@@ -40,16 +37,6 @@ type Props = {
   jeeCatalog: JeeCatalog;
   assetBaseUrl: string;
 };
-
-function formatSize(bytes: number) {
-  if (bytes >= 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-  }
-  if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
 
 function buildDocumentUrl(baseUrl: string, pathname: string) {
   const normalizedBase = baseUrl.trim().replace(/\/+$/, "");
@@ -107,10 +94,6 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           <div>
             <strong>{jeeCatalog.firstYear}-{jeeCatalog.lastYear}</strong>
             <span>Collected years</span>
-          </div>
-          <div>
-            <strong>{formatSize(jeeCatalog.totalBytes)}</strong>
-            <span>Library size</span>
           </div>
         </div>
       </header>
@@ -198,7 +181,6 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
                       <strong>{folder.year}</strong>
                       <small>{folder.papers.length} files</small>
                     </span>
-                    <em>{formatSize(folder.totalBytes)}</em>
                   </button>
                 );
               })}
@@ -223,7 +205,7 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
                       </div>
                       <div className="paper-name">
                         <strong>{paper.title}</strong>
-                        <span>{paper.year} / PDF / {formatSize(paper.bytes)}</span>
+                        <span>{paper.year} / PDF</span>
                       </div>
                       <div className="paper-actions">
                         {documentUrl ? (
@@ -583,12 +565,6 @@ export default function PyqLibraryClient({ jeeCatalog, assetBaseUrl }: Props) {
           font-size: 11px;
           color: var(--text-muted);
           margin-top: 2px;
-        }
-        .year-folder em {
-          color: var(--text-muted);
-          font-style: normal;
-          font-size: 10px;
-          white-space: nowrap;
         }
         .file-pane {
           min-width: 0;
