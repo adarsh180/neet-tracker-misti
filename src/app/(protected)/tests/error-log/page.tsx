@@ -34,7 +34,6 @@ import {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -43,6 +42,7 @@ import {
   ZAxis,
 } from "recharts";
 import { SYLLABUS } from "@/lib/syllabus";
+import ResponsiveChart from "@/components/charts/ResponsiveChart";
 
 const TEST_TYPES = ["AITS", "SECTIONAL", "UNIT", "FLT", "PYQ", "REAL_ATTEMPT"];
 const SUBJECTS = SYLLABUS.map(s => s.name);
@@ -73,6 +73,15 @@ const ATTEMPT_STATUS = ["ATTEMPTED", "SKIPPED"];
 const OUTCOMES = ["CORRECT", "WRONG", "UNMARKED"];
 const CONTENT_STATUS = ["HAD_CONTENT", "WEAK_CONTENT", "NOT_STUDIED", "OUT_OF_SYLLABUS"];
 const DIFFICULTIES = ["EASY", "MEDIUM", "HARD"];
+// How Misti reached her answer — tracked on every question so she can see how
+// well her elimination technique is actually serving her.
+const SOLVE_METHODS = ["DIRECT", "ELIMINATION", "GUESS", "BLIND_GUESS"];
+const SOLVE_METHOD_LABELS: Record<string, string> = {
+  DIRECT: "Direct",
+  ELIMINATION: "Elimination",
+  GUESS: "Educated guess",
+  BLIND_GUESS: "Blind guess",
+};
 const REASONS = [
   "Panic",
   "Anxiety",
@@ -110,6 +119,8 @@ interface ErrorQuestion {
   outOfSyllabus: boolean;
   notStudied: boolean;
   difficulty: string;
+  solveMethod: string | null;
+  optionsEliminated: number | null;
   confidence: number | null;
   timeSpentSeconds: number | null;
   reasonTags: string[] | null;
@@ -261,6 +272,8 @@ type DraftQuestion = {
   outOfSyllabus: boolean;
   notStudied: boolean;
   difficulty: string;
+  solveMethod: string;
+  optionsEliminated: string;
   confidence: string;
   timeSpentSeconds: string;
   reasonTags: string[];
@@ -297,6 +310,11 @@ function toDraftQuestion(question?: ErrorQuestion | null): DraftQuestion {
     outOfSyllabus: Boolean(question?.outOfSyllabus),
     notStudied: Boolean(question?.notStudied),
     difficulty: question?.difficulty ?? "MEDIUM",
+    solveMethod: question?.solveMethod ?? "",
+    optionsEliminated:
+      question?.optionsEliminated === null || question?.optionsEliminated === undefined
+        ? ""
+        : String(question.optionsEliminated),
     confidence: question?.confidence ? String(question.confidence) : "",
     timeSpentSeconds: question?.timeSpentSeconds ? String(question.timeSpentSeconds) : "",
     reasonTags: question?.reasonTags ?? [],
@@ -328,7 +346,9 @@ export default function ErrorLogTrackerPage() {
   const [creating, setCreating] = useState(false);
   const [savingQuestion, setSavingQuestion] = useState(false);
   const [savingBatch, setSavingBatch] = useState(false);
-  const [viewMode, setViewMode] = useState<"form" | "grid">("form");
+  const [viewMode, setViewMode] = useState<"quick" | "form" | "grid">("quick");
+  const [quickFilter, setQuickFilter] = useState<"ALL" | "UNMARKED" | "WRONG" | "SKIPPED" | "CORRECT">("ALL");
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [gridQuestions, setGridQuestions] = useState<DraftQuestion[]>([]);
   const [subjectTopicRecords, setSubjectTopicRecords] = useState<SubjectTopicRecord[]>([]);
   const [testAiLoading, setTestAiLoading] = useState(false);
@@ -425,6 +445,25 @@ export default function ErrorLogTrackerPage() {
         questionNumber: q.questionNumber,
         fill: q.outcome === "CORRECT" ? "var(--success)" : q.outcome === "WRONG" ? "var(--danger)" : "var(--gold-bright)",
       }));
+  }, [snapshot]);
+
+  // How well the elimination technique is actually working for Misti.
+  const eliminationStats = useMemo(() => {
+    const qs = snapshot?.questions ?? [];
+    const withMethod = qs.filter((q) => q.solveMethod);
+    const elim = withMethod.filter((q) => q.solveMethod === "ELIMINATION");
+    const elimCorrect = elim.filter((q) => q.outcome === "CORRECT").length;
+    const guesses = withMethod.filter((q) => q.solveMethod === "GUESS" || q.solveMethod === "BLIND_GUESS");
+    const guessCorrect = guesses.filter((q) => q.outcome === "CORRECT").length;
+    const direct = withMethod.filter((q) => q.solveMethod === "DIRECT").length;
+    return {
+      tracked: withMethod.length,
+      direct,
+      elimination: elim.length,
+      elimAccuracy: elim.length ? Math.round((elimCorrect / elim.length) * 100) : null,
+      guesses: guesses.length,
+      guessAccuracy: guesses.length ? Math.round((guessCorrect / guesses.length) * 100) : null,
+    };
   }, [snapshot]);
 
   const updateDraft = <K extends keyof DraftQuestion>(key: K, value: DraftQuestion[K]) => {
@@ -580,6 +619,8 @@ export default function ErrorLogTrackerPage() {
       outOfSyllabus: questionDraft.outOfSyllabus,
       notStudied: questionDraft.notStudied,
       difficulty: questionDraft.difficulty,
+      solveMethod: questionDraft.solveMethod || null,
+      optionsEliminated: questionDraft.optionsEliminated ? Number(questionDraft.optionsEliminated) : null,
       confidence: questionDraft.confidence ? Number(questionDraft.confidence) : null,
       timeSpentSeconds: questionDraft.timeSpentSeconds ? Number(questionDraft.timeSpentSeconds) : null,
       reasonTags: questionDraft.reasonTags,
@@ -611,6 +652,37 @@ export default function ErrorLogTrackerPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ questionId: question.id, question: payload }),
     });
+  };
+
+  // ---- Quick mode helpers -------------------------------------------------
+  // Misti marks each question fast; detail fields only matter for wrong/skipped.
+  const resultOf = (q: DraftQuestion): "CORRECT" | "WRONG" | "SKIPPED" | "UNMARKED" => {
+    if (q.outcome === "CORRECT") return "CORRECT";
+    if (q.outcome === "WRONG") return "WRONG";
+    if (q.attemptStatus === "SKIPPED") return "SKIPPED";
+    return "UNMARKED";
+  };
+
+  const updateQuickRow = (index: number, patch: Partial<DraftQuestion>, save = true) => {
+    const updated = { ...gridQuestions[index], ...patch };
+    const copy = [...gridQuestions];
+    copy[index] = updated;
+    setGridQuestions(copy);
+    if (save) void saveGridRow(updated);
+  };
+
+  const setQuickResult = (index: number, result: "CORRECT" | "WRONG" | "SKIPPED") => {
+    const patch: Partial<DraftQuestion> =
+      result === "CORRECT"
+        ? { outcome: "CORRECT", attemptStatus: "ATTEMPTED" }
+        : result === "WRONG"
+        ? { outcome: "WRONG", attemptStatus: "ATTEMPTED" }
+        : { outcome: "UNMARKED", attemptStatus: "SKIPPED" };
+    updateQuickRow(index, patch);
+    // Auto-open the detail panel when it now matters.
+    if (result === "WRONG" || result === "SKIPPED") {
+      setExpandedRows((prev) => ({ ...prev, [gridQuestions[index].id]: true }));
+    }
   };
 
   const saveBatch = async () => {
@@ -859,8 +931,9 @@ export default function ErrorLogTrackerPage() {
                   </div>
                   <LineChart size={18} />
                 </div>
-                <ResponsiveContainer width="100%" height={280}>
-                  <AreaChart data={snapshot?.analytics.timeline ?? []}>
+                <ResponsiveChart height={280}>
+                  {(w, h) => (
+                  <AreaChart width={w} height={h} data={snapshot?.analytics.timeline ?? []}>
                     <defs>
                       <linearGradient id="accuracyGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#d4a853" stopOpacity={0.42} />
@@ -873,7 +946,8 @@ export default function ErrorLogTrackerPage() {
                     <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} />
                     <Area type="monotone" dataKey="accuracy" stroke="var(--gold)" strokeWidth={3} fill="url(#accuracyGradient)" animationDuration={1300} />
                   </AreaChart>
-                </ResponsiveContainer>
+                  )}
+                </ResponsiveChart>
               </article>
 
               <article className="glass-card el-chart-card">
@@ -884,8 +958,9 @@ export default function ErrorLogTrackerPage() {
                   </div>
                   <BarChart3 size={18} />
                 </div>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={snapshot?.analytics.subjects ?? []}>
+                <ResponsiveChart height={280}>
+                  {(w, h) => (
+                  <BarChart width={w} height={h} data={snapshot?.analytics.subjects ?? []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                     <XAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -896,7 +971,8 @@ export default function ErrorLogTrackerPage() {
                       ))}
                     </Bar>
                   </BarChart>
-                </ResponsiveContainer>
+                  )}
+                </ResponsiveChart>
               </article>
 
               {timeChartData.length > 0 && (
@@ -908,8 +984,9 @@ export default function ErrorLogTrackerPage() {
                     </div>
                     <History size={18} />
                   </div>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <ScatterChart>
+                  <ResponsiveChart height={280}>
+                    {(w, h) => (
+                    <ScatterChart width={w} height={h}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                       <XAxis type="number" dataKey="x" name="Seconds" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
                       <YAxis type="number" dataKey="y" name="Difficulty" domain={[0, 4]} tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => v === 1 ? 'EASY' : v === 2 ? 'MEDIUM' : v === 3 ? 'HARD' : ''} />
@@ -921,7 +998,8 @@ export default function ErrorLogTrackerPage() {
                         ))}
                       </Scatter>
                     </ScatterChart>
-                  </ResponsiveContainer>
+                    )}
+                  </ResponsiveChart>
                 </article>
               )}
             </section>
@@ -931,9 +1009,10 @@ export default function ErrorLogTrackerPage() {
                 <div className="el-panel-head">
                   <div>
                     <span className="el-mini-label">Question editor</span>
-                    <h2>{viewMode === "form" ? "Record focused question data" : "Spreadsheet Entry"}</h2>
+                    <h2>{viewMode === "quick" ? "Quick mark — details only for misses" : viewMode === "form" ? "Record focused question data" : "Spreadsheet Entry"}</h2>
                   </div>
                   <div className="el-actions">
+                    <button type="button" className={`btn btn-sm ${viewMode === "quick" ? "btn-primary" : "btn-glass"}`} onClick={() => setViewMode("quick")}>Quick</button>
                     <button type="button" className={`btn btn-sm ${viewMode === "form" ? "btn-primary" : "btn-glass"}`} onClick={() => setViewMode("form")}>Form</button>
                     <button type="button" className={`btn btn-sm ${viewMode === "grid" ? "btn-primary" : "btn-glass"}`} onClick={() => setViewMode("grid")}>Spreadsheet</button>
                     {viewMode === "form" && (
@@ -952,7 +1031,162 @@ export default function ErrorLogTrackerPage() {
                   </div>
                 </div>
 
-                {viewMode === "form" ? (
+                {viewMode === "quick" ? (
+                  <div className="el-quick">
+                    <div className="el-quick-stats">
+                      <span className="el-quick-stat">
+                        Elimination: <strong>{eliminationStats.elimAccuracy === null ? "—" : `${eliminationStats.elimAccuracy}%`}</strong>
+                        <em>{eliminationStats.elimination} q</em>
+                      </span>
+                      <span className="el-quick-stat">
+                        Guess hit-rate: <strong>{eliminationStats.guessAccuracy === null ? "—" : `${eliminationStats.guessAccuracy}%`}</strong>
+                        <em>{eliminationStats.guesses} q</em>
+                      </span>
+                      <span className="el-quick-stat">
+                        Direct: <strong>{eliminationStats.direct}</strong>
+                        <em>solved</em>
+                      </span>
+                    </div>
+
+                    <div className="el-quick-filters">
+                      {(["ALL", "UNMARKED", "WRONG", "SKIPPED", "CORRECT"] as const).map((f) => {
+                        const count =
+                          f === "ALL"
+                            ? gridQuestions.length
+                            : gridQuestions.filter((q) => resultOf(q) === f).length;
+                        return (
+                          <button
+                            key={f}
+                            type="button"
+                            className={`el-quick-filter ${quickFilter === f ? "on" : ""}`}
+                            onClick={() => setQuickFilter(f)}
+                          >
+                            {cleanLabel(f)} <span>{count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="el-quick-list">
+                      {gridQuestions.map((q, i) => {
+                        const result = resultOf(q);
+                        if (quickFilter !== "ALL" && result !== quickFilter) return null;
+                        const needsDetail = result === "WRONG" || result === "SKIPPED";
+                        const open = expandedRows[q.id];
+                        const showElim = q.solveMethod === "ELIMINATION" || q.solveMethod === "GUESS";
+                        return (
+                          <div key={q.id} className={`el-quick-row r-${result.toLowerCase()}`}>
+                            <div className="el-quick-main">
+                              <span className="el-quick-num">{q.questionNumber}</span>
+
+                              <div className="el-quick-results">
+                                {(["CORRECT", "WRONG", "SKIPPED"] as const).map((r) => (
+                                  <button
+                                    key={r}
+                                    type="button"
+                                    className={`el-quick-result-btn b-${r.toLowerCase()} ${result === r ? "on" : ""}`}
+                                    onClick={() => setQuickResult(i, r)}
+                                  >
+                                    {r === "CORRECT" ? "✓" : r === "WRONG" ? "✗" : "⊘"}
+                                  </button>
+                                ))}
+                              </div>
+
+                              <div className="el-quick-methods">
+                                {SOLVE_METHODS.map((m) => (
+                                  <button
+                                    key={m}
+                                    type="button"
+                                    className={`el-quick-method ${q.solveMethod === m ? "on" : ""}`}
+                                    onClick={() => updateQuickRow(i, { solveMethod: q.solveMethod === m ? "" : m })}
+                                    title={SOLVE_METHOD_LABELS[m]}
+                                  >
+                                    {m === "DIRECT" ? "Direct" : m === "ELIMINATION" ? "Elim" : m === "GUESS" ? "Guess" : "Blind"}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {showElim && (
+                                <select
+                                  className="el-field el-select el-quick-elim"
+                                  value={q.optionsEliminated}
+                                  onChange={(e) => updateQuickRow(i, { optionsEliminated: e.target.value })}
+                                  title="Options eliminated"
+                                >
+                                  <option value="">— elim</option>
+                                  <option value="1">1 ruled out</option>
+                                  <option value="2">2 ruled out</option>
+                                  <option value="3">3 ruled out</option>
+                                </select>
+                              )}
+
+                              {needsDetail && (
+                                <button
+                                  type="button"
+                                  className={`el-quick-expand ${open ? "on" : ""}`}
+                                  onClick={() => setExpandedRows((prev) => ({ ...prev, [q.id]: !prev[q.id] }))}
+                                >
+                                  {open ? "Hide" : "Details"}
+                                </button>
+                              )}
+                            </div>
+
+                            {needsDetail && open && (
+                              <div className="el-quick-detail">
+                                <div className="el-form-grid two">
+                                  <select className="el-field el-select" value={q.subject} onChange={(e) => updateQuickRow(i, { subject: e.target.value, chapter: "", topic: "" })}>
+                                    {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                                  </select>
+                                  <select className="el-field el-select" value={q.difficulty} onChange={(e) => updateQuickRow(i, { difficulty: e.target.value })}>
+                                    {DIFFICULTIES.map((d) => <option key={d} value={d}>{cleanLabel(d)}</option>)}
+                                  </select>
+                                </div>
+                                <div className="el-form-grid two">
+                                  <select className="el-field el-select" value={q.chapter} onChange={(e) => updateQuickRow(i, { chapter: e.target.value, topic: "" })}>
+                                    <option value="">Select Chapter</option>
+                                    {getMergedChapters(q.subject).map((c) => <option key={c} value={c}>{c}</option>)}
+                                  </select>
+                                  <input
+                                    className="el-field"
+                                    list={`topics-quick-${i}`}
+                                    value={q.topic}
+                                    onChange={(e) => updateQuickRow(i, { topic: e.target.value }, false)}
+                                    onBlur={() => void commitGridTopic(i, gridQuestions[i])}
+                                    placeholder="Topic"
+                                  />
+                                  <datalist id={`topics-quick-${i}`}>
+                                    {getMergedTopics(q.subject, q.chapter || "").map((t) => <option key={t} value={t} />)}
+                                  </datalist>
+                                </div>
+                                <textarea className="el-field el-textarea" value={q.questionSummary} onChange={(e) => updateQuickRow(i, { questionSummary: e.target.value }, false)} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="What was the question? (a clue to recognise it later)" />
+                                <textarea className="el-field el-textarea" value={q.whereLacked} onChange={(e) => updateQuickRow(i, { whereLacked: e.target.value }, false)} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="Where I lacked: concept, formula, panic, reading, time, revision..." />
+                                <div className="el-reason-wrap">
+                                  {REASONS.map((reason) => {
+                                    const on = q.reasonTags.includes(reason);
+                                    return (
+                                      <button
+                                        type="button"
+                                        key={reason}
+                                        className={`el-reason ${on ? "on" : ""}`}
+                                        onClick={() => updateQuickRow(i, { reasonTags: on ? q.reasonTags.filter((t) => t !== reason) : [...q.reasonTags, reason] })}
+                                      >
+                                        {reason}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <textarea className="el-field el-textarea" value={q.actionFix} onChange={(e) => updateQuickRow(i, { actionFix: e.target.value }, false)} onBlur={() => saveGridRow(gridQuestions[i])} placeholder="Fix / memory hook for next time" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {gridQuestions.length === 0 && (
+                        <p className="el-quick-empty">No questions yet. Pick or create a test on the left.</p>
+                      )}
+                    </div>
+                  </div>
+                ) : viewMode === "form" ? (
                   <div className="el-question-form">
                   <div className="el-form-grid two">
                     <input className="el-field" type="number" min={1} value={questionDraft.questionNumber} disabled />
@@ -980,6 +1214,18 @@ export default function ErrorLogTrackerPage() {
                     </select>
                     <select className="el-field el-select" value={questionDraft.difficulty} onChange={(event) => updateDraft("difficulty", event.target.value)}>
                       {DIFFICULTIES.map((item) => <option key={item} value={item}>{cleanLabel(item)}</option>)}
+                    </select>
+                  </div>
+                  <div className="el-form-grid two">
+                    <select className="el-field el-select" value={questionDraft.solveMethod} onChange={(event) => updateDraft("solveMethod", event.target.value)}>
+                      <option value="">How did you answer?</option>
+                      {SOLVE_METHODS.map((item) => <option key={item} value={item}>{SOLVE_METHOD_LABELS[item]}</option>)}
+                    </select>
+                    <select className="el-field el-select" value={questionDraft.optionsEliminated} onChange={(event) => updateDraft("optionsEliminated", event.target.value)} disabled={questionDraft.solveMethod !== "ELIMINATION" && questionDraft.solveMethod !== "GUESS"}>
+                      <option value="">Options eliminated</option>
+                      <option value="1">1 ruled out</option>
+                      <option value="2">2 ruled out</option>
+                      <option value="3">3 ruled out</option>
                     </select>
                   </div>
                   <div className="el-form-grid two">
@@ -1107,8 +1353,9 @@ export default function ErrorLogTrackerPage() {
                 </div>
 
                 <div className="el-cause-chart">
-                  <ResponsiveContainer width="100%" height={210}>
-                    <PieChart>
+                  <ResponsiveChart height={210}>
+                    {(w, h) => (
+                    <PieChart width={w} height={h}>
                       <Pie data={reasonChartData} dataKey="value" nameKey="name" innerRadius={48} outerRadius={78} paddingAngle={3} animationDuration={1200}>
                         {reasonChartData.map((_, index) => (
                           <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
@@ -1116,7 +1363,8 @@ export default function ErrorLogTrackerPage() {
                       </Pie>
                       <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} />
                     </PieChart>
-                  </ResponsiveContainer>
+                    )}
+                  </ResponsiveChart>
                 </div>
 
                 <div className="el-report-stack">
@@ -1274,6 +1522,42 @@ export default function ErrorLogTrackerPage() {
         .el-reason-wrap, .el-ai-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         .el-reason { padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: rgba(255,255,255,.58); font-size: 11px; font-weight: 800; cursor: pointer; transition: all .15s; }
         .el-reason.on { color: var(--gold-bright); border-color: rgba(212,168,83,.32); background: rgba(212,168,83,.12); }
+
+        /* ---- Quick mark mode ---- */
+        .el-quick { display: grid; gap: 12px; }
+        .el-quick-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .el-quick-stat { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.025); font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+        .el-quick-stat strong { font-size: 19px; font-weight: 900; color: var(--gold-bright); letter-spacing: 0; text-transform: none; }
+        .el-quick-stat em { font-size: 10px; font-style: normal; color: rgba(255,255,255,.38); letter-spacing: .02em; }
+        .el-quick-filters { display: flex; flex-wrap: wrap; gap: 7px; }
+        .el-quick-filter { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: rgba(255,255,255,.6); font-size: 11px; font-weight: 800; cursor: pointer; transition: all .15s; }
+        .el-quick-filter span { font-size: 10px; opacity: .7; }
+        .el-quick-filter.on { color: var(--gold-bright); border-color: rgba(212,168,83,.34); background: rgba(212,168,83,.12); }
+        .el-quick-list { display: grid; gap: 8px; max-height: 620px; overflow-y: auto; padding-right: 4px; }
+        .el-quick-row { border: 1px solid rgba(255,255,255,.07); border-radius: 16px; background: rgba(255,255,255,.022); padding: 9px 11px; transition: border-color .15s; }
+        .el-quick-row.r-wrong { border-color: rgba(248,113,113,.22); background: rgba(248,113,113,.04); }
+        .el-quick-row.r-skipped { border-color: rgba(212,168,83,.2); background: rgba(212,168,83,.04); }
+        .el-quick-row.r-correct { border-color: rgba(34,197,94,.18); }
+        .el-quick-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .el-quick-num { flex-shrink: 0; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: rgba(255,255,255,.05); font-size: 12px; font-weight: 900; color: rgba(255,255,255,.7); }
+        .el-quick-results { display: inline-flex; gap: 4px; }
+        .el-quick-result-btn { width: 32px; height: 30px; border-radius: 9px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: rgba(255,255,255,.4); font-size: 14px; font-weight: 900; cursor: pointer; transition: all .14s; }
+        .el-quick-result-btn.b-correct.on { color: #fff; background: var(--success); border-color: var(--success); }
+        .el-quick-result-btn.b-wrong.on { color: #fff; background: var(--danger); border-color: var(--danger); }
+        .el-quick-result-btn.b-skipped.on { color: #1a1206; background: var(--gold-bright); border-color: var(--gold-bright); }
+        .el-quick-methods { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+        .el-quick-method { padding: 6px 9px; border-radius: 8px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.03); color: rgba(255,255,255,.52); font-size: 10.5px; font-weight: 800; cursor: pointer; transition: all .14s; }
+        .el-quick-method.on { color: var(--lotus-bright); border-color: rgba(168,85,247,.34); background: rgba(168,85,247,.14); }
+        .el-quick-elim { width: auto; min-width: 118px; padding: 6px 9px; font-size: 11px; }
+        .el-quick-expand { margin-left: auto; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: rgba(255,255,255,.66); font-size: 11px; font-weight: 800; cursor: pointer; }
+        .el-quick-expand.on { color: var(--gold-bright); border-color: rgba(212,168,83,.32); }
+        .el-quick-detail { display: grid; gap: 9px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,.1); }
+        .el-quick-empty { padding: 20px; text-align: center; color: rgba(255,255,255,.4); font-size: 13px; }
+        @media (max-width: 560px) {
+          .el-quick-stats { grid-template-columns: 1fr; }
+          .el-quick-expand { margin-left: 0; }
+        }
+
         .el-ai-card { display: grid; gap: 16px; align-content: start; }
         .el-cause-chart { border-radius: 22px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.025); }
         .el-report { max-height: 480px; overflow: auto; padding: 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.032); }

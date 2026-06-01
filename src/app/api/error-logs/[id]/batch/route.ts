@@ -27,6 +27,8 @@ const allowedQuestionFields = [
   "outOfSyllabus",
   "notStudied",
   "difficulty",
+  "solveMethod",
+  "optionsEliminated",
   "confidence",
   "timeSpentSeconds",
   "reasonTags",
@@ -50,6 +52,18 @@ function normalizeQuestion(input: Record<string, unknown>) {
   data.timeSpentSeconds = data.timeSpentSeconds === null || data.timeSpentSeconds === "" ? null : Number(data.timeSpentSeconds);
   if (!Number.isFinite(data.confidence as number)) data.confidence = null;
   if (!Number.isFinite(data.timeSpentSeconds as number)) data.timeSpentSeconds = null;
+  const VALID_SOLVE_METHODS = new Set(["DIRECT", "ELIMINATION", "GUESS", "BLIND_GUESS"]);
+  if ("solveMethod" in data) {
+    data.solveMethod = VALID_SOLVE_METHODS.has(String(data.solveMethod)) ? String(data.solveMethod) : null;
+  }
+  if ("optionsEliminated" in data) {
+    if (data.optionsEliminated === null || data.optionsEliminated === "") {
+      data.optionsEliminated = null;
+    } else {
+      const oe = Number(data.optionsEliminated);
+      data.optionsEliminated = Number.isFinite(oe) ? Math.min(3, Math.max(0, Math.round(oe))) : null;
+    }
+  }
   if (!Array.isArray(data.reasonTags)) data.reasonTags = [];
   data.outOfSyllabus = Boolean(data.outOfSyllabus);
   data.notStudied = Boolean(data.notStudied);

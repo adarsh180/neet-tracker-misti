@@ -32,6 +32,8 @@ export async function GET() {
             outOfSyllabus: true,
             notStudied: true,
             difficulty: true,
+            solveMethod: true,
+            optionsEliminated: true,
             confidence: true,
             timeSpentSeconds: true,
             reasonTags: true,

@@ -149,6 +149,8 @@ model ErrorLogQuestion {
   outOfSyllabus   Boolean      @default(false)
   notStudied      Boolean      @default(false)
   difficulty      String       @default("MEDIUM") // EASY, MEDIUM, HARD
+  solveMethod     String?      // DIRECT, ELIMINATION, GUESS, BLIND_GUESS
+  optionsEliminated Int?       // 0-3 options ruled out before answering
   confidence      Int?
   timeSpentSeconds Int?
   reasonTags      Json?

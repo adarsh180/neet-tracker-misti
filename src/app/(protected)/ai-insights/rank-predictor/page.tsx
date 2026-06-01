@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import {
-  RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Cell
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine
 } from "recharts";
 import { TrendingUp, AlertTriangle, Target, Zap, ChevronLeft, RefreshCw } from "lucide-react";
 import SmoothLink from "@/components/layout/smooth-link";
+import ResponsiveChart from "@/components/charts/ResponsiveChart";
 
 interface SubjectBreakdown {
   subject: string;
@@ -211,28 +212,50 @@ export default function RankPredictorPage() {
             <div className="rank-chart-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
               <div className="glass-card" style={{ padding: 24 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>Subject vs Target (Radar)</h3>
-                <ResponsiveContainer width="100%" height={240}>
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="var(--chart-grid)" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} />
-                    <Radar name="Current" dataKey="Current" stroke="var(--gold)" fill="var(--gold)" fillOpacity={0.2} />
-                    <Radar name="Target" dataKey="Target" stroke="var(--rose-bright)" fill="var(--rose-bright)" fillOpacity={0.1} strokeDasharray="4 2" />
+                <ResponsiveChart height={240}>
+                  {(w, h) => (
+                  <RadarChart width={w} height={h} data={radarData} outerRadius="72%">
+                    <defs>
+                      <radialGradient id="rankRadarCurrent" cx="50%" cy="50%" r="65%">
+                        <stop offset="0%" stopColor="#d4a853" stopOpacity={0.05} />
+                        <stop offset="100%" stopColor="#d4a853" stopOpacity={0.32} />
+                      </radialGradient>
+                    </defs>
+                    <PolarGrid stroke="var(--chart-grid)" strokeOpacity={0.5} />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 12, fontWeight: 600 }} />
+                    <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, color: "var(--text-primary)" }} labelStyle={{ color: "var(--text-primary)" }} />
+                    <Radar name="Target" dataKey="Target" stroke="var(--rose-bright)" strokeWidth={1.5} fill="var(--rose-bright)" fillOpacity={0.06} strokeDasharray="4 3" />
+                    <Radar name="Current" dataKey="Current" stroke="var(--gold)" strokeWidth={2.5} fill="url(#rankRadarCurrent)" fillOpacity={1} dot={{ fill: "var(--gold)", r: 3, strokeWidth: 0 }} isAnimationActive animationDuration={900} />
                   </RadarChart>
-                </ResponsiveContainer>
+                  )}
+                </ResponsiveChart>
               </div>
               <div className="glass-card" style={{ padding: 24 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>Gap Analysis by Subject</h3>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={barData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                <ResponsiveChart height={240}>
+                  {(w, h) => (
+                  <BarChart width={w} height={h} data={barData} barGap={4}>
+                    <defs>
+                      <linearGradient id="rankBarCurrent" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#e6c068" />
+                        <stop offset="100%" stopColor="#d4a853" stopOpacity={0.55} />
+                      </linearGradient>
+                      <linearGradient id="rankBarGap" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f87171" stopOpacity={0.5} />
+                        <stop offset="100%" stopColor="#f87171" stopOpacity={0.12} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
                     <XAxis dataKey="name" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, color: "var(--text-primary)" }} labelStyle={{ color: "var(--text-primary)" }} />
-                    <Bar dataKey="current" name="Current %" fill="var(--gold)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="gap" name="Gap to Target" fill="rgba(248,113,113,0.3)" radius={[4, 4, 0, 0]} />
+                    <Tooltip cursor={{ fill: "rgba(212,168,83,0.06)" }} contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, color: "var(--text-primary)" }} labelStyle={{ color: "var(--text-primary)" }} />
+                    <Bar dataKey="current" name="Current %" fill="url(#rankBarCurrent)" radius={[5, 5, 0, 0]} isAnimationActive animationDuration={900} />
+                    <Bar dataKey="gap" name="Gap to Target" fill="url(#rankBarGap)" radius={[5, 5, 0, 0]} isAnimationActive animationDuration={900} />
                     <ReferenceLine y={90} stroke="color-mix(in srgb, var(--gold) 36%, transparent)" strokeDasharray="4 2" />
                   </BarChart>
-                </ResponsiveContainer>
+                  )}
+                </ResponsiveChart>
               </div>
             </div>
           )}

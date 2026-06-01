@@ -20,6 +20,35 @@ function optionalText(value: unknown) {
   return text || null;
 }
 
+// Test page testType -> Error Log testType (must satisfy the error-log enum).
+function mapToErrorLogType(testType: unknown): string {
+  switch (String(testType)) {
+    case "FULL_LENGTH": return "FLT";
+    case "AITS": return "AITS";
+    case "SECTIONAL": return "SECTIONAL";
+    case "UNIT_TEST": return "UNIT";
+    default: return "FLT";
+  }
+}
+
+// Prefer the real attempted+wrong+skipped tally; otherwise a sane default by type.
+function deriveQuestionCount(
+  correct: number | null,
+  wrong: number | null,
+  skipped: number | null,
+  testType: unknown,
+): number {
+  const tallied = (correct ?? 0) + (wrong ?? 0) + (skipped ?? 0);
+  if (tallied >= 1) return Math.min(300, tallied);
+  switch (String(testType)) {
+    case "FULL_LENGTH":
+    case "AITS": return 180;
+    case "SECTIONAL": return 45;
+    case "UNIT_TEST": return 30;
+    default: return 180;
+  }
+}
+
 export async function GET() {
   const unauthorized = await requirePrivateApiSession();
   if (unauthorized) return unauthorized;
@@ -105,6 +134,46 @@ export async function POST(req: NextRequest) {
         notes: notes || null,
       },
     });
+
+    // Auto-create a linked Error Log so Misti never re-types the test details.
+    // Only when she didn't already pick an existing log to link.
+    if (!optionalText(linkedErrorLogTestId)) {
+      try {
+        const errorLogTestType = mapToErrorLogType(testType);
+        const questionCount = deriveQuestionCount(
+          optionalInt(correctCount),
+          optionalInt(wrongCount),
+          optionalInt(skippedCount),
+          testType,
+        );
+        const linkedLog = await db.errorLogTest.create({
+          data: {
+            testName,
+            testType: errorLogTestType,
+            questionCount,
+            takenAt: new Date(takenAt),
+            notes: notes || null,
+            questions: {
+              create: Array.from({ length: questionCount }, (_, index) => ({
+                questionNumber: index + 1,
+                subject: "Physics",
+                attemptStatus: "SKIPPED",
+                outcome: "UNMARKED",
+                contentStatus: "HAD_CONTENT",
+              })),
+            },
+          },
+        });
+        const linked = await db.testRecord.update({
+          where: { id: test.id },
+          data: { linkedErrorLogTestId: linkedLog.id },
+        });
+        return NextResponse.json(linked);
+      } catch {
+        // Linking is best-effort — never block recording the test itself.
+        return NextResponse.json(test);
+      }
+    }
 
     return NextResponse.json(test);
   } catch (err) {

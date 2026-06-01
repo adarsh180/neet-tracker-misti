@@ -1,4 +1,5 @@
-const CACHE_NAME = "neet-tracker-pwa-v7";
+const CACHE_NAME = "neet-tracker-pwa-v8";
+const IS_LOCAL = self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
 const OFFLINE_URL = "/offline";
 const APP_SHELL_ASSETS = [
   OFFLINE_URL,
@@ -57,7 +58,30 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname.startsWith("/_next/static/") || request.destination === "image" || request.destination === "font") {
+  // Build chunks: never let the SW serve a stale chunk (causes "module factory
+  // is not available" after a code change). In local dev, pass straight through
+  // to the network. In production, use stale-while-revalidate so the cache is
+  // always refreshed in the background.
+  if (url.pathname.startsWith("/_next/static/")) {
+    if (IS_LOCAL) return; // let the browser fetch fresh chunks directly
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(request).then((cached) => {
+          const network = fetch(request)
+            .then((response) => {
+              cache.put(request, response.clone());
+              return response;
+            })
+            .catch(() => cached);
+          return cached || network;
+        }),
+      ),
+    );
+    return;
+  }
+
+  // Images and fonts are safe to serve cache-first.
+  if (request.destination === "image" || request.destination === "font") {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;

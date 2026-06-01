@@ -9,13 +9,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   ReferenceLine,
   ReferenceDot,
-  ScatterChart,
-  Scatter,
-  ZAxis,
-  Cell,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import {
   Plus,
@@ -33,6 +33,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { format } from "date-fns";
+import ResponsiveChart from "@/components/charts/ResponsiveChart";
 
 interface TestRecord {
   id: string;
@@ -66,11 +67,26 @@ interface TestRecord {
   subject: { name: string; color: string } | null;
 }
 
+interface ErrorLogQuestionMini {
+  outcome: string;
+  attemptStatus: string;
+  subject: string;
+  reasonTags: string[] | null;
+}
+
 interface ErrorLogOption {
   id: string;
   testName: string;
   testType: string;
   takenAt: string;
+  questions?: ErrorLogQuestionMini[];
+}
+
+interface TestErrorSummary {
+  wrong: number;
+  skipped: number;
+  bySubject: { subject: string; count: number }[];
+  topReasons: { tag: string; count: number }[];
 }
 
 interface SubjectMini {
@@ -234,20 +250,61 @@ export default function TestsPage() {
     type: t.testType,
     typeLabel: TEST_TYPE_LABELS[t.testType],
   }));
-  const scatterData = sorted.map((t, i) => ({
-    x: i + 1,
-    y: t.percentage,
-    z: t.score,
-    name: t.testName,
-    color: TEST_COLORS[t.testType] || "#d4a853",
-    type: t.testType,
-    typeLabel: TEST_TYPE_LABELS[t.testType],
-    score: t.score,
-    maxScore: t.maxScore,
-    date: format(new Date(t.takenAt), "d MMM"),
-    percentage: t.percentage,
-  }));
+  // Subject mastery radar — averaged %, each NEET subject is out of 180.
+  const SUBJECT_MAX = 180;
+  const SUBJECT_TARGET = 90; // AIIMS-grade target per subject
+  const subjectRadarData = (
+    [
+      ["physicsScore", "Physics"],
+      ["chemistryScore", "Chemistry"],
+      ["botanyScore", "Botany"],
+      ["zoologyScore", "Zoology"],
+    ] as const
+  ).map(([key, subject]) => {
+    const vals = tests.map((t) => t[key]).filter((v): v is number => v != null);
+    const avgPct = vals.length
+      ? (vals.reduce((s, v) => s + v, 0) / vals.length / SUBJECT_MAX) * 100
+      : 0;
+    return { subject, You: Math.round(Math.min(100, Math.max(0, avgPct))), Target: SUBJECT_TARGET };
+  });
+  const hasSubjectData = tests.some(
+    (t) => t.physicsScore != null || t.chemistryScore != null || t.botanyScore != null || t.zoologyScore != null,
+  );
   const hasSingleTest = lineData.length === 1;
+
+  // Mistake summary per linked Error Log — wrong/skipped + worst subjects + top reasons.
+  const errorSummaryByLogId = new Map<string, TestErrorSummary>();
+  for (const log of errorLogs) {
+    const qs = log.questions ?? [];
+    if (qs.length === 0) continue;
+    const subjectCounts = new Map<string, number>();
+    const reasonCounts = new Map<string, number>();
+    let wrong = 0;
+    let skipped = 0;
+    for (const q of qs) {
+      const isWrong = q.outcome === "WRONG";
+      const isSkipped = q.attemptStatus === "SKIPPED" && q.outcome !== "CORRECT";
+      if (isWrong) wrong += 1;
+      if (isSkipped) skipped += 1;
+      if (isWrong || isSkipped) {
+        subjectCounts.set(q.subject, (subjectCounts.get(q.subject) ?? 0) + 1);
+        for (const tag of q.reasonTags ?? []) reasonCounts.set(tag, (reasonCounts.get(tag) ?? 0) + 1);
+      }
+    }
+    if (wrong === 0 && skipped === 0) continue;
+    errorSummaryByLogId.set(log.id, {
+      wrong,
+      skipped,
+      bySubject: [...subjectCounts.entries()]
+        .map(([subject, count]) => ({ subject, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 4),
+      topReasons: [...reasonCounts.entries()]
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3),
+    });
+  }
 
   const avgPct =
     tests.length > 0 ? Math.round((tests.reduce((s, t) => s + t.percentage, 0) / tests.length) * 10) / 10 : 0;
@@ -702,8 +759,9 @@ export default function TestsPage() {
                 {trendUp && <span className="badge badge-success tests-trend-chip">↑ Improving</span>}
               </div>
 
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={lineData} key={`chart-${lineData.length}`}>
+              <ResponsiveChart height={280}>
+                {(w, h) => (
+                <AreaChart width={w} height={h} data={lineData} key={`chart-${lineData.length}`}>
                   <defs>
                     <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#d4a853" stopOpacity={0.4} />
@@ -776,7 +834,8 @@ export default function TestsPage() {
                     />
                   )}
                 </AreaChart>
-              </ResponsiveContainer>
+                )}
+              </ResponsiveChart>
             </div>
 
             {tests.length >= 1 && (
@@ -787,70 +846,130 @@ export default function TestsPage() {
                       <Target size={15} />
                     </div>
                     <div>
-                      <h3 className="tests-section-title">{tests.length < 3 ? "First Test Marker" : "Test Distribution"}</h3>
-                      <p className="tests-section-subtitle">
-                        {tests.length < 3 ? "Your first score plotted against AIIMS cutoffs" : "Percent spread by attempt number"}
-                      </p>
+                      <h3 className="tests-section-title">Subject Mastery Radar</h3>
+                      <p className="tests-section-subtitle">Your strength per subject vs AIIMS target</p>
                     </div>
                   </div>
                 </div>
 
-                <ResponsiveContainer width="100%" height={280}>
-                  <ScatterChart>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-                    <XAxis
-                      type="number"
-                      dataKey="x"
-                      name="Test #"
-                      tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      domain={[0, Math.max(scatterData.length + 1, 2)]}
-                      label={{
-                        value: "Test Number →",
-                        fill: "var(--chart-axis-muted)",
-                        fontSize: 10,
-                        position: "insideBottomRight",
-                        offset: -5,
-                      }}
-                    />
-                    <YAxis
-                      type="number"
-                      dataKey="y"
-                      name="Score %"
-                      tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      domain={[0, 100]}
-                      tickFormatter={(v: number) => `${v}%`}
-                    />
-                    <ZAxis type="number" dataKey="z" range={[60, 240]} />
-                    <Tooltip content={<ChartTip />} />
-                    <ReferenceLine y={97} stroke="color-mix(in srgb, var(--gold) 44%, transparent)" strokeDasharray="6 3" />
-                    <ReferenceLine y={91} stroke="color-mix(in srgb, var(--lotus-bright) 44%, transparent)" strokeDasharray="6 3" />
-                    <Scatter data={scatterData}>
-                      {scatterData.map((entry, i) => (
-                        <Cell
-                          key={i}
-                          fill={entry.color}
-                          fillOpacity={0.88}
-                          stroke={entry.color}
-                          strokeOpacity={0.55}
-                          strokeWidth={1}
-                        />
-                      ))}
-                    </Scatter>
-                  </ScatterChart>
-                </ResponsiveContainer>
+                {!hasSubjectData && (
+                  <p className="tests-radar-hint">
+                    Tip: add subject-wise marks when recording a test to switch this into a per-subject mastery radar.
+                  </p>
+                )}
+                {hasSubjectData ? (
+                  <>
+                    <ResponsiveChart height={280}>
+                      {(w, h) => (
+                        <RadarChart width={w} height={h} data={subjectRadarData} outerRadius="70%">
+                          <defs>
+                            <radialGradient id="testRadarYou" cx="50%" cy="50%" r="65%">
+                              <stop offset="0%" stopColor="#c2606e" stopOpacity={0.04} />
+                              <stop offset="100%" stopColor="#c2606e" stopOpacity={0.38} />
+                            </radialGradient>
+                          </defs>
+                          <PolarGrid stroke="var(--chart-grid)" strokeOpacity={0.55} />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 12, fontWeight: 600 }} />
+                          <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                          <Tooltip
+                            contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 12, color: "var(--text-primary)" }}
+                            labelStyle={{ color: "var(--text-primary)" }}
+                            formatter={(value) => `${value}%`}
+                          />
+                          <Radar name="AIIMS Target" dataKey="Target" stroke="var(--gold)" strokeWidth={1.5} fill="var(--gold)" fillOpacity={0.05} strokeDasharray="4 3" isAnimationActive animationDuration={900} />
+                          <Radar
+                            name="You"
+                            dataKey="You"
+                            stroke="var(--rose-bright)"
+                            strokeWidth={2.5}
+                            fill="url(#testRadarYou)"
+                            fillOpacity={1}
+                            dot={{ fill: "var(--rose-bright)", r: 3, strokeWidth: 0 }}
+                            isAnimationActive
+                            animationDuration={1200}
+                            animationEasing="ease-out"
+                          />
+                        </RadarChart>
+                      )}
+                    </ResponsiveChart>
 
-                <div className="tests-legend">
-                  {Object.entries(TEST_COLORS).map(([type, color]) => (
-                    <div key={type} className="tests-legend-item">
-                      <div className="tests-legend-dot" style={{ background: color }} />
-                      <span>{TEST_TYPE_LABELS[type]}</span>
+                    <div className="tests-legend">
+                      <div className="tests-legend-item">
+                        <div className="tests-legend-dot" style={{ background: "var(--rose-bright)" }} />
+                        <span>You</span>
+                      </div>
+                      <div className="tests-legend-item">
+                        <div className="tests-legend-dot" style={{ background: "var(--gold)" }} />
+                        <span>AIIMS Target ({SUBJECT_TARGET}%)</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <ResponsiveChart height={280}>
+                      {(w, h) => (
+                        <AreaChart width={w} height={h} data={lineData} key={`wave-${lineData.length}`}>
+                          <defs>
+                            <linearGradient id="waveFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#c2606e" stopOpacity={0.5} />
+                              <stop offset="55%" stopColor="#a855f7" stopOpacity={0.18} />
+                              <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="waveStroke" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#c2606e" />
+                              <stop offset="100%" stopColor="#a855f7" />
+                            </linearGradient>
+                            <filter id="waveGlow" x="-20%" y="-20%" width="140%" height="140%">
+                              <feGaussianBlur stdDeviation="4" result="b" />
+                              <feComposite in="SourceGraphic" in2="b" operator="over" />
+                            </filter>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+                          <XAxis dataKey="date" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
+                          <Tooltip content={<ChartTip />} />
+                          <ReferenceLine y={97} stroke="color-mix(in srgb, var(--gold) 46%, transparent)" strokeDasharray="6 3" label={{ value: "AIIMS Delhi 97%", fill: "var(--gold)", fontSize: 10 }} />
+                          <ReferenceLine y={91} stroke="color-mix(in srgb, var(--lotus-bright) 46%, transparent)" strokeDasharray="6 3" label={{ value: "AIIMS Rish. 91%", fill: "var(--lotus-bright)", fontSize: 10 }} />
+                          <Area
+                            type="natural"
+                            dataKey="percentage"
+                            stroke="url(#waveStroke)"
+                            strokeWidth={3}
+                            fill="url(#waveFill)"
+                            fillOpacity={1}
+                            dot={{ fill: "#c2606e", r: 4, strokeWidth: 0 }}
+                            activeDot={{ r: 8, fill: "#fff", stroke: "#c2606e", strokeWidth: 3 }}
+                            isAnimationActive
+                            animationDuration={1700}
+                            animationEasing="ease-out"
+                            style={{ filter: "url(#waveGlow)" }}
+                          />
+                          {hasSingleTest && (
+                            <ReferenceDot
+                              x={lineData[0].date}
+                              y={lineData[0].percentage}
+                              r={7}
+                              fill="#fff0f3"
+                              stroke="#c2606e"
+                              strokeWidth={3}
+                              label={{ value: `${lineData[0].percentage.toFixed(1)}%`, fill: "var(--rose-bright)", fontSize: 11, position: "top" }}
+                            />
+                          )}
+                        </AreaChart>
+                      )}
+                    </ResponsiveChart>
+                    <div className="tests-legend">
+                      <div className="tests-legend-item">
+                        <div className="tests-legend-dot" style={{ background: "var(--rose-bright)" }} />
+                        <span>Score wave</span>
+                      </div>
+                      <div className="tests-legend-item">
+                        <div className="tests-legend-dot" style={{ background: "var(--gold)" }} />
+                        <span>AIIMS cutoffs</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -892,6 +1011,9 @@ export default function TestsPage() {
         ) : (
           <div className="test-list">
             {filtered.map((test, idx) => {
+              const errorSummary = test.linkedErrorLogTestId
+                ? errorSummaryByLogId.get(test.linkedErrorLogTestId)
+                : undefined;
               const pctColor =
                 test.percentage >= 97
                   ? "var(--success)"
@@ -930,6 +1052,29 @@ export default function TestsPage() {
                       </div>
 
                       {test.notes && <div className="test-card-notes">{test.notes}</div>}
+
+                      {errorSummary && (
+                        <Link href="/tests/error-log" className="test-error-summary" title="Open in Error Log Tracker">
+                          <span className="test-error-summary-head">
+                            <FileSpreadsheet size={12} />
+                            {errorSummary.wrong} wrong · {errorSummary.skipped} skipped
+                          </span>
+                          {errorSummary.bySubject.length > 0 && (
+                            <span className="test-error-summary-tags">
+                              {errorSummary.bySubject.map((s) => (
+                                <span key={s.subject} className="test-error-chip">
+                                  {s.subject} {s.count}
+                                </span>
+                              ))}
+                            </span>
+                          )}
+                          {errorSummary.topReasons.length > 0 && (
+                            <span className="test-error-summary-reasons">
+                              {errorSummary.topReasons.map((r) => r.tag).join(" · ")}
+                            </span>
+                          )}
+                        </Link>
+                      )}
                     </div>
                   </div>
 
@@ -1334,6 +1479,17 @@ export default function TestsPage() {
           margin-top: 12px;
         }
 
+        .tests-radar-hint {
+          font-size: 11.5px;
+          line-height: 1.5;
+          color: var(--text-muted);
+          margin: -2px 0 10px;
+          padding: 7px 11px;
+          border-radius: 10px;
+          background: rgba(168, 85, 247, 0.06);
+          border: 1px solid rgba(168, 85, 247, 0.16);
+        }
+
         .tests-legend-item {
           display: flex;
           align-items: center;
@@ -1532,6 +1688,52 @@ export default function TestsPage() {
           margin-top: 6px;
           font-style: italic;
           line-height: 1.5;
+        }
+
+        .test-error-summary {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px 10px;
+          margin-top: 9px;
+          padding: 7px 10px;
+          border-radius: 10px;
+          background: rgba(248, 113, 113, 0.06);
+          border: 1px solid rgba(248, 113, 113, 0.16);
+          text-decoration: none;
+          transition: border-color 0.18s ease, background 0.18s ease;
+        }
+        .test-error-summary:hover {
+          background: rgba(248, 113, 113, 0.1);
+          border-color: rgba(248, 113, 113, 0.32);
+        }
+        .test-error-summary-head {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 11.5px;
+          font-weight: 700;
+          color: var(--danger);
+          letter-spacing: 0.01em;
+        }
+        .test-error-summary-tags {
+          display: inline-flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+        .test-error-chip {
+          font-size: 10.5px;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--chart-tooltip-border, rgba(255, 255, 255, 0.08));
+          border-radius: 999px;
+          padding: 2px 8px;
+        }
+        .test-error-summary-reasons {
+          font-size: 11px;
+          color: var(--text-muted);
+          font-style: italic;
         }
 
         .test-card-right {
