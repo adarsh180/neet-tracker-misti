@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { buildCycleIntelligence } from "@/lib/cycle-intelligence";
+import { maybeSendCyclePredictionNudge } from "@/lib/cycle-nudge";
 import { getPrivateSession } from "@/lib/server-auth";
 
 function unauthorized() {
@@ -10,7 +11,12 @@ function unauthorized() {
 
 function parseDateInput(value?: string | null) {
   if (!value) return null;
-  return new Date(`${value}T00:00:00+05:30`);
+  // Cycle dates are stored in a date-only (@db.Date) column, which Prisma reads
+  // and writes in UTC. Anchor the picked calendar day to UTC midnight so the
+  // stored date matches exactly what the user selected — using a +05:30 offset
+  // here pushes the instant into the previous UTC day and the period reads back
+  // as starting "yesterday".
+  return new Date(`${value}T00:00:00.000Z`);
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -98,6 +104,7 @@ export async function GET() {
     if (!session) return unauthorized();
 
     const intelligence = await buildCycleIntelligence(session.userId);
+    await maybeSendCyclePredictionNudge(intelligence);
     return NextResponse.json(intelligence);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -132,6 +139,7 @@ export async function POST(req: NextRequest) {
 
     const intelligence = await buildCycleIntelligence(session.userId);
     await savePredictionSnapshot(session.userId, intelligence);
+    await maybeSendCyclePredictionNudge(intelligence);
     return NextResponse.json({ entry, intelligence });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

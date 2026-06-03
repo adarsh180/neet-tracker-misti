@@ -1,5 +1,11 @@
-import { addDays, differenceInCalendarDays, format, isWithinInterval, startOfDay } from "date-fns";
+import { addDays, differenceInCalendarDays, isWithinInterval } from "date-fns";
 import { db } from "@/lib/db";
+
+// India Standard Time offset (no DST). Cycle dates live in date-only (@db.Date)
+// columns that Prisma reads back as UTC midnight, so day keys are derived from
+// the UTC date. "Today", however, must reflect the user's local (IST) calendar
+// day so the model never treats the early-morning hours as the previous day.
+const IST_OFFSET_MS = 330 * 60 * 1000;
 
 type CycleRow = {
   id: string;
@@ -28,6 +34,7 @@ export type CyclePhase = "menstrual" | "follicular" | "ovulatory" | "luteal" | "
 export type CalendarDayKind =
   | "logged-period"
   | "predicted-period"
+  | "pms-window"
   | "fertile-window"
   | "ovulation-window"
   | "mood"
@@ -71,6 +78,8 @@ export type CycleIntelligence = {
   predictedStart: string | null;
   predictedWindowStart: string | null;
   predictedWindowEnd: string | null;
+  pmsWindowStart: string | null;
+  pmsWindowEnd: string | null;
   ovulationWindowStart: string | null;
   ovulationWindowEnd: string | null;
   fertileWindowStart: string | null;
@@ -122,6 +131,7 @@ export type CycleIntelligence = {
     highFocusCycleDays: number[];
     mostCommonSymptoms: string[];
     recommendationTone: "protect" | "balanced" | "push";
+    cycleDayInsight: string;
   };
   logs: {
     id: string;
@@ -139,11 +149,21 @@ export type CycleIntelligence = {
 };
 
 function toDateKey(date: Date) {
-  return format(date, "yyyy-MM-dd");
+  // Stored cycle dates come back as UTC midnight, so the UTC date is the exact
+  // calendar day the user logged — independent of the server timezone.
+  return date.toISOString().slice(0, 10);
 }
 
 function dateOnly(date: Date) {
-  return startOfDay(date);
+  // Normalize any instant to UTC midnight of its calendar day so all day-level
+  // math (addDays / diff / intervals) is stable on both UTC (Vercel) and local.
+  return new Date(`${toDateKey(date)}T00:00:00.000Z`);
+}
+
+function istToday() {
+  // Current calendar day in IST, anchored to UTC midnight to match stored dates.
+  const istKey = new Date(Date.now() + IST_OFFSET_MS).toISOString().slice(0, 10);
+  return new Date(`${istKey}T00:00:00.000Z`);
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -162,18 +182,18 @@ function median(values: number[]) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-function weightedAverageRecent(values: number[]) {
+function smoothedRecent(values: number[]) {
   if (!values.length) return 28;
 
-  let weightedSum = 0;
-  let totalWeight = 0;
-  values.forEach((value, index) => {
-    const weight = index + 1;
-    weightedSum += value * weight;
-    totalWeight += weight;
-  });
-
-  return weightedSum / totalWeight;
+  // Exponentially weighted moving average over chronological cycle lengths
+  // (oldest -> newest). Recent cycles lead the estimate, but the geometric decay
+  // dampens any single unusual cycle, producing a smoother month-to-month
+  // forecast than a hard linear weighting that lets the newest value dominate.
+  const alpha = 0.4;
+  return values.reduce(
+    (acc, value, index) => (index === 0 ? value : alpha * value + (1 - alpha) * acc),
+    values[0],
+  );
 }
 
 function variability(values: number[]) {
@@ -221,8 +241,16 @@ function normalizePeriodDayDetails(value: unknown): PeriodDayDetail[] {
     .sort((a, b) => a.day - b.day);
 }
 
+// Each cycle row is parsed for day details several times per request (calendar,
+// health signals, logs). Cache by row reference so the JSON is normalized once.
+const dayDetailCache = new WeakMap<object, PeriodDayDetail[]>();
+
 function getDayDetails(entry: CycleRow) {
-  return normalizePeriodDayDetails(entry.dayDetails);
+  const cached = dayDetailCache.get(entry);
+  if (cached) return cached;
+  const details = normalizePeriodDayDetails(entry.dayDetails);
+  dayDetailCache.set(entry, details);
+  return details;
 }
 
 function buildCycleModel(lengths: number[]) {
@@ -246,7 +274,7 @@ function buildCycleModel(lengths: number[]) {
   const recent = modelLengths.slice(-3);
   const earlier = modelLengths.slice(0, -3);
   const recentTrendDays = earlier.length >= 2 ? round1(clamp(average(recent) - average(earlier), -4, 4)) : 0;
-  const weighted = weightedAverageRecent(modelLengths);
+  const weighted = smoothedRecent(modelLengths);
   const robustCenter = median(modelLengths);
   const recentCenter = median(recent);
   const blended = (weighted * 0.54) + (robustCenter * 0.28) + (recentCenter * 0.18) + (recentTrendDays * 0.25);
@@ -445,6 +473,43 @@ function inferPhase(input: {
   return { phase: "luteal", dayOfCycle };
 }
 
+function describeCycleDayPattern(
+  mapped: Array<{ dayOfCycle: number; energy: number; focus: number; stress: number }>,
+): string {
+  if (mapped.length < 6) {
+    return "Log mood, energy, and focus across more cycle days to reveal how each phase affects study capacity.";
+  }
+
+  // Bucket mood logs into rough cycle weeks and score each by a focus + energy
+  // composite (lighter stress is better). The strongest and weakest windows turn
+  // her own history into an actionable "study hard here / protect there" signal.
+  const buckets = [
+    { label: "days 1–7", lo: 1, hi: 7, scores: [] as number[] },
+    { label: "days 8–14", lo: 8, hi: 14, scores: [] as number[] },
+    { label: "days 15–21", lo: 15, hi: 21, scores: [] as number[] },
+    { label: "days 22+", lo: 22, hi: 99, scores: [] as number[] },
+  ];
+
+  for (const mood of mapped) {
+    const composite = mood.focus + mood.energy - (mood.stress - 5);
+    const bucket = buckets.find((item) => mood.dayOfCycle >= item.lo && mood.dayOfCycle <= item.hi);
+    if (bucket) bucket.scores.push(composite);
+  }
+
+  const filled = buckets.filter((item) => item.scores.length >= 2).map((item) => ({ label: item.label, avg: average(item.scores) }));
+  if (filled.length < 2) {
+    return "A bit more day-by-day mood logging will surface clear focus and energy phases across her cycle.";
+  }
+
+  const best = filled.reduce((a, b) => (b.avg > a.avg ? b : a));
+  const worst = filled.reduce((a, b) => (b.avg < a.avg ? b : a));
+  if (Math.abs(best.avg - worst.avg) < 1.5) {
+    return "Energy and focus look fairly steady across her cycle so far — keep the current rhythm.";
+  }
+
+  return `Focus and energy peak around ${best.label} and dip around ${worst.label}. Schedule the hardest study in the strong window and protect the dip with revision.`;
+}
+
 function buildStudySignals(moods: MoodRow[], ascEntries: CycleRow[], entries: CycleRow[]): CycleIntelligence["studySignals"] {
   const mapped = moods
     .map((mood) => {
@@ -480,6 +545,7 @@ function buildStudySignals(moods: MoodRow[], ascEntries: CycleRow[], entries: Cy
     highFocusCycleDays: [...new Set(highFocusCycleDays)].sort((a, b) => a - b).slice(0, 10),
     mostCommonSymptoms: splitSymptoms(entries),
     recommendationTone,
+    cycleDayInsight: describeCycleDayPattern(mapped),
   };
 }
 
@@ -498,6 +564,8 @@ function buildCalendar(input: {
   predictedStart: Date | null;
   windowStart: Date | null;
   windowEnd: Date | null;
+  pmsStart: Date | null;
+  pmsEnd: Date | null;
   ovulationStart: Date | null;
   ovulationEnd: Date | null;
   fertileStart: Date | null;
@@ -514,6 +582,8 @@ function buildCalendar(input: {
     predictedStart,
     windowStart,
     windowEnd,
+    pmsStart,
+    pmsEnd,
     ovulationStart,
     ovulationEnd,
     fertileStart,
@@ -541,6 +611,9 @@ function buildCalendar(input: {
     if (loggedEntry) addKind(kinds, "logged-period");
     if (windowStart && windowEnd && isWithinInterval(cursor, { start: windowStart, end: windowEnd })) {
       addKind(kinds, "predicted-period");
+    }
+    if (pmsStart && pmsEnd && !loggedEntry && isWithinInterval(cursor, { start: pmsStart, end: pmsEnd })) {
+      addKind(kinds, "pms-window");
     }
     if (fertileStart && fertileEnd && isWithinInterval(cursor, { start: fertileStart, end: fertileEnd })) {
       addKind(kinds, "fertile-window");
@@ -599,7 +672,7 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
 
   const entries = entriesDesc as CycleRow[];
   const ascEntries = [...entries].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-  const today = dateOnly(new Date());
+  const today = istToday();
   const last = entries[0] ?? null;
 
   const rawCycleLengths = ascEntries
@@ -616,13 +689,23 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
   const periodDayDetailCount = entries.reduce((sum, entry) => sum + getDayDetails(entry).length, 0);
   const confidence = buildConfidence(completedCycleCount, cycleVariability, backtest.averageMissDays, periodDayDetailCount);
   const accuracyWindow = backtest.averageMissDays ?? 0;
-  const halfWindow = Math.round(clamp(Math.max(2, cycleVariability, accuracyWindow, completedCycleCount < 3 ? 5 : 2), 2, 9));
+  // Adaptive prediction window: combine her cycle variability with the model's own
+  // measured miss-rate (added in quadrature so two small sources don't overstate
+  // each other), plus a shrinking penalty for sparse history. As she logs more
+  // cycles and the backtest error falls, the window tightens automatically.
+  const sparsityPadding = completedCycleCount < 3 ? 3 : completedCycleCount < 6 ? 1.5 : 0;
+  const combinedSpread = Math.sqrt(cycleVariability ** 2 + accuracyWindow ** 2) + sparsityPadding;
+  const halfWindow = Math.round(clamp(Math.max(2, combinedSpread), 2, 9));
 
   const lastStart = last ? dateOnly(last.startDate) : null;
   const lastEnd = last?.endDate ? dateOnly(last.endDate) : lastStart ? addDays(lastStart, expectedPeriodLength - 1) : null;
   const predictedStart = lastStart ? addDays(lastStart, averageCycleLength) : null;
   const windowStart = predictedStart ? addDays(predictedStart, -halfWindow) : null;
   const windowEnd = predictedStart ? addDays(predictedStart, halfWindow) : null;
+  // Luteal / PMS dip: the few days before the predicted start, when energy and
+  // mood commonly drop. Surfaced as a "protect energy" band on the calendar.
+  const pmsStart = predictedStart ? addDays(predictedStart, -4) : null;
+  const pmsEnd = predictedStart ? addDays(predictedStart, -1) : null;
   const daysUntilPredictedStart = predictedStart ? differenceInCalendarDays(predictedStart, today) : null;
   const overdueDays = windowEnd && today > windowEnd ? differenceInCalendarDays(today, windowEnd) : null;
   const ovulationCenter = lastStart ? addDays(lastStart, Math.round(averageCycleLength - 14) - 1) : null;
@@ -664,6 +747,8 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
     predictedStart,
     windowStart,
     windowEnd,
+    pmsStart,
+    pmsEnd,
     ovulationStart,
     ovulationEnd,
     fertileStart,
@@ -711,6 +796,8 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
     predictedStart: predictedStart ? toDateKey(predictedStart) : null,
     predictedWindowStart: windowStart ? toDateKey(windowStart) : null,
     predictedWindowEnd: windowEnd ? toDateKey(windowEnd) : null,
+    pmsWindowStart: pmsStart ? toDateKey(pmsStart) : null,
+    pmsWindowEnd: pmsEnd ? toDateKey(pmsEnd) : null,
     ovulationWindowStart: ovulationStart ? toDateKey(ovulationStart) : null,
     ovulationWindowEnd: ovulationEnd ? toDateKey(ovulationEnd) : null,
     fertileWindowStart: fertileStart ? toDateKey(fertileStart) : null,
@@ -741,7 +828,7 @@ export async function buildCycleIntelligence(userId: string): Promise<CycleIntel
       backtestedCycles: backtest.errors.length,
       ignoredOutliers: model.ignoredOutliers,
       recentTrendDays: model.recentTrendDays,
-      modelBlend: "54% recent-weighted average, 28% robust median, 18% recent median, with limited drift adjustment.",
+      modelBlend: "54% EWMA-smoothed recency, 28% robust median, 18% recent median, with limited drift adjustment.",
     },
     healthSignals,
     studySignals,

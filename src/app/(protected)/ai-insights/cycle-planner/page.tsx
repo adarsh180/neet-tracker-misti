@@ -39,7 +39,7 @@ import {
 import SmoothLink from "@/components/layout/smooth-link";
 
 type CyclePhase = "menstrual" | "follicular" | "ovulatory" | "luteal" | "late" | "unknown";
-type CalendarDayKind = "logged-period" | "predicted-period" | "fertile-window" | "ovulation-window" | "mood" | "today";
+type CalendarDayKind = "logged-period" | "predicted-period" | "pms-window" | "fertile-window" | "ovulation-window" | "mood" | "today";
 
 interface CycleCalendarDay {
   date: string;
@@ -92,6 +92,8 @@ interface CycleIntelligence {
   predictedStart: string | null;
   predictedWindowStart: string | null;
   predictedWindowEnd: string | null;
+  pmsWindowStart: string | null;
+  pmsWindowEnd: string | null;
   ovulationWindowStart: string | null;
   ovulationWindowEnd: string | null;
   fertileWindowStart: string | null;
@@ -143,6 +145,7 @@ interface CycleIntelligence {
     highFocusCycleDays: number[];
     mostCommonSymptoms: string[];
     recommendationTone: "protect" | "balanced" | "push";
+    cycleDayInsight: string;
   };
   logs: CycleLog[];
   calendar: CycleCalendarDay[];
@@ -520,6 +523,8 @@ ${JSON.stringify(
     predictedStart: data.predictedStart,
     predictedWindowStart: data.predictedWindowStart,
     predictedWindowEnd: data.predictedWindowEnd,
+    pmsWindowStart: data.pmsWindowStart,
+    pmsWindowEnd: data.pmsWindowEnd,
     confidence: data.confidence,
     confidenceLabel: data.confidenceLabel,
     averageCycleLength: data.averageCycleLength,
@@ -869,6 +874,7 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                 <div className="legend-row">
                   <span><i className="legend actual" />Logged period</span>
                   <span><i className="legend predicted" />Predicted period</span>
+                  <span><i className="legend pms" />PMS / energy dip</span>
                   <span><i className="legend fertile" />Fertile window</span>
                   <span><i className="legend mood" />Mood log</span>
                 </div>
@@ -894,6 +900,7 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                           hasKind(day, "today") ? "today" : "",
                           hasKind(day, "logged-period") ? "actual" : "",
                           hasKind(day, "predicted-period") ? "predicted" : "",
+                          hasKind(day, "pms-window") ? "pms" : "",
                           hasKind(day, "fertile-window") ? "fertile" : "",
                           hasKind(day, "ovulation-window") ? "ovulation" : "",
                         ].filter(Boolean).join(" ")}
@@ -906,6 +913,7 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                         <span className="day-markers">
                           {hasKind(day, "logged-period") && <i className="marker actual" />}
                           {hasKind(day, "predicted-period") && <i className="marker predicted" />}
+                          {hasKind(day, "pms-window") && <i className="marker pms" />}
                           {hasKind(day, "ovulation-window") && <i className="marker ovulation" />}
                           {day?.mood && <i className="marker mood" style={{ background: moodColor(day.mood.mood) }} />}
                         </span>
@@ -1010,6 +1018,7 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
                       <strong>{data.studySignals.mostCommonSymptoms.length ? data.studySignals.mostCommonSymptoms.join(", ") : "None yet"}</strong>
                     </div>
                   </div>
+                  <p className="signal-insight">{data.studySignals.cycleDayInsight}</p>
                 </div>
 
                 <div className="glass-card health-card">
@@ -1677,6 +1686,11 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           background: var(--botany);
         }
 
+        .legend.pms,
+        .marker.pms {
+          background: var(--lotus-bright);
+        }
+
         .weekday-grid,
         .calendar-grid {
           display: grid;
@@ -1742,6 +1756,13 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           background:
             linear-gradient(180deg, rgba(74,222,128,0.13), rgba(74,222,128,0.04)),
             rgba(255,255,255,0.03);
+        }
+
+        .calendar-day.pms:not(.actual):not(.predicted) {
+          background:
+            linear-gradient(180deg, rgba(196,131,216,0.16), rgba(196,131,216,0.05)),
+            rgba(255,255,255,0.03);
+          border-color: rgba(196,131,216,0.24);
         }
 
         .calendar-day.ovulation {
@@ -1890,6 +1911,15 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
           color: var(--text-primary);
           font-size: 13px;
           line-height: 1.5;
+        }
+
+        .signal-insight {
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255,255,255,0.07);
+          color: var(--text-secondary);
+          font-size: 12.5px;
+          line-height: 1.6;
         }
 
         .health-card h3 {
@@ -2449,6 +2479,11 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
 
         :global(html[data-theme="light"]) .calendar-day.fertile:not(.actual):not(.predicted) {
           background: linear-gradient(180deg, rgba(74,222,128,0.11), rgba(74,222,128,0.03));
+        }
+
+        :global(html[data-theme="light"]) .calendar-day.pms:not(.actual):not(.predicted) {
+          background: linear-gradient(180deg, rgba(150,80,170,0.13), rgba(150,80,170,0.04));
+          border-color: rgba(150,80,170,0.2);
         }
 
         :global(html[data-theme="light"]) .calendar-day.today::after {
