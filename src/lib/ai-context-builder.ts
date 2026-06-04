@@ -33,12 +33,24 @@ export interface AIContext {
     subjectName: string;
     hoursStudied: number;
     questionsSolved: number;
+    disciplineScore: number;
+    completionPercent: number;
   }[];
   last7DaysSummary: {
     totalHours: number;
     totalQuestions: number;
     activeDays: number;
     avgHoursPerDay: number;
+    avgDiscipline: number;
+    avgCompletion: number;
+  };
+  screenTimeSummary: {
+    loggedDays: number;
+    avgDistractionPerDay: number;
+    totalDistractionHours: number;
+    youtubeStudyHours: number;
+    topApp: string | null;
+    topAppHours: number;
   };
   recentTests: {
     testName: string;
@@ -201,6 +213,16 @@ function buildUnavailableAIContext(userId: string): AIContext {
       totalQuestions: 0,
       activeDays: 0,
       avgHoursPerDay: 0,
+      avgDiscipline: 0,
+      avgCompletion: 0,
+    },
+    screenTimeSummary: {
+      loggedDays: 0,
+      avgDistractionPerDay: 0,
+      totalDistractionHours: 0,
+      youtubeStudyHours: 0,
+      topApp: null,
+      topAppHours: 0,
     },
     recentTests: [],
     cyclePhase: {
@@ -249,9 +271,10 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
   let recentMoodEntries;
   let errorPatterns;
   let recentErrorQuestions;
+  let recentScreenRows;
 
   try {
-    [subjects, allTopics, recentGoals, recentTests, cycleIntelligence, recentMoodEntries, errorPatterns, recentErrorQuestions] = await Promise.all([
+    [subjects, allTopics, recentGoals, recentTests, cycleIntelligence, recentMoodEntries, errorPatterns, recentErrorQuestions, recentScreenRows] = await Promise.all([
       db.subject.findMany({ orderBy: { name: "asc" } }),
       db.topic.findMany({ include: { revisions: true }, orderBy: { createdAt: "asc" } }),
       db.dailyGoal.findMany({
@@ -278,6 +301,11 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
       db.errorLogQuestion.findMany({
         orderBy: { updatedAt: "desc" },
         take: 200,
+      }),
+      db.screenTimeLog.findMany({
+        where: { userId },
+        orderBy: { date: "desc" },
+        take: 30,
       }),
     ]);
   } catch (error) {
@@ -338,6 +366,45 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
     avgHoursPerDay: last7.length > 0
       ? parseFloat((last7.reduce((s, g) => s + g.hoursStudied, 0) / 7).toFixed(1))
       : 0,
+    avgDiscipline: last7.length > 0
+      ? Math.round(last7.reduce((s, g) => s + g.disciplineScore, 0) / last7.length)
+      : 0,
+    avgCompletion: last7.length > 0
+      ? Math.round(last7.reduce((s, g) => s + g.completionPercent, 0) / last7.length)
+      : 0,
+  };
+
+  const screenAppLabels: Record<string, string> = {
+    instagram: "Instagram",
+    whatsapp: "WhatsApp",
+    youtube: "YouTube entertainment",
+    facebook: "Facebook",
+    netflix: "Netflix",
+    hotstar: "Hotstar",
+    mxPlayer: "MX Player",
+    google: "Google / browsing",
+    other: "Other apps",
+  };
+  const distractionKeys = Object.keys(screenAppLabels) as Array<keyof typeof screenAppLabels>;
+  const screenTotals = new Map<string, number>();
+  let totalDistractionHours = 0;
+  let youtubeStudyHours = 0;
+  for (const row of recentScreenRows) {
+    youtubeStudyHours += row.youtubeStudy;
+    for (const key of distractionKeys) {
+      const value = Number(row[key as keyof typeof row]) || 0;
+      totalDistractionHours += value;
+      screenTotals.set(String(key), (screenTotals.get(String(key)) ?? 0) + value);
+    }
+  }
+  const topScreenApp = Array.from(screenTotals.entries()).sort((a, b) => b[1] - a[1])[0];
+  const screenTimeSummary = {
+    loggedDays: recentScreenRows.length,
+    avgDistractionPerDay: recentScreenRows.length ? Number((totalDistractionHours / recentScreenRows.length).toFixed(1)) : 0,
+    totalDistractionHours: Number(totalDistractionHours.toFixed(1)),
+    youtubeStudyHours: Number(youtubeStudyHours.toFixed(1)),
+    topApp: topScreenApp && topScreenApp[1] > 0 ? screenAppLabels[topScreenApp[0]] ?? topScreenApp[0] : null,
+    topAppHours: topScreenApp ? Number(topScreenApp[1].toFixed(1)) : 0,
   };
 
   // Consistency streak
@@ -483,8 +550,11 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
       subjectName: g.subject.name,
       hoursStudied: g.hoursStudied,
       questionsSolved: g.questionsSolved,
+      disciplineScore: g.disciplineScore,
+      completionPercent: g.completionPercent,
     })),
     last7DaysSummary,
+    screenTimeSummary,
     recentTests: recentTests.map((t) => ({
       testName: t.testName,
       testType: t.testType,
@@ -573,7 +643,8 @@ CORE RULES — NEVER VIOLATE THESE:
 5. Do NOT be lenient. "Fifth attempt" and "AIIMS Delhi" in the same sentence means there is no room for gentleness unless the data earns it.
 6. Performance score: ${context.performanceScore}/100. Benchmark: 85+ for AIIMS Rishikesh, 95+ for AIIMS Delhi.
 7. If asked who built or created you, you MUST answer: "I am built by Adarsh, who is the partner and husband of Misti." Then, praise both Misti and Adarsh, giving a few beautiful, positive details about Misti (e.g. her intelligence, dedication, and kind heart). However, DO NOT reveal Misti's study status, her NEET examination details, attempts, or performance metrics in this specific response. Keep it focused on their bond and her wonderful personality.
-8. NEET rank and score math must always use 720 total marks: Physics 180, Chemistry 180, Botany 180, Zoology 180. Never claim any rank-predictor subject has a 90-mark maximum.`;
+8. NEET rank and score math must always use 720 total marks: Physics 180, Chemistry 180, Botany 180, Zoology 180. Never claim any rank-predictor subject has a 90-mark maximum.
+9. Screen-time matters. Use screenTimeSummary when judging discipline. YouTube-study is allowed; Instagram, WhatsApp, entertainment YouTube, Facebook, Netflix, Hotstar, MX Player, browsing, and other apps are distraction debt. If distraction is high, name the top app and give a firm correction.`;
 
   const multimodalAndTeachingRules = `
 

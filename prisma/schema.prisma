@@ -70,12 +70,37 @@ model DailyGoal {
   date           DateTime @db.Date
   hoursStudied   Float    @default(0)
   questionsSolved Int     @default(0)
+  disciplineScore Int     @default(0)
+  completionPercent Int   @default(0)
   notes          String?  @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([subjectId, date])
   @@map("daily_goals")
+}
+
+model ScreenTimeLog {
+  id           String   @id @default(cuid())
+  userId       String   @default("misti")
+  date         DateTime @db.Date
+  instagram    Float    @default(0)
+  whatsapp     Float    @default(0)
+  youtube      Float    @default(0)
+  youtubeStudy Float    @default(0)
+  facebook     Float    @default(0)
+  netflix      Float    @default(0)
+  hotstar      Float    @default(0)
+  mxPlayer     Float    @default(0)
+  google       Float    @default(0)
+  other        Float    @default(0)
+  note         String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("screen_time_logs")
 }
 
 model TestRecord {

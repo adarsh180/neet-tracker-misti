@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { subjectId, date, hoursStudied, questionsSolved, notes } = body;
+    const { subjectId, date, hoursStudied, questionsSolved, disciplineScore, completionPercent, notes } = body;
 
     const dateObj = new Date(date);
     dateObj.setHours(0, 0, 0, 0);
@@ -50,7 +50,13 @@ export async function POST(req: NextRequest) {
     });
 
     let result;
-    if (hoursStudied === 0 && questionsSolved === 0 && !notes) {
+    if (
+      hoursStudied === 0 &&
+      questionsSolved === 0 &&
+      (disciplineScore ?? 0) === 0 &&
+      (completionPercent ?? 0) === 0 &&
+      !notes
+    ) {
       if (existing) {
         result = await db.dailyGoal.delete({ where: { id: existing.id } });
       } else {
@@ -62,6 +68,8 @@ export async function POST(req: NextRequest) {
         data: {
           hoursStudied: hoursStudied ?? existing.hoursStudied,
           questionsSolved: questionsSolved ?? existing.questionsSolved,
+          disciplineScore: disciplineScore ?? existing.disciplineScore,
+          completionPercent: completionPercent ?? existing.completionPercent,
           notes: notes ?? existing.notes,
         },
       });
@@ -72,6 +80,8 @@ export async function POST(req: NextRequest) {
           date: dateObj,
           hoursStudied: hoursStudied ?? 0,
           questionsSolved: questionsSolved ?? 0,
+          disciplineScore: disciplineScore ?? 0,
+          completionPercent: completionPercent ?? 0,
           notes: notes ?? null,
         },
       });

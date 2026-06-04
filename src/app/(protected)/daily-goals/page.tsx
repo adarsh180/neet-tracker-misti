@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { type CSSProperties, useEffect, useMemo, useState, useCallback } from "react";
 import { format, addDays, subDays as dateFnsSubDays, differenceInCalendarDays } from "date-fns";
 import {
   Clock,
@@ -16,6 +16,8 @@ import {
   Target,
   BarChart3,
   Activity,
+  Smartphone,
+  ShieldCheck,
 } from "lucide-react";
 
 /* ---------- TYPES ---------- */
@@ -25,6 +27,8 @@ interface DailyGoalEntry {
   date: string;
   hoursStudied: number;
   questionsSolved: number;
+  disciplineScore: number;
+  completionPercent: number;
   notes: string | null;
   subject: { id: string; name: string; slug: string; color: string };
 }
@@ -35,6 +39,8 @@ interface QueuedDailyGoal {
   date: string;
   hoursStudied: number;
   questionsSolved: number;
+  disciplineScore: number;
+  completionPercent: number;
   notes: string | null;
 }
 
@@ -58,6 +64,18 @@ interface ChartPoint {
   displayDate: string;
   hours: number;
   questions: number;
+  discipline: number;
+  completion: number;
+  rhythm: number;
+}
+
+interface ScreenChartPoint {
+  date: string;
+  displayDate: string;
+  distraction: number;
+  study: number;
+  total: number;
+  samples: number;
 }
 
 interface SubjectAnalytics {
@@ -76,7 +94,40 @@ interface GoalFormValue {
 }
 
 type GoalFormState = Record<string, GoalFormValue>;
+type RangeKey = "7d" | "month" | "year";
+type StudyMetricKey = "hours" | "questions" | "discipline" | "completion" | "rhythm";
 type PerformanceLabel = "Poor" | "Moderate" | "Good" | "Very Good" | "Chumma";
+
+interface DailyMetaState {
+  disciplineScore: string;
+  completionPercent: string;
+}
+
+interface ScreenTimeEntry {
+  id: string;
+  date: string;
+  instagram: number;
+  whatsapp: number;
+  youtube: number;
+  youtubeStudy: number;
+  facebook: number;
+  netflix: number;
+  hotstar: number;
+  mxPlayer: number;
+  google: number;
+  other: number;
+  note: string | null;
+}
+
+type ScreenTimeForm = Omit<ScreenTimeEntry, "id" | "date" | "note"> & { note: string };
+
+interface AppDef {
+  key: keyof ScreenTimeForm;
+  label: string;
+  group: "Social" | "Video" | "Utility";
+  color: string;
+  short: string;
+}
 
 interface PerformanceBand {
   label: PerformanceLabel;
@@ -94,6 +145,59 @@ const TRACKER_END_KEY = format(TRACKER_END, "yyyy-MM-dd");
 const TRACKER_DAYS = differenceInCalendarDays(TRACKER_END, TRACKER_START) + 1;
 const LIVE_REFRESH_MS = 30000;
 const OFFLINE_DAILY_GOALS_KEY = "neet_offline_daily_goals_v1";
+const RANGE_DAYS: Record<RangeKey, number> = { "7d": 7, month: 30, year: 365 };
+const RANGE_LABELS: Array<{ key: RangeKey; label: string }> = [
+  { key: "7d", label: "7 days" },
+  { key: "month", label: "Monthly" },
+  { key: "year", label: "Yearly" },
+];
+
+const STUDY_METRICS: Record<StudyMetricKey, { label: string; unit: string; accent: string; cap: number }> = {
+  hours: { label: "Study hours", unit: "hrs", accent: "var(--gold)", cap: 12 },
+  questions: { label: "Questions", unit: "qs", accent: "var(--physics)", cap: 500 },
+  discipline: { label: "Discipline", unit: "/100", accent: "var(--botany)", cap: 100 },
+  completion: { label: "Completion", unit: "%", accent: "var(--rose-bright)", cap: 100 },
+  rhythm: { label: "7-day rhythm", unit: "score", accent: "var(--lotus-bright)", cap: 100 },
+};
+
+const HEAT_TIERS = [
+  { emoji: "·", label: "No log", min: 0, color: "var(--glass-thin)" },
+  { emoji: "🌱", label: "Light", min: 0.01, color: "hsla(142,60%,48%,0.16)" },
+  { emoji: "📘", label: "Warm", min: 4, color: "hsla(218,84%,62%,0.22)" },
+  { emoji: "🔥", label: "Close", min: 6, color: "hsla(352,72%,58%,0.26)" },
+  { emoji: "💪", label: "Good", min: 8, color: "hsla(142,60%,48%,0.34)" },
+  { emoji: "🏆", label: "Strong", min: 10, color: "hsla(38,72%,58%,0.38)" },
+  { emoji: "🚀", label: "Peak", min: 12, color: "var(--gold)" },
+];
+
+const SCREEN_APPS: AppDef[] = [
+  { key: "instagram", label: "Instagram", group: "Social", color: "linear-gradient(135deg,#feda75,#d62976 45%,#962fbf 80%,#4f5bd5)", short: "IG" },
+  { key: "whatsapp", label: "WhatsApp", group: "Social", color: "linear-gradient(135deg,#25d366,#128c7e)", short: "WA" },
+  { key: "youtube", label: "YouTube", group: "Video", color: "linear-gradient(135deg,#ff4e45,#cc0000)", short: "YT" },
+  { key: "youtubeStudy", label: "YouTube study", group: "Video", color: "linear-gradient(135deg,#3ec77a,#1f9d57)", short: "EDU" },
+  { key: "facebook", label: "Facebook", group: "Social", color: "linear-gradient(135deg,#3b82f6,#1877f2)", short: "f" },
+  { key: "netflix", label: "Netflix", group: "Video", color: "linear-gradient(135deg,#e50914,#8b0008)", short: "N" },
+  { key: "hotstar", label: "Hotstar", group: "Video", color: "linear-gradient(135deg,#1f80e0,#0b2a6b)", short: "★" },
+  { key: "mxPlayer", label: "MX Player", group: "Video", color: "linear-gradient(135deg,#2aa8ff,#1f6feb)", short: "▶" },
+  { key: "google", label: "Google / browse", group: "Utility", color: "linear-gradient(135deg,#4285f4,#34a853 55%,#fbbc05 80%,#ea4335)", short: "G" },
+  { key: "other", label: "Other", group: "Utility", color: "linear-gradient(135deg,#8a93a6,#5b6477)", short: "•••" },
+];
+
+const EMPTY_SCREEN_FORM: ScreenTimeForm = {
+  instagram: 0,
+  whatsapp: 0,
+  youtube: 0,
+  youtubeStudy: 0,
+  facebook: 0,
+  netflix: 0,
+  hotstar: 0,
+  mxPlayer: 0,
+  google: 0,
+  other: 0,
+  note: "",
+};
+
+const DISTRACTION_APP_KEYS = SCREEN_APPS.map((app) => app.key).filter((key) => key !== "youtubeStudy") as Array<keyof ScreenTimeForm>;
 
 function dateKey(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -107,14 +211,6 @@ function getIntensity(hours: number, questions: number): number {
   if (score > 0) return 1;
   return 0;
 }
-
-const INTENSITY_COLORS = [
-  "var(--glass-thin)",
-  "var(--gold-dim)",
-  "hsla(38,72%,58%,0.32)",
-  "var(--rose-glow)",
-  "var(--gold)",
-];
 
 function buildCycleHeatmap(goals: DailyGoalEntry[]): HeatCell[] {
   const map: Record<string, { hours: number; questions: number }> = {};
@@ -140,27 +236,105 @@ function buildCycleHeatmap(goals: DailyGoalEntry[]): HeatCell[] {
 }
 
 function buildChartData(goals: DailyGoalEntry[], days = 30): ChartPoint[] {
-  const map: Record<string, { hours: number; questions: number }> = {};
+  const map: Record<string, { hours: number; questions: number; discipline: number[]; completion: number[] }> = {};
   goals.forEach((g) => {
     const d = g.date.split("T")[0];
-    if (!map[d]) map[d] = { hours: 0, questions: 0 };
+    if (!map[d]) map[d] = { hours: 0, questions: 0, discipline: [], completion: [] };
     map[d].hours += g.hoursStudied;
     map[d].questions += g.questionsSolved;
+    map[d].discipline.push(g.disciplineScore);
+    map[d].completion.push(g.completionPercent);
   });
 
   const data: ChartPoint[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const targetDate = dateFnsSubDays(new Date(), i);
     const dateStr = format(targetDate, "yyyy-MM-dd");
-    const point = map[dateStr] || { hours: 0, questions: 0 };
+    const point = map[dateStr] || { hours: 0, questions: 0, discipline: [], completion: [] };
+    const discipline = point.discipline.length ? Math.round(point.discipline.reduce((s, v) => s + v, 0) / point.discipline.length) : 0;
+    const completion = point.completion.length ? Math.round(point.completion.reduce((s, v) => s + v, 0) / point.completion.length) : 0;
+    const rhythm = Math.round(
+      Math.min(100, (point.hours / 12) * 45 + (point.questions / 500) * 25 + discipline * 0.15 + completion * 0.15)
+    );
     data.push({
       date: dateStr,
-      displayDate: format(targetDate, "MMM dd"),
+      displayDate: days > 60 ? format(targetDate, "MMM dd") : format(targetDate, "MMM dd"),
       hours: point.hours,
       questions: point.questions,
+      discipline,
+      completion,
+      rhythm,
     });
   }
   return data;
+}
+
+function getHeatTier(hours: number) {
+  if (hours >= 12) return HEAT_TIERS[6];
+  if (hours >= 10) return HEAT_TIERS[5];
+  if (hours >= 8) return HEAT_TIERS[4];
+  if (hours >= 6) return HEAT_TIERS[3];
+  if (hours >= 4) return HEAT_TIERS[2];
+  if (hours > 0) return HEAT_TIERS[1];
+  return HEAT_TIERS[0];
+}
+
+function screenDateKey(date: string) {
+  return date.split("T")[0];
+}
+
+function buildDailyScreenRows(rows: ScreenTimeEntry[], days: number) {
+  const map: Record<string, ScreenTimeEntry> = {};
+  rows.forEach((row) => {
+    map[screenDateKey(row.date)] = row;
+  });
+
+  return Array.from({ length: days }, (_, index) => {
+    const targetDate = dateFnsSubDays(new Date(), days - 1 - index);
+    const key = format(targetDate, "yyyy-MM-dd");
+    const row = map[key];
+    const distraction = row
+      ? DISTRACTION_APP_KEYS.reduce((sum, appKey) => sum + (Number(row[appKey as keyof ScreenTimeEntry]) || 0), 0)
+      : 0;
+    return {
+      date: key,
+      displayDate: format(targetDate, days > 60 ? "MMM dd" : "MMM dd"),
+      distraction: Number(distraction.toFixed(1)),
+      study: row ? row.youtubeStudy : 0,
+      total: Number((distraction + (row ? row.youtubeStudy : 0)).toFixed(1)),
+      samples: row ? 1 : 0,
+    };
+  });
+}
+
+function buildScreenChartData(rows: ScreenTimeEntry[], range: RangeKey): ScreenChartPoint[] {
+  if (range === "7d") return buildDailyScreenRows(rows, 7);
+
+  const days = RANGE_DAYS[range];
+  const dailyRows = buildDailyScreenRows(rows, days);
+  const bucketSize = range === "month" ? 6 : 30;
+  const formatter = range === "month"
+    ? (start: ScreenChartPoint, _end: ScreenChartPoint, index: number) => `W${index + 1} · ${start.displayDate}`
+    : (start: ScreenChartPoint) => format(new Date(start.date), "MMM");
+
+  const buckets: ScreenChartPoint[] = [];
+  for (let index = 0; index < dailyRows.length; index += bucketSize) {
+    const slice = dailyRows.slice(index, index + bucketSize);
+    if (!slice.length) continue;
+    const divisor = slice.length;
+    const distraction = slice.reduce((sum, point) => sum + point.distraction, 0) / divisor;
+    const study = slice.reduce((sum, point) => sum + point.study, 0) / divisor;
+    buckets.push({
+      date: slice[0].date,
+      displayDate: formatter(slice[0], slice[slice.length - 1], buckets.length),
+      distraction: Number(distraction.toFixed(1)),
+      study: Number(study.toFixed(1)),
+      total: Number((distraction + study).toFixed(1)),
+      samples: slice.reduce((sum, point) => sum + point.samples, 0),
+    });
+  }
+
+  return buckets;
 }
 
 function buildSubjectAnalytics(goals: DailyGoalEntry[], subjects: Subject[]): SubjectAnalytics[] {
@@ -246,32 +420,87 @@ function queueOfflineDailyGoals(entries: QueuedDailyGoal[]) {
   return queue.length;
 }
 
+function renderAiLine(line: string, index: number) {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+
+  const clean = trimmed.replace(/\*\*/g, "");
+  const labelMatch = clean.match(/^([^:]+):\s*(.*)$/);
+  if (labelMatch && !/^\d+\./.test(clean)) {
+    return (
+      <p className="ai-report-line ai-report-labelled" key={`${index}-${clean}`}>
+        <span>{labelMatch[1]}</span>
+        {labelMatch[2]}
+      </p>
+    );
+  }
+
+  return (
+    <p className={/^\d+\./.test(clean) ? "ai-report-line ai-report-action" : "ai-report-line"} key={`${index}-${clean}`}>
+      {clean}
+    </p>
+  );
+}
+
 export default function DailyGoalsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [goals, setGoals] = useState<DailyGoalEntry[]>([]);
+  const [screenRows, setScreenRows] = useState<ScreenTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [form, setForm] = useState<GoalFormState>({});
+  const [dailyMeta, setDailyMeta] = useState<DailyMetaState>({ disciplineScore: "", completionPercent: "" });
+  const [screenForm, setScreenForm] = useState<ScreenTimeForm>(EMPTY_SCREEN_FORM);
   const [saving, setSaving] = useState(false);
+  const [savingScreen, setSavingScreen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [screenSaved, setScreenSaved] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [hoveredHeat, setHoveredHeat] = useState<HeatCell | null>(null);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [pendingOffline, setPendingOffline] = useState(0);
+  const [studyRange, setStudyRange] = useState<RangeKey>("month");
+  const [studyMetric, setStudyMetric] = useState<StudyMetricKey>("questions");
+  const [screenRange, setScreenRange] = useState<RangeKey>("7d");
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [subjectsData, goalsData] = await Promise.all([
+      const [subjectsData, goalsData, screenData] = await Promise.all([
         fetch("/api/subjects")
           .then(async (response) => (response.ok ? ((await response.json()) as Subject[]) : null))
           .catch(() => null),
         fetch(`/api/daily-goals?start=${TRACKER_START_KEY}&end=${TRACKER_END_KEY}`)
           .then(async (response) => (response.ok ? ((await response.json()) as DailyGoalEntry[]) : null))
           .catch(() => null),
+        fetch(`/api/screen-time?start=${TRACKER_START_KEY}&end=${TRACKER_END_KEY}`)
+          .then(async (response) => (response.ok ? ((await response.json()) as ScreenTimeEntry[]) : null))
+          .catch(() => null),
       ]);
 
       if (subjectsData) setSubjects(subjectsData);
+      if (screenData) {
+        setScreenRows(screenData);
+        if (!silent) {
+          const todayScreen = screenData.find((row) => screenDateKey(row.date) === selectedDate);
+          setScreenForm(todayScreen ? {
+            instagram: todayScreen.instagram,
+            whatsapp: todayScreen.whatsapp,
+            youtube: todayScreen.youtube,
+            youtubeStudy: todayScreen.youtubeStudy,
+            facebook: todayScreen.facebook,
+            netflix: todayScreen.netflix,
+            hotstar: todayScreen.hotstar,
+            mxPlayer: todayScreen.mxPlayer,
+            google: todayScreen.google,
+            other: todayScreen.other,
+            note: todayScreen.note || "",
+          } : EMPTY_SCREEN_FORM);
+        }
+      }
       if (goalsData) {
         const gs = goalsData;
         setGoals(gs);
@@ -287,6 +516,14 @@ export default function DailyGoalsPage() {
             };
           });
           setForm(initial);
+          setDailyMeta({
+            disciplineScore: todayGoals.length
+              ? String(Math.round(todayGoals.reduce((sum, goal) => sum + goal.disciplineScore, 0) / todayGoals.length))
+              : "",
+            completionPercent: todayGoals.length
+              ? String(Math.round(todayGoals.reduce((sum, goal) => sum + goal.completionPercent, 0) / todayGoals.length))
+              : "",
+          });
         }
       }
       setLastSynced(new Date());
@@ -338,19 +575,25 @@ export default function DailyGoalsPage() {
   }, [fetchData]);
 
   const heatCells = useMemo(() => buildCycleHeatmap(goals), [goals]);
-  const chartData = useMemo(() => buildChartData(goals, 30), [goals]);
+  const chartData = useMemo(() => buildChartData(goals, RANGE_DAYS[studyRange]), [goals, studyRange]);
+  const monthlyChartData = useMemo(() => buildChartData(goals, 30), [goals]);
+  const screenChartData = useMemo(() => buildScreenChartData(screenRows, screenRange), [screenRows, screenRange]);
   const subjectAnalytics = useMemo(() => buildSubjectAnalytics(goals, subjects), [goals, subjects]);
 
   const handleSave = async () => {
     setSaving(true);
+    const disciplineScore = Math.max(0, Math.min(100, parseInt(dailyMeta.disciplineScore) || 0));
+    const completionPercent = Math.max(0, Math.min(100, parseInt(dailyMeta.completionPercent) || 0));
     const entries: QueuedDailyGoal[] = Object.entries(form)
-      .filter(([, v]) => v.hours !== "" || v.questions !== "")
+      .filter(([, v]) => v.hours !== "" || v.questions !== "" || v.notes !== "")
       .map(([subjectId, v]) => ({
         id: `${selectedDate}:${subjectId}`,
         subjectId,
         date: selectedDate,
         hoursStudied: parseFloat(v.hours) || 0,
         questionsSolved: parseInt(v.questions) || 0,
+        disciplineScore,
+        completionPercent,
         notes: v.notes || null,
       }));
 
@@ -384,6 +627,40 @@ export default function DailyGoalsPage() {
     if (!failedEntries.length) fetchData();
   };
 
+  const handleScreenSave = async () => {
+    setSavingScreen(true);
+    setScreenSaved(false);
+    try {
+      const response = await fetch("/api/screen-time", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: selectedDate, ...screenForm }),
+      });
+
+      if (!response.ok) throw new Error("Unable to save screen-time");
+      setScreenSaved(true);
+      setTimeout(() => setScreenSaved(false), 2800);
+      await fetchData(true);
+    } finally {
+      setSavingScreen(false);
+    }
+  };
+
+  const runAiAnalysis = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const response = await fetch("/api/daily-goals/analyze");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "AI analysis failed");
+      setAiInsight(data.content || "No AI response returned.");
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const changeDate = (days: number) => {
     const cur = new Date(selectedDate);
     setSelectedDate(format(addDays(cur, days), "yyyy-MM-dd"));
@@ -406,14 +683,34 @@ export default function DailyGoalsPage() {
   const todayTotalHours = Object.values(form).reduce((s: number, v) => s + (parseFloat(v.hours) || 0), 0);
   const todayTotalQs = Object.values(form).reduce((s: number, v) => s + (parseInt(v.questions) || 0), 0);
   const filledSubjects = Object.values(form).filter((v) => v.hours !== "" || v.questions !== "").length;
-  const activeDays30 = chartData.filter((d) => d.questions > 0 || d.hours > 0).length;
-  const avgQuestions30 = Math.round(chartData.reduce((sum, d) => sum + d.questions, 0) / chartData.length);
-  const avgHours30 = chartData.reduce((sum, d) => sum + d.hours, 0) / chartData.length;
-  const bestChartPoint = chartData.reduce((best, current) => (current.questions > best.questions ? current : best), chartData[0]);
+  const activeDaysInRange = chartData.filter((d) => d.questions > 0 || d.hours > 0).length;
+  const activeDays30 = monthlyChartData.filter((d) => d.questions > 0 || d.hours > 0).length;
+  const selectedMetric = STUDY_METRICS[studyMetric];
+  const selectedMetricValues = chartData.map((d) => Number(d[studyMetric]) || 0);
+  const avgSelectedMetric = selectedMetricValues.reduce((sum, value) => sum + value, 0) / Math.max(chartData.length, 1);
+  const avgHoursInRange = chartData.reduce((sum, d) => sum + d.hours, 0) / chartData.length;
+  const bestChartPoint = chartData.reduce((best, current) => (Number(current[studyMetric]) > Number(best[studyMetric]) ? current : best), chartData[0]);
   const currentStreak = getCurrentStreak(goals);
   const cycleActiveDays = heatCells.filter((cell) => cell.intensity > 0).length;
   const cycleHours = heatCells.reduce((sum, cell) => sum + cell.totalHours, 0);
   const cycleQuestions = heatCells.reduce((sum, cell) => sum + cell.totalQuestions, 0);
+  const todayDiscipline = Math.max(0, Math.min(100, parseInt(dailyMeta.disciplineScore) || 0));
+  const todayCompletion = Math.max(0, Math.min(100, parseInt(dailyMeta.completionPercent) || 0));
+  const todayDistraction = DISTRACTION_APP_KEYS.reduce((sum, appKey) => sum + (Number(screenForm[appKey]) || 0), 0);
+  const todayStudyYoutube = Number(screenForm.youtubeStudy) || 0;
+  const screenTotalToday = todayDistraction + todayStudyYoutube;
+  const topScreenApp = SCREEN_APPS
+    .filter((app) => app.key !== "youtubeStudy")
+    .map((app) => ({ ...app, value: Number(screenForm[app.key]) || 0 }))
+    .sort((a, b) => b.value - a.value)[0];
+  const screenMax = Math.max(4, ...screenChartData.map((point) => point.total), 1);
+  const screenAverages = {
+    distraction: screenChartData.reduce((sum, point) => sum + point.distraction, 0) / Math.max(screenChartData.length, 1),
+    study: screenChartData.reduce((sum, point) => sum + point.study, 0) / Math.max(screenChartData.length, 1),
+    total: screenChartData.reduce((sum, point) => sum + point.total, 0) / Math.max(screenChartData.length, 1),
+  };
+  const screenChartModeLabel = screenRange === "7d" ? "Daily rows" : screenRange === "month" ? "Weekly averages" : "Monthly averages";
+  const screenLoggedBuckets = screenChartData.filter((point) => point.samples > 0).length;
   const trackerElapsedDays = Math.min(
     TRACKER_DAYS,
     Math.max(1, differenceInCalendarDays(new Date(), TRACKER_START) + 1)
@@ -437,18 +734,19 @@ export default function DailyGoalsPage() {
     }))
     .filter((marker, index, all) => index === 0 || marker.label !== all[index - 1].label);
 
-  const maxChartQ = Math.max(...chartData.map((d) => d.questions), 50);
+  const maxChartValue = Math.max(selectedMetric.cap, ...selectedMetricValues, 1);
   const chartWidth = 1000;
   const chartHeight = 270;
-  const padX = Math.max(58, String(maxChartQ).length * 9 + 28);
+  const padX = Math.max(58, String(Math.ceil(maxChartValue)).length * 9 + 28);
   const padY = 44;
   const usableW = chartWidth - padX * 2;
   const usableH = chartHeight - padY * 2;
 
   const chartPoints = chartData.map((d, i) => {
-    const x = padX + (i / (chartData.length - 1)) * usableW;
-    const y = chartHeight - padY - (d.questions / maxChartQ) * usableH;
-    return { x, y, ...d };
+    const x = padX + (i / Math.max(chartData.length - 1, 1)) * usableW;
+    const value = Number(d[studyMetric]) || 0;
+    const y = chartHeight - padY - (value / maxChartValue) * usableH;
+    return { x, y, value, ...d };
   });
 
   const lineD = `M ${chartPoints.map((p) => `${p.x},${p.y}`).join(" L ")}`;
@@ -573,11 +871,39 @@ export default function DailyGoalsPage() {
               <h3>
                 <TrendingUp size={20} className="inline-icon" /> Performance Trajectory
               </h3>
-              <p className="panel-desc">Realtime 30-day question trajectory from saved daily entries.</p>
+              <p className="panel-desc">Switch between hours, questions, discipline, completion, and rhythm without leaving the daily desk.</p>
             </div>
-            <div className="chart-stat-badge">
-              Max: <span>{maxChartQ} Qs</span>
+            <div className="chart-control-stack">
+              <div className="range-tabs" aria-label="Study range">
+                {RANGE_LABELS.map((range) => (
+                  <button
+                    key={range.key}
+                    type="button"
+                    className={`range-tab ${studyRange === range.key ? "range-tab-active" : ""}`}
+                    onClick={() => setStudyRange(range.key)}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+              <div className="chart-stat-badge">
+                Max: <span>{Math.ceil(maxChartValue)} {selectedMetric.unit}</span>
+              </div>
             </div>
+          </div>
+
+          <div className="metric-tabs" aria-label="Study metric">
+            {(Object.keys(STUDY_METRICS) as StudyMetricKey[]).map((metricKey) => (
+              <button
+                key={metricKey}
+                type="button"
+                className={`metric-tab ${studyMetric === metricKey ? "metric-tab-active" : ""}`}
+                style={{ "--metric-accent": STUDY_METRICS[metricKey].accent } as CSSProperties}
+                onClick={() => setStudyMetric(metricKey)}
+              >
+                {STUDY_METRICS[metricKey].label}
+              </button>
+            ))}
           </div>
 
           <div className="chart-layout">
@@ -598,7 +924,7 @@ export default function DailyGoalsPage() {
                 </defs>
 
                 <text x={padX} y="20" className="chart-axis-title">
-                  Questions solved
+                  {selectedMetric.label}
                 </text>
 
                 {[0, 0.5, 1].map((ratio) => {
@@ -607,14 +933,14 @@ export default function DailyGoalsPage() {
                     <g key={ratio} className="grid-line-group">
                       <line x1={padX} y1={y} x2={chartWidth - padX} y2={y} className="grid-line" />
                       <text x={padX - 12} y={y + 4} className="axis-label y-axis">
-                        {Math.round(ratio * maxChartQ)}
+                        {Math.round(ratio * maxChartValue)}
                       </text>
                     </g>
                   );
                 })}
 
                 <path d={areaD} fill="url(#areaGradient)" className="chart-area" />
-                <path d={lineD} fill="none" className="chart-line" filter="url(#glow)" />
+                <path d={lineD} fill="none" className="chart-line" filter="url(#glow)" style={{ stroke: selectedMetric.accent }} />
 
                 {chartPoints.map((p, i) => {
                   const isHovered = hoveredPoint === i;
@@ -633,7 +959,13 @@ export default function DailyGoalsPage() {
                   return (
                     <g key={i} onMouseEnter={() => setHoveredPoint(i)} onMouseLeave={() => setHoveredPoint(null)} className="point-group">
                       <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
-                      <circle cx={p.x} cy={p.y} r={isHovered ? "6" : "4"} className={`chart-point ${isHovered ? "point-hovered" : ""}`} />
+                      <circle
+                        cx={p.x}
+                        cy={p.y}
+                        r={isHovered ? "6" : "4"}
+                        className={`chart-point ${isHovered ? "point-hovered" : ""}`}
+                        style={{ stroke: selectedMetric.accent, fill: isHovered ? selectedMetric.accent : undefined } as CSSProperties}
+                      />
 
                       {i % 3 === 0 && (
                         <text x={p.x} y={chartHeight - 12} className="axis-label x-axis">
@@ -652,8 +984,8 @@ export default function DailyGoalsPage() {
                           />
                           <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height={tooltipHeight} rx="13" className="tooltip-bg" />
                           <text x={tooltipCenterX} y={tooltipCenterY} className="tooltip-text">
-                            <tspan className="tooltip-value">{p.questions}</tspan>
-                            <tspan dx="4" className="tooltip-unit">Qs</tspan>
+                            <tspan className="tooltip-value">{Number.isInteger(p.value) ? p.value : p.value.toFixed(1)}</tspan>
+                            <tspan dx="4" className="tooltip-unit">{selectedMetric.unit}</tspan>
                           </text>
                         </g>
                       )}
@@ -666,18 +998,20 @@ export default function DailyGoalsPage() {
             <div className="chart-insight-rail">
               <div className="insight-card insight-card-primary">
                 <span className="insight-label">Average / day</span>
-                <strong className="insight-value">{avgQuestions30}</strong>
-                <span className="insight-meta">questions across the last 30 days</span>
+                <strong className="insight-value">{studyMetric === "hours" ? avgSelectedMetric.toFixed(1) : Math.round(avgSelectedMetric)}</strong>
+                <span className="insight-meta">{selectedMetric.label.toLowerCase()} across {RANGE_DAYS[studyRange]} days</span>
               </div>
               <div className="insight-card">
                 <span className="insight-label">Best day</span>
-                <strong className="insight-value">{bestChartPoint.questions}</strong>
+                <strong className="insight-value">
+                  {studyMetric === "hours" ? Number(bestChartPoint[studyMetric]).toFixed(1) : Math.round(Number(bestChartPoint[studyMetric]) || 0)}
+                </strong>
                 <span className="insight-meta">{bestChartPoint.displayDate}</span>
               </div>
               <div className="insight-card">
                 <span className="insight-label">Active cadence</span>
-                <strong className="insight-value">{activeDays30}/30</strong>
-                <span className="insight-meta">{avgHours30.toFixed(1)} avg hours per day</span>
+                <strong className="insight-value">{activeDaysInRange}/{RANGE_DAYS[studyRange]}</strong>
+                <span className="insight-meta">{avgHoursInRange.toFixed(1)} avg hours per day</span>
               </div>
             </div>
           </div>
@@ -730,6 +1064,62 @@ export default function DailyGoalsPage() {
               <div className="summary-pill">
                 <span className="summary-pill-label">Subjects logged</span>
                 <strong>{filledSubjects} / {Math.max(subjects.length, 1)}</strong>
+              </div>
+            </div>
+
+            <div className="daily-meta-grid">
+              <div className="daily-meta-card">
+                <div className="daily-meta-copy">
+                  <span className="daily-meta-kicker">
+                    <ShieldCheck size={14} /> Discipline
+                  </span>
+                  <strong>{todayDiscipline || "--"}/100</strong>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={dailyMeta.disciplineScore || "0"}
+                  onChange={(event) => setDailyMeta((current) => ({ ...current, disciplineScore: event.target.value }))}
+                  className="meta-range discipline-range"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={dailyMeta.disciplineScore}
+                  onChange={(event) => setDailyMeta((current) => ({ ...current, disciplineScore: event.target.value }))}
+                  className="meta-number-input"
+                  aria-label="Daily discipline score"
+                />
+              </div>
+
+              <div className="daily-meta-card">
+                <div className="daily-meta-copy">
+                  <span className="daily-meta-kicker">
+                    <CheckCircle2 size={14} /> Completion
+                  </span>
+                  <strong>{todayCompletion || "--"}%</strong>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={dailyMeta.completionPercent || "0"}
+                  onChange={(event) => setDailyMeta((current) => ({ ...current, completionPercent: event.target.value }))}
+                  className="meta-range completion-range"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={dailyMeta.completionPercent}
+                  onChange={(event) => setDailyMeta((current) => ({ ...current, completionPercent: event.target.value }))}
+                  className="meta-number-input"
+                  aria-label="Daily completion percentage"
+                />
               </div>
             </div>
 
@@ -842,21 +1232,23 @@ export default function DailyGoalsPage() {
               <div className="heatmap-grid">
                 {weeks.map((w, i) => (
                   <div className="heatmap-col" key={`week-${i}`}>
-                    {w.map((c, rowIndex) =>
-                      c ? (
+                    {w.map((c, rowIndex) => {
+                      if (!c) return <span className="heat-cell heat-cell-empty" key={`empty-${i}-${rowIndex}`} aria-hidden="true" />;
+                      const tier = getHeatTier(c.totalHours);
+                      return (
                         <button
                           key={c.date}
-                          className="heat-cell"
-                          style={{ backgroundColor: INTENSITY_COLORS[c.intensity] }}
-                          title={`${c.date}: ${c.totalHours} hrs, ${c.totalQuestions} qs`}
+                          className={`heat-cell emoji-heat-cell tier-${HEAT_TIERS.indexOf(tier)}`}
+                          style={{ background: tier.color } as CSSProperties}
+                          title={`${c.date}: ${tier.label} - ${c.totalHours} hrs, ${c.totalQuestions} qs`}
                           onMouseEnter={() => setHoveredHeat(c)}
                           onMouseLeave={() => setHoveredHeat(null)}
                           type="button"
-                        />
-                      ) : (
-                        <span className="heat-cell heat-cell-empty" key={`empty-${i}-${rowIndex}`} aria-hidden="true" />
-                      )
-                    )}
+                        >
+                          <span className="heat-emoji">{tier.emoji}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -864,18 +1256,20 @@ export default function DailyGoalsPage() {
 
             <div className="heatmap-footer">
               <div className="heatmap-legend">
-                <span>Rest</span>
+                <span>Less than 8h is weak</span>
                 <div className="legend-colors">
-                  {INTENSITY_COLORS.map((color, i) => (
-                    <div key={i} className="legend-cell" style={{ backgroundColor: color }} />
+                  {HEAT_TIERS.map((tier) => (
+                    <div key={tier.label} className="legend-cell emoji-legend-cell" style={{ background: tier.color } as CSSProperties}>
+                      {tier.emoji}
+                    </div>
                   ))}
                 </div>
-                <span>Peak</span>
+                <span>8h good, 12h excellent</span>
               </div>
               <div className="heatmap-hover-card">
                 {hoveredHeat ? (
                   <>
-                    <strong>{format(new Date(hoveredHeat.date), "MMM dd, yyyy")}</strong>
+                    <strong>{format(new Date(hoveredHeat.date), "MMM dd, yyyy")} · {getHeatTier(hoveredHeat.totalHours).label}</strong>
                     <span>{hoveredHeat.totalHours} hrs / {hoveredHeat.totalQuestions} qs</span>
                   </>
                 ) : (
@@ -886,6 +1280,156 @@ export default function DailyGoalsPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="glass-panel screen-panel animate-slide-up" style={{ animationDelay: "680ms" }}>
+          <div className="panel-header chart-header">
+            <div>
+              <h3>
+                <Smartphone size={20} className="inline-icon" /> Screen-Time Discipline Zone
+              </h3>
+              <p className="panel-desc">Manual app-wise logging for distraction debt, with YouTube study kept separate from entertainment time.</p>
+            </div>
+            <div className="range-tabs" aria-label="Screen-time range">
+              {RANGE_LABELS.map((range) => (
+                <button
+                  key={range.key}
+                  type="button"
+                  className={`range-tab ${screenRange === range.key ? "range-tab-active" : ""}`}
+                  onClick={() => setScreenRange(range.key)}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="screen-summary-grid">
+            <div className="screen-summary-card screen-danger">
+              <span>Distraction today</span>
+              <strong>{todayDistraction.toFixed(1)} hrs</strong>
+              <small>{topScreenApp?.value ? `${topScreenApp.label} leads at ${topScreenApp.value.toFixed(1)} hrs` : "No distraction logged yet"}</small>
+            </div>
+            <div className="screen-summary-card screen-study">
+              <span>Study YouTube</span>
+              <strong>{todayStudyYoutube.toFixed(1)} hrs</strong>
+              <small>Allowed only when it genuinely supports NEET prep</small>
+            </div>
+            <div className="screen-summary-card">
+              <span>{RANGE_DAYS[screenRange]} day avg</span>
+              <strong>{screenAverages.total.toFixed(1)} hrs</strong>
+              <small>{screenAverages.distraction.toFixed(1)} distraction / {screenAverages.study.toFixed(1)} study</small>
+            </div>
+          </div>
+
+          <div className="screen-layout">
+            <div className="screen-form-stack">
+              {(["Social", "Video", "Utility"] as AppDef["group"][]).map((group) => (
+                <div className="screen-app-group" key={group}>
+                  <div className="screen-group-title">{group}</div>
+                  <div className="screen-app-grid">
+                    {SCREEN_APPS.filter((app) => app.group === group).map((app) => (
+                      <label className="screen-app-card" key={app.key}>
+                        <span className="app-logo" style={{ background: app.color } as CSSProperties}>{app.short}</span>
+                        <span className="screen-app-copy">
+                          <span>{app.label}</span>
+                          <small>{app.key === "youtubeStudy" ? "study-safe" : "track honestly"}</small>
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.25"
+                          value={screenForm[app.key] || ""}
+                          onChange={(event) =>
+                            setScreenForm((current) => ({ ...current, [app.key]: Number(event.target.value) || 0 }))
+                          }
+                          className="screen-input"
+                          aria-label={`${app.label} hours`}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <textarea
+                value={screenForm.note}
+                onChange={(event) => setScreenForm((current) => ({ ...current, note: event.target.value }))}
+                className="screen-note"
+                rows={3}
+                placeholder="Optional note: what was study, what was avoidable?"
+              />
+
+              <button className={`save-btn screen-save-btn ${screenSaved ? "saved" : ""}`} onClick={handleScreenSave} disabled={savingScreen}>
+                {screenSaved ? (
+                  <>
+                    <CheckCircle2 size={18} /> Screen-time recorded
+                  </>
+                ) : savingScreen ? (
+                  <>
+                    <span className="spinner" /> Saving screen-time...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} /> Save Screen-Time Log
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className={`screen-chart-card screen-range-${screenRange}`}>
+              <div className="screen-chart-header">
+                <div>
+                  <span>Distraction vs study</span>
+                  <small>{screenChartModeLabel} · {screenLoggedBuckets}/{screenChartData.length} with logs</small>
+                </div>
+                <strong>{screenTotalToday.toFixed(1)} hrs today</strong>
+              </div>
+              <div className="screen-chart">
+                {screenChartData.map((point) => (
+                  <div className={`screen-bar-row ${point.total > 0 ? "screen-bar-row-active" : ""}`} key={point.date}>
+                    <span className="screen-bar-date">{point.displayDate}</span>
+                    <div className="screen-bar-track">
+                      <span
+                        className="screen-bar-fill screen-bar-distraction"
+                        style={{ width: `${Math.min(100, (point.distraction / screenMax) * 100)}%` }}
+                      />
+                      <span
+                        className="screen-bar-fill screen-bar-study"
+                        style={{ width: `${Math.min(100, (point.study / screenMax) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="screen-bar-total">{point.total.toFixed(1)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-panel ai-discipline-panel animate-slide-up" style={{ animationDelay: "760ms" }}>
+          <div className="panel-header">
+            <div>
+              <h3>
+                <Sparkles size={20} className="inline-icon" /> AI Discipline Analyzer
+              </h3>
+              <p className="panel-desc">Reads study hours, questions, discipline, completion, weak subjects, and screen-time before suggesting the next correction.</p>
+            </div>
+            <button className="ai-run-btn" type="button" onClick={runAiAnalysis} disabled={aiLoading}>
+              {aiLoading ? <span className="spinner" /> : <Sparkles size={16} />}
+              Analyze
+            </button>
+          </div>
+          <div className="ai-insight-box">
+            {aiError ? (
+              <p className="ai-error">{aiError}</p>
+            ) : aiInsight ? (
+              <div className="ai-report">{aiInsight.split("\n").map(renderAiLine)}</div>
+            ) : (
+              <p>Run the analyzer after logging the day. It will treat under 8 study hours as weak, 8+ as good, 12+ as excellent, and screen-time leakage as part of discipline.</p>
+            )}
           </div>
         </div>
       </div>
@@ -1246,6 +1790,60 @@ export default function DailyGoalsPage() {
           white-space: nowrap;
         }
         .chart-stat-badge span { font-weight: 800; }
+        .chart-control-stack {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .range-tabs,
+        .metric-tabs {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 6px;
+          padding: 5px;
+          border-radius: 999px;
+          background: rgba(0,0,0,0.24);
+          border: 1px solid rgba(255,255,255,0.07);
+        }
+        .metric-tabs {
+          justify-content: flex-start;
+          border-radius: 18px;
+          width: fit-content;
+          max-width: 100%;
+        }
+        .range-tab,
+        .metric-tab {
+          border: 0;
+          border-radius: 999px;
+          background: transparent;
+          color: var(--text-secondary);
+          padding: 8px 12px;
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+          white-space: nowrap;
+        }
+        .metric-tab {
+          border-radius: 13px;
+          color: var(--text-muted);
+        }
+        .range-tab-active,
+        .range-tab:hover {
+          background: var(--gold-dim);
+          color: var(--gold);
+          box-shadow: inset 0 0 0 1px hsla(38,72%,58%,0.18);
+        }
+        .metric-tab-active,
+        .metric-tab:hover {
+          background: color-mix(in srgb, var(--metric-accent) 16%, transparent);
+          color: var(--metric-accent);
+          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--metric-accent) 26%, transparent);
+        }
         .chart-container {
           width: 100%;
           position: relative;
@@ -1398,7 +1996,7 @@ export default function DailyGoalsPage() {
           display: grid;
           grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
           gap: 22px;
-          align-items: stretch;
+          align-items: start;
         }
 
         .form-summary-strip {
@@ -1424,6 +2022,68 @@ export default function DailyGoalsPage() {
           font-weight: 800;
         }
         .summary-pill strong { font-size: 20px; letter-spacing: -0.03em; }
+        .daily-meta-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .daily-meta-card {
+          position: relative;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 86px;
+          gap: 12px 14px;
+          align-items: center;
+          padding: 16px;
+          border-radius: 20px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+          border: 1px solid rgba(255,255,255,0.075);
+        }
+        .daily-meta-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 0;
+        }
+        .daily-meta-kicker {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 850;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+        .daily-meta-copy strong {
+          font-size: 26px;
+          line-height: 1;
+          letter-spacing: -0.05em;
+        }
+        .meta-range {
+          grid-column: 1 / -1;
+          width: 100%;
+          accent-color: var(--gold);
+        }
+        .discipline-range { accent-color: var(--botany); }
+        .completion-range { accent-color: var(--rose-bright); }
+        .meta-number-input {
+          width: 86px;
+          border: 1px solid var(--glass-border);
+          border-radius: 13px;
+          background: rgba(0,0,0,0.34);
+          color: var(--text-primary);
+          padding: 10px 12px;
+          font: inherit;
+          font-weight: 800;
+          text-align: center;
+        }
+        .meta-number-input:focus,
+        .screen-input:focus,
+        .screen-note:focus {
+          outline: none;
+          border-color: var(--gold);
+          box-shadow: 0 0 0 3px var(--gold-dim);
+        }
         .subjects-list { display: flex; flex-direction: column; gap: 14px; }
         .empty-state { padding: 20px; text-align: center; color: var(--text-muted); font-style: italic; }
         .subject-row {
@@ -1532,7 +2192,11 @@ export default function DailyGoalsPage() {
         .save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
         .save-btn.saved { background: linear-gradient(135deg, var(--success), var(--botany)); box-shadow: 0 10px 28px var(--botany-glow); }
 
-        .heatmap-panel { overflow: hidden; }
+        .heatmap-panel {
+          overflow: hidden;
+          gap: 16px;
+          padding: 26px;
+        }
         .heatmap-header { align-items: center; }
         .heatmap-callout {
           display: flex;
@@ -1579,7 +2243,7 @@ export default function DailyGoalsPage() {
           display: grid;
           grid-template-columns: repeat(${weeks.length}, minmax(14px, 1fr));
           gap: 5px;
-          margin-bottom: 10px;
+          margin: 2px 0 -2px;
           color: var(--text-muted);
           font-size: 11px;
           font-weight: 700;
@@ -1589,8 +2253,12 @@ export default function DailyGoalsPage() {
         .heatmap-month-row span { white-space: nowrap; }
         .heatmap-container-wrap {
           overflow-x: auto;
-          padding: 8px 4px 12px;
+          padding: 12px 12px 14px;
           border-radius: var(--r-lg);
+          background:
+            radial-gradient(circle at 12% 10%, rgba(255,255,255,0.045), transparent 30%),
+            rgba(0,0,0,0.16);
+          border: 1px solid rgba(255,255,255,0.055);
           mask-image: linear-gradient(90deg, rgba(0,0,0,1) 94%, transparent 100%);
           -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,1) 94%, transparent 100%);
         }
@@ -1608,6 +2276,26 @@ export default function DailyGoalsPage() {
           cursor: crosshair;
           padding: 0;
         }
+        .emoji-heat-cell {
+          position: relative;
+          display: grid;
+          place-items: center;
+          overflow: visible;
+          border-color: rgba(255,255,255,0.06);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+        }
+        .heat-emoji {
+          font-size: 9px;
+          line-height: 1;
+          transform: translateY(-0.5px);
+          filter: saturate(1.05) drop-shadow(0 1px 3px rgba(0,0,0,0.48));
+          animation: heatBreath 3.6s ease-in-out infinite;
+        }
+        .tier-4 .heat-emoji,
+        .tier-5 .heat-emoji,
+        .tier-6 .heat-emoji {
+          animation-duration: 2.4s;
+        }
         .heat-cell-empty {
           visibility: hidden;
           pointer-events: none;
@@ -1620,36 +2308,366 @@ export default function DailyGoalsPage() {
           box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         .heatmap-footer {
-          margin-top: auto;
           display: flex;
           flex-direction: column;
-          gap: 14px;
-          padding-top: 16px;
+          gap: 10px;
+          padding-top: 12px;
           border-top: 1px solid var(--glass-border);
         }
         .heatmap-legend {
           display: flex;
           align-items: center;
           gap: 10px;
-          font-size: 13px;
+          font-size: 12px;
           color: var(--text-muted);
-          justify-content: flex-end;
-          font-weight: 600;
+          justify-content: space-between;
+          font-weight: 700;
+          flex-wrap: wrap;
         }
         .legend-colors { display: flex; gap: 5px; }
-        .legend-cell { width: 14px; height: 14px; border-radius: 4px; }
+        .legend-cell {
+          width: 14px;
+          height: 14px;
+          border-radius: 4px;
+          display: grid;
+          place-items: center;
+          font-size: 9px;
+          line-height: 1;
+          border: 1px solid rgba(255,255,255,0.06);
+        }
+        .emoji-legend-cell { width: 18px; height: 18px; border-radius: 6px; }
         .heatmap-hover-card {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          padding: 14px 16px;
-          border-radius: 18px;
+          padding: 12px 14px;
+          border-radius: 16px;
           background: rgba(255,255,255,0.03);
           border: 1px solid rgba(255,255,255,0.07);
           color: var(--text-secondary);
         }
         .heatmap-hover-card strong { color: var(--text-primary); }
+
+        .screen-panel {
+          overflow: hidden;
+        }
+        .screen-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .screen-summary-card {
+          padding: 18px;
+          border-radius: 20px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+          border: 1px solid rgba(255,255,255,0.07);
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          min-width: 0;
+        }
+        .screen-summary-card span {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 850;
+          text-transform: uppercase;
+          letter-spacing: 0.13em;
+        }
+        .screen-summary-card strong {
+          font-size: 30px;
+          line-height: 1;
+          letter-spacing: -0.05em;
+        }
+        .screen-summary-card small {
+          color: var(--text-secondary);
+          line-height: 1.45;
+        }
+        .screen-danger { border-color: hsla(352,52%,54%,0.2); background: linear-gradient(180deg, var(--rose-dim), rgba(255,255,255,0.018)); }
+        .screen-study { border-color: hsla(142,60%,48%,0.22); background: linear-gradient(180deg, var(--botany-dim), rgba(255,255,255,0.018)); }
+        .screen-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+          gap: 18px;
+          align-items: start;
+        }
+        .screen-form-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .screen-app-group {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .screen-group-title {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+        .screen-app-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .screen-app-card {
+          display: grid;
+          grid-template-columns: 42px minmax(0, 1fr) 74px;
+          gap: 10px;
+          align-items: center;
+          padding: 12px;
+          border-radius: 18px;
+          background: rgba(255,255,255,0.028);
+          border: 1px solid rgba(255,255,255,0.065);
+          transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+        .screen-app-card:hover {
+          border-color: rgba(255,255,255,0.14);
+          background: rgba(255,255,255,0.045);
+          transform: translateY(-1px);
+        }
+        .app-logo {
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          color: white;
+          font-size: 12px;
+          font-weight: 950;
+          letter-spacing: -0.02em;
+          box-shadow: 0 10px 24px rgba(0,0,0,0.26);
+        }
+        .screen-app-copy {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          gap: 3px;
+        }
+        .screen-app-copy span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--text-primary);
+          font-size: 13px;
+          font-weight: 850;
+        }
+        .screen-app-copy small {
+          color: var(--text-muted);
+          font-size: 11px;
+        }
+        .screen-input {
+          width: 74px;
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          background: rgba(0,0,0,0.34);
+          color: var(--text-primary);
+          padding: 9px 10px;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 800;
+          text-align: center;
+        }
+        .screen-input::-webkit-outer-spin-button,
+        .screen-input::-webkit-inner-spin-button,
+        .meta-number-input::-webkit-outer-spin-button,
+        .meta-number-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        .screen-input,
+        .meta-number-input {
+          appearance: textfield;
+          -moz-appearance: textfield;
+        }
+        .screen-note {
+          width: 100%;
+          resize: vertical;
+          border: 1px solid var(--glass-border);
+          border-radius: 18px;
+          background: rgba(0,0,0,0.28);
+          color: var(--text-primary);
+          padding: 14px 16px;
+          font: inherit;
+          line-height: 1.5;
+        }
+        .screen-note::placeholder { color: rgba(255,255,255,0.22); }
+        .screen-save-btn { margin-top: 0; }
+        .screen-chart-card {
+          min-height: 0;
+          padding: clamp(14px, 1.8vw, 18px);
+          border-radius: 22px;
+          background:
+            radial-gradient(circle at 15% 0%, var(--rose-dim), transparent 32%),
+            linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.08));
+          border: 1px solid rgba(255,255,255,0.07);
+        }
+        .screen-chart-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+        .screen-chart-header div {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          min-width: 0;
+        }
+        .screen-chart-header span {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 850;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+        .screen-chart-header small {
+          color: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.35;
+        }
+        .screen-chart-header strong {
+          color: var(--gold);
+          font-size: 14px;
+          white-space: nowrap;
+        }
+        .screen-chart {
+          display: flex;
+          flex-direction: column;
+          gap: clamp(7px, 1vw, 10px);
+          max-height: clamp(220px, 42vh, 420px);
+          overflow: auto;
+          padding-right: 4px;
+        }
+        .screen-range-7d .screen-chart { max-height: none; }
+        .screen-range-month .screen-chart { max-height: 310px; }
+        .screen-range-year .screen-chart { max-height: 390px; }
+        .screen-bar-row {
+          display: grid;
+          grid-template-columns: 58px minmax(0, 1fr) 42px;
+          align-items: center;
+          gap: 10px;
+          color: var(--text-secondary);
+          font-size: 12px;
+          opacity: 0.64;
+          transition: opacity 0.2s ease;
+        }
+        .screen-bar-row-active { opacity: 1; }
+        .screen-bar-date,
+        .screen-bar-total {
+          font-weight: 800;
+          white-space: nowrap;
+        }
+        .screen-range-month .screen-bar-row,
+        .screen-range-year .screen-bar-row {
+          grid-template-columns: minmax(70px, 0.22fr) minmax(0, 1fr) 42px;
+        }
+        .screen-bar-total { text-align: right; color: var(--text-muted); }
+        .screen-bar-track {
+          position: relative;
+          height: clamp(10px, 1.3vw, 13px);
+          border-radius: 999px;
+          background: rgba(255,255,255,0.06);
+          overflow: hidden;
+        }
+        .screen-bar-fill {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          border-radius: inherit;
+        }
+        .screen-bar-distraction {
+          background: linear-gradient(90deg, var(--rose), var(--rose-bright));
+          opacity: 0.78;
+        }
+        .screen-bar-study {
+          background: linear-gradient(90deg, var(--botany), var(--gold));
+          opacity: 0.9;
+          mix-blend-mode: screen;
+        }
+        .ai-discipline-panel {
+          background:
+            radial-gradient(circle at 8% 10%, var(--gold-dim), transparent 34%),
+            var(--glass-mid);
+        }
+        .ai-run-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          border: 1px solid hsla(38,72%,58%,0.28);
+          border-radius: 999px;
+          background: var(--gold-dim);
+          color: var(--gold);
+          padding: 10px 14px;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: transform 0.2s ease, background 0.2s ease;
+        }
+        .ai-run-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          background: hsla(38,72%,58%,0.16);
+        }
+        .ai-run-btn:disabled {
+          opacity: 0.65;
+          cursor: wait;
+        }
+        .ai-insight-box {
+          border-radius: 22px;
+          border: 1px solid rgba(255,255,255,0.075);
+          background: rgba(0,0,0,0.26);
+          padding: 18px;
+          color: var(--text-secondary);
+          line-height: 1.7;
+          overflow: auto;
+        }
+        .ai-insight-box pre {
+          margin: 0;
+          white-space: pre-wrap;
+          color: var(--text-primary);
+          font: inherit;
+        }
+        .ai-insight-box p { margin: 0; }
+        .ai-report {
+          display: grid;
+          gap: 10px;
+        }
+        .ai-report-line {
+          color: var(--text-secondary);
+          font-size: 14px;
+          line-height: 1.65;
+        }
+        .ai-report-labelled {
+          display: grid;
+          grid-template-columns: minmax(118px, 0.22fr) minmax(0, 1fr);
+          gap: 12px;
+          align-items: start;
+          padding-bottom: 9px;
+          border-bottom: 1px solid rgba(255,255,255,0.055);
+        }
+        .ai-report-labelled span {
+          color: var(--gold);
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .ai-report-action {
+          padding: 9px 12px;
+          border-radius: 14px;
+          background: rgba(255,255,255,0.035);
+          border: 1px solid rgba(255,255,255,0.06);
+          color: var(--text-primary);
+        }
+        .ai-error { color: var(--rose-bright); }
 
         .spinner {
           width: 18px;
@@ -1667,7 +2685,15 @@ export default function DailyGoalsPage() {
           0% { filter: drop-shadow(0 0 5px var(--gold-glow)); transform: scale(1); }
           100% { filter: drop-shadow(0 0 18px var(--gold)); transform: scale(1.15); }
         }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.62; }
+          50% { opacity: 1; }
+        }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes heatBreath {
+          0%, 100% { transform: translateY(-0.5px) scale(0.92); opacity: 0.72; }
+          50% { transform: translateY(-1px) scale(1.12); opacity: 1; }
+        }
         @keyframes float {
           0%, 100% { transform: translate(0, 0) scale(1); }
           50% { transform: translate(30px, -30px) scale(1.05); }
@@ -1680,6 +2706,7 @@ export default function DailyGoalsPage() {
           .main-grid { grid-template-columns: 1fr; }
           .chart-layout { grid-template-columns: 1fr; }
           .subject-analytics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .screen-layout { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 900px) {
@@ -1691,8 +2718,10 @@ export default function DailyGoalsPage() {
           .glass-panel { padding: 24px; }
           .panel-header { gap: 14px; flex-wrap: wrap; }
           .chart-header { align-items: flex-start; }
+          .chart-control-stack { justify-content: flex-start; }
           .heatmap-callout { align-items: flex-start; }
           .main-grid { grid-template-columns: 1fr !important; }
+          .screen-summary-grid { grid-template-columns: 1fr; }
           .form-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
           .heatmap-meta-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
         }
@@ -1710,7 +2739,12 @@ export default function DailyGoalsPage() {
           .panel-header h3 { font-size: 18px; }
           .panel-desc { font-size: 14px; }
           .chart-stat-badge { align-self: flex-start; }
+          .metric-tabs,
+          .range-tabs { width: 100%; border-radius: 18px; }
+          .range-tab,
+          .metric-tab { flex: 1; min-width: fit-content; }
           .form-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; }
+          .daily-meta-grid { grid-template-columns: 1fr; }
           .summary-pill { padding: 12px 10px; border-radius: 16px; }
           .summary-pill-label { font-size: 9px; letter-spacing: 0.08em; }
           .summary-pill strong { font-size: 18px; }
@@ -1723,6 +2757,7 @@ export default function DailyGoalsPage() {
           .inputs-group { width: 100%; gap: 10px; }
           .input-field { flex: 1; }
           .glass-input { width: 100%; }
+          .screen-app-grid { grid-template-columns: 1fr; }
           .heatmap-legend { justify-content: space-between; flex-wrap: wrap; }
           .heatmap-month-row { display: none; }
           .heatmap-hover-card { flex-direction: column; align-items: flex-start; }
@@ -1755,6 +2790,13 @@ export default function DailyGoalsPage() {
           .heatmap-col { gap: 4px; }
           .heat-cell,
           .legend-cell { width: 12px; height: 12px; }
+          .emoji-legend-cell { width: 16px; height: 16px; }
+          .heat-emoji { font-size: 8px; }
+          .screen-app-card { grid-template-columns: 38px minmax(0, 1fr) 66px; padding: 10px; }
+          .app-logo { width: 38px; height: 38px; border-radius: 12px; }
+          .screen-input { width: 66px; }
+          .screen-bar-row { grid-template-columns: 52px minmax(0, 1fr) 36px; gap: 8px; }
+          .ai-report-labelled { grid-template-columns: 1fr; gap: 4px; }
         }
 
         @media (max-width: 380px) {
