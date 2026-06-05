@@ -18,6 +18,9 @@ import {
   Activity,
   Smartphone,
   ShieldCheck,
+  RotateCcw,
+  Wand2,
+  X,
 } from "lucide-react";
 
 /* ---------- TYPES ---------- */
@@ -42,6 +45,10 @@ interface QueuedDailyGoal {
   disciplineScore: number;
   completionPercent: number;
   notes: string | null;
+}
+
+interface DailyGoalBatchResponse {
+  results?: Array<{ id?: string; ok: boolean; error?: string }>;
 }
 
 interface Subject {
@@ -103,6 +110,20 @@ interface DailyMetaState {
   completionPercent: string;
 }
 
+interface DailyQuickPreset {
+  label: string;
+  hoursPerSubject: number;
+  questionsPerSubject: number;
+  disciplineScore: string;
+  completionPercent: string;
+}
+
+interface SubjectQuickPreset {
+  label: string;
+  hours: string;
+  questions: string;
+}
+
 interface ScreenTimeEntry {
   id: string;
   date: string;
@@ -160,14 +181,26 @@ const STUDY_METRICS: Record<StudyMetricKey, { label: string; unit: string; accen
   rhythm: { label: "7-day rhythm", unit: "score", accent: "var(--lotus-bright)", cap: 100 },
 };
 
+const DAILY_QUICK_PRESETS: DailyQuickPreset[] = [
+  { label: "Balanced", hoursPerSubject: 3, questionsPerSubject: 125, disciplineScore: "82", completionPercent: "80" },
+  { label: "Push", hoursPerSubject: 3.25, questionsPerSubject: 140, disciplineScore: "88", completionPercent: "86" },
+  { label: "Light", hoursPerSubject: 1.5, questionsPerSubject: 60, disciplineScore: "65", completionPercent: "55" },
+];
+
+const SUBJECT_QUICK_PRESETS: SubjectQuickPreset[] = [
+  { label: "Light", hours: "1", questions: "40" },
+  { label: "Solid", hours: "2", questions: "80" },
+  { label: "Deep", hours: "3", questions: "125" },
+];
+
 const HEAT_TIERS = [
   { emoji: "·", label: "No log", min: 0, color: "var(--glass-thin)" },
   { emoji: "🌱", label: "Light", min: 0.01, color: "hsla(142,60%,48%,0.16)" },
   { emoji: "📘", label: "Warm", min: 4, color: "hsla(218,84%,62%,0.22)" },
-  { emoji: "🔥", label: "Close", min: 6, color: "hsla(352,72%,58%,0.26)" },
-  { emoji: "💪", label: "Good", min: 8, color: "hsla(142,60%,48%,0.34)" },
-  { emoji: "🏆", label: "Strong", min: 10, color: "hsla(38,72%,58%,0.38)" },
-  { emoji: "🚀", label: "Peak", min: 12, color: "var(--gold)" },
+  { emoji: "🔥", label: "Close", min: 8, color: "hsla(352,72%,58%,0.26)" },
+  { emoji: "💪", label: "Good", min: 10, color: "hsla(142,60%,48%,0.34)" },
+  { emoji: "🏆", label: "Excellent", min: 12, color: "hsla(38,72%,58%,0.38)" },
+  { emoji: "🚀", label: "Peak", min: 13, color: "var(--gold)" },
 ];
 
 const SCREEN_APPS: AppDef[] = [
@@ -270,10 +303,10 @@ function buildChartData(goals: DailyGoalEntry[], days = 30): ChartPoint[] {
 }
 
 function getHeatTier(hours: number) {
-  if (hours >= 12) return HEAT_TIERS[6];
-  if (hours >= 10) return HEAT_TIERS[5];
-  if (hours >= 8) return HEAT_TIERS[4];
-  if (hours >= 6) return HEAT_TIERS[3];
+  if (hours >= 13) return HEAT_TIERS[6];
+  if (hours >= 12) return HEAT_TIERS[5];
+  if (hours >= 10) return HEAT_TIERS[4];
+  if (hours >= 8) return HEAT_TIERS[3];
   if (hours >= 4) return HEAT_TIERS[2];
   if (hours > 0) return HEAT_TIERS[1];
   return HEAT_TIERS[0];
@@ -281,6 +314,10 @@ function getHeatTier(hours: number) {
 
 function screenDateKey(date: string) {
   return date.split("T")[0];
+}
+
+function formatPresetHours(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 function buildDailyScreenRows(rows: ScreenTimeEntry[], days: number) {
@@ -542,20 +579,24 @@ export default function DailyGoalsPage() {
 
     if (!queue.length || !navigator.onLine) return;
 
-    const remaining: QueuedDailyGoal[] = [];
+    let remaining: QueuedDailyGoal[] = [];
 
-    for (const entry of queue) {
-      try {
-        const response = await fetch("/api/daily-goals", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(entry),
-        });
+    try {
+      const response = await fetch("/api/daily-goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries: queue }),
+      });
 
-        if (!response.ok) remaining.push(entry);
-      } catch {
-        remaining.push(entry);
+      if (!response.ok) {
+        remaining = queue;
+      } else {
+        const data = (await response.json()) as DailyGoalBatchResponse;
+        const failedIds = new Set((data.results || []).filter((result) => !result.ok).map((result) => result.id));
+        remaining = queue.filter((entry) => failedIds.has(entry.id));
       }
+    } catch {
+      remaining = queue;
     }
 
     writeOfflineDailyGoals(remaining);
@@ -579,6 +620,75 @@ export default function DailyGoalsPage() {
   const monthlyChartData = useMemo(() => buildChartData(goals, 30), [goals]);
   const screenChartData = useMemo(() => buildScreenChartData(screenRows, screenRange), [screenRows, screenRange]);
   const subjectAnalytics = useMemo(() => buildSubjectAnalytics(goals, subjects), [goals, subjects]);
+  const lastLoggedDate = useMemo(() => {
+    const loggedDates = goals
+      .map((goal) => goal.date.split("T")[0])
+      .filter((goalDate) => goalDate < selectedDate)
+      .sort()
+      .reverse();
+    return loggedDates[0] || null;
+  }, [goals, selectedDate]);
+
+  const setSubjectFormValue = useCallback((subjectId: string, patch: Partial<GoalFormValue>) => {
+    setForm((current) => {
+      const existing = current[subjectId] || { hours: "", questions: "", notes: "" };
+      return {
+        ...current,
+        [subjectId]: { ...existing, ...patch },
+      };
+    });
+  }, []);
+
+  const applySubjectPreset = useCallback((subjectId: string, preset: SubjectQuickPreset) => {
+    setSubjectFormValue(subjectId, { hours: preset.hours, questions: preset.questions });
+  }, [setSubjectFormValue]);
+
+  const clearSubjectEntry = useCallback((subjectId: string) => {
+    setSubjectFormValue(subjectId, { hours: "", questions: "", notes: "" });
+  }, [setSubjectFormValue]);
+
+  const applyDailyPreset = useCallback((preset: DailyQuickPreset) => {
+    setForm((current) => {
+      const next: GoalFormState = { ...current };
+      subjects.forEach((subject) => {
+        const existing = current[subject.id] || { hours: "", questions: "", notes: "" };
+        next[subject.id] = {
+          ...existing,
+          hours: formatPresetHours(preset.hoursPerSubject),
+          questions: String(preset.questionsPerSubject),
+        };
+      });
+      return next;
+    });
+    setDailyMeta({
+      disciplineScore: preset.disciplineScore,
+      completionPercent: preset.completionPercent,
+    });
+  }, [subjects]);
+
+  const copyLastLoggedDay = useCallback(() => {
+    if (!lastLoggedDate) return;
+
+    const copiedGoals = goals.filter((goal) => goal.date.split("T")[0] === lastLoggedDate);
+    const next: GoalFormState = {};
+    copiedGoals.forEach((goal) => {
+      next[goal.subjectId] = {
+        hours: String(goal.hoursStudied),
+        questions: String(goal.questionsSolved),
+        notes: goal.notes || "",
+      };
+    });
+
+    setForm(next);
+    setDailyMeta({
+      disciplineScore: copiedGoals.length
+        ? String(Math.round(copiedGoals.reduce((sum, goal) => sum + goal.disciplineScore, 0) / copiedGoals.length))
+        : "",
+      completionPercent: copiedGoals.length
+        ? String(Math.round(copiedGoals.reduce((sum, goal) => sum + goal.completionPercent, 0) / copiedGoals.length))
+        : "",
+    });
+  }, [goals, lastLoggedDate]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -599,21 +709,25 @@ export default function DailyGoalsPage() {
 
     const failedEntries: QueuedDailyGoal[] = [];
 
-    await Promise.all(
-      entries.map(async (entry) => {
-        try {
-          const response = await fetch("/api/daily-goals", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(entry),
-          });
+    if (entries.length) {
+      try {
+        const response = await fetch("/api/daily-goals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entries }),
+        });
 
-          if (!response.ok) failedEntries.push(entry);
-        } catch {
-          failedEntries.push(entry);
+        if (!response.ok) {
+          failedEntries.push(...entries);
+        } else {
+          const data = (await response.json()) as DailyGoalBatchResponse;
+          const failedIds = new Set((data.results || []).filter((result) => !result.ok).map((result) => result.id));
+          failedEntries.push(...entries.filter((entry) => failedIds.has(entry.id)));
         }
-      })
-    );
+      } catch {
+        failedEntries.push(...entries);
+      }
+    }
 
     if (failedEntries.length) {
       setPendingOffline(queueOfflineDailyGoals(failedEntries));
@@ -1067,6 +1181,41 @@ export default function DailyGoalsPage() {
               </div>
             </div>
 
+            <div className="quick-log-dock">
+              <div className="quick-log-label">
+                <span>
+                  <Wand2 size={14} /> Quick fill
+                </span>
+                <strong>{lastLoggedDate ? format(new Date(lastLoggedDate), "MMM dd") : "Fresh day"}</strong>
+              </div>
+              <div className="quick-log-actions" aria-label="Daily quick fill actions">
+                {DAILY_QUICK_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    className="quick-log-btn"
+                    onClick={() => applyDailyPreset(preset)}
+                    disabled={loading || subjects.length === 0}
+                  >
+                    <Wand2 size={14} />
+                    <span>{preset.label}</span>
+                    <small>{formatPresetHours(preset.hoursPerSubject * Math.max(subjects.length, 1))}h / {preset.questionsPerSubject * Math.max(subjects.length, 1)}q</small>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="quick-log-btn quick-copy-btn"
+                  onClick={copyLastLoggedDay}
+                  disabled={loading || !lastLoggedDate}
+                  title={lastLoggedDate ? `Copy ${format(new Date(lastLoggedDate), "MMM dd")} log` : "No earlier log found"}
+                >
+                  <RotateCcw size={14} />
+                  <span>Last log</span>
+                  <small>{lastLoggedDate ? format(new Date(lastLoggedDate), "MMM dd") : "None"}</small>
+                </button>
+              </div>
+            </div>
+
             <div className="daily-meta-grid">
               <div className="daily-meta-card">
                 <div className="daily-meta-copy">
@@ -1150,7 +1299,7 @@ export default function DailyGoalsPage() {
                           min="0"
                           placeholder="0.0"
                           value={e.hours}
-                          onChange={(ev) => setForm((f) => ({ ...f, [s.id]: { ...e, hours: ev.target.value } }))}
+                          onChange={(ev) => setSubjectFormValue(s.id, { hours: ev.target.value })}
                           className="glass-input"
                         />
                         <span className="input-suffix">hrs</span>
@@ -1162,11 +1311,32 @@ export default function DailyGoalsPage() {
                           min="0"
                           placeholder="0"
                           value={e.questions}
-                          onChange={(ev) => setForm((f) => ({ ...f, [s.id]: { ...e, questions: ev.target.value } }))}
+                          onChange={(ev) => setSubjectFormValue(s.id, { questions: ev.target.value })}
                           className="glass-input"
                         />
                         <span className="input-suffix">qs</span>
                       </div>
+                    </div>
+                    <div className="quick-subject-actions" aria-label={`${s.name} quick fill`}>
+                      {SUBJECT_QUICK_PRESETS.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          className="quick-subject-chip"
+                          onClick={() => applySubjectPreset(s.id, preset)}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className="quick-subject-chip quick-clear-chip"
+                        onClick={() => clearSubjectEntry(s.id)}
+                        aria-label={`Clear ${s.name} log`}
+                        title={`Clear ${s.name}`}
+                      >
+                        <X size={13} />
+                      </button>
                     </div>
                   </div>
                 );
@@ -1256,7 +1426,7 @@ export default function DailyGoalsPage() {
 
             <div className="heatmap-footer">
               <div className="heatmap-legend">
-                <span>Less than 8h is weak</span>
+                <span>Below 10h is still building</span>
                 <div className="legend-colors">
                   {HEAT_TIERS.map((tier) => (
                     <div key={tier.label} className="legend-cell emoji-legend-cell" style={{ background: tier.color } as CSSProperties}>
@@ -1264,7 +1434,7 @@ export default function DailyGoalsPage() {
                     </div>
                   ))}
                 </div>
-                <span>8h good, 12h excellent</span>
+                <span>10h good, 12h excellent, 13h+ peak</span>
               </div>
               <div className="heatmap-hover-card">
                 {hoveredHeat ? (
@@ -1428,7 +1598,7 @@ export default function DailyGoalsPage() {
             ) : aiInsight ? (
               <div className="ai-report">{aiInsight.split("\n").map(renderAiLine)}</div>
             ) : (
-              <p>Run the analyzer after logging the day. It will treat under 8 study hours as weak, 8+ as good, 12+ as excellent, and screen-time leakage as part of discipline.</p>
+              <p>Run the analyzer after logging the day. It will treat 10h as good, 12h as excellent, 13h+ as peak, and screen-time leakage as part of discipline.</p>
             )}
           </div>
         </div>
@@ -2022,6 +2192,87 @@ export default function DailyGoalsPage() {
           font-weight: 800;
         }
         .summary-pill strong { font-size: 20px; letter-spacing: -0.03em; }
+        .quick-log-dock {
+          display: grid;
+          grid-template-columns: minmax(132px, 0.34fr) minmax(0, 1fr);
+          gap: 12px;
+          align-items: stretch;
+          padding: 12px;
+          border-radius: 20px;
+          background:
+            radial-gradient(circle at 12% 0%, var(--gold-dim), transparent 42%),
+            rgba(255,255,255,0.025);
+          border: 1px solid rgba(255,255,255,0.07);
+        }
+        .quick-log-label {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 6px;
+          min-width: 0;
+          padding: 4px 4px 4px 6px;
+        }
+        .quick-log-label span {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          color: var(--gold);
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .quick-log-label strong {
+          color: var(--text-secondary);
+          font-size: 13px;
+          font-weight: 800;
+        }
+        .quick-log-actions {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 8px;
+        }
+        .quick-log-btn {
+          min-width: 0;
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 16px;
+          background: rgba(0,0,0,0.22);
+          color: var(--text-primary);
+          padding: 10px 11px;
+          font: inherit;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 5px;
+          transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+        .quick-log-btn svg { color: var(--gold); flex-shrink: 0; }
+        .quick-log-btn span {
+          font-size: 12px;
+          font-weight: 900;
+          line-height: 1.1;
+        }
+        .quick-log-btn small {
+          max-width: 100%;
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .quick-log-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          border-color: hsla(38,72%,58%,0.28);
+          background: var(--gold-dim);
+        }
+        .quick-copy-btn svg { color: var(--botany); }
+        .quick-log-btn:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+          transform: none;
+        }
         .daily-meta-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2106,7 +2357,7 @@ export default function DailyGoalsPage() {
           border-color: hsla(38,72%,58%,0.22);
           box-shadow: inset 0 0 0 1px var(--gold-dim);
         }
-        .subject-info { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .subject-info { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 160px; }
         .subject-avatar {
           width: 48px;
           height: 48px;
@@ -2122,7 +2373,7 @@ export default function DailyGoalsPage() {
         .subject-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
         .name { font-weight: 700; font-size: 15px; letter-spacing: 0.01em; }
         .subject-tag { font-size: 12px; color: var(--text-muted); }
-        .inputs-group { display: flex; gap: 12px; align-items: flex-end; }
+        .inputs-group { display: flex; gap: 12px; align-items: flex-end; flex: 0 0 auto; }
         .input-field { position: relative; display: flex; align-items: center; flex-direction: column; gap: 8px; }
         .input-label {
           width: 100%;
@@ -2164,6 +2415,46 @@ export default function DailyGoalsPage() {
           color: var(--text-muted);
           pointer-events: none;
           text-transform: uppercase;
+        }
+        .quick-subject-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 6px;
+          flex: 0 1 184px;
+          flex-wrap: wrap;
+        }
+        .quick-subject-chip {
+          min-height: 31px;
+          border: 1px solid rgba(255,255,255,0.075);
+          border-radius: 999px;
+          background: rgba(255,255,255,0.035);
+          color: var(--text-secondary);
+          padding: 7px 9px;
+          font: inherit;
+          font-size: 11px;
+          font-weight: 850;
+          cursor: pointer;
+          transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+        .quick-subject-chip:hover {
+          color: var(--gold);
+          border-color: hsla(38,72%,58%,0.26);
+          background: var(--gold-dim);
+          transform: translateY(-1px);
+        }
+        .quick-clear-chip {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 31px;
+          padding: 0;
+          color: var(--text-muted);
+        }
+        .quick-clear-chip:hover {
+          color: var(--rose-bright);
+          border-color: hsla(352,52%,54%,0.26);
+          background: var(--rose-dim);
         }
         .save-btn {
           margin-top: 10px;
@@ -2723,6 +3014,8 @@ export default function DailyGoalsPage() {
           .main-grid { grid-template-columns: 1fr !important; }
           .screen-summary-grid { grid-template-columns: 1fr; }
           .form-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+          .quick-log-dock { grid-template-columns: 1fr; }
+          .quick-log-label { flex-direction: row; align-items: center; justify-content: space-between; }
           .heatmap-meta-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
         }
 
@@ -2748,6 +3041,8 @@ export default function DailyGoalsPage() {
           .summary-pill { padding: 12px 10px; border-radius: 16px; }
           .summary-pill-label { font-size: 9px; letter-spacing: 0.08em; }
           .summary-pill strong { font-size: 18px; }
+          .quick-log-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .quick-log-btn { min-height: 70px; }
           .subject-analytics { grid-template-columns: 1fr; }
           .heatmap-meta-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; }
           .heatmap-meta-card { padding: 12px 10px; border-radius: 16px; }
@@ -2757,6 +3052,9 @@ export default function DailyGoalsPage() {
           .inputs-group { width: 100%; gap: 10px; }
           .input-field { flex: 1; }
           .glass-input { width: 100%; }
+          .quick-subject-actions { justify-content: flex-start; flex: none; width: 100%; }
+          .quick-subject-chip { flex: 1; }
+          .quick-clear-chip { flex: 0 0 38px; width: 38px; }
           .screen-app-grid { grid-template-columns: 1fr; }
           .heatmap-legend { justify-content: space-between; flex-wrap: wrap; }
           .heatmap-month-row { display: none; }
@@ -2786,6 +3084,10 @@ export default function DailyGoalsPage() {
           .heatmap-meta-row > :last-child {
             grid-column: 1 / -1;
           }
+          .quick-log-dock { padding: 10px; }
+          .quick-log-label { align-items: flex-start; flex-direction: column; gap: 5px; }
+          .quick-log-actions { grid-template-columns: 1fr; }
+          .quick-log-btn { min-height: 0; }
           .heatmap-grid { gap: 4px; }
           .heatmap-col { gap: 4px; }
           .heat-cell,

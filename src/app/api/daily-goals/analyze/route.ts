@@ -158,14 +158,15 @@ export async function GET() {
       questions7: seven.reduce((s, d) => s + d.questions, 0),
       avgDiscipline7: seven.length ? Math.round(seven.reduce((s, d) => s + d.discipline, 0) / seven.length) : 0,
       avgCompletion7: seven.length ? Math.round(seven.reduce((s, d) => s + d.completion, 0) / seven.length) : 0,
-      good8hDays7: seven.filter((d) => d.hours >= 8).length,
-      peak12hDays7: seven.filter((d) => d.hours >= 12).length,
+      good10hDays7: seven.filter((d) => d.hours >= 10).length,
+      excellent12hDays7: seven.filter((d) => d.hours >= 12).length,
+      peak13hDays7: seven.filter((d) => d.hours >= 13).length,
       distraction7: Number(screen.slice(0, 7).reduce((s, d) => s + d.distraction, 0).toFixed(1)),
       studyYoutube7: Number(screen.slice(0, 7).reduce((s, d) => s + d.youtubeStudy, 0).toFixed(1)),
     };
 
     const prompt = `You are NEET-GURU's discipline analyst for Misti's daily-goals page.
-Hard standards: under 8 study hours is not a good day, 8h+ is good, 12h+ is excellent. For NEET, questions solved, discipline score, completion %, and screen-time leakage must all be read together.
+Hard standards: under 10 study hours is still not a good NEET day, 10h+ is good, 12h+ is excellent, and 13h+ is peak. For NEET, questions solved, discipline score, completion %, and screen-time leakage must all be read together.
 YouTube-study is allowed. YouTube entertainment, Instagram, WhatsApp, Facebook, Netflix, Hotstar, MX Player, browsing, and other apps are distraction debt.
 
 Return concise Markdown only. Do not use code fences. Do not return JSON.
