@@ -53,11 +53,17 @@ function buildDocumentUrl(pathname: string, download = false) {
   return `/api/pyq/document?${params.toString()}`;
 }
 
+// NEET UG covers 20 years of papers (2006–2025). No PDF blobs were supplied for
+// NEET, so each year tracks progress here and opens a Practice Arena session
+// built from that year's PYQs instead of a static file.
+const NEET_YEARS = Array.from({ length: 2025 - 2006 + 1 }, (_, index) => String(2025 - index));
+
 export default function PyqLibraryClient({ jeeCatalog }: Props) {
   const [activeArchive, setActiveArchive] = useState<"jee" | "neet" | null>(null);
   const [selectedYear, setSelectedYear] = useState(jeeCatalog.years[0]?.year ?? "");
   const [query, setQuery] = useState("");
   const [yearProgress, setYearProgress] = useState<Record<string, YearProgress>>({});
+  const [neetProgress, setNeetProgress] = useState<Record<string, YearProgress>>({});
   const [progressLoading, setProgressLoading] = useState(true);
   const [savingYears, setSavingYears] = useState<Set<string>>(() => new Set());
   const [progressError, setProgressError] = useState("");
@@ -95,12 +101,23 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
     if (!quiet) setProgressLoading(true);
 
     try {
-      const response = await fetch("/api/pyq/progress?exam=jee-main", { cache: "no-store" });
-      if (!response.ok) throw new Error("Unable to load PYQ progress");
+      const [jeeResponse, neetResponse] = await Promise.all([
+        fetch("/api/pyq/progress?exam=jee-main", { cache: "no-store" }),
+        fetch("/api/pyq/progress?exam=neet-ug", { cache: "no-store" }),
+      ]);
+      if (!jeeResponse.ok || !neetResponse.ok) throw new Error("Unable to load PYQ progress");
 
-      const records = (await response.json()) as YearProgress[];
+      const records = (await jeeResponse.json()) as YearProgress[];
+      const neetRecords = (await neetResponse.json()) as YearProgress[];
       setYearProgress((current) => {
         const synced = Object.fromEntries(records.map((record) => [record.year, record]));
+        pendingYearsRef.current.forEach((year) => {
+          if (current[year]) synced[year] = current[year];
+        });
+        return synced;
+      });
+      setNeetProgress((current) => {
+        const synced = Object.fromEntries(neetRecords.map((record) => [record.year, record]));
         pendingYearsRef.current.forEach((year) => {
           if (current[year]) synced[year] = current[year];
         });
@@ -134,12 +151,18 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
     };
   }, [loadProgress]);
 
-  async function saveProgress(year: string, changes: Partial<Pick<YearProgress, "completed" | "revisionCount">>) {
-    const previous = yearProgress[year] ?? { year, completed: false, revisionCount: 0 };
+  async function saveProgress(
+    year: string,
+    changes: Partial<Pick<YearProgress, "completed" | "revisionCount">>,
+    exam: "jee-main" | "neet-ug" = "jee-main",
+  ) {
+    const progressMap = exam === "neet-ug" ? neetProgress : yearProgress;
+    const setProgressMap = exam === "neet-ug" ? setNeetProgress : setYearProgress;
+    const previous = progressMap[year] ?? { year, completed: false, revisionCount: 0 };
     const next = { ...previous, ...changes };
 
     pendingYearsRef.current.add(year);
-    setYearProgress((current) => ({ ...current, [year]: next }));
+    setProgressMap((current) => ({ ...current, [year]: next }));
     setSavingYears((current) => new Set(current).add(year));
     setProgressError("");
 
@@ -148,7 +171,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          exam: "jee-main",
+          exam,
           year,
           completed: next.completed,
           revisionCount: next.revisionCount,
@@ -157,9 +180,9 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
       if (!response.ok) throw new Error("Unable to save PYQ progress");
 
       const saved = (await response.json()) as YearProgress;
-      setYearProgress((current) => ({ ...current, [year]: saved }));
+      setProgressMap((current) => ({ ...current, [year]: saved }));
     } catch {
-      setYearProgress((current) => ({ ...current, [year]: previous }));
+      setProgressMap((current) => ({ ...current, [year]: previous }));
       setProgressError("Progress could not be saved. Please try again.");
     } finally {
       pendingYearsRef.current.delete(year);
@@ -224,24 +247,81 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
             <button className="collection-folder collection-folder-neet" onClick={() => setActiveArchive("neet")} type="button">
               <span className="folder-lip" />
               <span className="folder-glare" />
-              <Folder size={34} className="folder-icon" />
-              <span className="folder-name">NEET</span>
-              <span className="folder-caption">A reserved shelf for upcoming papers</span>
-              <span className="folder-action">View folder <ArrowUpRight size={15} /></span>
+              <FolderOpen size={34} className="folder-icon" />
+              <span className="folder-name">NEET UG</span>
+              <span className="folder-caption">{NEET_YEARS.length} years / 2006-2025 · practice sessions</span>
+              <span className="folder-action">Open archive <ArrowUpRight size={15} /></span>
             </button>
           </div>
         </section>
       )}
 
       {activeArchive === "neet" && (
-        <section className="empty-folder">
-          <button className="back-button" onClick={() => setActiveArchive(null)} type="button">
-            <ArrowLeft size={15} /> All collections
-          </button>
-          <Folder size={52} />
-          <span className="archive-eyebrow">NEET folder</span>
-          <h2>This shelf is ready.</h2>
-          <p>No NEET PDF folder was present in the supplied archive, so nothing artificial has been placed here.</p>
+        <section className="neet-shelf">
+          <div className="neet-toolbar">
+            <button className="back-button" onClick={() => setActiveArchive(null)} type="button">
+              <ArrowLeft size={15} /> All collections
+            </button>
+            <div className="neet-shelf-head">
+              <span className="archive-eyebrow">NEET UG · 2006-2025</span>
+              <h2>Year-wise NEET papers</h2>
+              <p>
+                Tick a year after finishing it from your books, count revision rounds, or launch a Practice Arena
+                session built from that year&apos;s PYQs with verified answer keys.
+              </p>
+            </div>
+          </div>
+          <div className="neet-grid">
+            {NEET_YEARS.map((year, index) => {
+              const status = neetProgress[year] ?? { year, completed: false, revisionCount: 0 };
+              const saving = savingYears.has(year);
+              return (
+                <div className={`neet-year ${status.completed ? "is-complete" : ""}`} key={year} style={{ "--folder-index": index } as CSSProperties}>
+                  <div className="neet-year-top">
+                    <Folder size={18} />
+                    <strong>NEET {year}</strong>
+                    <span className={`sync-status ${saving ? "is-saving" : ""}`}>
+                      {saving ? "Saving..." : status.completed ? "Completed" : "Pending"}
+                    </span>
+                  </div>
+                  <div className="progress-controls">
+                    <label className={`completion-check ${status.completed ? "is-checked" : ""}`}>
+                      <input
+                        checked={status.completed}
+                        disabled={progressLoading || saving}
+                        onChange={(event) => void saveProgress(year, { completed: event.target.checked }, "neet-ug")}
+                        type="checkbox"
+                      />
+                      <span className="check-box"><Check size={12} /></span>
+                      Done end-to-end
+                    </label>
+                    <div className="revision-control" aria-label={`NEET ${year} revision rounds`}>
+                      <button
+                        aria-label={`Decrease NEET ${year} revision count`}
+                        disabled={progressLoading || saving || status.revisionCount === 0}
+                        onClick={() => void saveProgress(year, { revisionCount: Math.max(0, status.revisionCount - 1) }, "neet-ug")}
+                        type="button"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span><strong>{status.revisionCount}</strong> Rev</span>
+                      <button
+                        aria-label={`Increase NEET ${year} revision count`}
+                        disabled={progressLoading || saving || status.revisionCount === 99}
+                        onClick={() => void saveProgress(year, { revisionCount: Math.min(99, status.revisionCount + 1) }, "neet-ug")}
+                        type="button"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  </div>
+                  <a className="neet-practice" href={`/practice?year=${year}`}>
+                    Practice {year} PYQs <ArrowUpRight size={13} />
+                  </a>
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
 
@@ -1039,34 +1119,89 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
         }
         .no-results strong { color: var(--text-secondary); font-size: 15px; }
         .no-results span { font-size: 13px; }
-        .empty-folder {
-          position: relative;
-          min-height: 430px;
+        .neet-shelf {
           margin-top: 18px;
+          padding: clamp(18px, 2.6vw, 28px);
+          border: 1px solid rgba(255,255,255,0.085);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.068), rgba(255,255,255,0.025)),
+            rgba(6,7,11,0.73);
+          box-shadow: 0 20px 58px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
+          backdrop-filter: blur(20px) saturate(145%);
+          border-radius: 10px;
+        }
+        .neet-toolbar { margin-bottom: 18px; }
+        .neet-shelf-head { margin-top: 16px; }
+        .neet-shelf-head h2 {
+          margin: 4px 0 6px;
+          font: 500 25px/1.15 var(--font-display);
+          color: var(--text-primary);
+        }
+        .neet-shelf-head p {
+          margin: 0;
+          max-width: 560px;
+          color: var(--text-secondary);
+          font-size: 13.5px;
+          line-height: 1.55;
+        }
+        .neet-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+          gap: 12px;
+        }
+        .neet-year {
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 10px;
+          padding: 13px 13px 12px;
+          background: rgba(255,255,255,0.028);
+          animation: riseIn 250ms var(--ease-out) both;
+          animation-delay: calc(var(--folder-index) * 16ms);
+        }
+        .neet-year.is-complete {
+          border-color: rgba(77,200,125,0.28);
+          background: rgba(77,200,125,0.05);
+        }
+        .neet-year-top {
           display: flex;
-          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          color: var(--success);
+          margin-bottom: 8px;
+        }
+        .neet-year-top strong {
+          flex: 1;
+          color: var(--text-primary);
+          font-size: 14px;
+        }
+        .neet-year-top .sync-status { margin: 0; }
+        .neet-practice {
+          margin-top: 10px;
+          height: 34px;
+          display: flex;
           align-items: center;
           justify-content: center;
-          gap: 11px;
+          gap: 5px;
+          border-radius: 7px;
+          text-decoration: none;
           color: var(--success);
-          text-align: center;
+          background: rgba(77,200,125,0.08);
+          border: 1px solid rgba(77,200,125,0.2);
+          font-size: 12px;
+          font-weight: 650;
+          transition: var(--t-fast);
         }
-        .empty-folder .back-button {
-          position: absolute;
-          left: 22px;
-          top: 22px;
+        .neet-practice:hover {
+          background: rgba(77,200,125,0.15);
+          border-color: rgba(77,200,125,0.35);
         }
-        .empty-folder h2 {
-          color: var(--text-primary);
-          margin: 3px 0 0;
-          font: 500 27px/1.15 var(--font-display);
+        :global(html[data-theme="light"]) .neet-shelf {
+          border-color: rgba(70,45,24,0.11);
+          background: rgba(255,251,242,0.73);
+          box-shadow: 0 18px 50px rgba(70,45,24,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
         }
-        .empty-folder p {
-          max-width: 460px;
-          margin: 0;
-          color: var(--text-secondary);
-          font-size: 14px;
-          line-height: 1.55;
+        :global(html[data-theme="light"]) .neet-year {
+          border-color: rgba(70,45,24,0.1);
+          background: rgba(255,255,255,0.44);
         }
         @keyframes riseIn {
           from { opacity: 0; transform: translateY(7px); }
@@ -1149,10 +1284,10 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
           .paper-name { width: calc(100% - 54px); flex: none; }
           .paper-actions { width: 100%; padding-left: 54px; }
           .open-paper { flex: 1; }
-          .empty-folder .back-button {
-            position: static;
-            margin: 0 0 30px;
-          }
+          .neet-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+          .neet-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </main>

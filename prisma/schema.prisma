@@ -521,6 +521,56 @@ model MissionSession {
   @@map("mission_sessions")
 }
 
+model ReviewCard {
+  id            String    @id @default(cuid())
+  userId        String    @default("misti")
+  period        String    // WEEKLY | MONTHLY
+  periodKey     String    // e.g. "2026-06-08" (week start) or "2026-05" (month)
+  periodStart   DateTime  @db.Date
+  periodEnd     DateTime  @db.Date
+  status        String    @default("AWAITING_ANSWERS") // AWAITING_ANSWERS | COMPLETED
+  reviewJson    Json      // the review card content
+  questionsJson Json      // integrity questions incl. private evidence/expected answers
+  answersJson   Json?     // her submitted answers
+  verdictJson   Json?     // integrity verdict after evaluation
+  model         String?
+  notifiedAt    DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([period, periodKey])
+  @@index([createdAt])
+  @@map("review_cards")
+}
+
+model PracticeTest {
+  id             String    @id @default(cuid())
+  title          String
+  mode           String    // FULL_LENGTH | SUBJECT | CHAPTER | TOPIC | PYQ_YEAR
+  subject        String?   // subject slug, null for full syllabus
+  chapter        String?
+  topic          String?
+  pyqYear        String?
+  questionCount  Int
+  difficulty     String    @default("MIXED") // MIXED | EASY | MODERATE | TOUGH
+  status         String    @default("GENERATING") // GENERATING | READY | COMPLETED
+  questionsJson  Json      // questions incl. private correctIndex/explanation
+  weakZonesJson  Json?     // weak-zone snapshot used to steer generation
+  answersJson    Json?
+  resultJson     Json?
+  model          String?
+  testRecordId   String?
+  errorLogTestId String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@map("practice_tests")
+}
+
 model PyqDocument {
   id        String   @id @default(cuid())
   pathname  String   @unique

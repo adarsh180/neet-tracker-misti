@@ -3,7 +3,6 @@ const OPENROUTER_BASE = "https://generativelanguage.googleapis.com/v1beta/openai
 export const AI_MODELS = {
   primary: "gemma-4-31b-it",
   fallback1: "gemma-4-26b-a4b-it",
-  fallback2: "gemma-3-27b-it",
   emergencyFallback: "gemini-2.5-flash",
 };
 
@@ -86,11 +85,12 @@ export async function chatWithAI(
   messages: ChatMessage[],
   maxTokens = 4096,
   temperature = 0.7,
-  timeoutMs = 18000
+  timeoutMs = 18000,
+  models: string[] = MODELS_LIST
 ): Promise<AIResponse> {
   const errors: string[] = [];
 
-  for (const model of MODELS_LIST) {
+  for (const model of models) {
     try {
       const result = await callModel(model, messages, maxTokens, temperature, timeoutMs);
       if (result.content) return result;

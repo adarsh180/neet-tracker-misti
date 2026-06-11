@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { Brain, TrendingUp, Heart, ArrowRight, Sparkles } from "lucide-react";
+import { Brain, TrendingUp, Heart, ArrowRight, Sparkles, ClipboardCheck } from "lucide-react";
 import SmoothLink from "@/components/layout/smooth-link";
 
 const TOOLS = [
@@ -28,6 +28,14 @@ const TOOLS = [
     desc: "Phase-aware study schedules built from your cycle data and daily mood logs. Mind-body alignment.",
     badge: "Mood Aware",
     accent: "#e8728a",
+  },
+  {
+    href: "/reviews",
+    icon: ClipboardCheck,
+    title: "Review Cards",
+    desc: "Weekly & monthly report cards with grades, progress graphs, and a Truth Check that cross-examines your answers against your real logs.",
+    badge: "Integrity Audit",
+    accent: "#5ecb7b",
   },
 ];
 
@@ -73,13 +81,13 @@ export default function AIInsightsPage() {
           <h1 className="ai-title">Intelligence Suite</h1>
 
           <p className="ai-desc">
-            Three specialized AI modules that read your real study data to deliver personalized
-            mentorship, predictions, and wellness planning.
+            Specialized AI modules that read your real study data to deliver personalized
+            mentorship, predictions, wellness planning, and honest performance reviews.
           </p>
 
           <div className="ai-hero-metrics">
             <div className="ai-metric">
-              <span className="ai-metric-value">3</span>
+              <span className="ai-metric-value">{TOOLS.length}</span>
               <span className="ai-metric-label">Focused modules</span>
             </div>
             <div className="ai-metric">

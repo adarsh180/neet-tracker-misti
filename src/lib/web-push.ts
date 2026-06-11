@@ -9,6 +9,7 @@ type PushNotificationPayload = {
   tone: string;
   senderLabel: string;
   createdAt: Date | string;
+  url?: string;
 };
 
 type PushTarget = {
@@ -73,7 +74,7 @@ async function deliverWebPush(target: PushTarget, notification: PushNotification
     vibrate: [160, 70, 160, 70, 240],
     data: {
       id: notification.id,
-      url: "/dashboard",
+      url: notification.url || "/dashboard",
       tone: notification.tone,
       createdAt: notification.createdAt,
       urgent: true,

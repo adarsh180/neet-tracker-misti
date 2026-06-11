@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/cycle-nudge",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/daily-planner",
+      "schedule": "30 23 * * *"
     }
   ]
 }

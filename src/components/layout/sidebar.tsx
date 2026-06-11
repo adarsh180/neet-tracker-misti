@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Target, BarChart2, Sparkles, Leaf, Zap,
   Microscope, Atom, LogOut, ChevronLeft, ChevronRight,
-  SmilePlus, ListTodo
+  SmilePlus, ListTodo, Sunrise, ClipboardCheck, Swords
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
 import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
@@ -12,11 +12,14 @@ import SmoothLink from "@/components/layout/smooth-link";
 
 const NAV_MAIN = [
   { href: "/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/planner",     icon: Sunrise,          label: "Day Planner" },
   { href: "/todo",        icon: ListTodo,         label: "Todo Deck" },
   { href: "/daily-goals", icon: Target,           label: "Daily Goals" },
   { href: "/tests",       icon: BarChart2,        label: "Tests" },
+  { href: "/practice",    icon: Swords,           label: "Practice Arena" },
   { href: "/visual-lab",  icon: Atom,             label: "Visual Lab" },
   { href: "/ai-insights", icon: Sparkles,         label: "AI Insights" },
+  { href: "/reviews",     icon: ClipboardCheck,   label: "Review Cards" },
   { href: "/mood",        icon: SmilePlus,        label: "Mood Tracker" },
 ];
 const NAV_SUBJECTS = [

@@ -3,8 +3,12 @@ import { db } from "@/lib/db";
 import { getPrivateSession } from "@/lib/server-auth";
 import jeeCatalog from "@/data/pyq/jee-catalog.json";
 
-const SUPPORTED_EXAMS = new Set(["jee-main"]);
-const SUPPORTED_YEARS = new Set(jeeCatalog.years.map((folder) => folder.year));
+const SUPPORTED_EXAMS = new Set(["jee-main", "neet-ug"]);
+const NEET_YEARS = Array.from({ length: 2025 - 2006 + 1 }, (_, index) => String(2006 + index));
+const SUPPORTED_YEARS_BY_EXAM: Record<string, Set<string>> = {
+  "jee-main": new Set(jeeCatalog.years.map((folder) => folder.year)),
+  "neet-ug": new Set(NEET_YEARS),
+};
 const MISTI_PROGRESS_OWNER = "misti";
 const YEAR_PATTERN = /^\d{4}$/;
 
@@ -59,7 +63,7 @@ export async function PATCH(req: NextRequest) {
     const exam = normalizeExam(body.exam || "jee-main");
     const year = String(body.year || "").trim();
 
-    if (!exam || !YEAR_PATTERN.test(year) || !SUPPORTED_YEARS.has(year)) {
+    if (!exam || !YEAR_PATTERN.test(year) || !SUPPORTED_YEARS_BY_EXAM[exam]?.has(year)) {
       return NextResponse.json({ error: "Valid exam and year are required" }, { status: 400 });
     }
 

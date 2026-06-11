@@ -233,6 +233,14 @@ export default function SignInPage() {
           display: flex; align-items: center; justify-content: center; gap: 6px;
           font-size: 12px; color: var(--text-muted); text-align: center;
         }
+        @media (max-width: 480px) {
+          .signin-page { padding: 14px; align-items: flex-start; padding-top: max(7vh, 28px); }
+          .signin-wrap { padding: 30px 22px; gap: 19px; }
+          .signin-title { font-size: 24px; }
+          .signin-greeting-title { font-size: 17px; }
+          .signin-orb-1 { width: 380px; height: 380px; }
+          .signin-orb-2 { width: 320px; height: 320px; }
+        }
       `}</style>
     </div>
   );

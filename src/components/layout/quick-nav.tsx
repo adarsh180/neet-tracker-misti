@@ -20,6 +20,9 @@ import {
   TrendingUp,
   ListTodo,
   FolderOpen,
+  Sunrise,
+  ClipboardCheck,
+  Swords,
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
 import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
@@ -34,15 +37,18 @@ type NavItem = {
 
 const EXECUTION_ITEMS: NavItem[] = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", accent: "#d4a853" },
+  { href: "/planner", icon: Sunrise, label: "Day Planner", accent: "#f5b85b" },
   { href: "/todo", icon: ListTodo, label: "Todo Deck", accent: "#f59e0b" },
   { href: "/daily-goals", icon: Target, label: "Daily Goals", accent: "#e8728a" },
   { href: "/tests", icon: BarChart2, label: "Tests", accent: "#5b9cf5" },
+  { href: "/practice", icon: Swords, label: "Practice Arena", accent: "#d4a853" },
   { href: "/visual-lab", icon: Atom, label: "Visual Lab", accent: "#4dd6ff" },
   { href: "/mood", icon: SmilePlus, label: "Mood Tracker", accent: "#b680d9" },
 ] ;
 
 const AI_ITEMS: NavItem[] = [
   { href: "/ai-insights", icon: Sparkles, label: "AI Insights", accent: "#d4a853" },
+  { href: "/reviews", icon: ClipboardCheck, label: "Review Cards", accent: "#5ecb7b" },
   { href: "/todo?focus=mission", icon: Target, label: "Mission Planner", accent: "#e8728a" },
   { href: "/todo?focus=copilot", icon: Brain, label: "Task Copilot", accent: "#f59e0b" },
   { href: "/ai-insights/neet-guru", icon: Brain, label: "NEET-GURU", accent: "#d4a853" },
