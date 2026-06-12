@@ -4,6 +4,13 @@
 import "dotenv/config";
 import { defineConfig, env } from "prisma/config";
 
+const isGenerateCommand = process.argv.some((arg) => arg === "generate");
+const databaseUrl =
+  process.env.DATABASE_URL ??
+  (isGenerateCommand
+    ? "postgresql://prisma:prisma@localhost:5432/prisma_generate"
+    : env("DATABASE_URL"));
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
@@ -11,6 +18,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: env("DATABASE_URL"),
+    url: databaseUrl,
   },
 });
