@@ -6,6 +6,7 @@ import {
   PRACTICE_MIN_QUESTIONS,
   PRACTICE_SUBJECTS,
   createPracticeTest,
+  normalizeAiFreshPercent,
   sanitizePracticeTest,
   type PracticeConfig,
   type PracticeMode,
@@ -76,9 +77,7 @@ export async function POST(request: NextRequest) {
   }
 
   const difficulty = DIFFICULTIES.has(body.difficulty) ? body.difficulty : "MIXED";
-  const aiFreshPercent = Number.isFinite(Number(body.aiFreshPercent))
-    ? Math.max(0, Math.min(20, Math.round(Number(body.aiFreshPercent))))
-    : undefined;
+  const aiFreshPercent = normalizeAiFreshPercent(body.aiFreshPercent);
   const classLevel = body.classLevel === "11" || body.classLevel === "12" ? body.classLevel : null;
   if ((mode === "UNIT" || mode === "SECTIONAL") && !classLevel) {
     return NextResponse.json({ error: "Class level is required for this mode" }, { status: 400 });

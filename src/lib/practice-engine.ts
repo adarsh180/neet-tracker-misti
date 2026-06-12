@@ -31,6 +31,8 @@ export const PRACTICE_BATCH_SIZE = 5;
 const PRACTICE_MODELS = [AI_MODELS.fallback1, AI_MODELS.primary, AI_MODELS.emergencyFallback];
 export const PRACTICE_MIN_QUESTIONS = 50;
 export const PRACTICE_MAX_QUESTIONS = 180;
+export const PRACTICE_DEFAULT_AI_FRESH_PERCENT = 3;
+export const PRACTICE_MAX_AI_FRESH_PERCENT = 4;
 
 export const PRACTICE_SUBJECTS = ["physics", "chemistry", "botany", "zoology"] as const;
 export type PracticeSubjectSlug = (typeof PRACTICE_SUBJECTS)[number];
@@ -121,6 +123,12 @@ export function practiceSourceLabel(source: PracticeSource) {
   return SOURCE_LABELS[source] ?? source;
 }
 
+export function normalizeAiFreshPercent(value: unknown) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return PRACTICE_DEFAULT_AI_FRESH_PERCENT;
+  return Math.max(0, Math.min(PRACTICE_MAX_AI_FRESH_PERCENT, Math.round(numeric)));
+}
+
 // ---------------------------------------------------------------------------
 // Test creation
 // ---------------------------------------------------------------------------
@@ -154,7 +162,7 @@ function buildTitle(config: PracticeConfig) {
 
 export async function createPracticeTest(config: PracticeConfig) {
   const count = Math.max(PRACTICE_MIN_QUESTIONS, Math.min(PRACTICE_MAX_QUESTIONS, Math.round(config.questionCount)));
-  const aiFreshPercent = Math.max(0, Math.min(20, Math.round(config.aiFreshPercent ?? 6)));
+  const aiFreshPercent = normalizeAiFreshPercent(config.aiFreshPercent);
   const durationMinutes = Math.max(1, Math.min(180, Math.round(config.durationMinutes ?? count)));
   const weakZones = await snapshotWeakZones();
   const filters = {
@@ -376,7 +384,7 @@ export async function generateNextBatch(testId: string) {
 
   let existing = test.questionsJson as unknown as PracticeQuestion[];
   let model = test.model;
-  const aiFreshPercent = Math.max(0, Math.min(20, Math.round(test.aiFreshPercent ?? 6)));
+  const aiFreshPercent = normalizeAiFreshPercent(test.aiFreshPercent);
   const aiFreshCount = Math.round((test.questionCount * aiFreshPercent) / 100);
   const bankTarget = Math.max(0, test.questionCount - aiFreshCount);
   const existingBankIds = existing.map((question) => question.bankId).filter((id): id is string => Boolean(id));

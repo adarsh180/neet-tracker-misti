@@ -431,7 +431,7 @@ function PracticeList({
         <div className="cbt-brand-mark"><ShieldCheck size={22} /></div>
         <div>
           <h1>NTA CBT Practice Arena</h1>
-          <p>Real bank questions, 6% fresh AI items, saved snapshots, strict running-mode security.</p>
+          <p>Real bank questions, 3% fresh AI items, saved snapshots, strict running-mode security.</p>
         </div>
         <button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button>
       </header>
@@ -519,7 +519,7 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
         pyqYear: mode === "PYQ_YEAR" ? pyqYear : null,
         questionCount,
         durationMinutes,
-        aiFreshPercent: 6,
+        aiFreshPercent: 3,
         difficulty,
       };
       const response = await fetch("/api/practice", {
@@ -1278,4 +1278,3 @@ export function AnswerReview({ questions, answers }: { questions: Question[]; an
     </section>
   );
 }
-
