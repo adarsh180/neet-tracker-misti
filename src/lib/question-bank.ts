@@ -430,7 +430,7 @@ async function fillSubjectShortfallByChapter(options: {
       if ((counts.get(chapter.chapter) ?? 0) >= cap) continue;
       const row = await selectBankRows(
         {
-          qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET"] },
+          qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
           subject: options.subject,
           classLevel: options.classLevel ?? undefined,
           chapter: chapter.chapter,
@@ -449,7 +449,7 @@ async function fillSubjectShortfallByChapter(options: {
     const remaining = options.desiredCount - picked.length;
     const overflow = await selectBankRows(
       {
-        qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET"] },
+        qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
         subject: options.subject,
         classLevel: options.classLevel ?? undefined,
       },
@@ -494,7 +494,7 @@ async function assembleTrendQuestions(
       let chapterPicked = 0;
       for (const diffBucket of splitDifficulty(chapterQuota.count, request.difficulty)) {
         const baseWhere: Prisma.BankQuestionWhereInput = {
-          qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET"] },
+          qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
           subject: subjectQuota.subject,
           classLevel: request.classLevel ?? undefined,
           chapter: chapterQuota.chapter,
@@ -629,7 +629,7 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
     for (const diffBucket of splitDifficulty(subjectBucket.count, request.difficulty)) {
       const where: Prisma.BankQuestionWhereInput = {
-        qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET"] },
+        qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
         subject,
         classLevel: request.classLevel ?? undefined,
         difficulty: diffBucket.difficulty,
