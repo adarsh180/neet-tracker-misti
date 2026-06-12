@@ -7,6 +7,7 @@ import { extractJsonArray } from "./ai-json";
 import { db } from "./db";
 import { AI_MODELS, chatWithAI } from "./openrouter";
 import type { PracticeDifficulty, PracticeQuestion, PracticeSource, PracticeSubjectSlug } from "./practice-engine";
+import { cleanQuestionOptions, cleanQuestionText } from "./text-cleanup";
 import { buildTrendAssemblyPlan, shouldUseTrendAssembly } from "./trend-blueprint";
 
 export const BANK_CHAPTER_QUOTA = 2000;
@@ -146,7 +147,7 @@ export function validateBankQuestion(raw: RawBankQuestion, verifiedDefault = fal
   const chapterEntry = canonicalizeChapter(subject, String(raw.chapter ?? ""));
   if (!chapterEntry) return { question: null, reason: "chapter is not canonicalizable" };
 
-  const options = coerceOptions(raw);
+  const options = cleanQuestionOptions(coerceOptions(raw));
   if (options.length !== 4 || options.some((option) => !option)) return { question: null, reason: "requires four non-empty options" };
 
   const correctIndex = parseCorrectIndex(raw.correctIndex);
@@ -161,10 +162,10 @@ export function validateBankQuestion(raw: RawBankQuestion, verifiedDefault = fal
   const difficulty = String(raw.difficulty ?? "MODERATE").trim().toUpperCase() as PracticeDifficulty;
   if (!DIFFICULTIES.has(difficulty)) return { question: null, reason: "unknown difficulty" };
 
-  const questionText = String(raw.question ?? "").trim();
+  const questionText = cleanQuestionText(raw.question);
   if (!questionText) return { question: null, reason: "question is required" };
 
-  const explanation = String(raw.explanation ?? "").trim();
+  const explanation = cleanQuestionText(raw.explanation);
   if (!explanation) return { question: null, reason: "explanation is required" };
 
   const classLevel = String(raw.classLevel ?? chapterEntry.classLevel).trim() || chapterEntry.classLevel;
@@ -313,7 +314,7 @@ function splitDifficulty(total: number, difficulty: "MIXED" | PracticeDifficulty
 }
 
 function bankRowToPracticeQuestion(row: BankQuestion, questionNumber: number): PracticeQuestion {
-  const options = Array.isArray(row.optionsJson) ? row.optionsJson.map(String) : [];
+  const options = Array.isArray(row.optionsJson) ? cleanQuestionOptions(row.optionsJson) : [];
   return {
     id: `q${questionNumber}`,
     bankId: row.id,
@@ -323,10 +324,10 @@ function bankRowToPracticeQuestion(row: BankQuestion, questionNumber: number): P
     source: row.source as PracticeSource,
     sourceRef: row.sourceRef,
     difficulty: row.difficulty as PracticeDifficulty,
-    question: row.question,
+    question: cleanQuestionText(row.question),
     options,
     correctIndex: row.correctIndex,
-    explanation: row.explanation,
+    explanation: cleanQuestionText(row.explanation),
     verified: row.verified || row.qualityStatus === "VERIFIED_STRICT",
   };
 }
@@ -662,7 +663,7 @@ export async function writeBackBankStats(questions: PracticeQuestion[], answerMa
 }
 
 function bankRowToValidated(row: BankQuestion): ValidatedBankQuestion {
-  const options = Array.isArray(row.optionsJson) ? row.optionsJson.map(String) : [];
+  const options = Array.isArray(row.optionsJson) ? cleanQuestionOptions(row.optionsJson) : [];
   return {
     subject: row.subject as NeetSubject,
     classLevel: row.classLevel,
@@ -671,10 +672,10 @@ function bankRowToValidated(row: BankQuestion): ValidatedBankQuestion {
     source: row.source as BankSource,
     sourceRef: row.sourceRef,
     difficulty: row.difficulty as PracticeDifficulty,
-    question: row.question,
+    question: cleanQuestionText(row.question),
     options,
     correctIndex: row.correctIndex,
-    explanation: row.explanation,
+    explanation: cleanQuestionText(row.explanation),
     verified: row.verified,
     contentHash: row.contentHash,
   };

@@ -6,6 +6,7 @@ import { extractJsonArray } from "@/lib/ai-json";
 import { db } from "@/lib/db";
 import { AI_MODELS, chatWithAI } from "@/lib/openrouter";
 import { assembleQuestionsFromBank, writeBackBankStats, type BankAssemblyAudit } from "@/lib/question-bank";
+import { cleanQuestionOptions, cleanQuestionText } from "@/lib/text-cleanup";
 import { buildDistributionAudit, TREND_BLUEPRINT_VERSION, TREND_FULL_TEMPLATE } from "@/lib/trend-blueprint";
 
 /**
@@ -282,8 +283,9 @@ function buildGenerationPrompt(test: PracticeTest, batchSize: number, existing: 
 4. Options must be plausible, mutually exclusive, similar length. Exactly one correct.
 5. Assertion-Reason and Match-the-column formats are allowed (state them fully in the question text).
 6. The correctIndex MUST be verifiably correct — solve each question yourself before keying it.
-7. BE COMPACT: keep each question under 90 words, each option under 18 words, each explanation under 45 words. The whole array must stay well under 3000 tokens.
-8. Every array item MUST be a complete JSON object wrapped in { } with all the keys from rule 2.${avoid ? `\n9. Do not repeat these already-used questions:\n${avoid}` : ""}`,
+7. Write clean UTF-8 text only. For equations prefer LaTeX commands like \\times, \\Delta, \\leq, \\geq, \\to, \\mu, and \\pi. Never output broken encoding artifacts or unreadable copied symbols.
+8. BE COMPACT: keep each question under 90 words, each option under 18 words, each explanation under 45 words. The whole array must stay well under 3000 tokens.
+9. Every array item MUST be a complete JSON object wrapped in { } with all the keys from rule 2.${avoid ? `\n10. Do not repeat these already-used questions:\n${avoid}` : ""}`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -300,7 +302,7 @@ function validateBatch(raw: RawQuestion[] | null, startIndex: number): PracticeQ
   const valid: PracticeQuestion[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
-    const options = Array.isArray(item.options) ? item.options.map(String) : [];
+    const options = Array.isArray(item.options) ? cleanQuestionOptions(item.options) : [];
     const correctIndex = Number(item.correctIndex);
     if (
       !item.question ||
@@ -318,12 +320,12 @@ function validateBatch(raw: RawQuestion[] | null, startIndex: number): PracticeQ
       chapter: String(item.chapter ?? "General"),
       topic: item.topic ? String(item.topic) : null,
       source: sources.has(item.source as PracticeSource) ? (item.source as PracticeSource) : "AI",
-      sourceRef: String(item.sourceRef ?? "Original"),
+      sourceRef: cleanQuestionText(item.sourceRef ?? "Original"),
       difficulty: difficulties.has(item.difficulty as PracticeDifficulty) ? (item.difficulty as PracticeDifficulty) : "MODERATE",
-      question: String(item.question),
+      question: cleanQuestionText(item.question),
       options,
       correctIndex,
-      explanation: String(item.explanation ?? ""),
+      explanation: cleanQuestionText(item.explanation),
       verified: false,
     });
   }
@@ -731,14 +733,14 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
           chapter: question.chapter,
           topic: question.topic,
           source: question.source,
-          sourceRef: question.sourceRef,
+          sourceRef: cleanQuestionText(question.sourceRef),
           difficulty: question.difficulty,
-          question: question.question,
-          options: question.options,
+          question: cleanQuestionText(question.question),
+          options: cleanQuestionOptions(question.options),
           verified: question.verified,
           // The key and reasoning unlock only after submission.
           correctIndex: completed ? question.correctIndex : null,
-          explanation: completed ? question.explanation : null,
+          explanation: completed ? cleanQuestionText(question.explanation) : null,
         }))
       : undefined,
   };
