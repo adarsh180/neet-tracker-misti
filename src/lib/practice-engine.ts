@@ -376,12 +376,15 @@ export async function generateNextBatch(testId: string) {
 
   let existing = test.questionsJson as unknown as PracticeQuestion[];
   let model = test.model;
+  const aiFreshPercent = Math.max(0, Math.min(20, Math.round(test.aiFreshPercent ?? 6)));
+  const aiFreshCount = Math.round((test.questionCount * aiFreshPercent) / 100);
+  const bankTarget = Math.max(0, test.questionCount - aiFreshCount);
+  const existingBankIds = existing.map((question) => question.bankId).filter((id): id is string => Boolean(id));
+  const existingBankCount = existingBankIds.length;
 
-  if (existing.length === 0) {
-    const aiFreshPercent = Math.max(0, Math.min(20, Math.round(test.aiFreshPercent ?? 6)));
-    const aiFreshCount = Math.round((test.questionCount * aiFreshPercent) / 100);
-    const bankTarget = Math.max(0, test.questionCount - aiFreshCount);
-    if (bankTarget > 0) {
+  if (bankTarget > existingBankCount) {
+    const neededFromBank = bankTarget - existingBankCount;
+    if (neededFromBank > 0) {
       const bankQuestions = await assembleQuestionsFromBank({
         mode: test.mode as PracticeMode,
         subject: test.subject as PracticeSubjectSlug | null,
@@ -393,21 +396,38 @@ export async function generateNextBatch(testId: string) {
         pyqYear: test.pyqYear,
         questionCount: test.questionCount,
         difficulty: test.difficulty as PracticeConfig["difficulty"],
-        desiredCount: bankTarget,
+        desiredCount: neededFromBank,
         startIndex: existing.length,
+        excludeBankIds: existingBankIds,
       });
       if (bankQuestions.length) {
         existing = [...existing, ...bankQuestions];
         model = bankQuestions.length >= test.questionCount ? "question-bank" : `question-bank+${test.model ?? "ai"}`;
       }
+      if (bankQuestions.length < neededFromBank) {
+        const filters = test.filtersJson ? JSON.stringify(test.filtersJson) : "{}";
+        throw new Error(
+          `Question bank shortage: needed ${neededFromBank} more bank questions for ${test.mode}, but found ${bankQuestions.length}. ` +
+            `This usually means the deployed database has not been imported/refined, or the filters are too strict. Filters=${filters}`,
+        );
+      }
     }
   }
 
   const remaining = test.questionCount - existing.length;
-  const batchSize = Math.min(PRACTICE_BATCH_SIZE, Math.max(remaining, 0));
+  const existingLiveAiCount = existing.filter((question) => !question.bankId).length;
+  const liveAiRemaining = Math.max(0, aiFreshCount - existingLiveAiCount);
+  const batchSize = Math.min(PRACTICE_BATCH_SIZE, Math.max(remaining, 0), liveAiRemaining);
   const weakZones = (test.weakZonesJson as unknown as WeakZone[]) ?? [];
 
   let added: PracticeQuestion[] = [];
+
+  if (remaining > 0 && liveAiRemaining <= 0) {
+    throw new Error(
+      `Question assembly stopped because the ${aiFreshPercent}% live-AI cap is already reached. ` +
+        `Bank questions=${existingBankCount}/${bankTarget}, live AI=${existingLiveAiCount}/${aiFreshCount}.`,
+    );
+  }
 
   if (batchSize > 0) {
     const messages = [
