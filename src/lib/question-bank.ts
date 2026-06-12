@@ -7,7 +7,7 @@ import { extractJsonArray } from "./ai-json";
 import { db } from "./db";
 import { AI_MODELS, chatWithAI } from "./openrouter";
 import type { PracticeDifficulty, PracticeQuestion, PracticeSource, PracticeSubjectSlug } from "./practice-engine";
-import { cleanQuestionOptions, cleanQuestionText } from "./text-cleanup";
+import { cleanQuestionOptions, cleanQuestionText, isPlaceholderText } from "./text-cleanup";
 import { buildTrendAssemblyPlan, shouldUseTrendAssembly } from "./trend-blueprint";
 
 export const BANK_CHAPTER_QUOTA = 2000;
@@ -123,7 +123,11 @@ function parseCorrectIndex(input: unknown) {
 }
 
 function coerceOptions(raw: RawBankQuestion) {
-  if (Array.isArray(raw.options)) return raw.options.map((option) => String(option ?? "").trim());
+  if (Array.isArray(raw.options)) return cleanQuestionOptions(raw.options);
+  if (raw.options && typeof raw.options === "object") {
+    const record = raw.options as Record<string, unknown>;
+    return ["A", "B", "C", "D"].map((letter) => record[letter] ?? record[letter.toLowerCase()]);
+  }
   return [raw.optionA, raw.optionB, raw.optionC, raw.optionD].map((option) => String(option ?? "").trim());
 }
 
@@ -148,7 +152,7 @@ export function validateBankQuestion(raw: RawBankQuestion, verifiedDefault = fal
   if (!chapterEntry) return { question: null, reason: "chapter is not canonicalizable" };
 
   const options = cleanQuestionOptions(coerceOptions(raw));
-  if (options.length !== 4 || options.some((option) => !option)) return { question: null, reason: "requires four non-empty options" };
+  if (options.length !== 4 || options.some((option) => isPlaceholderText(option))) return { question: null, reason: "requires four readable options" };
 
   const correctIndex = parseCorrectIndex(raw.correctIndex);
   if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex > 3) return { question: null, reason: "correctIndex must be 0-3 or A-D" };
@@ -164,6 +168,7 @@ export function validateBankQuestion(raw: RawBankQuestion, verifiedDefault = fal
 
   const questionText = cleanQuestionText(raw.question);
   if (!questionText) return { question: null, reason: "question is required" };
+  if (isLowQualityQuestionText(questionText)) return { question: null, reason: "question contains generator artifacts" };
 
   const explanation = cleanQuestionText(raw.explanation);
   if (!explanation) return { question: null, reason: "explanation is required" };
@@ -339,6 +344,24 @@ function bankQualityRank(row: BankQuestion) {
   return 2;
 }
 
+function isLowQualityQuestionText(question: string) {
+  return (
+    isPlaceholderText(question) ||
+    /\b(?:table|item|case)\s+\d{3}-\d{2}\b/i.test(question) ||
+    /^\s*Assertion-Reason\s+\d{3}-\d{2}\s*:/i.test(question) ||
+    /\b(?:Table\/matching item|Lengthy case)\s+\d+-\d+\b/i.test(question)
+  );
+}
+
+function isServeableBankRow(row: BankQuestion) {
+  const options = Array.isArray(row.optionsJson) ? cleanQuestionOptions(row.optionsJson) : [];
+  if (options.length !== 4 || options.some((option) => isPlaceholderText(option))) return false;
+  if (!Number.isInteger(row.correctIndex) || row.correctIndex < 0 || row.correctIndex > 3) return false;
+  if (isLowQualityQuestionText(cleanQuestionText(row.question))) return false;
+  if (isPlaceholderText(row.explanation)) return false;
+  return true;
+}
+
 function pushWarning(audit: BankAssemblyAudit | undefined, warning: string) {
   if (!audit || audit.warnings.includes(warning)) return;
   audit.warnings.push(warning);
@@ -359,7 +382,7 @@ async function selectBankRows(
     take: Math.max(requested * 10, requested),
   });
   const picked: BankQuestion[] = [];
-  for (const row of shuffle(pool.filter((candidate) => !state.exclude.has(candidate.id))).sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)) {
+  for (const row of shuffle(pool.filter((candidate) => !state.exclude.has(candidate.id) && isServeableBankRow(candidate))).sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)) {
     const cluster = row.duplicateClusterId;
     if (cluster && state.duplicateClusters.has(cluster)) continue;
     picked.push(row);
@@ -621,7 +644,7 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
         orderBy: [{ timesServed: "asc" }, { lastServedAt: "asc" }, { createdAt: "asc" }],
         take: Math.max(diffBucket.count * 8, diffBucket.count),
       });
-      const picked = shuffle(pool.filter((row) => !exclude.has(row.id)))
+      const picked = shuffle(pool.filter((row) => !exclude.has(row.id) && isServeableBankRow(row)))
         .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)
         .slice(0, diffBucket.count);
       picked.forEach((row) => exclude.add(row.id));

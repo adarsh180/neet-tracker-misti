@@ -55,8 +55,21 @@ const HTML_ENTITIES: Array<[RegExp, string]> = [
   [/&amp;/gi, "&"],
 ];
 
+function textFromObject(value: Record<string, unknown>) {
+  for (const key of ["text", "value", "label", "content", "option", "answer", "body", "statement", "name"]) {
+    const entry = value[key];
+    if (typeof entry === "string" || typeof entry === "number") return String(entry);
+  }
+  const primitiveValues = Object.values(value).filter((entry) => typeof entry === "string" || typeof entry === "number");
+  if (primitiveValues.length === 1) return String(primitiveValues[0]);
+  return "";
+}
+
 export function cleanQuestionText(value: unknown) {
-  let text = String(value ?? "");
+  let text =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? textFromObject(value as Record<string, unknown>)
+      : String(value ?? "");
   for (const [pattern, replacement] of HTML_ENTITIES) text = text.replace(pattern, replacement);
   for (const [pattern, replacement] of MOJIBAKE_REPLACEMENTS) text = text.replace(pattern, replacement);
   return text
@@ -68,6 +81,11 @@ export function cleanQuestionText(value: unknown) {
     .replace(/\s+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+export function isPlaceholderText(value: unknown) {
+  const text = cleanQuestionText(value);
+  return !text || /^\[object Object\]$/i.test(text) || /^(?:undefined|null|nan)$/i.test(text);
 }
 
 export function hasUnreadableText(value: unknown) {
