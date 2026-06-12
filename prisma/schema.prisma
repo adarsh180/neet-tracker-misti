@@ -547,17 +547,29 @@ model ReviewCard {
 model PracticeTest {
   id             String    @id @default(cuid())
   title          String
-  mode           String    // FULL_LENGTH | SUBJECT | CHAPTER | TOPIC | PYQ_YEAR
+  mode           String    // FULL_LENGTH | SECTIONAL | UNIT | SUBJECT | CHAPTER | TOPIC | PYQ_YEAR
   subject        String?   // subject slug, null for full syllabus
   chapter        String?
   topic          String?
   pyqYear        String?
   questionCount  Int
+  aiFreshPercent Int       @default(6)
+  durationMinutes Int      @default(180)
   difficulty     String    @default("MIXED") // MIXED | EASY | MODERATE | TOUGH
-  status         String    @default("GENERATING") // GENERATING | READY | COMPLETED
+  status         String    @default("GENERATING") // GENERATING | READY | RUNNING | PAUSED | COMPLETED
+  filtersJson    Json?
   questionsJson  Json      // questions incl. private correctIndex/explanation
   weakZonesJson  Json?     // weak-zone snapshot used to steer generation
   answersJson    Json?
+  questionStatusesJson Json?
+  currentQuestionIndex Int @default(0)
+  remainingSeconds Int?
+  pauseLogsJson Json?
+  securityEventsJson Json?
+  submitType String?
+  autoSubmitReason String?
+  totalActiveSeconds Int?
+  totalPausedSeconds Int?
   resultJson     Json?
   model          String?
   testRecordId   String?
@@ -569,6 +581,59 @@ model PracticeTest {
 
   @@index([status, createdAt])
   @@map("practice_tests")
+}
+
+model BankQuestion {
+  id           String    @id @default(cuid())
+  subject      String
+  classLevel   String?
+  chapter      String
+  topic        String?
+  source       String
+  sourceRef    String
+  difficulty   String
+  question     String    @db.Text
+  optionsJson  Json
+  correctIndex Int
+  explanation  String    @db.Text
+  verified     Boolean   @default(false)
+  qualityStatus String   @default("UNVERIFIED") // UNVERIFIED | VERIFIED_STRICT | NEEDS_REVIEW | REJECTED
+  qualityScore  Float?
+  verifiedAt    DateTime?
+  rejectedAt    DateTime?
+  verifierModel String?
+  verifierRuns  Json?
+  rejectReason  String?  @db.Text
+  contentHash  String    @unique @db.VarChar(64)
+  timesServed  Int       @default(0)
+  timesCorrect Int       @default(0)
+  timesWrong   Int       @default(0)
+  lastServedAt DateTime?
+  importBatch  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([subject, chapter, difficulty])
+  @@index([subject, chapter, source])
+  @@index([subject, chapter, lastServedAt])
+  @@map("bank_questions")
+}
+
+model BankFillJob {
+  id        String   @id @default(cuid())
+  subject   String
+  chapter   String
+  requested Int
+  inserted  Int      @default(0)
+  rejected  Int      @default(0)
+  status    String   @default("RUNNING")
+  model     String?
+  error     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([subject, chapter, createdAt])
+  @@map("bank_fill_jobs")
 }
 
 model PyqDocument {

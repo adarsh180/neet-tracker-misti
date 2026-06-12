@@ -1,7 +1,9 @@
 import type { PracticeTest, Prisma } from "@prisma/client";
 
+import { extractJsonArray } from "@/lib/ai-json";
 import { db } from "@/lib/db";
 import { AI_MODELS, chatWithAI } from "@/lib/openrouter";
+import { assembleQuestionsFromBank, writeBackBankStats } from "@/lib/question-bank";
 
 /**
  * Practice Arena — the question-paper engine.
@@ -40,12 +42,13 @@ const SUBJECT_NAMES: Record<PracticeSubjectSlug, string> = {
   zoology: "Zoology",
 };
 
-export type PracticeMode = "FULL_LENGTH" | "SUBJECT" | "CHAPTER" | "TOPIC" | "PYQ_YEAR";
-export type PracticeSource = "NEET_PYQ" | "JEE_PYQ" | "INSTITUTE" | "PLATFORM" | "AI";
+export type PracticeMode = "FULL_LENGTH" | "SECTIONAL" | "UNIT" | "SUBJECT" | "CHAPTER" | "TOPIC" | "PYQ_YEAR";
+export type PracticeSource = "NEET_PYQ" | "JEE_PYQ" | "INSTITUTE" | "PLATFORM" | "NCERT" | "AI";
 export type PracticeDifficulty = "EASY" | "MODERATE" | "TOUGH";
 
 export type PracticeQuestion = {
   id: string;
+  bankId?: string;
   subject: string; // display name
   chapter: string;
   topic: string | null;
@@ -60,6 +63,10 @@ export type PracticeQuestion = {
 };
 
 export type PracticeAnswer = { id: string; optionIndex: number | null };
+export type CBTQuestionStatus = "NOT_VISITED" | "NOT_ANSWERED" | "ANSWERED" | "MARKED_FOR_REVIEW" | "ANSWERED_MARKED_FOR_REVIEW";
+
+export type CBTSubmitType = "MANUAL" | "AUTO" | "TIME_UP";
+export type CBTAutoSubmitReason = "TAB_SWITCH" | "FULLSCREEN_EXIT" | "BACK_NAVIGATION" | "RELOAD" | "WINDOW_BLUR" | "ROUTE_LEAVE" | "TIME_UP";
 
 export type PracticeResult = {
   score: number;
@@ -78,8 +85,25 @@ export type PracticeConfig = {
   chapter?: string | null;
   topic?: string | null;
   pyqYear?: string | null;
+  classLevel?: string | null;
+  subjects?: PracticeSubjectSlug[] | null;
+  chapters?: string[] | null;
   questionCount: number;
+  aiFreshPercent?: number | null;
+  durationMinutes?: number | null;
   difficulty: "MIXED" | PracticeDifficulty;
+};
+
+export type PracticeSubmitMeta = {
+  submitType?: CBTSubmitType;
+  autoSubmitReason?: CBTAutoSubmitReason | null;
+  questionStatuses?: Record<string, CBTQuestionStatus>;
+  currentQuestionIndex?: number;
+  remainingSeconds?: number;
+  pauseLogs?: unknown[];
+  securityEvents?: unknown[];
+  totalActiveSeconds?: number;
+  totalPausedSeconds?: number;
 };
 
 type WeakZone = { subject: string; chapter: string | null; topic: string | null; wrong: number };
@@ -89,93 +113,12 @@ const SOURCE_LABELS: Record<PracticeSource, string> = {
   JEE_PYQ: "JEE Main PYQ",
   INSTITUTE: "Institute series",
   PLATFORM: "Platform standard",
+  NCERT: "NCERT",
   AI: "AI original",
 };
 
 export function practiceSourceLabel(source: PracticeSource) {
   return SOURCE_LABELS[source] ?? source;
-}
-
-function safeJsonParse<T>(input: string): T | null {
-  try {
-    return JSON.parse(input) as T;
-  } catch {
-    return null;
-  }
-}
-
-function extractJson<T>(input: string): T | null {
-  const direct = safeJsonParse<T>(input);
-  if (direct) return direct;
-  const fenced = input.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
-  if (fenced) {
-    const parsed = safeJsonParse<T>(fenced.trim());
-    if (parsed) return parsed;
-  }
-  const start = input.indexOf("{");
-  const end = input.lastIndexOf("}");
-  if (start >= 0 && end > start) return safeJsonParse<T>(input.slice(start, end + 1));
-  const arrStart = input.indexOf("[");
-  const arrEnd = input.lastIndexOf("]");
-  if (arrStart >= 0 && arrEnd > arrStart) return safeJsonParse<T>(input.slice(arrStart, arrEnd + 1));
-  return null;
-}
-
-/**
- * Pulls a JSON array of objects out of messy model output. Handles reasoning
- * preambles (`<thought>` blocks, closed or unclosed), fenced code, wrapper
- * objects, and token-limit truncation (salvages every complete item).
- */
-function extractJsonArray<T>(input: string): T[] | null {
-  // Closed reasoning blocks can be stripped safely; unclosed ones are handled
-  // by scanning for array-of-object starts below.
-  const cleaned = input.replace(/<(thought|thinking)>[\s\S]*?<\/\1>/gi, "").trim();
-
-  const tryParse = (slice: string): T[] | null => {
-    const parsed = safeJsonParse<unknown>(slice);
-    return Array.isArray(parsed) ? (parsed as T[]) : null;
-  };
-
-  const direct = tryParse(cleaned);
-  if (direct) return direct;
-
-  const fenced = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
-  if (fenced) {
-    const parsed = tryParse(fenced.trim());
-    if (parsed) return parsed;
-  }
-
-  // Scan every `[ {` position (the real payload may sit after an unclosed
-  // reasoning preamble); keep the largest array that parses.
-  const starts: number[] = [];
-  const startPattern = /\[\s*\{/g;
-  let match: RegExpExecArray | null;
-  while ((match = startPattern.exec(cleaned)) && starts.length < 12) starts.push(match.index);
-
-  let best: T[] | null = null;
-  for (const start of starts) {
-    let candidate: T[] | null = null;
-    const lastBracket = cleaned.lastIndexOf("]");
-    if (lastBracket > start) candidate = tryParse(cleaned.slice(start, lastBracket + 1));
-
-    // Truncation salvage: close the array after the last complete object.
-    if (!candidate) {
-      let lastBrace = cleaned.lastIndexOf("}");
-      for (let attempts = 0; attempts < 40 && lastBrace > start && !candidate; attempts++) {
-        candidate = tryParse(`${cleaned.slice(start, lastBrace + 1)}]`);
-        lastBrace = cleaned.lastIndexOf("}", lastBrace - 1);
-      }
-    }
-    if (candidate && (!best || candidate.length > best.length)) best = candidate;
-  }
-  if (best) return best;
-
-  const wrapped = extractJson<unknown>(cleaned);
-  if (wrapped && typeof wrapped === "object" && !Array.isArray(wrapped)) {
-    const inner = Object.values(wrapped).find((value) => Array.isArray(value));
-    if (inner) return inner as T[];
-  }
-  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +154,16 @@ function buildTitle(config: PracticeConfig) {
 
 export async function createPracticeTest(config: PracticeConfig) {
   const count = Math.max(PRACTICE_MIN_QUESTIONS, Math.min(PRACTICE_MAX_QUESTIONS, Math.round(config.questionCount)));
+  const aiFreshPercent = Math.max(0, Math.min(20, Math.round(config.aiFreshPercent ?? 6)));
+  const durationMinutes = Math.max(1, Math.min(180, Math.round(config.durationMinutes ?? count)));
   const weakZones = await snapshotWeakZones();
+  const filters = {
+    classLevel: config.classLevel ?? null,
+    subjects: config.subjects?.length ? config.subjects : config.subject ? [config.subject] : null,
+    chapters: config.chapters?.length ? config.chapters : config.chapter ? [config.chapter] : null,
+    topic: config.topic ?? null,
+    pyqYear: config.pyqYear ?? null,
+  };
 
   return db.practiceTest.create({
     data: {
@@ -222,8 +174,11 @@ export async function createPracticeTest(config: PracticeConfig) {
       topic: config.topic ?? null,
       pyqYear: config.pyqYear ?? null,
       questionCount: count,
+      aiFreshPercent,
+      durationMinutes,
       difficulty: config.difficulty,
       status: "GENERATING",
+      filtersJson: filters as unknown as Prisma.InputJsonValue,
       questionsJson: [] as unknown as Prisma.InputJsonValue,
       weakZonesJson: weakZones as unknown as Prisma.InputJsonValue,
     },
@@ -300,7 +255,7 @@ function buildGenerationPrompt(test: PracticeTest, batchSize: number, existing: 
       : "",
     `FORMAT RULES:
 1. Respond with a valid JSON array ONLY. No markdown fences, no prose, no wrapper object.
-2. Each item: { "subject": "Physics|Chemistry|Botany|Zoology", "chapter": "exact NCERT chapter", "topic": "specific topic", "source": "NEET_PYQ|JEE_PYQ|INSTITUTE|PLATFORM|AI", "sourceRef": "string", "difficulty": "EASY|MODERATE|TOUGH", "question": "string", "options": ["A","B","C","D"], "correctIndex": 0-3, "explanation": "1-3 short sentences on why the key is right" }
+2. Each item: { "subject": "Physics|Chemistry|Botany|Zoology", "chapter": "exact NCERT chapter", "topic": "specific topic", "source": "NEET_PYQ|JEE_PYQ|INSTITUTE|PLATFORM|NCERT|AI", "sourceRef": "string", "difficulty": "EASY|MODERATE|TOUGH", "question": "string", "options": ["A","B","C","D"], "correctIndex": 0-3, "explanation": "1-3 short sentences on why the key is right" }
 3. Write all math/chemistry in LaTeX: inline $...$. Use \\times for multiplication. Plain text for biology.
 4. Options must be plausible, mutually exclusive, similar length. Exactly one correct.
 5. Assertion-Reason and Match-the-column formats are allowed (state them fully in the question text).
@@ -317,7 +272,7 @@ type RawQuestion = Partial<PracticeQuestion> & { options?: unknown };
 function validateBatch(raw: RawQuestion[] | null, startIndex: number): PracticeQuestion[] {
   if (!Array.isArray(raw)) return [];
   const subjects = new Set(Object.values(SUBJECT_NAMES));
-  const sources = new Set<PracticeSource>(["NEET_PYQ", "JEE_PYQ", "INSTITUTE", "PLATFORM", "AI"]);
+  const sources = new Set<PracticeSource>(["NEET_PYQ", "JEE_PYQ", "INSTITUTE", "PLATFORM", "NCERT", "AI"]);
   const difficulties = new Set<PracticeDifficulty>(["EASY", "MODERATE", "TOUGH"]);
 
   const valid: PracticeQuestion[] = [];
@@ -419,13 +374,40 @@ export async function generateNextBatch(testId: string) {
     return { status: test.status, generated: questions.length, target: test.questionCount, added: 0 };
   }
 
-  const existing = test.questionsJson as unknown as PracticeQuestion[];
+  let existing = test.questionsJson as unknown as PracticeQuestion[];
+  let model = test.model;
+
+  if (existing.length === 0) {
+    const aiFreshPercent = Math.max(0, Math.min(20, Math.round(test.aiFreshPercent ?? 6)));
+    const aiFreshCount = Math.round((test.questionCount * aiFreshPercent) / 100);
+    const bankTarget = Math.max(0, test.questionCount - aiFreshCount);
+    if (bankTarget > 0) {
+      const bankQuestions = await assembleQuestionsFromBank({
+        mode: test.mode as PracticeMode,
+        subject: test.subject as PracticeSubjectSlug | null,
+        subjects: ((test.filtersJson as { subjects?: PracticeSubjectSlug[] } | null)?.subjects ?? undefined),
+        classLevel: ((test.filtersJson as { classLevel?: string } | null)?.classLevel ?? undefined),
+        chapter: test.chapter,
+        chapters: ((test.filtersJson as { chapters?: string[] } | null)?.chapters ?? undefined),
+        topic: test.topic,
+        pyqYear: test.pyqYear,
+        questionCount: test.questionCount,
+        difficulty: test.difficulty as PracticeConfig["difficulty"],
+        desiredCount: bankTarget,
+        startIndex: existing.length,
+      });
+      if (bankQuestions.length) {
+        existing = [...existing, ...bankQuestions];
+        model = bankQuestions.length >= test.questionCount ? "question-bank" : `question-bank+${test.model ?? "ai"}`;
+      }
+    }
+  }
+
   const remaining = test.questionCount - existing.length;
   const batchSize = Math.min(PRACTICE_BATCH_SIZE, Math.max(remaining, 0));
   const weakZones = (test.weakZonesJson as unknown as WeakZone[]) ?? [];
 
   let added: PracticeQuestion[] = [];
-  let model = test.model;
 
   if (batchSize > 0) {
     const messages = [
@@ -521,11 +503,11 @@ function gradeTest(questions: PracticeQuestion[], answers: PracticeAnswer[], tim
 
 const ERROR_DIFFICULTY: Record<PracticeDifficulty, string> = { EASY: "EASY", MODERATE: "MEDIUM", TOUGH: "HARD" };
 
-export async function submitPracticeTest(testId: string, answers: PracticeAnswer[], timeTakenSeconds: number | null) {
+export async function submitPracticeTest(testId: string, answers: PracticeAnswer[], timeTakenSeconds: number | null, meta: PracticeSubmitMeta = {}) {
   const test = await db.practiceTest.findUnique({ where: { id: testId } });
   if (!test) throw new Error("Practice test not found");
   if (test.status === "COMPLETED") throw new Error("This test is already submitted");
-  if (test.status !== "READY") throw new Error("This test is still generating");
+  if (!["READY", "RUNNING", "PAUSED"].includes(test.status)) throw new Error("This test is still generating");
 
   const questions = test.questionsJson as unknown as PracticeQuestion[];
   const result = gradeTest(questions, answers, timeTakenSeconds);
@@ -533,7 +515,7 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
   const now = new Date();
 
   const subjectScore = (name: string) => result.subjectScores.find((entry) => entry.subject === name)?.score ?? null;
-  const isFullLength = test.mode === "FULL_LENGTH" || test.mode === "PYQ_YEAR";
+  const isFullLength = test.mode === "FULL_LENGTH" || test.mode === "PYQ_YEAR" || test.mode === "SECTIONAL";
 
   const subjectRow = test.subject ? await db.subject.findUnique({ where: { slug: test.subject } }) : null;
 
@@ -596,11 +578,22 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
     },
   });
 
+  await writeBackBankStats(questions, answerMap);
+
   const updated = await db.practiceTest.update({
     where: { id: test.id },
     data: {
       status: "COMPLETED",
       answersJson: answers as unknown as Prisma.InputJsonValue,
+      questionStatusesJson: (meta.questionStatuses ?? test.questionStatusesJson ?? null) as Prisma.InputJsonValue,
+      currentQuestionIndex: Number.isInteger(meta.currentQuestionIndex) ? Number(meta.currentQuestionIndex) : test.currentQuestionIndex,
+      remainingSeconds: Number.isFinite(Number(meta.remainingSeconds)) ? Math.max(0, Math.round(Number(meta.remainingSeconds))) : test.remainingSeconds,
+      pauseLogsJson: (meta.pauseLogs ?? test.pauseLogsJson ?? null) as Prisma.InputJsonValue,
+      securityEventsJson: (meta.securityEvents ?? test.securityEventsJson ?? null) as Prisma.InputJsonValue,
+      submitType: meta.submitType ?? "MANUAL",
+      autoSubmitReason: meta.autoSubmitReason ?? null,
+      totalActiveSeconds: Number.isFinite(Number(meta.totalActiveSeconds)) ? Math.max(0, Math.round(Number(meta.totalActiveSeconds))) : (timeTakenSeconds ?? null),
+      totalPausedSeconds: Number.isFinite(Number(meta.totalPausedSeconds)) ? Math.max(0, Math.round(Number(meta.totalPausedSeconds))) : null,
       resultJson: result as unknown as Prisma.InputJsonValue,
       testRecordId: testRecord.id,
       errorLogTestId: errorLogTest.id,
@@ -629,15 +622,28 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
     pyqYear: test.pyqYear,
     questionCount: test.questionCount,
     generatedCount: questions.length,
+    aiFreshPercent: test.aiFreshPercent,
+    durationMinutes: test.durationMinutes,
+    filters: test.filtersJson,
     difficulty: test.difficulty,
     status: test.status,
     model: test.model,
     createdAt: test.createdAt,
+    startedAt: test.startedAt,
     completedAt: test.completedAt,
     testRecordId: test.testRecordId,
     errorLogTestId: test.errorLogTestId,
     result: completed ? (test.resultJson as unknown as PracticeResult | null) : null,
-    answers: completed ? (test.answersJson as unknown as PracticeAnswer[] | null) : null,
+    answers: (test.answersJson as unknown as PracticeAnswer[] | null) ?? null,
+    questionStatuses: (test.questionStatusesJson as unknown as Record<string, CBTQuestionStatus> | null) ?? null,
+    currentQuestionIndex: test.currentQuestionIndex,
+    remainingSeconds: test.remainingSeconds,
+    pauseLogs: (test.pauseLogsJson as unknown as unknown[] | null) ?? null,
+    securityEvents: (test.securityEventsJson as unknown as unknown[] | null) ?? null,
+    submitType: test.submitType,
+    autoSubmitReason: test.autoSubmitReason,
+    totalActiveSeconds: test.totalActiveSeconds,
+    totalPausedSeconds: test.totalPausedSeconds,
     questions: includeQuestions
       ? questions.map((question) => ({
           id: question.id,

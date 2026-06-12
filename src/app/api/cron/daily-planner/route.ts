@@ -5,6 +5,7 @@ import {
   ensureDailyPlanner,
   getISTDateString,
 } from "@/lib/daily-planner";
+import { fillQuestionBank } from "@/lib/question-bank";
 import { ensurePeriodicReviews } from "@/lib/review-agent";
 
 export const dynamic = "force-dynamic";
@@ -53,5 +54,18 @@ export async function GET(req: NextRequest) {
   // Reviews are independent of the planner launch gate and never throw.
   const reviews = await ensurePeriodicReviews({ notify: !quiet });
 
-  return NextResponse.json({ ok: true, today, planner, reviews });
+  let questionBank: Record<string, unknown>;
+  try {
+    questionBank = await fillQuestionBank({
+      all: true,
+      count: 100,
+      maxQuestions: 100,
+      timeBudgetMs: 120000,
+    });
+  } catch (err) {
+    console.error("[cron/daily-planner] question bank fill failed:", err);
+    questionBank = { error: String(err) };
+  }
+
+  return NextResponse.json({ ok: true, today, planner, reviews, questionBank });
 }
