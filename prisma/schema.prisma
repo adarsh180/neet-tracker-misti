@@ -597,7 +597,7 @@ model BankQuestion {
   correctIndex Int
   explanation  String    @db.Text
   verified     Boolean   @default(false)
-  qualityStatus String   @default("UNVERIFIED") // UNVERIFIED | VERIFIED_STRICT | NEEDS_REVIEW | REJECTED
+  qualityStatus String   @default("UNVERIFIED") // UNVERIFIED | VERIFIED_STRICT | NEEDS_REVIEW | NEEDS_VISUAL_ASSET | REJECTED
   qualityScore  Float?
   verifiedAt    DateTime?
   rejectedAt    DateTime?
