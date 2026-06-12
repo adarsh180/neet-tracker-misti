@@ -10,6 +10,7 @@ import type { PracticeDifficulty, PracticeQuestion, PracticeSource, PracticeSubj
 
 export const BANK_CHAPTER_QUOTA = 2000;
 export const BANK_AI_MODELS = [AI_MODELS.fallback1, AI_MODELS.primary, AI_MODELS.emergencyFallback];
+const BANK_AI_TIMEOUT_MS = 300000;
 
 export type BankSource = PracticeSource | "NCERT";
 
@@ -389,7 +390,7 @@ export async function verifyBankQuestions(questions: ValidatedBankQuestion[]) {
     ],
     2400,
     0.1,
-    150000,
+    BANK_AI_TIMEOUT_MS,
     BANK_AI_MODELS,
   );
   const solved = extractJsonArray<{ id: string; answerIndex: number; confident?: boolean }>(result.content) ?? [];

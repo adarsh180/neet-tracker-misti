@@ -25,6 +25,7 @@ import { assembleQuestionsFromBank, writeBackBankStats } from "@/lib/question-ba
  */
 
 export const PRACTICE_BATCH_SIZE = 5;
+const PRACTICE_AI_TIMEOUT_MS = 300000;
 
 // gemma-4-26b-a4b finishes long question batches reliably; 31b consistently
 // times out on them, so it rides second here instead of burning the budget.
@@ -346,7 +347,7 @@ async function verifyBatch(questions: PracticeQuestion[]): Promise<PracticeQuest
       ],
       2400,
       0.1,
-      150000,
+      PRACTICE_AI_TIMEOUT_MS,
       PRACTICE_MODELS,
     );
 
@@ -451,7 +452,7 @@ export async function generateNextBatch(testId: string) {
     // Attempt 1: gemma-4 lane. Attempt 2: flash, which is more schema-reliable,
     // when the first response can't be parsed into valid questions.
     for (const lane of [PRACTICE_MODELS, [AI_MODELS.emergencyFallback]]) {
-      const result = await chatWithAI(messages, 12000, 0.4, 150000, lane);
+      const result = await chatWithAI(messages, 12000, 0.4, PRACTICE_AI_TIMEOUT_MS, lane);
       model = result.model;
       candidates = validateBatch(extractJsonArray<RawQuestion>(result.content), existing.length);
       if (candidates.length) break;

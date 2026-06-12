@@ -1,4 +1,4 @@
-import type { Prisma, ReviewCard } from "@prisma/client";
+import type { BankQuestion, Prisma, ReviewCard } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { chatWithAI } from "@/lib/openrouter";
@@ -26,6 +26,12 @@ import { getISTDateString } from "@/lib/daily-planner";
  */
 
 export const REVIEW_SENDER_LABEL = "Review Agent";
+const REVIEW_AI_TIMEOUT_MS = 300000;
+
+const REVIEW_INTEGRITY_POLICY = {
+  WEEKLY: { total: 20, bank: 17, ai: 3 },
+  MONTHLY: { total: 30, bank: 24, ai: 6 },
+} as const;
 
 export type ReviewPeriod = "WEEKLY" | "MONTHLY";
 
@@ -223,6 +229,25 @@ async function gatherPeriodStats(startISO: string, endISO: string) {
 
   const totalHours = goals.reduce((sum, goal) => sum + goal.hoursStudied, 0);
   const totalQuestions = goals.reduce((sum, goal) => sum + goal.questionsSolved, 0);
+  const scopeMap = new Map<string, { subject: string; chapter: string; topic: string | null; weight: number }>();
+  const addScope = (subject: string | null | undefined, chapter: string | null | undefined, topic: string | null | undefined, weight: number) => {
+    if (!subject || !chapter) return;
+    const cleanSubject = subject.trim();
+    const cleanChapter = chapter.trim();
+    const cleanTopic = topic?.trim() || null;
+    if (!cleanSubject || !cleanChapter) return;
+    const key = `${cleanSubject}::${cleanChapter}::${cleanTopic ?? ""}`;
+    const entry = scopeMap.get(key) ?? { subject: cleanSubject, chapter: cleanChapter, topic: cleanTopic, weight: 0 };
+    entry.weight += weight;
+    scopeMap.set(key, entry);
+  };
+
+  for (const topic of topicsCompleted) addScope(topic.subject.name, topic.chapter, topic.name, 3);
+  for (const revision of revisions) addScope(revision.topic.subject.name, revision.topic.chapter, revision.topic.name, 2);
+  for (const [key, wrong] of wrongByChapter) {
+    const [subject, chapter] = key.split(" â€” ");
+    addScope(subject, chapter, null, wrong);
+  }
 
   return {
     range: { start: startISO, end: endISO },
@@ -264,6 +289,12 @@ async function gatherPeriodStats(startISO: string, endISO: string) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 12)
       .map(([chapter, wrong]) => ({ chapter, wrong })),
+    studyScope: {
+      subjects: [...subjectTotals.entries()]
+        .sort((a, b) => b[1].hours + b[1].questions / 50 - (a[1].hours + a[1].questions / 50))
+        .map(([subject]) => subject),
+      chapters: [...scopeMap.values()].sort((a, b) => b.weight - a.weight).slice(0, 30),
+    },
   };
 }
 
@@ -341,6 +372,109 @@ function extractJson<T>(input: string): T | null {
 }
 
 type GeneratedReview = { review: ReviewContent; questions: IntegrityQuestion[] };
+
+function shuffle<T>(items: T[]) {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+function bankQualityRank(row: BankQuestion) {
+  if (row.qualityStatus === "VERIFIED_STRICT") return 0;
+  if (row.verified) return 1;
+  if (row.qualityStatus === "NEEDS_REVIEW") return 3;
+  return 2;
+}
+
+function bankQuestionToIntegrityQuestion(row: BankQuestion, index: number): IntegrityQuestion | null {
+  const options = Array.isArray(row.optionsJson) ? row.optionsJson.map(String).slice(0, 4) : [];
+  if (options.length !== 4 || row.correctIndex < 0 || row.correctIndex > 3) return null;
+  return {
+    id: `q${index}`,
+    question: row.question,
+    options,
+    expectedOptionIndex: row.correctIndex,
+    evidence: `DB bank question from studied scope: ${row.subject}/${row.chapter}${row.topic ? `/${row.topic}` : ""}. Correct answer: (${String.fromCharCode(65 + row.correctIndex)}) ${options[row.correctIndex]}. Source: ${row.source} ${row.sourceRef}.`,
+    signal: null,
+  };
+}
+
+async function fetchBankIntegrityQuestions(stats: PeriodStats, targetCount: number) {
+  if (targetCount <= 0) return [];
+
+  const selected: BankQuestion[] = [];
+  const exclude = new Set<string>();
+  const subjects = stats.studyScope.subjects.length
+    ? stats.studyScope.subjects
+    : ["Physics", "Chemistry", "Botany", "Zoology"];
+  const chapters = stats.studyScope.chapters;
+
+  const pickFromWhere = async (where: Prisma.BankQuestionWhereInput, needed: number) => {
+    if (needed <= 0) return;
+    const pool = await db.bankQuestion.findMany({
+      where: {
+        ...where,
+        qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET"] },
+        id: exclude.size ? { notIn: [...exclude] } : undefined,
+      },
+      orderBy: [{ timesServed: "asc" }, { lastServedAt: "asc" }, { createdAt: "asc" }],
+      take: Math.max(needed * 10, needed),
+    });
+    const picked = shuffle(pool.filter((row) => !exclude.has(row.id)))
+      .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)
+      .slice(0, needed);
+    picked.forEach((row) => exclude.add(row.id));
+    selected.push(...picked);
+  };
+
+  for (const scope of chapters) {
+    if (selected.length >= targetCount) break;
+    await pickFromWhere(
+      {
+        subject: scope.subject,
+        chapter: scope.chapter,
+        topic: scope.topic ? { contains: scope.topic } : undefined,
+      },
+      1,
+    );
+  }
+
+  if (selected.length < targetCount && chapters.length) {
+    await pickFromWhere(
+      {
+        OR: chapters.map((scope) => ({ subject: scope.subject, chapter: scope.chapter })),
+      },
+      targetCount - selected.length,
+    );
+  }
+
+  if (selected.length < targetCount) {
+    await pickFromWhere({ subject: { in: subjects } }, targetCount - selected.length);
+  }
+
+  if (selected.length) {
+    await db.bankQuestion.updateMany({
+      where: { id: { in: selected.map((row) => row.id) } },
+      data: { timesServed: { increment: 1 }, lastServedAt: new Date() },
+    });
+  }
+
+  return selected
+    .map((row, index) => bankQuestionToIntegrityQuestion(row, index + 1))
+    .filter((question): question is IntegrityQuestion => Boolean(question))
+    .slice(0, targetCount);
+}
+
+function normalizeIntegrityQuestions(bankQuestions: IntegrityQuestion[], aiQuestions: IntegrityQuestion[], totalTarget: number) {
+  const seen = new Set<string>();
+  const merged: IntegrityQuestion[] = [];
+  for (const question of [...bankQuestions, ...aiQuestions]) {
+    const key = `${question.question}::${question.options.join("|")}`.toLowerCase().replace(/\s+/g, " ").trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(question);
+    if (merged.length >= totalTarget) break;
+  }
+  return merged.map((question, index) => ({ ...question, id: `q${index + 1}` }));
+}
 
 function buildGenerationPrompt(
   period: ReviewPeriod,
@@ -471,6 +605,17 @@ function buildFallbackReview(
       : "Forensics found no backfilled entries.",
     signal: "backfilled-log",
   });
+  {
+    const bucket = bucketOptions(Math.max(stats.totals.questions, 0), "questions");
+    questions.push({
+      id: "q6",
+      question: "Roughly how many practice questions did you actually solve this period?",
+      options: bucket.options,
+      expectedOptionIndex: stats.totals.questions > 0 ? bucket.expected : 0,
+      evidence: `Tracker shows ${stats.totals.questions} questions solved in the period.`,
+      signal: stats.totals.questions === 0 ? "no-artifacts" : null,
+    });
+  }
 
   return {
     review: {
@@ -572,6 +717,8 @@ async function generateReviewCard(period: ReviewPeriod, range: { start: string; 
     gatherPeriodStats(previousRange.start, previousRange.end),
   ]);
   const signals = detectIntegritySignals(stats);
+  const policy = REVIEW_INTEGRITY_POLICY[period];
+  const deterministic = buildFallbackReview(period, stats, previous, signals);
 
   let generated: GeneratedReview | null = null;
   let model = "deterministic-fallback";
@@ -586,7 +733,7 @@ async function generateReviewCard(period: ReviewPeriod, range: { start: string; 
       ],
       6000,
       0.3,
-      150000,
+      REVIEW_AI_TIMEOUT_MS,
     );
     generated = validateGenerated(extractJson<GeneratedReview>(result.content), signals);
     if (generated) model = result.model;
@@ -597,7 +744,11 @@ async function generateReviewCard(period: ReviewPeriod, range: { start: string; 
   } catch (error) {
     console.warn("[review-agent] AI review generation failed; using deterministic fallback.", error);
   }
-  if (!generated) generated = buildFallbackReview(period, stats, previous, signals);
+  if (!generated) generated = deterministic;
+
+  const bankQuestions = await fetchBankIntegrityQuestions(stats, policy.bank);
+  const aiTail = normalizeIntegrityQuestions([], [...generated.questions, ...deterministic.questions], policy.ai);
+  generated.questions = normalizeIntegrityQuestions(bankQuestions, aiTail, policy.total);
 
   // Exact numbers for the progress graphs — always from the data, never the AI.
   generated.review.metrics = {
@@ -820,7 +971,7 @@ export async function evaluateReviewAnswers(cardId: string, answers: ReviewAnswe
       ],
       1800,
       0.3,
-      150000,
+      REVIEW_AI_TIMEOUT_MS,
     );
     verdict = validateVerdict(extractJson<ReviewVerdict>(result.content), questions);
     if (verdict) model = result.model;
