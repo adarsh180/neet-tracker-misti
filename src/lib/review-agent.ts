@@ -6,22 +6,23 @@ import { sendWebPushNotification } from "@/lib/web-push";
 import { getISTDateString } from "@/lib/daily-planner";
 
 /**
- * Review Agent — weekly & monthly report cards with an integrity audit.
+ * Review Agent - weekly & monthly report cards with an integrity audit.
  *
  * On the agent heartbeat (the daily 05:00 IST cron) it checks whether the most
- * recently completed week (Mon–Sun, IST) and calendar month have a review card.
+ * recently completed week (Mon-Sun, IST) and calendar month have a review card.
  * If not, it:
  *  1. aggregates everything she logged in that period (goals, screen time, mood,
  *     tests, error log, topics completed, revisions),
  *  2. runs deterministic forensics over the logs (backfilled entries, implausible
  *     hours, template logging, hours without output, discipline vs screen-time
  *     contradictions, ...),
- *  3. has the AI write the review card AND 5–7 option-based "Truth Check"
- *     questions whose expected answers are derived from her own data,
+ *  3. has the AI write the review card, then assembles a bank-first
+ *     option-based Truth Check from studied chapters/topics plus a small
+ *     AI/data-probe tail,
  *  4. notifies the panel + every push device: "Weekly/Monthly review is ready".
  *
  * When she submits her answers, the agent cross-examines them against the data
- * and the forensic signals, scores her integrity, and answers back — warm and
+ * and the forensic signals, scores her integrity, and answers back - warm and
  * firm if honest, an unambiguous scolding if the logs were faked.
  */
 
@@ -221,7 +222,7 @@ async function gatherPeriodStats(startISO: string, endISO: string) {
       errorTotal += 1;
       if (question.outcome === "WRONG") {
         errorWrong += 1;
-        const key = `${question.subject} — ${question.chapter ?? "General"}`;
+        const key = `${question.subject}::${question.chapter ?? "General"}`;
         wrongByChapter.set(key, (wrongByChapter.get(key) ?? 0) + 1);
       }
     }
@@ -245,7 +246,7 @@ async function gatherPeriodStats(startISO: string, endISO: string) {
   for (const topic of topicsCompleted) addScope(topic.subject.name, topic.chapter, topic.name, 3);
   for (const revision of revisions) addScope(revision.topic.subject.name, revision.topic.chapter, revision.topic.name, 2);
   for (const [key, wrong] of wrongByChapter) {
-    const [subject, chapter] = key.split(" â€” ");
+    const [subject, chapter] = key.split("::");
     addScope(subject, chapter, null, wrong);
   }
 

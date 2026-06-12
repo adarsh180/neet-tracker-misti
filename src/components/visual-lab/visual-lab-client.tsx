@@ -540,7 +540,7 @@ function drawMath2D(
     try { return compileExpression(eq); } catch { return null; }
   });
 
-  // â”€â”€ Build chapters from concept steps â”€â”€
+  // Build chapters from concept steps
   const xMin = Math.min(values.xMin ?? -10, (values.xMax ?? 10) - 1);
   const xMax = Math.max(values.xMax ?? 10, xMin + 1);
   const drawSpd = values.speed ?? 1;
@@ -561,7 +561,7 @@ function drawMath2D(
   if (!Number.isFinite(yLoGlobal)) { yLoGlobal = -8; yHiGlobal = 8; }
   const yPad = Math.max(1.2, (yHiGlobal - yLoGlobal) * 0.2);
 
-  // â”€â”€ Find intersections (bisection) â”€â”€
+  // Find intersections (bisection)
   const intersections: Array<{ x: number; y: number; label: string }> = [];
   if (compiled.length >= 2 && compiled[0] && compiled[1]) {
     const steps = 240;
@@ -601,7 +601,7 @@ function drawMath2D(
           if (mv * py2 <= 0) hi = mid; else lo = mid;
         }
         const rx = (lo + hi) / 2;
-        intersections.push({ x: rx, y: 0, label: `xâ‰ˆ${rx.toFixed(2)}` });
+        intersections.push({ x: rx, y: 0, label: `x ~= ${rx.toFixed(2)}` });
       }
       px2 = cx; py2 = cy;
     }
@@ -633,7 +633,7 @@ function drawMath2D(
   ];
   const chapters = defaultChapters.length >= 2 ? defaultChapters : [defaultChapters[0]];
 
-  // â”€â”€ Progress & drawX â”€â”€
+  // Progress and drawX
   const progress = clamp((time * 0.032 * drawSpd) % 1.04, 0, 1);
   let drawX = xMin + easeOutCinematic(progress) * (xMax - xMin);
   const activeMark = marks.find((_, i) => progress >= (i + 1) / chapterCount && progress <= (i + 2) / chapterCount);
@@ -645,12 +645,12 @@ function drawMath2D(
     return 1 - Math.pow(-2 * p + 2, 2) / 2;
   }
 
-  // â”€â”€ Viewport â”€â”€
+  // Viewport
   const view = interpolateView(chapters, progress);
   const rect = graphRect(W, H);
   const P = makeProjector(view, rect);
 
-  // â”€â”€ Draw â”€â”€
+  // Draw
   drawFrameBox(ctx, rect);
   drawGrid(ctx, view, rect, P);
 
@@ -814,9 +814,9 @@ function drawProjectile(ctx: CanvasRenderingContext2D, concept: VisualConcept, v
   const pad = 52;
 
   // Chapters
-  const chapterName = progress < 0.3 ? "Launch â€” initial velocity" : progress < 0.65 ? "Ascending to peak" : "Full trajectory";
+  const chapterName = progress < 0.3 ? "Launch - initial velocity" : progress < 0.65 ? "Ascending to peak" : "Full trajectory";
 
-  // Coordinate mapping â€” zoom into launch during early phase
+  // Coordinate mapping - zoom into launch during early phase
   const zoom = progress < 0.35 ? clamp(progress / 0.35, 0, 1) : 1;
   const viewMaxX = Math.max(full.range, 1) * (0.35 + 0.65 * zoom);
   const viewMaxY = Math.max(full.maxHeight * 1.3, 1);
