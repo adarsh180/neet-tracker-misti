@@ -570,6 +570,11 @@ model PracticeTest {
   autoSubmitReason String?
   totalActiveSeconds Int?
   totalPausedSeconds Int?
+  testSeed      String?
+  blueprintVersion String?
+  paperTemplate String?
+  distributionAuditJson Json?
+  blueprintWarningsJson Json?
   resultJson     Json?
   model          String?
   testRecordId   String?
@@ -604,6 +609,15 @@ model BankQuestion {
   verifierModel String?
   verifierRuns  Json?
   rejectReason  String?  @db.Text
+  trendChapterId String?
+  questionForm   String?
+  subtopic       String?
+  isDiagramBased Boolean  @default(false)
+  isGraphBased   Boolean  @default(false)
+  duplicateClusterId String?
+  sourceQuality  Float?
+  pyqSimilarityScore Float?
+  trendMetaJson  Json?
   contentHash  String    @unique @db.VarChar(64)
   timesServed  Int       @default(0)
   timesCorrect Int       @default(0)
@@ -616,6 +630,10 @@ model BankQuestion {
   @@index([subject, chapter, difficulty])
   @@index([subject, chapter, source])
   @@index([subject, chapter, lastServedAt])
+  @@index([subject, classLevel, trendChapterId])
+  @@index([subject, classLevel, chapter, trendChapterId])
+  @@index([questionForm])
+  @@index([duplicateClusterId])
   @@map("bank_questions")
 }
 

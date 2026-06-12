@@ -1,0 +1,5586 @@
+{
+  "schema_version": "2.0.0",
+  "file_name": "neet_20yr_trend_analysis_blueprint.json",
+  "created_at": "2026-06-12",
+  "created_for": "Adarsh Tiwari practice arena with 100k+ question bank",
+  "scope": {
+    "primary_exam": "NEET UG / AIPMT trend model, approx last 20 years with heavier weight to 2021-2025",
+    "secondary_reference": "JEE Main Physics and Chemistry style only; not used for Biology and not used to raise NEET beyond syllabus",
+    "not_a_guarantee": "This is a trend/selector blueprint, not official future prediction. Exact 20-year counts require a tagged PYQ corpus."
+  },
+  "official_pattern_contract": {
+    "NEET_full_test": {
+      "total_questions": 180,
+      "Physics": 45,
+      "Chemistry": 45,
+      "Biology": 90,
+      "suggested_internal_split": {
+        "Botany": 45,
+        "Zoology": 45
+      },
+      "marking": "+4/-1"
+    },
+    "JEE_Main_Paper_1_reference": {
+      "per_subject_reference": "Physics/Chemistry use MCQ + numerical style awareness; do not copy difficulty blindly"
+    }
+  },
+  "calibration_instruction": {
+    "current_status": "expert-estimated trend model with public recent-year signals",
+    "upgrade_path": [
+      "tag every PYQ from 2005-2026 with subject, chapter, topic, form, difficulty, NCERT anchor",
+      "replace target_avg values with actual weighted moving averages",
+      "keep min_safe/max_safe ranges to preserve paper diversity",
+      "run annual recalibration after each NEET paper"
+    ],
+    "recommended_weighting_formula": {
+      "recent_5_years": 0.5,
+      "middle_10_years": 0.35,
+      "older_5_years": 0.15,
+      "reason": "NTA-style shifts and syllabus changes make recent papers more predictive than very old AIPMT papers"
+    }
+  },
+  "section_summaries": {
+    "Physics": {
+      "total_questions": 45,
+      "class_split_target": {
+        "class_XI": {
+          "min": 18,
+          "target": 21,
+          "max": 23
+        },
+        "class_XII": {
+          "min": 22,
+          "target": 24,
+          "max": 27
+        }
+      },
+      "difficulty_mix_target": {
+        "easy": {
+          "min": 14,
+          "target": 17,
+          "max": 20
+        },
+        "medium": {
+          "min": 18,
+          "target": 21,
+          "max": 24
+        },
+        "hard_NEET_level": {
+          "min": 5,
+          "target": 7,
+          "max": 10
+        }
+      },
+      "question_form_mix_target": {
+        "numerical_calculation": {
+          "min": 22,
+          "target": 27,
+          "max": 31
+        },
+        "conceptual_statement": {
+          "min": 7,
+          "target": 10,
+          "max": 13
+        },
+        "graph_diagram_experiment": {
+          "min": 4,
+          "target": 6,
+          "max": 9
+        },
+        "direct_formula": {
+          "min": 5,
+          "target": 8,
+          "max": 11
+        }
+      },
+      "mandatory_constraints": [
+        "must cover electrodynamics + modern physics + mechanics + thermal/optics in every full test",
+        "limit one chapter to max 4 questions except combined modern/electrodynamics cluster",
+        "at least 4 graph/diagram/instrument questions"
+      ]
+    },
+    "Chemistry": {
+      "total_questions": 45,
+      "class_split_target": {
+        "class_XI": {
+          "min": 19,
+          "target": 22,
+          "max": 24
+        },
+        "class_XII": {
+          "min": 21,
+          "target": 23,
+          "max": 26
+        }
+      },
+      "difficulty_mix_target": {
+        "easy": {
+          "min": 17,
+          "target": 20,
+          "max": 24
+        },
+        "medium": {
+          "min": 16,
+          "target": 19,
+          "max": 23
+        },
+        "hard_NEET_level": {
+          "min": 4,
+          "target": 6,
+          "max": 9
+        }
+      },
+      "question_form_mix_target": {
+        "physical_numerical": {
+          "min": 8,
+          "target": 11,
+          "max": 14
+        },
+        "organic_reaction_or_GOC": {
+          "min": 11,
+          "target": 14,
+          "max": 17
+        },
+        "inorganic_NCERT": {
+          "min": 10,
+          "target": 13,
+          "max": 16
+        },
+        "statement_match_assertion": {
+          "min": 5,
+          "target": 8,
+          "max": 11
+        }
+      },
+      "mandatory_constraints": [
+        "keep Physical:Organic:Inorganic approximately balanced",
+        "inorganic must be NCERT-line based",
+        "organic must include GOC + product/reagent + named reaction mix"
+      ]
+    },
+    "Botany": {
+      "total_questions": 45,
+      "class_split_target": {
+        "class_XI": {
+          "min": 20,
+          "target": 23,
+          "max": 26
+        },
+        "class_XII": {
+          "min": 19,
+          "target": 22,
+          "max": 25
+        }
+      },
+      "difficulty_mix_target": {
+        "easy": {
+          "min": 20,
+          "target": 24,
+          "max": 28
+        },
+        "medium": {
+          "min": 13,
+          "target": 17,
+          "max": 20
+        },
+        "hard_NEET_level": {
+          "min": 2,
+          "target": 4,
+          "max": 7
+        }
+      },
+      "question_form_mix_target": {
+        "NCERT_line_based": {
+          "min": 18,
+          "target": 23,
+          "max": 28
+        },
+        "statement_based": {
+          "min": 10,
+          "target": 14,
+          "max": 19
+        },
+        "match_the_following": {
+          "min": 5,
+          "target": 8,
+          "max": 12
+        },
+        "diagram_table_example": {
+          "min": 4,
+          "target": 7,
+          "max": 10
+        }
+      },
+      "mandatory_constraints": [
+        "Molecular Basis + Genetics should be locked high-yield",
+        "include plant diversity/kingdom + cell/cell cycle + ecology in most tests",
+        "avoid making all Biology direct one-line MCQ"
+      ]
+    },
+    "Zoology": {
+      "total_questions": 45,
+      "class_split_target": {
+        "class_XI": {
+          "min": 21,
+          "target": 24,
+          "max": 27
+        },
+        "class_XII": {
+          "min": 18,
+          "target": 21,
+          "max": 24
+        }
+      },
+      "difficulty_mix_target": {
+        "easy": {
+          "min": 20,
+          "target": 24,
+          "max": 28
+        },
+        "medium": {
+          "min": 13,
+          "target": 17,
+          "max": 20
+        },
+        "hard_NEET_level": {
+          "min": 2,
+          "target": 4,
+          "max": 7
+        }
+      },
+      "question_form_mix_target": {
+        "NCERT_line_based": {
+          "min": 17,
+          "target": 22,
+          "max": 27
+        },
+        "statement_based": {
+          "min": 10,
+          "target": 14,
+          "max": 18
+        },
+        "match_the_following": {
+          "min": 5,
+          "target": 8,
+          "max": 12
+        },
+        "diagram_table_example": {
+          "min": 4,
+          "target": 7,
+          "max": 10
+        }
+      },
+      "mandatory_constraints": [
+        "Animal Kingdom + Human Physiology + Human Reproduction + Health/Disease/Biotech must be represented",
+        "include diagrams from human physiology/reproduction/neural/excretion regularly"
+      ]
+    }
+  },
+  "chapter_trends": {
+    "Physics": [
+      {
+        "id": "phy_measurement",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Physics and Measurement / Experimental Skills",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "units_dimensions_errors",
+            "trend_priority": "high",
+            "forms": [
+              "dimension_analysis",
+              "error_least_count",
+              "significant_figures"
+            ]
+          },
+          {
+            "topic": "basic_graphs_and_instruments",
+            "trend_priority": "medium",
+            "forms": [
+              "graph_reading",
+              "experiment_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "direct_formula",
+            "dimension_check",
+            "experimental_observation"
+          ],
+          "low_hanging_generation_rules": [
+            "include 1 easy unit/dimension/error question in many full tests",
+            "prefer NCERT/lab-manual style experimental facts"
+          ],
+          "tricky_generation_rules": [
+            "combine error propagation with graph slope/intercept occasionally"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "dimension-analysis speed questions",
+            "experimental skill MCQs"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_kinematics",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Kinematics",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "motion_in_straight_line",
+            "trend_priority": "medium_high",
+            "forms": [
+              "graph",
+              "equation_based"
+            ],
+            "subtopics": [
+              "v-t/x-t graph",
+              "relative motion basics"
+            ]
+          },
+          {
+            "topic": "motion_in_plane_projectile",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical",
+              "conceptual"
+            ],
+            "subtopics": [
+              "projectile range/time/height",
+              "vectors"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "graph_based",
+            "formula_application",
+            "conceptual_sign_convention"
+          ],
+          "low_hanging_generation_rules": [
+            "one clean v-t/x-t graph or projectile direct application"
+          ],
+          "tricky_generation_rules": [
+            "mix relative velocity with vectors; avoid too many long calculations"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "graph interpretation",
+            "projectile multi-step numerical at moderate level"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_laws_motion",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Laws of Motion",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "free_body_diagram",
+            "trend_priority": "high",
+            "forms": [
+              "diagram_based",
+              "numerical"
+            ],
+            "subtopics": [
+              "inclined plane",
+              "friction",
+              "pulley"
+            ]
+          },
+          {
+            "topic": "friction_and_circular_motion",
+            "trend_priority": "medium_high",
+            "forms": [
+              "conceptual",
+              "numerical"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "diagram_based",
+            "single_step_numerical",
+            "conceptual_force_balance"
+          ],
+          "low_hanging_generation_rules": [
+            "simple FBD with friction or pulley",
+            "direct coefficient/friction limit question"
+          ],
+          "tricky_generation_rules": [
+            "pseudo-force/circular turn banking only at NEET level"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "FBD discipline",
+            "friction limiting cases"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_work_energy_power",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Work, Energy and Power",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "work_energy_theorem",
+            "trend_priority": "high",
+            "forms": [
+              "numerical",
+              "conceptual"
+            ]
+          },
+          {
+            "topic": "power_collision_potential_energy",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical",
+              "statement_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "direct_formula",
+            "conservation_energy",
+            "conceptual"
+          ],
+          "low_hanging_generation_rules": [
+            "direct work-energy theorem or power efficiency"
+          ],
+          "tricky_generation_rules": [
+            "combine spring/variable force graph area only moderately"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "graph-area work problems",
+            "energy conservation style"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_rotational",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Rotational Motion",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "torque_angular_momentum",
+            "trend_priority": "medium_high",
+            "forms": [
+              "numerical",
+              "conceptual"
+            ]
+          },
+          {
+            "topic": "moment_of_inertia_rolling",
+            "trend_priority": "high",
+            "forms": [
+              "formula_based",
+              "diagram_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "formula_application",
+            "conceptual_comparison",
+            "single_step_numerical"
+          ],
+          "low_hanging_generation_rules": [
+            "standard moment of inertia/rolling energy questions"
+          ],
+          "tricky_generation_rules": [
+            "rolling on incline or torque equilibrium with hidden sign errors"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "moment of inertia comparison",
+            "rolling-energy hybrid at moderate level"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_gravitation",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Gravitation",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "orbital_speed_escape_velocity",
+            "trend_priority": "high",
+            "forms": [
+              "formula_based",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "gravitational_potential_field",
+            "trend_priority": "medium",
+            "forms": [
+              "conceptual",
+              "statement_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "direct_formula",
+            "ratio_based",
+            "conceptual"
+          ],
+          "low_hanging_generation_rules": [
+            "one easy formula/ratio question in many tests"
+          ],
+          "tricky_generation_rules": [
+            "potential vs field conceptual trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "ratio-style calculations",
+            "potential-energy sign concepts"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_solids_fluids",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Mechanical Properties of Solids and Fluids",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "elasticity",
+            "trend_priority": "medium",
+            "forms": [
+              "formula_based"
+            ]
+          },
+          {
+            "topic": "fluid_statics_dynamics_surface_tension_viscosity",
+            "trend_priority": "high",
+            "forms": [
+              "numerical",
+              "statement_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "formula_application",
+            "direct_theory",
+            "conceptual"
+          ],
+          "low_hanging_generation_rules": [
+            "Bernoulli/continuity or Young modulus direct calculation"
+          ],
+          "tricky_generation_rules": [
+            "surface tension/viscosity unit and proportionality traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "Bernoulli continuity combos",
+            "dimensional consistency"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_thermal_thermo",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Thermal Physics and Thermodynamics",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "calorimetry_thermal_expansion_heat_transfer",
+            "trend_priority": "medium_high",
+            "forms": [
+              "numerical",
+              "conceptual"
+            ]
+          },
+          {
+            "topic": "first_law_processes",
+            "trend_priority": "high",
+            "forms": [
+              "PV_graph",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "heat_engine_refrigerator",
+            "trend_priority": "medium",
+            "forms": [
+              "formula_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "PV_graph",
+            "formula_application",
+            "conceptual_statement"
+          ],
+          "low_hanging_generation_rules": [
+            "include at least one heat/thermo question in most papers"
+          ],
+          "tricky_generation_rules": [
+            "cyclic process sign convention and graph area"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "PV graph work interpretation",
+            "process comparison"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_kinetic_theory",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Kinetic Theory of Gases",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.0,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 16.7,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "rms_speed_degree_of_freedom",
+            "trend_priority": "high",
+            "forms": [
+              "formula_based"
+            ]
+          },
+          {
+            "topic": "law_of_equipartition",
+            "trend_priority": "medium",
+            "forms": [
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "direct_formula",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "simple rms speed/average kinetic energy question"
+          ],
+          "tricky_generation_rules": [
+            "degree of freedom for gases at different temperatures"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "degree-of-freedom application"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_oscillations",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Oscillations",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "SHM_equations_energy",
+            "trend_priority": "high",
+            "forms": [
+              "formula",
+              "graph"
+            ]
+          },
+          {
+            "topic": "spring_pendulum",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "graph_based",
+            "formula_application"
+          ],
+          "low_hanging_generation_rules": [
+            "direct time period/energy relation"
+          ],
+          "tricky_generation_rules": [
+            "phase and graph interpretation"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "SHM graph questions",
+            "energy-position relation"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_waves",
+        "subject_section": "Physics",
+        "class_level": "XI",
+        "chapter": "Waves",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "sound_waves_doppler",
+            "trend_priority": "medium_high",
+            "forms": [
+              "formula_based"
+            ]
+          },
+          {
+            "topic": "standing_waves_organ_pipes",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "formula_application",
+            "conceptual"
+          ],
+          "low_hanging_generation_rules": [
+            "speed/frequency/wavelength simple question"
+          ],
+          "tricky_generation_rules": [
+            "Doppler sign convention or resonance mode trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "standing wave harmonic identification"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_electrostatics_capacitance",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Electrostatics and Capacitance",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 4.0,
+            "min_safe": 3,
+            "max_safe": 5
+          },
+          "frequency_band": "very_high",
+          "frequency_score_0_100": 66.7,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "electric_field_potential",
+            "trend_priority": "high",
+            "forms": [
+              "conceptual",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "capacitors",
+            "trend_priority": "very_high",
+            "forms": [
+              "circuit",
+              "formula",
+              "energy"
+            ]
+          },
+          {
+            "topic": "Gauss_law",
+            "trend_priority": "medium",
+            "forms": [
+              "symmetry_concept"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "circuit_based",
+            "ratio_based",
+            "diagram_based",
+            "single_step_numerical"
+          ],
+          "low_hanging_generation_rules": [
+            "must include one easy capacitor/electric field question regularly"
+          ],
+          "tricky_generation_rules": [
+            "combination of capacitors with dielectric/energy change"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "capacitor network reasoning",
+            "field-potential conceptual traps"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_current_electricity",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Current Electricity",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 4.0,
+            "min_safe": 3,
+            "max_safe": 5
+          },
+          "frequency_band": "very_high",
+          "frequency_score_0_100": 66.7,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "Ohms_law_resistance",
+            "trend_priority": "very_high",
+            "forms": [
+              "circuit",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "Kirchhoff_wheatstone_meter_bridge",
+            "trend_priority": "high",
+            "forms": [
+              "circuit"
+            ]
+          },
+          {
+            "topic": "potentiometer_cells",
+            "trend_priority": "medium_high",
+            "forms": [
+              "experiment_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "circuit_based",
+            "instrument_based",
+            "numerical"
+          ],
+          "low_hanging_generation_rules": [
+            "almost always include current/resistance/circuit calculation"
+          ],
+          "tricky_generation_rules": [
+            "multi-loop circuit or bridge balance with hidden simplification"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "multi-branch circuit selection",
+            "instrument principle"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_magnetism",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Moving Charges, Magnetism and Magnetism Matter",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "force_on_charge_wire",
+            "trend_priority": "high",
+            "forms": [
+              "numerical",
+              "direction"
+            ]
+          },
+          {
+            "topic": "magnetic_field_due_to_current",
+            "trend_priority": "high",
+            "forms": [
+              "formula_based"
+            ]
+          },
+          {
+            "topic": "magnetism_matter",
+            "trend_priority": "medium",
+            "forms": [
+              "conceptual",
+              "statement_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "direction_based",
+            "formula_application",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "direct Biot-Savart/Ampere force question"
+          ],
+          "tricky_generation_rules": [
+            "field direction and circular motion of charge"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "direction rules",
+            "magnetic circular motion"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_emi_ac",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Electromagnetic Induction and Alternating Current",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "Faraday_Lenz_inductance",
+            "trend_priority": "high",
+            "forms": [
+              "conceptual",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "AC_circuits_transformer",
+            "trend_priority": "high",
+            "forms": [
+              "phasor",
+              "formula"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "graph_based",
+            "formula_application",
+            "conceptual_statement"
+          ],
+          "low_hanging_generation_rules": [
+            "direct induced emf or AC impedance/power question"
+          ],
+          "tricky_generation_rules": [
+            "LCR resonance/power factor trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "LCR graphs",
+            "transformer efficiency"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_emwaves",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Electromagnetic Waves",
+        "syllabus_status_2026": "active_low_weight",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 0.5,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "low",
+          "frequency_score_0_100": 8.3,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "spectrum_uses",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          },
+          {
+            "topic": "displacement_current",
+            "trend_priority": "low",
+            "forms": [
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "direct_NCERT_fact",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "occasionally include one easy spectrum/use question"
+          ],
+          "tricky_generation_rules": [
+            "avoid too much depth"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "spectrum ordering facts"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_ray_optics",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Ray Optics and Optical Instruments",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "mirror_lens_formula",
+            "trend_priority": "high",
+            "forms": [
+              "numerical",
+              "ray_diagram"
+            ]
+          },
+          {
+            "topic": "prism_refraction_TIR",
+            "trend_priority": "high",
+            "forms": [
+              "conceptual",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "microscope_telescope",
+            "trend_priority": "medium",
+            "forms": [
+              "formula_based"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "diagram_based",
+            "formula_application",
+            "conceptual"
+          ],
+          "low_hanging_generation_rules": [
+            "one direct lens/mirror/prism question in most tests"
+          ],
+          "tricky_generation_rules": [
+            "sign convention + combination lens trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "ray diagram inference",
+            "multi-surface refraction at moderate level"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_wave_optics",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Wave Optics",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "YDSE_interference",
+            "trend_priority": "high",
+            "forms": [
+              "formula",
+              "graph"
+            ]
+          },
+          {
+            "topic": "diffraction_polarisation",
+            "trend_priority": "medium",
+            "forms": [
+              "conceptual",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "formula_application",
+            "conceptual_statement"
+          ],
+          "low_hanging_generation_rules": [
+            "direct fringe width or polarization fact"
+          ],
+          "tricky_generation_rules": [
+            "path difference and phase traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "interference graph/fringe shift"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_dual_nature",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Dual Nature of Radiation and Matter",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "photoelectric_effect",
+            "trend_priority": "high",
+            "forms": [
+              "graph",
+              "formula"
+            ]
+          },
+          {
+            "topic": "de_Broglie_wave",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "graph_based",
+            "formula_application",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "photoelectric equation or de Broglie direct calculation"
+          ],
+          "tricky_generation_rules": [
+            "stopping potential graph interpretation"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "photoelectric graphs"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_atoms_nuclei",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Atoms and Nuclei",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "Bohr_model_spectra",
+            "trend_priority": "high",
+            "forms": [
+              "formula",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "radioactivity_nuclear_binding",
+            "trend_priority": "high",
+            "forms": [
+              "graph",
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "formula_application",
+            "graph_decay",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "include modern physics easy scoring question regularly"
+          ],
+          "tricky_generation_rules": [
+            "binding energy per nucleon/decay law traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "radioactive decay graph",
+            "Bohr energy transitions"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      },
+      {
+        "id": "phy_semiconductor",
+        "subject_section": "Physics",
+        "class_level": "XII",
+        "chapter": "Semiconductor Electronics",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "diode_transistor_logic_gate",
+            "trend_priority": "high",
+            "forms": [
+              "circuit",
+              "truth_table"
+            ]
+          },
+          {
+            "topic": "semiconductor_band_theory",
+            "trend_priority": "medium_high",
+            "forms": [
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "truth_table",
+            "circuit_symbol",
+            "NCERT_fact",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "logic gate/truth table is a must-rotate low hanging area"
+          ],
+          "tricky_generation_rules": [
+            "mixed gate output or diode biasing diagram"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "logic gate composition",
+            "diode circuit output"
+          ],
+          "do_not_borrow": [
+            "multi_concept_JEE_advanced_depth",
+            "lengthy_algebra",
+            "beyond_NEET_syllabus"
+          ]
+        }
+      }
+    ],
+    "Chemistry": [
+      {
+        "id": "chem_some_basic_concepts",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Some Basic Concepts of Chemistry / Mole Concept",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "mole_concept_stoichiometry",
+            "trend_priority": "high",
+            "forms": [
+              "numerical",
+              "single_correct"
+            ],
+            "subtopics": [
+              "limiting reagent",
+              "empirical formula",
+              "concentration"
+            ]
+          },
+          {
+            "topic": "redox_linked_equivalents",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "calculation",
+            "formula_based",
+            "conceptual_units"
+          ],
+          "low_hanging_generation_rules": [
+            "one mole/stoichiometry/concentration direct question in many tests"
+          ],
+          "tricky_generation_rules": [
+            "limiting reagent with purity/yield"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "stoichiometry numerical discipline",
+            "limiting reagent style"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_atomic_structure",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Structure of Atom",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "quantum_numbers_electronic_configuration",
+            "trend_priority": "high",
+            "forms": [
+              "statement_based",
+              "NCERT_fact"
+            ]
+          },
+          {
+            "topic": "Bohr_spectrum_deBroglie",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "statement_based",
+            "numerical",
+            "conceptual"
+          ],
+          "low_hanging_generation_rules": [
+            "quantum numbers or electronic configuration"
+          ],
+          "tricky_generation_rules": [
+            "spectral line/electron transition at moderate level"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "quantum number constraints",
+            "spectra numericals"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_periodicity",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Classification of Elements and Periodicity",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "periodic_trends",
+            "trend_priority": "high",
+            "forms": [
+              "order_based",
+              "statement"
+            ]
+          },
+          {
+            "topic": "anomalies_and_blocks",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "order_based",
+            "statement_based",
+            "assertion_reason"
+          ],
+          "low_hanging_generation_rules": [
+            "size/IE/EA/electronegativity trend"
+          ],
+          "tricky_generation_rules": [
+            "exception/anomaly based order"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "comparative trend ordering"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_bonding",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Chemical Bonding and Molecular Structure",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.5,
+            "min_safe": 2,
+            "max_safe": 5
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 58.3,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "VSEPR_hybridisation_shape",
+            "trend_priority": "very_high",
+            "forms": [
+              "structure",
+              "statement"
+            ]
+          },
+          {
+            "topic": "MOT_bond_order_magnetic",
+            "trend_priority": "high",
+            "forms": [
+              "formula",
+              "comparison"
+            ]
+          },
+          {
+            "topic": "H_bond_dipole_lattice",
+            "trend_priority": "medium",
+            "forms": [
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "structure_based",
+            "statement_based",
+            "comparison"
+          ],
+          "low_hanging_generation_rules": [
+            "shape/hybridisation/bond order common low-hanging"
+          ],
+          "tricky_generation_rules": [
+            "MOT magnetic behaviour or exception-based geometry"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "MOT comparison",
+            "VSEPR exception handling"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_thermodynamics",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Chemical Thermodynamics",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "enthalpy_entropy_gibbs",
+            "trend_priority": "high",
+            "forms": [
+              "formula",
+              "numerical"
+            ]
+          },
+          {
+            "topic": "spontaneity_and_equilibrium_link",
+            "trend_priority": "medium",
+            "forms": [
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "numerical",
+            "statement_based",
+            "formula"
+          ],
+          "low_hanging_generation_rules": [
+            "direct ΔG/ΔH/entropy sign question"
+          ],
+          "tricky_generation_rules": [
+            "temperature dependence/spontaneity trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "multi-step thermochemical equations"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_equilibrium",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Equilibrium",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "chemical_equilibrium_Kp_Kc",
+            "trend_priority": "high",
+            "forms": [
+              "numerical",
+              "conceptual"
+            ]
+          },
+          {
+            "topic": "ionic_equilibrium_pH_buffer_Ksp",
+            "trend_priority": "very_high",
+            "forms": [
+              "numerical",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "numerical",
+            "statement_based",
+            "conceptual"
+          ],
+          "low_hanging_generation_rules": [
+            "Kp/Kc/pH/Ksp direct question"
+          ],
+          "tricky_generation_rules": [
+            "buffer/common ion or solubility order trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "ionic equilibrium numerical style",
+            "Kp/Kc conversions"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_redox",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Redox Reactions",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.0,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 16.7,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "oxidation_number_balancing",
+            "trend_priority": "high",
+            "forms": [
+              "calculation"
+            ]
+          },
+          {
+            "topic": "equivalent_weight",
+            "trend_priority": "medium",
+            "forms": [
+              "numerical"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "calculation",
+            "single_correct"
+          ],
+          "low_hanging_generation_rules": [
+            "oxidation number or redox balancing"
+          ],
+          "tricky_generation_rules": [
+            "n-factor in acidic/basic medium"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "n-factor examples"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_solutions",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Solutions",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "colligative_properties",
+            "trend_priority": "high",
+            "forms": [
+              "numerical"
+            ]
+          },
+          {
+            "topic": "Raoult_law_vapour_pressure",
+            "trend_priority": "medium_high",
+            "forms": [
+              "numerical",
+              "graph"
+            ]
+          },
+          {
+            "topic": "abnormal_molar_mass",
+            "trend_priority": "medium",
+            "forms": [
+              "calculation"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "numerical",
+            "formula_based",
+            "graph"
+          ],
+          "low_hanging_generation_rules": [
+            "direct colligative property question"
+          ],
+          "tricky_generation_rules": [
+            "van't Hoff factor and association/dissociation"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "colligative numerical mix"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_electrochemistry",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Electrochemistry",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "Nernst_equation_cell_potential",
+            "trend_priority": "high",
+            "forms": [
+              "numerical"
+            ]
+          },
+          {
+            "topic": "conductance_electrolysis",
+            "trend_priority": "medium_high",
+            "forms": [
+              "numerical",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "numerical",
+            "formula",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "Nernst/conductivity direct calculation"
+          ],
+          "tricky_generation_rules": [
+            "electrolysis stoichiometry or concentration cell"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "Nernst numerical",
+            "Faraday laws"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_kinetics",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Chemical Kinetics",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "rate_law_order_half_life",
+            "trend_priority": "high",
+            "forms": [
+              "numerical"
+            ]
+          },
+          {
+            "topic": "Arrhenius_equation",
+            "trend_priority": "medium",
+            "forms": [
+              "graph",
+              "calculation"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "numerical",
+            "graph",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "rate/order/half-life direct question"
+          ],
+          "tricky_generation_rules": [
+            "Arrhenius graph/slope trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "integrated first-order numerical"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_d_f_block",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "d- and f-Block Elements",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "transition_element_properties",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ]
+          },
+          {
+            "topic": "lanthanoid_actinoid",
+            "trend_priority": "medium",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_fact",
+            "match_the_following",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "magnetic/color/oxidation states from NCERT"
+          ],
+          "tricky_generation_rules": [
+            "exception-based statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "inorganic trend comparison"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_coordination",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Coordination Compounds",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.5,
+            "min_safe": 2,
+            "max_safe": 5
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 58.3,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "nomenclature_isomerism",
+            "trend_priority": "high",
+            "forms": [
+              "single_correct",
+              "match"
+            ]
+          },
+          {
+            "topic": "VBT_CFT_magnetic_moment",
+            "trend_priority": "very_high",
+            "forms": [
+              "statement",
+              "calculation"
+            ]
+          },
+          {
+            "topic": "stability_and_applications",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "statement_based",
+            "structure_based",
+            "single_correct"
+          ],
+          "low_hanging_generation_rules": [
+            "nomenclature/isomer count/geometry low hanging"
+          ],
+          "tricky_generation_rules": [
+            "CFT spin state and magnetic moment"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "CFT spin/magnetic moment",
+            "isomer count"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_p_block",
+        "subject_section": "Chemistry",
+        "class_level": "XI/XII",
+        "chapter": "p-Block Elements",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "group_13_18_trends_compounds",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ]
+          },
+          {
+            "topic": "oxoacids_interhalogens_noble_gases",
+            "trend_priority": "medium_high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_fact",
+            "statement_based",
+            "match_the_following"
+          ],
+          "low_hanging_generation_rules": [
+            "NCERT line-based p-block statement"
+          ],
+          "tricky_generation_rules": [
+            "exception in oxoacids/halogen compounds"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "inorganic NCERT-plus trend recognition"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_goc",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Organic Chemistry: Some Basic Principles, Techniques and Purification",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.5,
+            "min_safe": 2,
+            "max_safe": 5
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 58.3,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "IUPAC_isomerism",
+            "trend_priority": "high",
+            "forms": [
+              "structure",
+              "single_correct"
+            ]
+          },
+          {
+            "topic": "GOC_effects_intermediates_acid_base",
+            "trend_priority": "very_high",
+            "forms": [
+              "order",
+              "statement"
+            ]
+          },
+          {
+            "topic": "purification_qualitative_analysis",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "structure_based",
+            "order_based",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "IUPAC/isomerism/acid-base effect question"
+          ],
+          "tricky_generation_rules": [
+            "stability order with resonance/inductive/hyperconjugation"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "GOC stability order",
+            "isomerism precision"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_hydrocarbons",
+        "subject_section": "Chemistry",
+        "class_level": "XI",
+        "chapter": "Hydrocarbons",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "alkanes_alkenes_alkynes_reactions",
+            "trend_priority": "high",
+            "forms": [
+              "reaction_product"
+            ]
+          },
+          {
+            "topic": "aromaticity_benzene_reactions",
+            "trend_priority": "medium_high",
+            "forms": [
+              "statement",
+              "product"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "reaction_product",
+            "mechanism_basic",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "simple product/reagent/aromaticity"
+          ],
+          "tricky_generation_rules": [
+            "Markovnikov/anti-Markovnikov and ozonolysis traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "reaction product prediction"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_haloalkanes_haloarenes",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Haloalkanes and Haloarenes",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "SN1_SN2_elimination",
+            "trend_priority": "high",
+            "forms": [
+              "mechanism",
+              "order"
+            ]
+          },
+          {
+            "topic": "preparation_reactions_uses",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "reaction_product",
+            "order_based",
+            "statement"
+          ],
+          "low_hanging_generation_rules": [
+            "SN1/SN2/reactivity order"
+          ],
+          "tricky_generation_rules": [
+            "competing substitution-elimination"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "mechanism-based reactivity"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_alcohols_phenols_ethers",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Alcohols, Phenols and Ethers",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "preparation_properties_reactions",
+            "trend_priority": "high",
+            "forms": [
+              "reaction_product"
+            ]
+          },
+          {
+            "topic": "phenol_acidity_named_reactions",
+            "trend_priority": "medium_high",
+            "forms": [
+              "order",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "reaction_product",
+            "order_based",
+            "NCERT_fact"
+          ],
+          "low_hanging_generation_rules": [
+            "phenol acidity/product question"
+          ],
+          "tricky_generation_rules": [
+            "Williamson synthesis limitations"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "named reaction product logic"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_carbonyl_carboxylic",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Aldehydes, Ketones and Carboxylic Acids",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "nucleophilic_addition_named_reactions",
+            "trend_priority": "very_high",
+            "forms": [
+              "reaction_product"
+            ]
+          },
+          {
+            "topic": "carboxylic_acid_derivatives_acidity",
+            "trend_priority": "high",
+            "forms": [
+              "order",
+              "statement"
+            ]
+          },
+          {
+            "topic": "distinguishing_tests",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "reaction_product",
+            "statement_based",
+            "order_based"
+          ],
+          "low_hanging_generation_rules": [
+            "regularly include one product/reagent or acidity order question"
+          ],
+          "tricky_generation_rules": [
+            "multi-reagent sequence but keep NEET-level"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "product prediction",
+            "reagent selectivity"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_amines",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Amines",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "basicity_order_diazonium",
+            "trend_priority": "high",
+            "forms": [
+              "order",
+              "reaction"
+            ]
+          },
+          {
+            "topic": "preparation_tests",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "order_based",
+            "reaction_product",
+            "statement"
+          ],
+          "low_hanging_generation_rules": [
+            "basicity order/diazonium direct"
+          ],
+          "tricky_generation_rules": [
+            "aniline vs aliphatic amine exception"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "basicity trends",
+            "diazonium chemistry"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_biomolecules",
+        "subject_section": "Chemistry",
+        "class_level": "XII",
+        "chapter": "Biomolecules",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "carbohydrates_proteins_nucleic_acids",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_fact",
+              "match"
+            ]
+          },
+          {
+            "topic": "vitamins_enzymes",
+            "trend_priority": "medium",
+            "forms": [
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_fact",
+            "match_the_following",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "direct NCERT fact/matching"
+          ],
+          "tricky_generation_rules": [
+            "mixed biomolecule classification statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "NCERT fact precision"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_environment",
+        "subject_section": "Chemistry",
+        "class_level": "XI/XII",
+        "chapter": "Environmental Chemistry / Chemistry in Everyday Life / Polymers",
+        "syllabus_status_2026": "legacy_or_low_weight_check_current_syllabus",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 0.5,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "low",
+          "frequency_score_0_100": 8.3,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "environmental_pollutants_drugs_polymers",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact",
+              "match"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_fact",
+            "match_the_following"
+          ],
+          "low_hanging_generation_rules": [
+            "use as rare easy filler if active in your syllabus bank"
+          ],
+          "tricky_generation_rules": [
+            "do not overrepresent old deleted content"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "fact-based matching only"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      },
+      {
+        "id": "chem_practical",
+        "subject_section": "Chemistry",
+        "class_level": "XI/XII",
+        "chapter": "Practical Organic Chemistry and Qualitative Analysis",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.0,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 16.7,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "salt_analysis_functional_groups_purification",
+            "trend_priority": "medium_high",
+            "forms": [
+              "experiment_based",
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "experiment_based",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "simple functional group test or purification method"
+          ],
+          "tricky_generation_rules": [
+            "qualitative analysis inference"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "jee_main_physics_chemistry_reference": {
+          "use_as_secondary_style_reference": true,
+          "borrow": [
+            "practical chemistry identification"
+          ],
+          "do_not_borrow": [
+            "JEE_advanced_reagent_chains",
+            "rare_exceptions_not_in_NCERT",
+            "very_long_integer_type_calculations"
+          ]
+        }
+      }
+    ],
+    "Botany": [
+      {
+        "id": "bot_living_world",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "The Living World",
+        "syllabus_status_2026": "active_low_weight",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 0.5,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "low",
+          "frequency_score_0_100": 8.3,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "taxonomy_basics",
+            "trend_priority": "low",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ],
+            "subtopics": [
+              "taxonomical aids",
+              "binomial nomenclature"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_fact",
+            "statement_based"
+          ],
+          "low_hanging_generation_rules": [
+            "rare easy factual question"
+          ],
+          "tricky_generation_rules": [
+            "avoid overusing; merge with biological classification in tests"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_biological_classification",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Biological Classification",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "kingdom_monera_protista_fungi",
+            "trend_priority": "high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          },
+          {
+            "topic": "virus_viroid_lichen_mycorrhiza",
+            "trend_priority": "medium_high",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "NCERT table/example-based question"
+          ],
+          "tricky_generation_rules": [
+            "multi-statement organism feature comparison"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_plant_kingdom",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Plant Kingdom",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "algae_bryophytes_pteridophytes",
+            "trend_priority": "high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          },
+          {
+            "topic": "gymnosperm_angiosperm_life_cycle",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "examples/features/life-cycle direct questions"
+          ],
+          "tricky_generation_rules": [
+            "gametophyte/sporophyte dominance and alternation traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_morphology",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Morphology of Flowering Plants",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "root_stem_leaf_modifications",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "NCERT_example"
+            ]
+          },
+          {
+            "topic": "inflorescence_flower_fruit_seed",
+            "trend_priority": "high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "NCERT examples and family features"
+          ],
+          "tricky_generation_rules": [
+            "families floral formula/diagram-based statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_anatomy",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Anatomy of Flowering Plants",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "tissues_anatomy_stem_root_leaf",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "secondary_growth",
+            "trend_priority": "medium",
+            "forms": [
+              "conceptual",
+              "diagram"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "diagram of tissue/root/stem arrangement"
+          ],
+          "tricky_generation_rules": [
+            "secondary growth statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_cell_unit",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Cell: The Unit of Life",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "cell_organelles",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "membrane_cell_wall_ribosome",
+            "trend_priority": "medium_high",
+            "forms": [
+              "NCERT_fact",
+              "match"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "organelle function matching"
+          ],
+          "tricky_generation_rules": [
+            "membrane model/prokaryote-eukaryote comparison"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_biomolecules",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Biomolecules",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "proteins_enzymes_carbohydrates_lipids",
+            "trend_priority": "high",
+            "forms": [
+              "statement",
+              "match"
+            ]
+          },
+          {
+            "topic": "nucleic_acids_metabolism",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "enzyme/protein/carbohydrate factual question"
+          ],
+          "tricky_generation_rules": [
+            "metabolic pathway/enzyme statement traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_cell_cycle",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Cell Cycle and Cell Division",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "mitosis_meiosis",
+            "trend_priority": "very_high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "cell_cycle_phases_checkpoints",
+            "trend_priority": "high",
+            "forms": [
+              "sequence",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "regularly include phase/diagram/sequence question"
+          ],
+          "tricky_generation_rules": [
+            "crossing over, chromosome number, meiosis stage traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_photosynthesis",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Photosynthesis in Higher Plants",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "light_reaction_photophosphorylation",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "C3_C4_CAM_calvin_cycle",
+            "trend_priority": "high",
+            "forms": [
+              "match",
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "C3/C4 comparison or pigment/electron flow"
+          ],
+          "tricky_generation_rules": [
+            "compensation point/photorespiration tricky statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_respiration",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Respiration in Plants",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.5,
+            "min_safe": 0,
+            "max_safe": 3
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 25.0,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "glycolysis_TCA_ETS",
+            "trend_priority": "high",
+            "forms": [
+              "sequence",
+              "statement"
+            ]
+          },
+          {
+            "topic": "respiratory_quotient",
+            "trend_priority": "medium",
+            "forms": [
+              "calculation",
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based",
+            "calculation"
+          ],
+          "low_hanging_generation_rules": [
+            "ATP yield/pathway location direct"
+          ],
+          "tricky_generation_rules": [
+            "RQ and amphibolic pathway traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_pgd",
+        "subject_section": "Botany",
+        "class_level": "XI",
+        "chapter": "Plant Growth and Development",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "plant_hormones",
+            "trend_priority": "high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          },
+          {
+            "topic": "photoperiodism_vernalisation",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "hormone function matching"
+          ],
+          "tricky_generation_rules": [
+            "hormone interaction/photoperiodism statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_sexual_reproduction_flowering",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Sexual Reproduction in Flowering Plants",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "flower_microsporogenesis_megasporogenesis",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "sequence"
+            ]
+          },
+          {
+            "topic": "pollination_fertilisation_seed_fruit",
+            "trend_priority": "very_high",
+            "forms": [
+              "statement",
+              "diagram"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "embryo sac/pollen/fertilisation diagram/sequence"
+          ],
+          "tricky_generation_rules": [
+            "double fertilisation and ploidy traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_principles_inheritance",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Principles of Inheritance and Variation",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 4.0,
+            "min_safe": 3,
+            "max_safe": 5
+          },
+          "frequency_band": "very_high",
+          "frequency_score_0_100": 66.7,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "mendelian_inheritance",
+            "trend_priority": "very_high",
+            "forms": [
+              "pedigree",
+              "ratio",
+              "statement"
+            ]
+          },
+          {
+            "topic": "linkage_crossing_over_genetic_disorders",
+            "trend_priority": "high",
+            "forms": [
+              "numerical",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based",
+            "ratio_calculation",
+            "pedigree"
+          ],
+          "low_hanging_generation_rules": [
+            "must include Mendelian/pedigree/genetic disorder regularly"
+          ],
+          "tricky_generation_rules": [
+            "dihybrid/test-cross/linkage ratio traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_molecular_basis",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Molecular Basis of Inheritance",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 6.0,
+            "min_safe": 5,
+            "max_safe": 7
+          },
+          "frequency_band": "very_high",
+          "frequency_score_0_100": 100,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "DNA_RNA_replication_transcription_translation",
+            "trend_priority": "very_high",
+            "forms": [
+              "sequence",
+              "statement",
+              "diagram"
+            ]
+          },
+          {
+            "topic": "genetic_code_lac_operon_HGP_DNA_fingerprinting",
+            "trend_priority": "very_high",
+            "forms": [
+              "statement",
+              "match"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "this is a locked high-weight chapter: include multiple line-based and process questions"
+          ],
+          "tricky_generation_rules": [
+            "lac operon regulation, genetic code, DNA fingerprinting statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        },
+        "notes": "Recent public 5-year tables place Molecular Basis among the highest Botany contributors; use as locked high-yield."
+      },
+      {
+        "id": "bot_microbes",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Microbes in Human Welfare",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "industrial_products_antibiotics",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_fact",
+              "match"
+            ]
+          },
+          {
+            "topic": "sewage_biogas_biocontrol_biofertiliser",
+            "trend_priority": "medium_high",
+            "forms": [
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "NCERT example-microbe-product matching"
+          ],
+          "tricky_generation_rules": [
+            "biocontrol/biofertiliser examples mixed statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_organisms_populations",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Organisms and Populations",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "population_interactions",
+            "trend_priority": "high",
+            "forms": [
+              "graph",
+              "statement"
+            ]
+          },
+          {
+            "topic": "adaptations_growth_models",
+            "trend_priority": "medium_high",
+            "forms": [
+              "graph",
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based",
+            "graph"
+          ],
+          "low_hanging_generation_rules": [
+            "population interaction/growth curve question"
+          ],
+          "tricky_generation_rules": [
+            "logistic/exponential and interaction example traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_ecosystem",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Ecosystem",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "productivity_energy_flow",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "calculation"
+            ]
+          },
+          {
+            "topic": "nutrient_cycles_ecological_pyramids",
+            "trend_priority": "high",
+            "forms": [
+              "statement",
+              "match"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based",
+            "simple_calculation"
+          ],
+          "low_hanging_generation_rules": [
+            "ecological pyramid/energy flow diagram"
+          ],
+          "tricky_generation_rules": [
+            "inverted pyramid and nutrient cycle exceptions"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_biodiversity",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Biodiversity and Conservation",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "biodiversity_patterns_loss_conservation",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ]
+          },
+          {
+            "topic": "hotspots_sacred_groves_Red_list",
+            "trend_priority": "medium_high",
+            "forms": [
+              "match"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "NCERT examples/hotspots/conservation method"
+          ],
+          "tricky_generation_rules": [
+            "species-area relation and extinction causes"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "bot_biotech_application",
+        "subject_section": "Botany",
+        "class_level": "XII",
+        "chapter": "Biotechnology Applications Cross-link",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.0,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 16.7,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "GM_crops_RNAi_bioremediation",
+            "trend_priority": "medium_high",
+            "forms": [
+              "statement",
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "include as cross-link with molecular genetics/microbes occasionally"
+          ],
+          "tricky_generation_rules": [
+            "do not duplicate Zoology biotech quota in same paper"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      }
+    ],
+    "Zoology": [
+      {
+        "id": "zoo_animal_kingdom",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Animal Kingdom",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 4.0,
+            "min_safe": 3,
+            "max_safe": 5
+          },
+          "frequency_band": "very_high",
+          "frequency_score_0_100": 66.7,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "non_chordates",
+            "trend_priority": "very_high",
+            "forms": [
+              "NCERT_table",
+              "match",
+              "diagram"
+            ]
+          },
+          {
+            "topic": "chordates_class_features",
+            "trend_priority": "very_high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          },
+          {
+            "topic": "examples_and_body_plan",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_example"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "locked high-yield: feature-example matching from NCERT tables"
+          ],
+          "tricky_generation_rules": [
+            "multi-statement phylum/class characteristics"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_structural_org",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Structural Organisation in Animals",
+        "syllabus_status_2026": "active_with_legacy_filter",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.5,
+            "min_safe": 2,
+            "max_safe": 5
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 58.3,
+          "confidence": "high",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "animal_tissues",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "cockroach_frog_earthworm_legacy_examples",
+            "trend_priority": "medium",
+            "forms": [
+              "diagram",
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "tissue identification/organ system diagram"
+          ],
+          "tricky_generation_rules": [
+            "do not overdo old animal morphology if current syllabus excludes parts"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_biomolecules",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Biomolecules",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "enzymes_proteins_nucleic_acids",
+            "trend_priority": "high",
+            "forms": [
+              "statement",
+              "match"
+            ]
+          },
+          {
+            "topic": "metabolism_secondary_metabolites",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "enzyme/protein/nucleic acid line-based question"
+          ],
+          "tricky_generation_rules": [
+            "enzyme inhibition or biomolecule classification traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_digestion",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Digestion and Absorption",
+        "syllabus_status_2026": "legacy_check_current_syllabus",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 0.5,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "low",
+          "frequency_score_0_100": 8.3,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "enzymes_absorption",
+            "trend_priority": "low",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "only use if current syllabus bank marks it active"
+          ],
+          "tricky_generation_rules": [
+            "legacy-heavy; avoid in strict 2026 mode if not included"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_breathing",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Breathing and Exchange of Gases",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "respiratory_volumes_transport",
+            "trend_priority": "high",
+            "forms": [
+              "calculation",
+              "statement"
+            ]
+          },
+          {
+            "topic": "neural_regulation_disorders",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based",
+            "simple_calculation"
+          ],
+          "low_hanging_generation_rules": [
+            "lung volume or gas transport direct"
+          ],
+          "tricky_generation_rules": [
+            "Bohr effect/regulation statement traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_circulation",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Body Fluids and Circulation",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "blood_components_clotting_immunity_link",
+            "trend_priority": "high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          },
+          {
+            "topic": "cardiac_cycle_ECG",
+            "trend_priority": "very_high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "blood_groups",
+            "trend_priority": "medium_high",
+            "forms": [
+              "single_correct"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "ECG/cardiac cycle/blood group common low hanging"
+          ],
+          "tricky_generation_rules": [
+            "cardiac output/cycle phase statement traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_excretion",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Excretory Products and Their Elimination",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "nephron_urine_formation",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "counter_current_osmoregulation",
+            "trend_priority": "medium_high",
+            "forms": [
+              "conceptual"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "nephron diagram/function direct question"
+          ],
+          "tricky_generation_rules": [
+            "hormonal regulation/counter-current trap"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_locomotion",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Locomotion and Movement",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "muscle_contraction",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "sequence"
+            ]
+          },
+          {
+            "topic": "skeletal_system_disorders",
+            "trend_priority": "medium_high",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "sliding filament/actin-myosin direct"
+          ],
+          "tricky_generation_rules": [
+            "sarcomere band changes and disorder matching"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_neural",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Neural Control and Coordination",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "neuron_impulse_synapse",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "sequence"
+            ]
+          },
+          {
+            "topic": "brain_eye_ear",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "neuron/eye/ear diagram label and function"
+          ],
+          "tricky_generation_rules": [
+            "impulse transmission and sensory organ statements"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_chemical_coordination",
+        "subject_section": "Zoology",
+        "class_level": "XI",
+        "chapter": "Chemical Coordination and Integration",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.5,
+            "min_safe": 1,
+            "max_safe": 4
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 41.7,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "endocrine_glands_hormones",
+            "trend_priority": "very_high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          },
+          {
+            "topic": "hormone_mechanism_disorders",
+            "trend_priority": "medium_high",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "hormone-gland-function matching"
+          ],
+          "tricky_generation_rules": [
+            "hypo/hyper-secretion and mechanism traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_human_reproduction",
+        "subject_section": "Zoology",
+        "class_level": "XII",
+        "chapter": "Human Reproduction",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 4.0,
+            "min_safe": 3,
+            "max_safe": 5
+          },
+          "frequency_band": "very_high",
+          "frequency_score_0_100": 66.7,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "male_female_reproductive_system",
+            "trend_priority": "high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "gametogenesis_menstrual_cycle_fertilisation",
+            "trend_priority": "very_high",
+            "forms": [
+              "sequence",
+              "statement"
+            ]
+          },
+          {
+            "topic": "pregnancy_parturition_lactation",
+            "trend_priority": "medium_high",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "regularly include gametogenesis/menstrual/fertilisation question"
+          ],
+          "tricky_generation_rules": [
+            "hormonal regulation and ploidy/stage traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_reproductive_health",
+        "subject_section": "Zoology",
+        "class_level": "XII",
+        "chapter": "Reproductive Health",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "contraception_ART_STI_MTP",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_fact",
+              "match"
+            ]
+          },
+          {
+            "topic": "population_policy",
+            "trend_priority": "medium",
+            "forms": [
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "contraceptive/ART/STI direct NCERT question"
+          ],
+          "tricky_generation_rules": [
+            "method-category matching traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_evolution",
+        "subject_section": "Zoology",
+        "class_level": "XII",
+        "chapter": "Evolution",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "evidences_theories",
+            "trend_priority": "high",
+            "forms": [
+              "statement",
+              "match"
+            ]
+          },
+          {
+            "topic": "Hardy_Weinberg",
+            "trend_priority": "medium_high",
+            "forms": [
+              "simple_calculation",
+              "conceptual"
+            ]
+          },
+          {
+            "topic": "human_evolution",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based",
+            "simple_calculation"
+          ],
+          "low_hanging_generation_rules": [
+            "Hardy-Weinberg/direct theory/evidence question"
+          ],
+          "tricky_generation_rules": [
+            "selection vs drift and allele-frequency calculation"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_human_health",
+        "subject_section": "Zoology",
+        "class_level": "XII",
+        "chapter": "Human Health and Disease",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.5,
+            "min_safe": 2,
+            "max_safe": 5
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 58.3,
+          "confidence": "high",
+          "recent_trend": "stable_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "infectious_diseases_pathogens",
+            "trend_priority": "very_high",
+            "forms": [
+              "match",
+              "NCERT_fact"
+            ]
+          },
+          {
+            "topic": "immunity_vaccination_AIDS_cancer",
+            "trend_priority": "high",
+            "forms": [
+              "statement"
+            ]
+          },
+          {
+            "topic": "drugs_alcohol_abuse",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "pathogen-disease/vector matching locked"
+          ],
+          "tricky_generation_rules": [
+            "immunity terms/cancer/AIDS statement traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_biotech_principles",
+        "subject_section": "Zoology",
+        "class_level": "XII",
+        "chapter": "Biotechnology: Principles and Processes",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 3.0,
+            "min_safe": 2,
+            "max_safe": 4
+          },
+          "frequency_band": "high",
+          "frequency_score_0_100": 50.0,
+          "confidence": "high",
+          "recent_trend": "increasing_high"
+        },
+        "topic_focus": [
+          {
+            "topic": "tools_of_recombinant_DNA",
+            "trend_priority": "very_high",
+            "forms": [
+              "diagram",
+              "statement"
+            ]
+          },
+          {
+            "topic": "PCR_vectors_enzymes_gel_electrophoresis",
+            "trend_priority": "very_high",
+            "forms": [
+              "sequence",
+              "match"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "restriction enzyme/vector/PCR/gel question must rotate"
+          ],
+          "tricky_generation_rules": [
+            "sequence of rDNA technology and enzyme function traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_biotech_applications",
+        "subject_section": "Zoology",
+        "class_level": "XII",
+        "chapter": "Biotechnology and Its Applications",
+        "syllabus_status_2026": "active",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 2.0,
+            "min_safe": 1,
+            "max_safe": 3
+          },
+          "frequency_band": "medium_high",
+          "frequency_score_0_100": 33.3,
+          "confidence": "medium",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "medical_biotech_gene_therapy_ELISA",
+            "trend_priority": "high",
+            "forms": [
+              "NCERT_fact",
+              "statement"
+            ]
+          },
+          {
+            "topic": "GM_crops_RNAi_transgenic_animals",
+            "trend_priority": "medium_high",
+            "forms": [
+              "match",
+              "statement"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "Bt cotton/RNAi/ELISA/gene therapy line-based"
+          ],
+          "tricky_generation_rules": [
+            "application-mechanism matching traps"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      },
+      {
+        "id": "zoo_food_production_legacy",
+        "subject_section": "Zoology",
+        "class_level": "XII",
+        "chapter": "Strategies for Enhancement in Food Production / Applied Biology Cross-link",
+        "syllabus_status_2026": "legacy_or_low_weight_check_current_syllabus",
+        "trend_model": {
+          "basis": "NEET/AIPMT approx 20-year trend + recent 5-year public analyses; replace with exact counts when your PYQ corpus is tagged",
+          "expected_questions_per_45_question_section": {
+            "target_avg": 1.0,
+            "min_safe": 0,
+            "max_safe": 2
+          },
+          "frequency_band": "medium",
+          "frequency_score_0_100": 16.7,
+          "confidence": "low",
+          "recent_trend": "stable"
+        },
+        "topic_focus": [
+          {
+            "topic": "animal_husbandry_plant_breeding_legacy",
+            "trend_priority": "medium",
+            "forms": [
+              "NCERT_fact",
+              "match"
+            ]
+          }
+        ],
+        "nta_question_behaviour": {
+          "most_common_forms": [
+            "NCERT_line_based",
+            "statement_based",
+            "match_the_following",
+            "assertion_reason",
+            "diagram_based"
+          ],
+          "low_hanging_generation_rules": [
+            "only as legacy/current-syllabus-compatible filler"
+          ],
+          "tricky_generation_rules": [
+            "avoid old deleted-heavy distribution"
+          ],
+          "avoid_patterns": [
+            "do_not_create_out_of_syllabus_depth",
+            "avoid_JEE_Advanced_style_derivations",
+            "avoid_one_chapter_monotony_inside_full_test",
+            "avoid_exact_PYQ_clone"
+          ]
+        }
+      }
+    ]
+  },
+  "paper_templates": {
+    "neet_full_balanced_180": {
+      "description": "Balanced full NEET-style paper: 45 Physics, 45 Chemistry, 45 Botany, 45 Zoology.",
+      "section_chapter_counts": {
+        "Physics": {
+          "phy_measurement": 2,
+          "phy_kinematics": 2,
+          "phy_laws_motion": 2,
+          "phy_work_energy_power": 2,
+          "phy_rotational": 2,
+          "phy_gravitation": 2,
+          "phy_solids_fluids": 2,
+          "phy_thermal_thermo": 3,
+          "phy_kinetic_theory": 1,
+          "phy_oscillations": 2,
+          "phy_waves": 1,
+          "phy_electrostatics_capacitance": 4,
+          "phy_current_electricity": 4,
+          "phy_magnetism": 3,
+          "phy_emi_ac": 3,
+          "phy_emwaves": 0,
+          "phy_ray_optics": 3,
+          "phy_wave_optics": 1,
+          "phy_dual_nature": 1,
+          "phy_atoms_nuclei": 3,
+          "phy_semiconductor": 2
+        },
+        "Chemistry": {
+          "chem_some_basic_concepts": 2,
+          "chem_atomic_structure": 2,
+          "chem_periodicity": 1,
+          "chem_bonding": 4,
+          "chem_thermodynamics": 2,
+          "chem_equilibrium": 3,
+          "chem_redox": 1,
+          "chem_solutions": 3,
+          "chem_electrochemistry": 2,
+          "chem_kinetics": 2,
+          "chem_d_f_block": 2,
+          "chem_coordination": 4,
+          "chem_p_block": 2,
+          "chem_goc": 4,
+          "chem_hydrocarbons": 2,
+          "chem_haloalkanes_haloarenes": 1,
+          "chem_alcohols_phenols_ethers": 1,
+          "chem_carbonyl_carboxylic": 3,
+          "chem_amines": 2,
+          "chem_biomolecules": 1,
+          "chem_environment": 0,
+          "chem_practical": 1
+        },
+        "Botany": {
+          "bot_living_world": 0,
+          "bot_biological_classification": 2,
+          "bot_plant_kingdom": 3,
+          "bot_morphology": 2,
+          "bot_anatomy": 2,
+          "bot_cell_unit": 3,
+          "bot_biomolecules": 3,
+          "bot_cell_cycle": 3,
+          "bot_photosynthesis": 2,
+          "bot_respiration": 1,
+          "bot_pgd": 2,
+          "bot_sexual_reproduction_flowering": 3,
+          "bot_principles_inheritance": 4,
+          "bot_molecular_basis": 6,
+          "bot_microbes": 2,
+          "bot_organisms_populations": 2,
+          "bot_ecosystem": 2,
+          "bot_biodiversity": 2,
+          "bot_biotech_application": 1
+        },
+        "Zoology": {
+          "zoo_animal_kingdom": 4,
+          "zoo_structural_org": 4,
+          "zoo_biomolecules": 3,
+          "zoo_digestion": 0,
+          "zoo_breathing": 3,
+          "zoo_circulation": 3,
+          "zoo_excretion": 2,
+          "zoo_locomotion": 2,
+          "zoo_neural": 3,
+          "zoo_chemical_coordination": 2,
+          "zoo_human_reproduction": 4,
+          "zoo_reproductive_health": 2,
+          "zoo_evolution": 3,
+          "zoo_human_health": 4,
+          "zoo_biotech_principles": 3,
+          "zoo_biotech_applications": 2,
+          "zoo_food_production_legacy": 1
+        }
+      },
+      "use_case": "default full-test selector",
+      "rotation_note": "Do not use exact same counts every test. Use count as target center and rotate within min_safe/max_safe."
+    },
+    "neet_score_booster_high_yield": {
+      "description": "Slightly high-yield biased paper for practice blocks; still must not ignore low/moderate chapters.",
+      "rules": [
+        "increase high/very_high chapters by +1 within section cap",
+        "decrease low/legacy chapters first",
+        "cap any single chapter at 6 in Botany/Zoology, 4 in Physics/Chemistry except molecular genetics"
+      ]
+    },
+    "neet_diversity_wide_coverage": {
+      "description": "Wider coverage paper for preventing chapter overfitting.",
+      "rules": [
+        "force at least 16 Physics chapters, 17 Chemistry chapters, 16 Botany chapters, 15 Zoology chapters to appear",
+        "reduce locked high-yield by 1 only if enough good questions exist",
+        "use more easy/medium NCERT-line questions but maintain 20% statement/match/diagram mix"
+      ]
+    }
+  },
+  "item_form_observations": {
+    "recent_NEET_item_style_shift": {
+      "summary": "Recent papers show more statement, matching, graph/diagram and multi-statement items; full tests should not be only direct one-line MCQs.",
+      "selector_translation": {
+        "Physics": "graph/diagram/experiment items should appear regularly; numerical dominance remains",
+        "Chemistry": "statement + matching + NCERT fact checks should be mixed with numericals/reactions",
+        "Biology": "statement, match-the-following, assertion-reason and NCERT diagram/table/example items should be heavily represented"
+      },
+      "example_distribution_targets_per_180": {
+        "straight_single_line_MCQ": {
+          "min": 75,
+          "target": 95,
+          "max": 115
+        },
+        "statement_or_multi_statement": {
+          "min": 25,
+          "target": 40,
+          "max": 55
+        },
+        "match_the_following": {
+          "min": 10,
+          "target": 20,
+          "max": 35
+        },
+        "graph_diagram_table": {
+          "min": 10,
+          "target": 18,
+          "max": 30
+        },
+        "assertion_reason": {
+          "min": 3,
+          "target": 8,
+          "max": 15
+        }
+      }
+    }
+  },
+  "selector_rules_for_codex": {
+    "metadata_required_per_question": [
+      "exam",
+      "subject_section",
+      "class_level",
+      "chapter_id",
+      "chapter",
+      "topic",
+      "subtopic",
+      "difficulty",
+      "question_form",
+      "source_quality",
+      "ncert_anchor",
+      "pyq_similarity_score",
+      "duplicate_cluster_id",
+      "is_diagram_based",
+      "is_graph_based",
+      "validation_status"
+    ],
+    "hard_filters": [
+      "validation_status must be approved",
+      "source_quality >= 0.75",
+      "pyq_similarity_score <= 0.82 unless explicitly marked as PYQ practice",
+      "do not select same duplicate_cluster_id twice in one test",
+      "do not select out_of_current_syllabus questions unless test_mode allows legacy"
+    ],
+    "selection_algorithm": [
+      "choose paper template using deterministic seed",
+      "calculate section quotas from trend JSON",
+      "fill locked high-yield quotas first, then medium chapters, then low/legacy only if allowed",
+      "inside each chapter, enforce topic_focus diversity before selecting second question from same subtopic",
+      "apply difficulty and question_form quotas at section level",
+      "run audit; if distribution violates critical constraints, reroll with same seed + salt",
+      "save test_seed, blueprint_version, selected_question_ids, distribution_audit, and warnings"
+    ],
+    "active_test_security_display": [
+      "hide chapter, topic, difficulty, source, and trend tags during active test",
+      "after submission show full analytics by subject/chapter/topic/difficulty/question_form"
+    ],
+    "fail_conditions": [
+      "insufficient approved questions for a locked high-yield quota",
+      "too many duplicate clusters available for a chapter",
+      "chapter quota cannot be satisfied without breaking current syllabus filter"
+    ]
+  },
+  "jee_main_reference": {
+    "purpose": "JEE Main is used only as a secondary style reference for Physics/Chemistry because JEE has stronger numerical/CBT variation; NEET depth must remain NCERT/NEET-level.",
+    "physics_borrow": [
+      "graph/data interpretation",
+      "experimental skill MCQ",
+      "multi-step but short numerical",
+      "unit/dimension traps",
+      "conceptual force/circuit/optics diagrams"
+    ],
+    "chemistry_borrow": [
+      "physical chemistry numerical clarity",
+      "organic reaction-product logic",
+      "inorganic statement precision",
+      "coordination/GOC trend questions"
+    ],
+    "do_not_borrow": [
+      "JEE Advanced style derivations",
+      "integer-heavy lengthy calculations",
+      "rare reagent mechanisms outside NEET",
+      "multi-correct marking"
+    ]
+  },
+  "source_references": [
+    {
+      "name": "NTA NEET official site",
+      "url": "https://neet.nta.nic.in/",
+      "used_for": "official exam authority and NEET UG public information"
+    },
+    {
+      "name": "NEET UG 2026 Information Bulletin / Syllabus notices",
+      "url": "https://neet.nta.nic.in/",
+      "used_for": "exam pattern and current-syllabus alignment; exact syllabus should be synced from latest official notice"
+    },
+    {
+      "name": "NTA JEE Main official site and 2026 information bulletin/syllabus pages",
+      "url": "https://jeemain.nta.nic.in/",
+      "used_for": "secondary JEE Main Physics/Chemistry style reference"
+    },
+    {
+      "name": "PW NEET chapter-wise 5-year analysis 2021-2025",
+      "url": "https://www.pw.live/neet/exams/neet-chapter-wise-weightage",
+      "used_for": "recent 5-year chapter intensity signal"
+    },
+    {
+      "name": "Target Publications NEET UG 2025 paper analysis",
+      "url": "https://targetpublications.org/blog/neet-ug-2025-paper-analysis",
+      "used_for": "recent subject difficulty and high-weight topic signals"
+    },
+    {
+      "name": "CareerOrbits NEET chapterwise trend summary",
+      "url": "https://www.careerorbits.com/neet/neet-important-chapters-chapter-wise-weightage-neet",
+      "used_for": "broad past-paper trend heuristics and class split signal"
+    },
+    {
+      "name": "Recent NEET MCQ type analysis 2021-2024 public PDF mirror",
+      "url": "https://www.scribd.com/document/738934667/Chapter-wise-Analysis-NEET-2021-to-NEET-2024-8-Papers",
+      "used_for": "recent item-form shift signal; lower-trust source, included only for item-type heuristic"
+    }
+  ],
+  "checksum_sha256_without_checksum": "e21b6727426f9b1684bca72cd126e9dc35d895aa9ac9ec3fe81a288438b09fa6"
+}

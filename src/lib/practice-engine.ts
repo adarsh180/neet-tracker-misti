@@ -1,9 +1,12 @@
+import { randomUUID } from "node:crypto";
+
 import type { PracticeTest, Prisma } from "@prisma/client";
 
 import { extractJsonArray } from "@/lib/ai-json";
 import { db } from "@/lib/db";
 import { AI_MODELS, chatWithAI } from "@/lib/openrouter";
-import { assembleQuestionsFromBank, writeBackBankStats } from "@/lib/question-bank";
+import { assembleQuestionsFromBank, writeBackBankStats, type BankAssemblyAudit } from "@/lib/question-bank";
+import { buildDistributionAudit, TREND_BLUEPRINT_VERSION, TREND_FULL_TEMPLATE } from "@/lib/trend-blueprint";
 
 /**
  * Practice Arena — the question-paper engine.
@@ -34,6 +37,7 @@ export const PRACTICE_MIN_QUESTIONS = 50;
 export const PRACTICE_MAX_QUESTIONS = 180;
 export const PRACTICE_DEFAULT_AI_FRESH_PERCENT = 3;
 export const PRACTICE_MAX_AI_FRESH_PERCENT = 4;
+export const PRACTICE_MAX_AI_FRESH_QUESTIONS = 5;
 
 export const PRACTICE_SUBJECTS = ["physics", "chemistry", "botany", "zoology"] as const;
 export type PracticeSubjectSlug = (typeof PRACTICE_SUBJECTS)[number];
@@ -130,6 +134,11 @@ export function normalizeAiFreshPercent(value: unknown) {
   return Math.max(0, Math.min(PRACTICE_MAX_AI_FRESH_PERCENT, Math.round(numeric)));
 }
 
+export function practiceAiFreshQuestionCount(questionCount: number, aiFreshPercent: number) {
+  const target = Math.round((questionCount * aiFreshPercent) / 100);
+  return Math.max(0, Math.min(PRACTICE_MAX_AI_FRESH_QUESTIONS, target));
+}
+
 // ---------------------------------------------------------------------------
 // Test creation
 // ---------------------------------------------------------------------------
@@ -166,6 +175,7 @@ export async function createPracticeTest(config: PracticeConfig) {
   const aiFreshPercent = normalizeAiFreshPercent(config.aiFreshPercent);
   const durationMinutes = Math.max(1, Math.min(180, Math.round(config.durationMinutes ?? count)));
   const weakZones = await snapshotWeakZones();
+  const testSeed = randomUUID();
   const filters = {
     classLevel: config.classLevel ?? null,
     subjects: config.subjects?.length ? config.subjects : config.subject ? [config.subject] : null,
@@ -190,6 +200,9 @@ export async function createPracticeTest(config: PracticeConfig) {
       filtersJson: filters as unknown as Prisma.InputJsonValue,
       questionsJson: [] as unknown as Prisma.InputJsonValue,
       weakZonesJson: weakZones as unknown as Prisma.InputJsonValue,
+      testSeed,
+      blueprintVersion: TREND_BLUEPRINT_VERSION,
+      paperTemplate: TREND_FULL_TEMPLATE,
     },
   });
 }
@@ -385,34 +398,46 @@ export async function generateNextBatch(testId: string) {
 
   let existing = test.questionsJson as unknown as PracticeQuestion[];
   let model = test.model;
+  const assemblyAudits: BankAssemblyAudit[] = [];
   const aiFreshPercent = normalizeAiFreshPercent(test.aiFreshPercent);
-  const aiFreshCount = Math.round((test.questionCount * aiFreshPercent) / 100);
+  const aiFreshCount = practiceAiFreshQuestionCount(test.questionCount, aiFreshPercent);
   const bankTarget = Math.max(0, test.questionCount - aiFreshCount);
-  const existingBankIds = existing.map((question) => question.bankId).filter((id): id is string => Boolean(id));
-  const existingBankCount = existingBankIds.length;
 
+  const addBankQuestions = async (desiredCount: number) => {
+    if (desiredCount <= 0) return [] as PracticeQuestion[];
+    const excludeBankIds = existing.map((question) => question.bankId).filter((id): id is string => Boolean(id));
+    const audit: BankAssemblyAudit = { mode: test.mode, requested: desiredCount, selected: 0, quotas: [], warnings: [] };
+    const bankQuestions = await assembleQuestionsFromBank({
+      mode: test.mode as PracticeMode,
+      subject: test.subject as PracticeSubjectSlug | null,
+      subjects: ((test.filtersJson as { subjects?: PracticeSubjectSlug[] } | null)?.subjects ?? undefined),
+      classLevel: ((test.filtersJson as { classLevel?: string } | null)?.classLevel ?? undefined),
+      chapter: test.chapter,
+      chapters: ((test.filtersJson as { chapters?: string[] } | null)?.chapters ?? undefined),
+      topic: test.topic,
+      pyqYear: test.pyqYear,
+      questionCount: test.questionCount,
+      difficulty: test.difficulty as PracticeConfig["difficulty"],
+      desiredCount,
+      startIndex: existing.length,
+      excludeBankIds,
+      existingQuestions: existing,
+      testSeed: test.testSeed ?? test.id,
+      audit,
+    });
+    assemblyAudits.push(audit);
+    if (bankQuestions.length) {
+      existing = [...existing, ...bankQuestions];
+      model = bankQuestions.length >= test.questionCount ? "question-bank" : `question-bank+${model ?? "ai"}`;
+    }
+    return bankQuestions;
+  };
+
+  const existingBankCount = existing.map((question) => question.bankId).filter(Boolean).length;
   if (bankTarget > existingBankCount) {
     const neededFromBank = bankTarget - existingBankCount;
     if (neededFromBank > 0) {
-      const bankQuestions = await assembleQuestionsFromBank({
-        mode: test.mode as PracticeMode,
-        subject: test.subject as PracticeSubjectSlug | null,
-        subjects: ((test.filtersJson as { subjects?: PracticeSubjectSlug[] } | null)?.subjects ?? undefined),
-        classLevel: ((test.filtersJson as { classLevel?: string } | null)?.classLevel ?? undefined),
-        chapter: test.chapter,
-        chapters: ((test.filtersJson as { chapters?: string[] } | null)?.chapters ?? undefined),
-        topic: test.topic,
-        pyqYear: test.pyqYear,
-        questionCount: test.questionCount,
-        difficulty: test.difficulty as PracticeConfig["difficulty"],
-        desiredCount: neededFromBank,
-        startIndex: existing.length,
-        excludeBankIds: existingBankIds,
-      });
-      if (bankQuestions.length) {
-        existing = [...existing, ...bankQuestions];
-        model = bankQuestions.length >= test.questionCount ? "question-bank" : `question-bank+${test.model ?? "ai"}`;
-      }
+      const bankQuestions = await addBankQuestions(neededFromBank);
       if (bankQuestions.length < neededFromBank) {
         const filters = test.filtersJson ? JSON.stringify(test.filtersJson) : "{}";
         throw new Error(
@@ -431,40 +456,58 @@ export async function generateNextBatch(testId: string) {
 
   let added: PracticeQuestion[] = [];
 
-  if (remaining > 0 && liveAiRemaining <= 0) {
-    throw new Error(
-      `Question assembly stopped because the ${aiFreshPercent}% live-AI cap is already reached. ` +
-        `Bank questions=${existingBankCount}/${bankTarget}, live AI=${existingLiveAiCount}/${aiFreshCount}.`,
-    );
+  if (batchSize > 0) {
+    try {
+      const messages = [
+        {
+          role: "system" as const,
+          content:
+            "You are a precise NEET UG question paper setter. Respond only with a valid JSON array of objects. Never include markdown fences. Accuracy of answer keys is non-negotiable.",
+        },
+        { role: "user" as const, content: buildGenerationPrompt(test, batchSize, existing, weakZones) },
+      ];
+
+      let candidates: PracticeQuestion[] = [];
+      // Attempt 1: gemma-4 lane. Attempt 2: flash, which is more schema-reliable,
+      // when the first response can't be parsed into valid questions.
+      for (const lane of [PRACTICE_MODELS, [AI_MODELS.emergencyFallback]]) {
+        const result = await chatWithAI(messages, 12000, 0.4, PRACTICE_AI_TIMEOUT_MS, lane);
+        model = result.model;
+        candidates = validateBatch(extractJsonArray<RawQuestion>(result.content), existing.length);
+        if (candidates.length) break;
+        console.warn(
+          `[practice-engine] ${result.model} batch produced no valid questions. Raw head: ${result.content.slice(0, 300)} ... tail: ${result.content.slice(-120)}`,
+        );
+      }
+      added = await verifyBatch(candidates);
+    } catch (error) {
+      console.warn("[practice-engine] live AI batch failed; filling the remaining paper from bank.", error);
+    }
   }
 
-  if (batchSize > 0) {
-    const messages = [
-      {
-        role: "system" as const,
-        content:
-          "You are a precise NEET UG question paper setter. Respond only with a valid JSON array of objects. Never include markdown fences. Accuracy of answer keys is non-negotiable.",
-      },
-      { role: "user" as const, content: buildGenerationPrompt(test, batchSize, existing, weakZones) },
-    ];
+  if (added.length) existing = [...existing, ...added];
 
-    let candidates: PracticeQuestion[] = [];
-    // Attempt 1: gemma-4 lane. Attempt 2: flash, which is more schema-reliable,
-    // when the first response can't be parsed into valid questions.
-    for (const lane of [PRACTICE_MODELS, [AI_MODELS.emergencyFallback]]) {
-      const result = await chatWithAI(messages, 12000, 0.4, PRACTICE_AI_TIMEOUT_MS, lane);
-      model = result.model;
-      candidates = validateBatch(extractJsonArray<RawQuestion>(result.content), existing.length);
-      if (candidates.length) break;
-      console.warn(
-        `[practice-engine] ${result.model} batch produced no valid questions. Raw head: ${result.content.slice(0, 300)} ... tail: ${result.content.slice(-120)}`,
+  const stillNeeded = test.questionCount - existing.length;
+  if (stillNeeded > 0) {
+    const fallbackBankQuestions = await addBankQuestions(stillNeeded);
+    if (fallbackBankQuestions.length < stillNeeded) {
+      const filters = test.filtersJson ? JSON.stringify(test.filtersJson) : "{}";
+      throw new Error(
+        `Question assembly shortage: live AI added ${added.length}/${batchSize}, then bank fallback found ` +
+          `${fallbackBankQuestions.length}/${stillNeeded}. Filters=${filters}`,
       );
     }
-    added = await verifyBatch(candidates);
+    if (batchSize > 0 && added.length < batchSize) {
+      model = `${model ?? "ai"}+bank-fallback`;
+    }
   }
 
-  const questions = [...existing, ...added];
+  const questions = existing;
   const done = questions.length >= test.questionCount;
+  const distributionAudit = buildDistributionAudit(questions, {
+    blueprintWarnings: assemblyAudits.flatMap((audit) => audit.warnings),
+    assemblyAudits,
+  });
 
   const updated = await db.practiceTest.update({
     where: { id: test.id },
@@ -472,6 +515,10 @@ export async function generateNextBatch(testId: string) {
       questionsJson: questions as unknown as Prisma.InputJsonValue,
       status: done ? "READY" : "GENERATING",
       model,
+      blueprintVersion: TREND_BLUEPRINT_VERSION,
+      paperTemplate: TREND_FULL_TEMPLATE,
+      distributionAuditJson: distributionAudit as unknown as Prisma.InputJsonValue,
+      blueprintWarningsJson: distributionAudit.warnings as unknown as Prisma.InputJsonValue,
     },
   });
 
@@ -657,6 +704,10 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
     difficulty: test.difficulty,
     status: test.status,
     model: test.model,
+    blueprintVersion: test.blueprintVersion,
+    paperTemplate: test.paperTemplate,
+    distributionAudit: completed ? (test.distributionAuditJson as unknown) : null,
+    blueprintWarnings: completed ? (test.blueprintWarningsJson as unknown) : null,
     createdAt: test.createdAt,
     startedAt: test.startedAt,
     completedAt: test.completedAt,

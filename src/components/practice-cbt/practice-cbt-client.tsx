@@ -629,7 +629,7 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
 
           <div className="setup-summary">
             <strong>Paper policy</strong>
-            <span>94% eligible bank questions + 6% live AI generated at creation time.</span>
+            <span>Eligible bank questions first, with a maximum of 5 live AI questions at creation time.</span>
             <span>Text-only diagram and graph rows are excluded until image assets are attached.</span>
           </div>
 
@@ -677,7 +677,7 @@ function GenerationView({ test, onReady, onExit }: { test: PracticeTest; onReady
     <div className="gen-card">
       <ShieldCheck size={28} />
       <h1>Assembling CBT paper</h1>
-      <p>Questions are being served from the bank snapshot first, then the 6% live AI portion is generated and verified.</p>
+      <p>Questions are served from the bank snapshot first. If the small live AI portion fails, the bank fills those slots too.</p>
       <div className="gen-bar"><span style={{ width: `${pct}%` }} /></div>
       <strong>{progress.generated}/{progress.target} questions ready</strong>
       {error && <p className="cbt-error">{error}</p>}
