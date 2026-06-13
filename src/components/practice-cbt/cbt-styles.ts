@@ -201,6 +201,8 @@ export const questionStyles = `
   .q-diff-moderate { color: var(--gold); }
   .q-diff-tough { color: var(--danger); }
   .question-text { font-size: 16px; line-height: 1.8; color: var(--text-primary); margin-bottom: 24px; }
+  .question-visual { margin: 0 0 20px; max-width: 860px; }
+  .question-visual img { max-width: 100%; height: auto; border-radius: 10px; background: #fff; padding: 8px; border: 1px solid var(--border, rgba(255,255,255,0.12)); display: block; }
   .option-list { display: grid; gap: 9px; max-width: 860px; }
   .option-btn {
     display: flex; align-items: flex-start; gap: 13px; width: 100%; padding: 14px 16px;

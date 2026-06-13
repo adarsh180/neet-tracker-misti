@@ -1,8 +1,16 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
+import Module from "node:module";
 
 const require = createRequire(import.meta.url);
+const originalResolveFilename = Module._resolveFilename;
+Module._resolveFilename = function resolveWorkspaceAlias(request, parent, isMain, options) {
+  if (typeof request === "string" && request.startsWith("@/")) {
+    return originalResolveFilename.call(this, path.join(process.cwd(), "src", request.slice(2)), parent, isMain, options);
+  }
+  return originalResolveFilename.call(this, request, parent, isMain, options);
+};
 require("ts-node").register({
   transpileOnly: true,
   compilerOptions: {

@@ -5,7 +5,7 @@ import type { PracticeTest, Prisma } from "@prisma/client";
 import { extractJsonArray } from "@/lib/ai-json";
 import { db } from "@/lib/db";
 import { AI_MODELS, chatWithAI } from "@/lib/openrouter";
-import { assembleQuestionsFromBank, writeBackBankStats, type BankAssemblyAudit } from "@/lib/question-bank";
+import { assembleQuestionsFromBank, fillQuestionBank, writeBackBankStats, type BankAssemblyAudit } from "@/lib/question-bank";
 import { cleanQuestionOptions, cleanQuestionText } from "@/lib/text-cleanup";
 import { buildDistributionAudit, TREND_BLUEPRINT_VERSION, TREND_FULL_TEMPLATE } from "@/lib/trend-blueprint";
 
@@ -36,9 +36,9 @@ const PRACTICE_AI_TIMEOUT_MS = 300000;
 const PRACTICE_MODELS = [AI_MODELS.fallback1, AI_MODELS.primary, AI_MODELS.emergencyFallback];
 export const PRACTICE_MIN_QUESTIONS = 50;
 export const PRACTICE_MAX_QUESTIONS = 180;
-export const PRACTICE_DEFAULT_AI_FRESH_PERCENT = 3;
-export const PRACTICE_MAX_AI_FRESH_PERCENT = 4;
-export const PRACTICE_MAX_AI_FRESH_QUESTIONS = 5;
+export const PRACTICE_DEFAULT_AI_FRESH_PERCENT = 0;
+export const PRACTICE_MAX_AI_FRESH_PERCENT = 0;
+export const PRACTICE_MAX_AI_FRESH_QUESTIONS = 0;
 
 export const PRACTICE_SUBJECTS = ["physics", "chemistry", "botany", "zoology"] as const;
 export type PracticeSubjectSlug = (typeof PRACTICE_SUBJECTS)[number];
@@ -68,6 +68,10 @@ export type PracticeQuestion = {
   correctIndex: number; // private until completed
   explanation: string; // private until completed
   verified: boolean;
+  visualAssetUrl?: string | null;
+  visualAssetAlt?: string | null;
+  visualAssetKind?: string | null;
+  visualMeta?: unknown;
 };
 
 export type PracticeAnswer = { id: string; optionIndex: number | null };
@@ -327,6 +331,10 @@ function validateBatch(raw: RawQuestion[] | null, startIndex: number): PracticeQ
       correctIndex,
       explanation: cleanQuestionText(item.explanation),
       verified: false,
+      visualAssetUrl: null,
+      visualAssetAlt: null,
+      visualAssetKind: null,
+      visualMeta: null,
     });
   }
   return valid;
@@ -399,8 +407,11 @@ export async function generateNextBatch(testId: string) {
   }
 
   let existing = test.questionsJson as unknown as PracticeQuestion[];
+  const initialGeneratedCount = existing.length;
   let model = test.model;
   const assemblyAudits: BankAssemblyAudit[] = [];
+  const generationWarnings: string[] = [];
+  const strictFillReports: unknown[] = [];
   const aiFreshPercent = normalizeAiFreshPercent(test.aiFreshPercent);
   const aiFreshCount = practiceAiFreshQuestionCount(test.questionCount, aiFreshPercent);
   const bankTarget = Math.max(0, test.questionCount - aiFreshCount);
@@ -435,17 +446,45 @@ export async function generateNextBatch(testId: string) {
     return bankQuestions;
   };
 
+  const requestStrictTopUp = async (shortfall: number) => {
+    if (shortfall <= 0) return;
+    try {
+      const filters = test.filtersJson as { subjects?: PracticeSubjectSlug[]; chapters?: string[] } | null;
+      const singleChapter = test.chapter ?? (filters?.chapters?.length === 1 ? filters.chapters[0] : undefined);
+      const singleSubject = test.subject ?? (filters?.subjects?.length === 1 ? filters.subjects[0] : undefined);
+      const report = await fillQuestionBank({
+        subject: singleSubject ?? undefined,
+        chapter: singleChapter ?? undefined,
+        all: !singleChapter,
+        count: Math.min(10, Math.max(5, shortfall)),
+        maxQuestions: Math.min(15, Math.max(5, shortfall * 2)),
+        timeBudgetMs: 110000,
+      });
+      strictFillReports.push(report);
+      if (report.inserted <= 0) {
+        generationWarnings.push(`Strict bank top-up produced no new verified rows for a shortfall of ${shortfall}.`);
+      } else {
+        model = `${model ?? "question-bank"}+strict-fill`;
+      }
+    } catch (error) {
+      console.warn("[practice-engine] strict bank top-up failed.", error);
+      generationWarnings.push(`Strict bank top-up failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
   const existingBankCount = existing.map((question) => question.bankId).filter(Boolean).length;
   if (bankTarget > existingBankCount) {
     const neededFromBank = bankTarget - existingBankCount;
     if (neededFromBank > 0) {
-      const bankQuestions = await addBankQuestions(neededFromBank);
+      let bankQuestions = await addBankQuestions(neededFromBank);
       if (bankQuestions.length < neededFromBank) {
-        const filters = test.filtersJson ? JSON.stringify(test.filtersJson) : "{}";
-        throw new Error(
-          `Question bank shortage: needed ${neededFromBank} more bank questions for ${test.mode}, but found ${bankQuestions.length}. ` +
-            `This usually means the deployed database has not been imported/refined, or the filters are too strict. Filters=${filters}`,
-        );
+        const shortfall = neededFromBank - bankQuestions.length;
+        generationWarnings.push(`Strict bank shortage before top-up: needed ${neededFromBank}, found ${bankQuestions.length}.`);
+        await requestStrictTopUp(shortfall);
+        bankQuestions = await addBankQuestions(shortfall);
+        if (bankQuestions.length < shortfall) {
+          generationWarnings.push(`Strict bank still short by ${shortfall - bankQuestions.length} after top-up.`);
+        }
       }
     }
   }
@@ -491,13 +530,14 @@ export async function generateNextBatch(testId: string) {
 
   const stillNeeded = test.questionCount - existing.length;
   if (stillNeeded > 0) {
-    const fallbackBankQuestions = await addBankQuestions(stillNeeded);
+    let fallbackBankQuestions = await addBankQuestions(stillNeeded);
     if (fallbackBankQuestions.length < stillNeeded) {
-      const filters = test.filtersJson ? JSON.stringify(test.filtersJson) : "{}";
-      throw new Error(
-        `Question assembly shortage: live AI added ${added.length}/${batchSize}, then bank fallback found ` +
-          `${fallbackBankQuestions.length}/${stillNeeded}. Filters=${filters}`,
-      );
+      const shortfall = stillNeeded - fallbackBankQuestions.length;
+      await requestStrictTopUp(shortfall);
+      fallbackBankQuestions = await addBankQuestions(shortfall);
+      if (fallbackBankQuestions.length < shortfall) {
+        generationWarnings.push(`Question assembly is waiting for ${shortfall - fallbackBankQuestions.length} more strict verified row(s).`);
+      }
     }
     if (batchSize > 0 && added.length < batchSize) {
       model = `${model ?? "ai"}+bank-fallback`;
@@ -510,8 +550,8 @@ export async function generateNextBatch(testId: string) {
   // Safe because the exam only ever uses the READY snapshot.
   const questions = done ? existing.map((question, index) => ({ ...question, id: `q${index + 1}` })) : existing;
   const distributionAudit = buildDistributionAudit(questions, {
-    blueprintWarnings: assemblyAudits.flatMap((audit) => audit.warnings),
-    assemblyAudits,
+    blueprintWarnings: [...assemblyAudits.flatMap((audit) => audit.warnings), ...generationWarnings],
+    assemblyAudits: strictFillReports.length ? [...assemblyAudits, { strictFillReports }] : assemblyAudits,
   });
 
   const updated = await db.practiceTest.update({
@@ -531,7 +571,9 @@ export async function generateNextBatch(testId: string) {
     status: updated.status,
     generated: questions.length,
     target: test.questionCount,
-    added: added.length,
+    added: questions.length - initialGeneratedCount,
+    retryAfterMs: done ? 0 : 60000,
+    waitingForStrictStock: !done && generationWarnings.length > 0,
   };
 }
 
@@ -712,7 +754,7 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
     blueprintVersion: test.blueprintVersion,
     paperTemplate: test.paperTemplate,
     distributionAudit: completed ? (test.distributionAuditJson as unknown) : null,
-    blueprintWarnings: completed ? (test.blueprintWarningsJson as unknown) : null,
+    blueprintWarnings: test.blueprintWarningsJson as unknown,
     createdAt: test.createdAt,
     startedAt: test.startedAt,
     completedAt: test.completedAt,
@@ -741,6 +783,10 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
           question: cleanQuestionText(question.question),
           options: cleanQuestionOptions(question.options),
           verified: question.verified,
+          visualAssetUrl: question.visualAssetUrl ?? null,
+          visualAssetAlt: question.visualAssetAlt ? cleanQuestionText(question.visualAssetAlt) : null,
+          visualAssetKind: question.visualAssetKind ?? null,
+          visualMeta: question.visualMeta ?? null,
           // The key and reasoning unlock only after submission.
           correctIndex: completed ? question.correctIndex : null,
           explanation: completed ? cleanQuestionText(question.explanation) : null,

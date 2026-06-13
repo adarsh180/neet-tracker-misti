@@ -5,7 +5,7 @@ import type { BankQuestion, Prisma } from "@prisma/client";
 import { CHAPTERS, canonicalizeChapter, normalizeSubject, type NeetSubject } from "../data/syllabus/neet-chapters";
 import { extractJsonArray } from "./ai-json";
 import { db } from "./db";
-import { BANK_MODELS, chatWithAI } from "./openrouter";
+import { BANK_MODELS, BANK_SECOND_PASS_MODELS, chatWithAI } from "./openrouter";
 import type { PracticeDifficulty, PracticeQuestion, PracticeSource, PracticeSubjectSlug } from "./practice-engine";
 import { cleanQuestionOptions, cleanQuestionText, isPlaceholderText } from "./text-cleanup";
 import { buildTrendAssemblyPlan, shouldUseTrendAssembly } from "./trend-blueprint";
@@ -42,6 +42,10 @@ export type RawBankQuestion = {
   sourceQuality?: unknown;
   pyqSimilarityScore?: unknown;
   trendMetaJson?: unknown;
+  visualAssetUrl?: unknown;
+  visualAssetAlt?: unknown;
+  visualAssetKind?: unknown;
+  visualMetaJson?: unknown;
 };
 
 export type ValidatedBankQuestion = {
@@ -67,6 +71,10 @@ export type ValidatedBankQuestion = {
   sourceQuality?: number | null;
   pyqSimilarityScore?: number | null;
   trendMetaJson?: unknown;
+  visualAssetUrl?: string | null;
+  visualAssetAlt?: string | null;
+  visualAssetKind?: string | null;
+  visualMetaJson?: unknown;
 };
 
 export type BankInsertReport = {
@@ -93,6 +101,15 @@ export type BankAssemblyAudit = {
     fallback?: boolean;
   }>;
   warnings: string[];
+};
+
+type FillQuestionBankOptions = {
+  subject?: unknown;
+  chapter?: unknown;
+  count?: unknown;
+  maxQuestions?: unknown;
+  all?: unknown;
+  timeBudgetMs?: unknown;
 };
 
 const SOURCES = new Set<BankSource>(["NEET_PYQ", "JEE_PYQ", "INSTITUTE", "PLATFORM", "NCERT", "AI"]);
@@ -199,6 +216,10 @@ export function validateBankQuestion(raw: RawBankQuestion, verifiedDefault = fal
       sourceQuality: optionalNumber(raw.sourceQuality),
       pyqSimilarityScore: optionalNumber(raw.pyqSimilarityScore),
       trendMetaJson: raw.trendMetaJson,
+      visualAssetUrl: optionalString(raw.visualAssetUrl, 760),
+      visualAssetAlt: optionalString(raw.visualAssetAlt, 1000),
+      visualAssetKind: optionalString(raw.visualAssetKind, 40),
+      visualMetaJson: raw.visualMetaJson,
     },
   };
 }
@@ -228,6 +249,10 @@ function toCreateManyInput(row: ValidatedBankQuestion, importBatch?: string): Pr
     sourceQuality: row.sourceQuality ?? undefined,
     pyqSimilarityScore: row.pyqSimilarityScore ?? undefined,
     trendMetaJson: row.trendMetaJson === undefined ? undefined : (row.trendMetaJson as Prisma.InputJsonValue),
+    visualAssetUrl: row.visualAssetUrl ?? undefined,
+    visualAssetAlt: row.visualAssetAlt ?? undefined,
+    visualAssetKind: row.visualAssetKind ?? undefined,
+    visualMetaJson: row.visualMetaJson === undefined ? undefined : (row.visualMetaJson as Prisma.InputJsonValue),
   };
 }
 
@@ -267,14 +292,18 @@ export async function insertBankQuestions(rawRows: RawBankQuestion[], options: {
 }
 
 export async function getBankStatus() {
-  const [verified, total, difficulty, source] = await Promise.all([
-    db.bankQuestion.groupBy({ by: ["subject", "chapter"], where: { verified: true }, _count: { _all: true } }),
+  const [verified, total, difficulty, source, needsReview, needsVisual] = await Promise.all([
+    db.bankQuestion.groupBy({ by: ["subject", "chapter"], where: { qualityStatus: "VERIFIED_STRICT", verified: true }, _count: { _all: true } }),
     db.bankQuestion.groupBy({ by: ["subject", "chapter"], _count: { _all: true } }),
-    db.bankQuestion.groupBy({ by: ["subject", "chapter", "difficulty"], where: { verified: true }, _count: { _all: true } }),
-    db.bankQuestion.groupBy({ by: ["subject", "chapter", "source"], where: { verified: true }, _count: { _all: true } }),
+    db.bankQuestion.groupBy({ by: ["subject", "chapter", "difficulty"], where: { qualityStatus: "VERIFIED_STRICT", verified: true }, _count: { _all: true } }),
+    db.bankQuestion.groupBy({ by: ["subject", "chapter", "source"], where: { qualityStatus: "VERIFIED_STRICT", verified: true }, _count: { _all: true } }),
+    db.bankQuestion.groupBy({ by: ["subject", "chapter"], where: { qualityStatus: "NEEDS_REVIEW" }, _count: { _all: true } }),
+    db.bankQuestion.groupBy({ by: ["subject", "chapter"], where: { qualityStatus: "NEEDS_VISUAL_ASSET" }, _count: { _all: true } }),
   ]);
   const verifiedMap = new Map(verified.map((row) => [`${row.subject}::${row.chapter}`, row._count._all]));
   const totalMap = new Map(total.map((row) => [`${row.subject}::${row.chapter}`, row._count._all]));
+  const reviewMap = new Map(needsReview.map((row) => [`${row.subject}::${row.chapter}`, row._count._all]));
+  const visualMap = new Map(needsVisual.map((row) => [`${row.subject}::${row.chapter}`, row._count._all]));
 
   return CHAPTERS.map((chapter) => {
     const key = `${chapter.subject}::${chapter.chapter}`;
@@ -287,6 +316,8 @@ export async function getBankStatus() {
       quota: BANK_CHAPTER_QUOTA,
       verified: verifiedMap.get(key) ?? 0,
       total: totalMap.get(key) ?? 0,
+      needsReview: reviewMap.get(key) ?? 0,
+      needsVisualAsset: visualMap.get(key) ?? 0,
       difficulty: {
         EASY: difficultyRows.find((row) => row.difficulty === "EASY")?._count._all ?? 0,
         MODERATE: difficultyRows.find((row) => row.difficulty === "MODERATE")?._count._all ?? 0,
@@ -333,7 +364,11 @@ function bankRowToPracticeQuestion(row: BankQuestion, questionNumber: number): P
     options,
     correctIndex: row.correctIndex,
     explanation: cleanQuestionText(row.explanation),
-    verified: row.verified || row.qualityStatus === "VERIFIED_STRICT",
+    verified: row.qualityStatus === "VERIFIED_STRICT" && row.verified,
+    visualAssetUrl: row.visualAssetUrl ?? null,
+    visualAssetAlt: row.visualAssetAlt ?? null,
+    visualAssetKind: row.visualAssetKind ?? null,
+    visualMeta: row.visualMetaJson ?? null,
   };
 }
 
@@ -353,12 +388,14 @@ function isLowQualityQuestionText(question: string) {
   );
 }
 
-function isServeableBankRow(row: BankQuestion) {
+export function isStrictlyServeableBankRow(row: BankQuestion) {
+  if (row.qualityStatus !== "VERIFIED_STRICT" || !row.verified) return false;
   const options = Array.isArray(row.optionsJson) ? cleanQuestionOptions(row.optionsJson) : [];
   if (options.length !== 4 || options.some((option) => isPlaceholderText(option))) return false;
   if (!Number.isInteger(row.correctIndex) || row.correctIndex < 0 || row.correctIndex > 3) return false;
   if (isLowQualityQuestionText(cleanQuestionText(row.question))) return false;
   if (isPlaceholderText(row.explanation)) return false;
+  if ((row.isDiagramBased || row.isGraphBased || row.visualAssetKind) && !row.visualAssetUrl) return false;
   return true;
 }
 
@@ -382,7 +419,7 @@ async function selectBankRows(
     take: Math.max(requested * 10, requested),
   });
   const picked: BankQuestion[] = [];
-  for (const row of shuffle(pool.filter((candidate) => !state.exclude.has(candidate.id) && isServeableBankRow(candidate))).sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)) {
+  for (const row of shuffle(pool.filter((candidate) => !state.exclude.has(candidate.id) && isStrictlyServeableBankRow(candidate))).sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)) {
     const cluster = row.duplicateClusterId;
     if (cluster && state.duplicateClusters.has(cluster)) continue;
     picked.push(row);
@@ -430,7 +467,8 @@ async function fillSubjectShortfallByChapter(options: {
       if ((counts.get(chapter.chapter) ?? 0) >= cap) continue;
       const row = await selectBankRows(
         {
-          qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
+          qualityStatus: "VERIFIED_STRICT",
+          verified: true,
           subject: options.subject,
           classLevel: options.classLevel ?? undefined,
           chapter: chapter.chapter,
@@ -449,7 +487,8 @@ async function fillSubjectShortfallByChapter(options: {
     const remaining = options.desiredCount - picked.length;
     const overflow = await selectBankRows(
       {
-        qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
+        qualityStatus: "VERIFIED_STRICT",
+        verified: true,
         subject: options.subject,
         classLevel: options.classLevel ?? undefined,
       },
@@ -494,7 +533,8 @@ async function assembleTrendQuestions(
       let chapterPicked = 0;
       for (const diffBucket of splitDifficulty(chapterQuota.count, request.difficulty)) {
         const baseWhere: Prisma.BankQuestionWhereInput = {
-          qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
+          qualityStatus: "VERIFIED_STRICT",
+          verified: true,
           subject: subjectQuota.subject,
           classLevel: request.classLevel ?? undefined,
           chapter: chapterQuota.chapter,
@@ -629,7 +669,8 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
     for (const diffBucket of splitDifficulty(subjectBucket.count, request.difficulty)) {
       const where: Prisma.BankQuestionWhereInput = {
-        qualityStatus: { notIn: ["REJECTED", "NEEDS_VISUAL_ASSET", "NEEDS_REVIEW"] },
+        qualityStatus: "VERIFIED_STRICT",
+        verified: true,
         subject,
         classLevel: request.classLevel ?? undefined,
         difficulty: diffBucket.difficulty,
@@ -644,7 +685,7 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
         orderBy: [{ timesServed: "asc" }, { lastServedAt: "asc" }, { createdAt: "asc" }],
         take: Math.max(diffBucket.count * 8, diffBucket.count),
       });
-      const picked = shuffle(pool.filter((row) => !exclude.has(row.id) && isServeableBankRow(row)))
+      const picked = shuffle(pool.filter((row) => !exclude.has(row.id) && isStrictlyServeableBankRow(row)))
         .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)
         .slice(0, diffBucket.count);
       picked.forEach((row) => exclude.add(row.id));
@@ -769,6 +810,267 @@ export async function verifyUnverifiedBankQuestions(limit = 8) {
   return { checked: rows.length, verified: verifiedHashes.size, deleted };
 }
 
-export async function fillQuestionBank(_options: Record<string, unknown> = {}) {
-  return { requested: 0, inserted: 0, verifiedInserted: 0, rejected: 0, batches: 0, jobs: [], model: null };
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function fillLimit(value: unknown, fallback: number) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(1, Math.round(numeric)) : fallback;
+}
+
+function chapterKey(subject: string, chapter: string) {
+  return `${subject}::${chapter}`;
+}
+
+function subjectDisplayFromInput(input: unknown): NeetSubject | null {
+  const text = String(input ?? "").trim();
+  if (!text) return null;
+  return normalizeSubject(text);
+}
+
+async function pickFillTargets(options: FillQuestionBankOptions) {
+  const subject = subjectDisplayFromInput(options.subject);
+  const explicitChapter = String(options.chapter ?? "").trim();
+  if (subject && explicitChapter) {
+    const canonical = canonicalizeChapter(subject, explicitChapter);
+    if (!canonical) throw new Error(`Chapter "${explicitChapter}" is not canonicalizable for ${subject}`);
+    return [canonical];
+  }
+
+  const strictCounts = await db.bankQuestion.groupBy({
+    by: ["subject", "chapter"],
+    where: { qualityStatus: "VERIFIED_STRICT", verified: true },
+    _count: { _all: true },
+  });
+  const countMap = new Map(strictCounts.map((row) => [chapterKey(row.subject, row.chapter), row._count._all]));
+  const candidates = CHAPTERS.filter((entry) => !subject || entry.subject === subject);
+  return candidates.sort((a, b) => {
+    const aCount = countMap.get(chapterKey(a.subject, a.chapter)) ?? 0;
+    const bCount = countMap.get(chapterKey(b.subject, b.chapter)) ?? 0;
+    return aCount / BANK_CHAPTER_QUOTA - bCount / BANK_CHAPTER_QUOTA || a.subject.localeCompare(b.subject) || a.chapter.localeCompare(b.chapter);
+  });
+}
+
+function buildBankGenerationPrompt(target: { subject: NeetSubject; classLevel: string; chapter: string }, count: number, avoidStems: string[]) {
+  return [
+    "Produce original NEET UG single-correct MCQs for a strict question bank.",
+    "Respond with a valid JSON array only. Begin your reply with '['. Do not include planning notes, markdown fences, or explanations outside JSON.",
+    `Subject: ${target.subject}. Class: ${target.classLevel}. Chapter: "${target.chapter}". Stay strictly inside this NCERT chapter.`,
+    `Produce EXACTLY ${count} questions. Use institute-test-series standard and NCERT-grounded reasoning. Do not claim a question is a real PYQ unless you are reproducing it exactly; prefer source "AI" or "INSTITUTE".`,
+    `Required JSON object keys: subject, classLevel, chapter, topic, source, sourceRef, difficulty, questionForm, question, options, correctIndex, explanation.`,
+    `Allowed source values: AI, INSTITUTE, NCERT, PLATFORM. Allowed difficulty values: EASY, MODERATE, TOUGH. options must be exactly four strings and exactly one option must be correct.`,
+    `Use LaTeX inline math for physics/chemistry. Keep stems under 95 words, options under 20 words, explanations under 55 words. No fake "as shown in figure" wording and no missing diagrams.`,
+    avoidStems.length ? `Do not repeat these stems:\n${avoidStems.map((stem) => `- ${stem.slice(0, 90).replace(/\s+/g, " ")}`).join("\n")}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+async function recentChapterStems(subject: NeetSubject, chapter: string) {
+  const rows = await db.bankQuestion.findMany({
+    where: { subject, chapter },
+    orderBy: { createdAt: "desc" },
+    take: 24,
+    select: { question: true },
+  });
+  return rows.map((row) => cleanQuestionText(row.question));
+}
+
+type BlindSolve = { id?: unknown; answerIndex?: unknown; confident?: unknown; ambiguous?: unknown };
+
+async function solveBlindForStrictCheck(questions: ValidatedBankQuestion[], models: string[]) {
+  const payload = questions.map((question, index) => ({
+    id: `q${index + 1}`,
+    subject: question.subject,
+    chapter: question.chapter,
+    question: question.question,
+    options: question.options,
+  }));
+  const result = await chatWithAI(
+    [
+      {
+        role: "system",
+        content: "You are a senior NEET UG examiner. Solve independently. Respond only with a valid JSON array. Never include markdown fences.",
+      },
+      {
+        role: "user",
+        content: `Blind-solve each single-correct MCQ. Do not trust any stored key. Return [{ "id": "q1", "answerIndex": 0-3, "confident": true|false, "ambiguous": true|false }]. Set confident=false or ambiguous=true if wording is invalid, data is missing, or more than one option fits.\n\n${JSON.stringify(payload)}`,
+      },
+    ],
+    3200,
+    0.05,
+    BANK_AI_TIMEOUT_MS,
+    models,
+  );
+  return {
+    model: result.model,
+    solved: extractJsonArray<BlindSolve>(result.content) ?? [],
+  };
+}
+
+function isConfidentSolve(entry: BlindSolve | undefined) {
+  const answerIndex = Number(entry?.answerIndex);
+  return entry?.confident !== false && entry?.ambiguous !== true && Number.isInteger(answerIndex) && answerIndex >= 0 && answerIndex <= 3;
+}
+
+async function strictVerifyGeneratedQuestions(questions: ValidatedBankQuestion[]) {
+  if (!questions.length) return { kept: [] as ValidatedBankQuestion[], rejected: 0, models: [] as string[] };
+  const first = await solveBlindForStrictCheck(questions, BANK_MODELS);
+  await sleep(400);
+  const second = await solveBlindForStrictCheck(questions, BANK_SECOND_PASS_MODELS);
+  const firstMap = new Map(first.solved.map((entry) => [String(entry.id), entry]));
+  const secondMap = new Map(second.solved.map((entry) => [String(entry.id), entry]));
+
+  const kept: ValidatedBankQuestion[] = [];
+  let rejected = 0;
+
+  questions.forEach((question, index) => {
+    const id = `q${index + 1}`;
+    const a = firstMap.get(id);
+    const b = secondMap.get(id);
+    if (!isConfidentSolve(a) || !isConfidentSolve(b)) {
+      rejected += 1;
+      return;
+    }
+    const firstAnswer = Number(a?.answerIndex);
+    const secondAnswer = Number(b?.answerIndex);
+    if (firstAnswer !== secondAnswer) {
+      rejected += 1;
+      return;
+    }
+    kept.push({ ...question, correctIndex: firstAnswer, verified: true });
+  });
+
+  return { kept, rejected, models: [first.model, second.model] };
+}
+
+async function generateBankCandidates(target: { subject: NeetSubject; classLevel: string; chapter: string }, count: number) {
+  const avoid = await recentChapterStems(target.subject, target.chapter);
+  const result = await chatWithAI(
+    [
+      {
+        role: "system",
+        content: "You are a precise NEET UG question setter. Respond only with a valid JSON array of objects.",
+      },
+      { role: "user", content: buildBankGenerationPrompt(target, count, avoid) },
+    ],
+    8000,
+    0.45,
+    BANK_AI_TIMEOUT_MS,
+    BANK_MODELS,
+  );
+  const raw = extractJsonArray<RawBankQuestion>(result.content) ?? [];
+  const valid: ValidatedBankQuestion[] = [];
+  let invalid = 0;
+  for (const row of raw) {
+    const parsed = validateBankQuestion(
+      {
+        ...row,
+        subject: target.subject,
+        classLevel: target.classLevel,
+        chapter: target.chapter,
+        source: row.source ?? "AI",
+        sourceRef: row.sourceRef ?? "Institute test-series standard",
+      },
+      false,
+    );
+    if (parsed.question) valid.push(parsed.question);
+    else invalid += 1;
+  }
+  return { valid, invalid, model: result.model };
+}
+
+export async function fillQuestionBank(options: FillQuestionBankOptions = {}) {
+  const requested = fillLimit(options.count ?? options.maxQuestions, 100);
+  const maxQuestions = fillLimit(options.maxQuestions ?? options.count, requested);
+  const timeBudgetMs = Math.max(5000, Number(options.timeBudgetMs ?? 120000));
+  const startedAt = Date.now();
+  const targets = await pickFillTargets(options);
+  const jobs: Array<{ id: string; subject: string; chapter: string; inserted: number; rejected: number; status: string }> = [];
+  const importBatch = `strict-fill-${new Date().toISOString().slice(0, 10)}`;
+
+  let inserted = 0;
+  let verifiedInserted = 0;
+  let rejected = 0;
+  let batches = 0;
+  let lastModel: string | null = null;
+  let targetIndex = 0;
+
+  while (inserted < maxQuestions && Date.now() - startedAt < timeBudgetMs && targets.length) {
+    const target = targets[targetIndex % targets.length];
+    targetIndex += 1;
+    const remaining = maxQuestions - inserted;
+    const batchSize = Math.min(5, remaining);
+    const job = await db.bankFillJob.create({
+      data: {
+        subject: target.subject,
+        chapter: target.chapter,
+        requested: batchSize,
+        status: "RUNNING",
+      },
+    });
+
+    try {
+      const candidates = await generateBankCandidates(target, batchSize);
+      lastModel = candidates.model;
+      rejected += candidates.invalid;
+      const verified = await strictVerifyGeneratedQuestions(candidates.valid);
+      rejected += verified.rejected;
+      lastModel = verified.models.filter(Boolean).join("; ") || lastModel;
+
+      const report = await insertBankQuestions(verified.kept, { trusted: true, importBatch });
+      if (verified.kept.length) {
+        await db.bankQuestion.updateMany({
+          where: { contentHash: { in: verified.kept.map((row) => row.contentHash) } },
+          data: {
+            verified: true,
+            qualityStatus: "VERIFIED_STRICT",
+            qualityScore: 0.95,
+            verifiedAt: new Date(),
+            verifierModel: lastModel,
+            rejectReason: null,
+          },
+        });
+      }
+
+      inserted += report.inserted;
+      verifiedInserted += report.inserted;
+      batches += 1;
+      await db.bankFillJob.update({
+        where: { id: job.id },
+        data: {
+          inserted: report.inserted,
+          rejected: candidates.invalid + verified.rejected + report.duplicate,
+          status: "DONE",
+          model: lastModel,
+        },
+      });
+      jobs.push({ id: job.id, subject: target.subject, chapter: target.chapter, inserted: report.inserted, rejected: candidates.invalid + verified.rejected + report.duplicate, status: "DONE" });
+    } catch (error) {
+      await db.bankFillJob.update({
+        where: { id: job.id },
+        data: {
+          status: "FAILED",
+          error: error instanceof Error ? error.message.slice(0, 4000) : String(error).slice(0, 4000),
+          model: lastModel,
+        },
+      });
+      jobs.push({ id: job.id, subject: target.subject, chapter: target.chapter, inserted: 0, rejected: batchSize, status: "FAILED" });
+      rejected += batchSize;
+      if (String(error).includes("RATE_LIMITED") || /429|503|quota/i.test(String(error))) break;
+    }
+
+    if (inserted >= requested && !options.all) break;
+    if (Date.now() - startedAt + 1500 < timeBudgetMs) await sleep(1200);
+  }
+
+  return {
+    requested: Math.min(requested, maxQuestions),
+    inserted,
+    verifiedInserted,
+    rejected,
+    batches,
+    jobs,
+    model: lastModel,
+    strictOnly: true,
+  };
 }

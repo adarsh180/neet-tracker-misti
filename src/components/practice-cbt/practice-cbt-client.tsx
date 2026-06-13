@@ -60,6 +60,8 @@ type Question = {
   verified: boolean;
   correctIndex: number | null;
   explanation: string | null;
+  visualAssetUrl?: string | null;
+  visualAssetAlt?: string | null;
 };
 
 type PracticeResult = {
@@ -1122,6 +1124,11 @@ export function QuestionPanel({
         <span className={`q-diff q-diff-${question.difficulty.toLowerCase()}`}>{question.difficulty.toLowerCase()}</span>
       </div>
       <div className="question-text"><MarkdownBlock text={question.question} /></div>
+      {question.visualAssetUrl ? (
+        <div className="question-visual">
+          <img src={question.visualAssetUrl} alt={question.visualAssetAlt ?? "Question figure"} loading="lazy" />
+        </div>
+      ) : null}
       <div className="option-list">
         {question.options.map((option, optionIndex) => (
           <button key={optionIndex} disabled={disabled} className={`option-btn ${selected === optionIndex ? "selected" : ""}`} onClick={() => onChoose(optionIndex)}>

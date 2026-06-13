@@ -618,6 +618,10 @@ model BankQuestion {
   sourceQuality  Float?
   pyqSimilarityScore Float?
   trendMetaJson  Json?
+  visualAssetUrl String?   @db.VarChar(768)
+  visualAssetAlt String?   @db.Text
+  visualAssetKind String?  @db.VarChar(40)
+  visualMetaJson Json?
   contentHash  String    @unique @db.VarChar(64)
   timesServed  Int       @default(0)
   timesCorrect Int       @default(0)
@@ -634,6 +638,7 @@ model BankQuestion {
   @@index([subject, classLevel, chapter, trendChapterId])
   @@index([questionForm])
   @@index([duplicateClusterId])
+  @@index([visualAssetKind])
   @@map("bank_questions")
 }
 
