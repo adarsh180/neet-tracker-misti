@@ -38,6 +38,7 @@ import "katex/dist/katex.min.css";
 import SmoothLink from "@/components/layout/smooth-link";
 import { CHAPTERS, SUBJECT_SLUGS, type ClassLevel, type NeetSubjectSlug } from "@/data/syllabus/neet-chapters";
 import { allCBTStyles } from "@/components/practice-cbt/cbt-styles";
+import PracticeAnalytics, { type AnalyticsTest } from "@/components/practice-cbt/practice-analytics";
 
 type PracticeSource = "NEET_PYQ" | "JEE_PYQ" | "INSTITUTE" | "PLATFORM" | "NCERT" | "AI";
 type PracticeDifficulty = "EASY" | "MODERATE" | "TOUGH";
@@ -175,6 +176,38 @@ function answersFromList(list?: PracticeAnswer[] | null) {
   const map: Record<string, number | null> = {};
   for (const answer of list ?? []) map[answer.id] = answer.optionIndex;
   return map;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Smoothly counts the displayed number toward `value` so live generation progress
+// animates instead of snapping.
+function AnimatedCount({ value }: { value: number }) {
+  const [display, setDisplay] = useState(value);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const from = display;
+    const to = value;
+    if (from === to) return;
+    const start = performance.now();
+    const duration = 450;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(from + (to - from) * eased));
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return <>{display}</>;
 }
 
 function MarkdownBlock({ text }: { text: string }) {
@@ -338,6 +371,68 @@ export default function PracticeCBTClient() {
     if (params.get("year")) setPhase("setup");
   }, [loadList]);
 
+  // Patch one test in both the list and the active selection so live progress
+  // is reflected everywhere without a refresh.
+  const patchTest = useCallback((id: string, partial: Partial<PracticeTest>) => {
+    setTests((prev) => prev.map((entry) => (entry.id === id ? { ...entry, ...partial } : entry)));
+    setActive((prev) => (prev && prev.id === id ? { ...prev, ...partial } : prev));
+  }, []);
+
+  // Centralized generation driver: a single detached loop advances whichever test
+  // is GENERATING (preferring the active one) and streams its count into state, so
+  // generation keeps running in the background across the list/generating views and
+  // the progress animates live — no Ctrl+R needed.
+  const driverRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const driveGeneration = useCallback(
+    async (id: string) => {
+      if (driverRef.current) return;
+      driverRef.current = id;
+      let failures = 0;
+      try {
+        while (mountedRef.current) {
+          const response = await fetch(`/api/practice/${id}/generate`, { method: "POST" }).catch(() => null);
+          if (!response) {
+            if (++failures > 5) break;
+            await sleep(2500);
+            continue;
+          }
+          if (response.status === 404) break; // test deleted
+          const json = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            if (++failures > 5) break;
+            await sleep(2500);
+            continue;
+          }
+          failures = 0;
+          if (!mountedRef.current) break;
+          patchTest(id, { generatedCount: json.generated, status: json.status });
+          if (json.status === "READY") {
+            const full = await fetch(`/api/practice/${id}`, { cache: "no-store" }).then((res) => res.json()).catch(() => null);
+            if (full?.test && mountedRef.current) patchTest(id, full.test);
+            break;
+          }
+          await sleep(450);
+        }
+      } finally {
+        if (driverRef.current === id) driverRef.current = null;
+      }
+    },
+    [patchTest],
+  );
+
+  useEffect(() => {
+    const generating = (active?.status === "GENERATING" ? active : null) ?? tests.find((entry) => entry.status === "GENERATING");
+    if (generating && !driverRef.current) void driveGeneration(generating.id);
+  }, [active, tests, driveGeneration]);
+
   const openTest = useCallback(async (id: string) => {
     setError(null);
     const response = await fetch(`/api/practice/${id}`, { cache: "no-store" });
@@ -394,7 +489,14 @@ export default function PracticeCBTClient() {
           }}
         />
       )}
-      {phase === "result" && active && <ResultSummary test={active} onBack={() => { setActive(null); setPhase("list"); void loadList(); }} />}
+      {phase === "result" && active && (
+        <>
+          <PracticeAnalytics test={active as unknown as AnalyticsTest} onBack={() => { setActive(null); setPhase("list"); void loadList(); }} />
+          <div style={{ marginTop: 16 }}>
+            <AnswerReview questions={active.questions ?? []} answers={new Map((active.answers ?? []).map((a) => [a.id, a.optionIndex]))} />
+          </div>
+        </>
+      )}
       {/* Plain global stylesheet: styled-jsx cannot scope imported strings. */}
       <style dangerouslySetInnerHTML={{ __html: allCBTStyles }} />
       <style jsx>{`
@@ -449,7 +551,13 @@ function PracticeList({
                 <span>{MODE_LABEL[test.mode] ?? test.mode} · {test.questionCount} questions · {test.durationMinutes ?? 180} min · {new Date(test.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}</span>
               </button>
               <span className={`cbt-test-chip cbt-test-chip-${test.status.toLowerCase()}`}>
-                {test.status === "COMPLETED" && test.result ? `${test.result.score}/${test.result.maxScore}` : test.status === "GENERATING" ? `${test.generatedCount}/${test.questionCount}` : test.status}
+                {test.status === "COMPLETED" && test.result ? (
+                  `${test.result.score}/${test.result.maxScore}`
+                ) : test.status === "GENERATING" ? (
+                  <span className="cbt-gen-chip"><Loader2 className="cbt-spin" size={12} /> <AnimatedCount value={test.generatedCount} />/{test.questionCount}</span>
+                ) : (
+                  test.status
+                )}
               </span>
               {test.status !== "COMPLETED" && <button className="cbt-icon-btn" onClick={() => deleteTest(test.id)} aria-label="Delete test"><Trash2 size={15} /></button>}
             </article>
@@ -644,44 +752,24 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
 }
 
 function GenerationView({ test, onReady, onExit }: { test: PracticeTest; onReady: (test: PracticeTest) => void; onExit: () => void }) {
-  const [progress, setProgress] = useState({ generated: test.generatedCount, target: test.questionCount, status: test.status });
-  const [error, setError] = useState<string | null>(null);
-
+  // Generation is driven centrally by PracticeCBTClient; this view just reflects the
+  // live count it streams into `test` and advances to the exam once READY.
   useEffect(() => {
-    let cancelled = false;
-    async function tick() {
-      try {
-        const response = await fetch(`/api/practice/${test.id}/generate`, { method: "POST" });
-        const json = await response.json();
-        if (!response.ok) throw new Error(json.error || "Generation failed");
-        if (cancelled) return;
-        setProgress(json);
-        if (json.status === "READY") {
-          const next = await fetch(`/api/practice/${test.id}`, { cache: "no-store" }).then((res) => res.json());
-          if (!cancelled) onReady(next.test);
-        } else {
-          window.setTimeout(tick, 600);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Generation failed");
-      }
-    }
-    void tick();
-    return () => {
-      cancelled = true;
-    };
-  }, [onReady, test.id]);
+    if (test.status === "READY" || test.status === "RUNNING" || test.status === "PAUSED") onReady(test);
+  }, [test, onReady]);
 
-  const pct = Math.min(100, Math.round((progress.generated / Math.max(1, progress.target)) * 100));
+  const generated = Math.min(test.generatedCount, test.questionCount);
+  const target = test.questionCount;
+  const pct = Math.min(100, Math.round((generated / Math.max(1, target)) * 100));
   return (
     <div className="gen-card">
       <ShieldCheck size={28} />
       <h1>Assembling CBT paper</h1>
       <p>Questions are served from the bank snapshot first. If the small live AI portion fails, the bank fills those slots too.</p>
       <div className="gen-bar"><span style={{ width: `${pct}%` }} /></div>
-      <strong>{progress.generated}/{progress.target} questions ready</strong>
-      {error && <p className="cbt-error">{error}</p>}
-      <button className="cbt-ghost" onClick={onExit}><ArrowLeft size={15} /> Back to attempts</button>
+      <strong><AnimatedCount value={generated} />/{target} questions ready</strong>
+      <button className="cbt-ghost" onClick={onExit}><ArrowLeft size={15} /> Generate in background</button>
+      <p className="gen-hint">You can leave this screen — generation keeps running and the count updates live on your attempts list.</p>
     </div>
   );
 }
@@ -1254,7 +1342,7 @@ export function AnswerReview({ questions, answers }: { questions: Question[]; an
         {visible.map((question, index) => {
           const chosen = answers.get(question.id);
           return (
-            <article className="review-card" key={question.id}>
+            <article className="review-card" key={`${question.id}-${index}`}>
               <div className="review-meta">
                 <span>Q{index + 1}</span><span>{question.subject}</span><span>{question.chapter}</span><span>{SOURCE_LABEL[question.source]} · {question.sourceRef}</span>{question.verified && <span>Verified</span>}
               </div>

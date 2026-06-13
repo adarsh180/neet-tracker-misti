@@ -12,12 +12,12 @@ require("ts-node").register({
 
 const { PrismaClient } = require("@prisma/client");
 const { extractJsonArray } = require("../src/lib/ai-json.ts");
-const { AI_MODELS, chatWithAI } = require("../src/lib/openrouter.ts");
+const { BANK_MODELS, BANK_SECOND_PASS_MODELS, chatWithAI } = require("../src/lib/openrouter.ts");
 
 const prisma = new PrismaClient();
 
-const STRICT_MODELS = [AI_MODELS.fallback1, AI_MODELS.primary, AI_MODELS.emergencyFallback];
-const SECOND_PASS_MODELS = [AI_MODELS.emergencyFallback, AI_MODELS.fallback1];
+const STRICT_MODELS = BANK_MODELS;
+const SECOND_PASS_MODELS = BANK_SECOND_PASS_MODELS;
 
 function parseArgs(argv) {
   const args = {};

@@ -17,7 +17,8 @@ export const listStyles = `
   .cbt-test-chip { flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.02em; }
   .cbt-test-chip-completed { color: var(--gold); }
   .cbt-test-chip-ready, .cbt-test-chip-running, .cbt-test-chip-paused { color: var(--success); }
-  .cbt-test-chip-generating { color: var(--text-secondary); }
+  .cbt-test-chip-generating { color: var(--gold); }
+  .cbt-gen-chip { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 `;
 
 export const globalCBTStyles = `
@@ -117,6 +118,7 @@ export const generationStyles = `
   .gen-bar { width: min(440px, 100%); height: 8px; border-radius: 999px; background: var(--bg-elevated); overflow: hidden; }
   .gen-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transition: width .4s ease; }
   .gen-card strong { color: var(--gold); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .gen-hint { font-size: 11.5px; color: var(--text-muted); max-width: 420px; margin: 2px 0 0; }
 `;
 
 export const arenaStyles = `

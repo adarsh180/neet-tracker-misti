@@ -504,8 +504,11 @@ export async function generateNextBatch(testId: string) {
     }
   }
 
-  const questions = existing;
-  const done = questions.length >= test.questionCount;
+  const done = existing.length >= test.questionCount;
+  // On completion, re-index to unique sequential ids. Bank + AI-fresh assembly can
+  // otherwise collide ids (two "q50"), which corrupts the answer map and the review.
+  // Safe because the exam only ever uses the READY snapshot.
+  const questions = done ? existing.map((question, index) => ({ ...question, id: `q${index + 1}` })) : existing;
   const distributionAudit = buildDistributionAudit(questions, {
     blueprintWarnings: assemblyAudits.flatMap((audit) => audit.warnings),
     assemblyAudits,

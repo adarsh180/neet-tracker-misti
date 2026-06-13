@@ -5,13 +5,13 @@ import type { BankQuestion, Prisma } from "@prisma/client";
 import { CHAPTERS, canonicalizeChapter, normalizeSubject, type NeetSubject } from "../data/syllabus/neet-chapters";
 import { extractJsonArray } from "./ai-json";
 import { db } from "./db";
-import { AI_MODELS, chatWithAI } from "./openrouter";
+import { BANK_MODELS, chatWithAI } from "./openrouter";
 import type { PracticeDifficulty, PracticeQuestion, PracticeSource, PracticeSubjectSlug } from "./practice-engine";
 import { cleanQuestionOptions, cleanQuestionText, isPlaceholderText } from "./text-cleanup";
 import { buildTrendAssemblyPlan, shouldUseTrendAssembly } from "./trend-blueprint";
 
 export const BANK_CHAPTER_QUOTA = 2000;
-export const BANK_AI_MODELS = [AI_MODELS.fallback1, AI_MODELS.primary, AI_MODELS.emergencyFallback];
+export const BANK_AI_MODELS = BANK_MODELS;
 const BANK_AI_TIMEOUT_MS = 300000;
 
 export type BankSource = PracticeSource | "NCERT";
