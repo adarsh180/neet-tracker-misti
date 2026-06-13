@@ -45,7 +45,7 @@ next-env.d.ts
 
 .vercel
 .claude/
-data/
+/data/
 codex-working-notes.md
 
 # dev server logs and python bytecode
