@@ -333,7 +333,7 @@ function buildDeterministicRankAnalysis(context: AIContext, reason: unknown): Ra
     ...(evidence.dataUnavailable ? ["Live tracker database was unreachable, so study logs and tests could not be verified."] : []),
     ...(context.recentTests.length === 0 ? ["No recent test records are available, so rank confidence is intentionally capped low."] : []),
     ...(evidence.fullLengthTests === 0 && evidence.partialTests > 0 ? ["Only partial or subject-wise tests are available, so the 720-score estimate is extrapolated."] : []),
-    "Previous validated NEET attempt marks are a hard historical anchor: 2023 = 192, 2024 = 296, 2025 = 322.",
+    "Previous validated NEET attempt marks are a hard historical anchor: 2023 = 192, 2024 = 296, 2025 = 322, 2026 = 410.",
   ];
   const failureReason = reason instanceof Error ? reason.message.split("\n")[0] : String(reason);
 
@@ -411,7 +411,7 @@ function normalizeRankAnalysis(modelOutput: RankAnalysis, context: AIContext): R
     evidence.dataUnavailable ? "Live tracker database was unreachable, so this prediction cannot verify real logs." : "",
     evidence.fullLengthTests === 0 ? "No recent full-length 720-mark test is available; confidence is capped by design." : "",
     evidence.scoreModelNote,
-    "Validated real NEET attempts are enforced as a historical anchor: 2023 = 192, 2024 = 296, 2025 = 322.",
+    "Validated real NEET attempts are enforced as a historical anchor: 2023 = 192, 2024 = 296, 2025 = 322, 2026 = 410.",
   ].filter(Boolean);
 
   return {
@@ -503,7 +503,7 @@ Hallucination guard:
 Use logged tests, syllabus progress, revision state, error patterns, study hours, and consistency only.
 Use chapter/topic intelligence to rank bottlenecks, but do not treat chapter weightage as official future certainty.
 Respect the time-benefit rule: Rotational Motion is medium priority unless there is strong direct test evidence requiring more.
-Treat real NEET attempts as a hard historical anchor: 2023 = 192, 2024 = 296, 2025 = 322. Do not claim the current validated baseline is in the 100s unless a newer full-length 720-mark test proves collapse.
+Treat real NEET attempts as a hard historical anchor: 2023 = 192, 2024 = 296, 2025 = 322, 2026 = 410 (her most recent real attempt, taken 2026-06-21, and her best real score so far). Do not claim the current validated baseline is below 410 unless a newer full-length 720-mark test proves collapse.
 If evidence is missing, say confidence is low instead of inventing certainty.
 Confidence must be evidence-based, never 100, and must be low when no full-length tests exist.
 PredictedRankMin must be the better rank from predictedScoreMax. PredictedRankMax must be the worse rank from predictedScoreMin.

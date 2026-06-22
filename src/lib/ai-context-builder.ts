@@ -1,6 +1,39 @@
 import { db } from "@/lib/db";
 import { buildCycleIntelligence } from "@/lib/cycle-intelligence";
 import { isPrismaConnectionError } from "@/lib/prisma-errors";
+import { getPreviousAttemptSummary } from "@/lib/neet-rank-calibration";
+
+const NEET_TOTAL_MARKS = 720;
+
+// Misti's real, validated NEET attempt history is static reference data, so it
+// is available even when the live database is unreachable. This makes the most
+// recent real attempt the ground-truth anchor for every AI mode, not just the
+// rank predictor.
+function buildRealAttemptProfile() {
+  const attempts = getPreviousAttemptSummary();
+  const last = attempts[attempts.length - 1] ?? null;
+
+  return {
+    previousRealAttempts: attempts.map((attempt) => ({
+      year: attempt.year,
+      score: attempt.score,
+      maxScore: NEET_TOTAL_MARKS,
+      estimatedRank: attempt.estimatedRank,
+      label: attempt.label,
+    })),
+    lastRealAttempt: last
+      ? {
+          year: last.year,
+          score: last.score,
+          maxScore: NEET_TOTAL_MARKS,
+          percentage: Math.round((last.score / NEET_TOTAL_MARKS) * 1000) / 10,
+          takenOn: last.takenOn ?? null,
+          estimatedRank: last.estimatedRank,
+          label: last.label,
+        }
+      : null,
+  };
+}
 
 export interface AIContext {
   student: {
@@ -12,6 +45,22 @@ export interface AIContext {
     daysRemaining: number;
     bscEnrolled: boolean;
     hasPartner: boolean;
+    lastRealAttempt: {
+      year: number;
+      score: number;
+      maxScore: number;
+      percentage: number;
+      takenOn: string | null;
+      estimatedRank: number | null;
+      label: string;
+    } | null;
+    previousRealAttempts: {
+      year: number;
+      score: number;
+      maxScore: number;
+      estimatedRank: number | null;
+      label: string;
+    }[];
   };
   subjects: {
     name: string;
@@ -198,6 +247,7 @@ function buildUnavailableAIContext(userId: string): AIContext {
       daysRemaining,
       bscEnrolled: true,
       hasPartner: true,
+      ...buildRealAttemptProfile(),
     },
     subjects: subjectNames.map((subject) => ({
       ...subject,
@@ -543,6 +593,7 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
       daysRemaining,
       bscEnrolled: true,
       hasPartner: true,
+      ...buildRealAttemptProfile(),
     },
     subjects: subjectStats,
     recentDailyGoals: recentGoals.slice(0, 21).map((g) => ({
@@ -628,12 +679,20 @@ export function buildSystemPrompt(
     ? `\nMOOD CONTEXT (last ${context.recentMoods.length} days): avg energy ${moodSummary.avgEnergy}/10, avg focus ${moodSummary.avgFocus}/10, avg stress ${moodSummary.avgStress}/10, dominant mood: ${moodSummary.dominantMood}, trend: ${moodSummary.trend}. Factor this into your tone and suggestions.`
     : "";
 
+  const lastReal = student.lastRealAttempt;
+  const realAttemptAnchor = lastReal
+    ? `\nREAL NEET ATTEMPT ANCHOR (ground truth — this outranks any in-app mock score or self-report):
+Her actual, validated NEET trajectory is ${student.previousRealAttempts.map((a) => `${a.year} = ${a.score}/720`).join(", ")}.
+Her most recent REAL NEET attempt was ${lastReal.year}${lastReal.takenOn ? ` (taken ${lastReal.takenOn})` : ""}: ${lastReal.score}/720 (${lastReal.percentage}%)${lastReal.estimatedRank ? `, ≈ AIR ${lastReal.estimatedRank.toLocaleString("en-IN")}` : ""}. This is a verified board result, not a practice test.
+Anchor every judgement to this real score. She has genuinely proven ${lastReal.score}/720 — acknowledge that this is her best real attempt and a real climb from her earlier attempts — but AIIMS Rishikesh needs ~660 and AIIMS Delhi ~700, so she is ${Math.max(0, 660 - lastReal.score)} marks short of Rishikesh and ${Math.max(0, 700 - lastReal.score)} short of Delhi. Hold her to closing this exact gap. Never describe her current ability as below her latest real attempt unless newer full-length 720-mark evidence proves a regression.`
+    : "";
+
   const basePersonality = `You are NEET-GURU, an elite, uncompromising AI mentor built exclusively for Misti Tiwari's AIIMS Delhi MBBS preparation (NEET UG 2027 — ${student.daysRemaining} days left, 5th attempt).
 
 IDENTITY LOCK:
 Misti Tiwari and Divyani are the same person. Divyani is her original name; Misti is her nickname. Never treat Misti and Divyani as two different students, never compare them with each other, and never split their records.
 
-${toneGuide}${moodContext}
+${toneGuide}${moodContext}${realAttemptAnchor}
 
 CORE RULES — NEVER VIOLATE THESE:
 1. Use clear, premium Markdown formatting. Use tables for study schedules or comparison charts. Use bolding and structured lists to make answers highly readable.

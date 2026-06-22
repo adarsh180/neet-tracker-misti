@@ -16,12 +16,14 @@ export type PreviousAttempt = {
   year: number;
   score: number;
   label: string;
+  takenOn?: string; // ISO date (YYYY-MM-DD) when a real attempt date is known
 };
 
 export const MISTI_PREVIOUS_ATTEMPTS: PreviousAttempt[] = [
   { year: 2023, score: 192, label: "Previous NEET attempt" },
   { year: 2024, score: 296, label: "Previous NEET attempt" },
   { year: 2025, score: 322, label: "Previous NEET attempt" },
+  { year: 2026, score: 410, label: "Most recent real NEET attempt — best real score so far", takenOn: "2026-06-21" },
 ];
 
 export const NEET_RANK_CALIBRATION: RankCalibrationYear[] = [
@@ -302,7 +304,13 @@ export function estimateCalibratedRank(score: number) {
 export function getPreviousAttemptSummary() {
   return MISTI_PREVIOUS_ATTEMPTS.map((attempt) => ({
     ...attempt,
-    estimatedRank: estimateRankForYear(attempt.score, attempt.year),
+    // Prefer the year-specific anchor table; for years without a published
+    // calibration table (e.g. the most recent attempt), fall back to the
+    // blended recent-years model so the freshest real attempt still gets a
+    // rank estimate instead of null.
+    estimatedRank:
+      estimateRankForYear(attempt.score, attempt.year)
+      ?? estimateCalibratedRank(attempt.score).rank,
   }));
 }
 
