@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { pruneExpiredNotifications } from "@/lib/notification-retention";
+import { constantTimeEquals } from "@/lib/secure-compare";
 import { sendWebPushNotification } from "@/lib/web-push";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +16,9 @@ function clean(value: unknown, fallback = "") {
 function authorized(request: NextRequest) {
   const secret = process.env.CROSS_APP_NOTIFY_SECRET;
   const header = request.headers.get("x-cross-app-secret");
-  const isAuth = Boolean(secret && header && header === secret);
+  const isAuth = constantTimeEquals(header, secret);
   if (!isAuth) {
-    console.error("[cross-app-notifications] Authorization failed. Secret configured on server:", secret ? "Yes" : "No", "Secret header received:", header ? "Yes" : "No");
+    console.error("[cross-app-notifications] Authorization failed.");
   }
   return isAuth;
 }

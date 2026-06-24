@@ -57,7 +57,14 @@ export default function SignInPage() {
         router.prefetch("/dashboard");
         router.replace("/dashboard");
       } else {
-        setError("Invalid credentials. This platform is exclusively for Misti.");
+        const payload = await res.json().catch(() => ({}));
+        if (res.status === 429) {
+          const retryAfter = Number(payload.retryAfterSeconds || res.headers.get("Retry-After") || 3600);
+          const minutes = Math.max(1, Math.ceil(retryAfter / 60));
+          setError(`Too many failed attempts. Please try again in ${minutes} minutes.`);
+        } else {
+          setError("Invalid credentials. This platform is exclusively for Misti.");
+        }
       }
     } catch {
       setError("Could not create a private session. Please try again.");

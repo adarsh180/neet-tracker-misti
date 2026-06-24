@@ -7,6 +7,7 @@ import {
 } from "@/lib/daily-planner";
 import { fillQuestionBank } from "@/lib/question-bank";
 import { ensurePeriodicReviews } from "@/lib/review-agent";
+import { constantTimeEquals } from "@/lib/secure-compare";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -18,8 +19,8 @@ export const maxDuration = 300;
 //  - the monthly review card (first beat of a new month).
 function isAuthorized(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return req.headers.get("authorization") === `Bearer ${secret}`;
+  if (!secret) return process.env.NODE_ENV !== "production";
+  return constantTimeEquals(req.headers.get("authorization"), `Bearer ${secret}`);
 }
 
 export async function GET(req: NextRequest) {

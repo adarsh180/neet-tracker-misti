@@ -668,3 +668,36 @@ model PyqDocument {
 
   @@map("pyq_documents")
 }
+
+model TrustedDeviceSession {
+  id               String    @id @default(cuid())
+  userId           String    @default("misti")
+  tokenHash        String    @unique @db.VarChar(64)
+  userAgentHash    String?   @db.VarChar(64)
+  ipHash           String?   @db.VarChar(64)
+  createdAt        DateTime  @default(now())
+  lastSeenAt       DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  legacyMigratedAt DateTime?
+
+  @@index([userId, expiresAt])
+  @@index([revokedAt])
+  @@map("trusted_device_sessions")
+}
+
+model LoginRateLimit {
+  id           String    @id @default(cuid())
+  scopeHash    String    @unique @db.VarChar(64)
+  emailHash    String    @db.VarChar(64)
+  ipHash       String    @db.VarChar(64)
+  failureCount Int       @default(0)
+  lockedUntil  DateTime?
+  lastFailedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([emailHash])
+  @@index([lockedUntil])
+  @@map("login_rate_limits")
+}

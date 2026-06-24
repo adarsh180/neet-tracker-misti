@@ -126,10 +126,9 @@ export async function sendWebPushNotification(
         sent += 1;
       } catch (error) {
         failed += 1;
-        console.error(`[web-push] Failed to deliver push notification to endpoint ${subscription.endpoint}:`, {
+        console.error("[web-push] Failed to deliver push notification.", {
           message: error instanceof Error ? error.message : String(error),
           statusCode: typeof error === "object" && error && "statusCode" in error ? error.statusCode : undefined,
-          body: typeof error === "object" && error && "body" in error ? error.body : undefined,
         });
         const statusCode = typeof error === "object" && error && "statusCode" in error ? Number(error.statusCode) : 0;
         if (statusCode === 404 || statusCode === 410) {

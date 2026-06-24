@@ -1,3 +1,5 @@
+import { clearOfflineQueue } from "@/lib/offline-sync";
+
 export function getStoredAuth(): boolean {
   if (typeof window === "undefined") return false;
   return localStorage.getItem("neet_auth") === "authenticated";
@@ -13,5 +15,6 @@ export function clearAuth(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem("neet_auth");
   localStorage.removeItem("neet_auth_time");
+  clearOfflineQueue();
   fetch("/api/auth/logout", { method: "POST", keepalive: true }).catch(() => {});
 }

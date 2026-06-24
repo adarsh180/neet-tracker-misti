@@ -2,6 +2,7 @@
 
 const QUEUE_KEY = "neet_offline_mutation_queue_v1";
 const QUEUE_EVENT = "neet-offline-queue-change";
+const QUEUE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type QueuedMutation = {
   id: string;
@@ -14,12 +15,9 @@ type QueuedMutation = {
 
 const SAFE_MUTATION_PATHS = [
   "/api/daily-goals",
-  "/api/mood",
   "/api/tests",
   "/api/tasks",
   "/api/topics",
-  "/api/cycle",
-  "/api/error-logs",
 ];
 
 function readQueue(): QueuedMutation[] {
@@ -27,7 +25,12 @@ function readQueue(): QueuedMutation[] {
 
   try {
     const parsed = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    const fresh = parsed.filter((item): item is QueuedMutation => (
+      typeof item?.createdAt === "number" && Date.now() - item.createdAt <= QUEUE_TTL_MS
+    ));
+    if (fresh.length !== parsed.length) writeQueue(fresh);
+    return fresh;
   } catch {
     return [];
   }
@@ -91,6 +94,12 @@ export function getOfflineQueueCount() {
   return readQueue().length;
 }
 
+export function clearOfflineQueue() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(QUEUE_KEY);
+  window.dispatchEvent(new CustomEvent(QUEUE_EVENT, { detail: { count: 0 } }));
+}
+
 export function subscribeOfflineQueue(listener: (count: number) => void) {
   const handler = () => listener(getOfflineQueueCount());
   window.addEventListener(QUEUE_EVENT, handler);
@@ -148,7 +157,7 @@ export function installOfflineMutationQueue() {
 
     try {
       return await originalFetch(input, init);
-    } catch (error) {
+    } catch {
       return enqueueMutation(input, init);
     }
   };

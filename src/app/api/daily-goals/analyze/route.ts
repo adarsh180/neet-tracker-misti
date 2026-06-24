@@ -104,7 +104,11 @@ export async function GET() {
 
   try {
     const [context, goals, screenRows] = await Promise.all([
-      buildAIContext("misti"),
+      buildAIContext("misti", {
+        includeWellness: false,
+        includeScreenTime: false,
+        includeErrorLogs: true,
+      }),
       db.dailyGoal.findMany({
         include: { subject: true },
         orderBy: { date: "desc" },

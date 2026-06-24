@@ -1,18 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveCredentialUser, setPrivateSession } from "@/lib/server-auth";
+import {
+  getLoginCooldown,
+  recordFailedLogin,
+  recordSuccessfulLogin,
+  resolveCredentialUser,
+  setPrivateSession,
+} from "@/lib/server-auth";
+
+function cooldownResponse(retryAfterSeconds: number) {
+  return NextResponse.json(
+    {
+      error: "Too many failed login attempts. Try again in 1 hour.",
+      retryAfterSeconds,
+    },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(retryAfterSeconds),
+      },
+    }
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const session = resolveCredentialUser(String(body.email || ""), String(body.password || ""));
+    const email = String(body.email || "");
+    const password = String(body.password || "");
+    const cooldown = await getLoginCooldown(email, req);
+    if (cooldown) return cooldownResponse(cooldown.retryAfterSeconds);
+
+    const session = resolveCredentialUser(email, password);
 
     if (!session) {
+      const locked = await recordFailedLogin(email, req);
+      if (locked) return cooldownResponse(locked.retryAfterSeconds);
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    await setPrivateSession(session.userId);
+    await recordSuccessfulLogin(email, req);
+    await setPrivateSession(session.userId, req);
     return NextResponse.json({ ok: true, userId: session.userId });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error("[auth/login] failed:", error);
+    return NextResponse.json({ error: "Could not create a private session" }, { status: 500 });
   }
 }

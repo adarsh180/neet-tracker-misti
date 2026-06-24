@@ -26,8 +26,8 @@ const devanagari = Noto_Serif_Devanagari({
 
 export const metadata: Metadata = {
   title: "NEET DOCTOR — NEET 2027",
-  description: "Divyani's premium journey to AIIMS Delhi MBBS. A personalized NEET UG 2027 preparation platform.",
-  keywords: "NEET 2027, AIIMS Delhi, MBBS, study tracker, Divyani, NEET DOCTOR",
+  description: "Private NEET UG 2027 preparation platform.",
+  keywords: "NEET 2027, AIIMS Delhi, MBBS, study tracker, NEET DOCTOR",
   applicationName: "NEET DOCTOR",
   appleWebApp: {
     capable: true,

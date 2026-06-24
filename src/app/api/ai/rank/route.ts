@@ -460,7 +460,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Rank prediction runs only after a manual button click." }, { status: 400 });
     }
 
-    const context = await buildAIContext(session.userId);
+    const context = await buildAIContext(session.userId, {
+      includeWellness: false,
+      includeScreenTime: false,
+      includeErrorLogs: true,
+    });
     const systemPrompt = buildSystemPrompt(context, "rank");
     const deterministicEvidence = buildDeterministicEvidence(context);
     const rankCalibration = getRankCalibrationPromptSummary();

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { buildCycleIntelligence } from "@/lib/cycle-intelligence";
 import { maybeSendCyclePredictionNudge } from "@/lib/cycle-nudge";
+import { constantTimeEquals } from "@/lib/secure-compare";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -14,8 +15,8 @@ export const maxDuration = 60;
 // only ever fires inside the prediction window — so the blast radius is nil.
 function isAuthorized(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return req.headers.get("authorization") === `Bearer ${secret}`;
+  if (!secret) return process.env.NODE_ENV !== "production";
+  return constantTimeEquals(req.headers.get("authorization"), `Bearer ${secret}`);
 }
 
 export async function GET(req: NextRequest) {

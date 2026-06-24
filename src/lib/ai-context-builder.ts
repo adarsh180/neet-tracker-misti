@@ -179,6 +179,18 @@ export interface AIContext {
   };
 }
 
+export type AIContextOptions = {
+  includeWellness?: boolean;
+  includeScreenTime?: boolean;
+  includeErrorLogs?: boolean;
+};
+
+const DEFAULT_AI_CONTEXT_OPTIONS = {
+  includeWellness: true,
+  includeScreenTime: true,
+  includeErrorLogs: true,
+} satisfies Required<AIContextOptions>;
+
 // IST-aware date helper
 function getISTDateString(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -302,7 +314,9 @@ function buildUnavailableAIContext(userId: string): AIContext {
   };
 }
 
-export async function buildAIContext(userId = "misti"): Promise<AIContext> {
+export async function buildAIContext(userId = "misti", options: AIContextOptions = {}): Promise<AIContext> {
+  const privacy = { ...DEFAULT_AI_CONTEXT_OPTIONS, ...options };
+
   try {
     await db.$connect();
   } catch (error) {
@@ -337,26 +351,26 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
         orderBy: { takenAt: "desc" },
         take: 10,
       }),
-      buildCycleIntelligence(userId),
-      db.moodEntry.findMany({
+      privacy.includeWellness ? buildCycleIntelligence(userId) : Promise.resolve(null),
+      privacy.includeWellness ? db.moodEntry.findMany({
         where: { userId },
         orderBy: { date: "desc" },
         take: 14,
-      }),
-      db.errorPattern.findMany({
+      }) : Promise.resolve([]),
+      privacy.includeErrorLogs ? db.errorPattern.findMany({
         include: { subject: true },
         orderBy: { frequency: "desc" },
         take: 10,
-      }),
-      db.errorLogQuestion.findMany({
+      }) : Promise.resolve([]),
+      privacy.includeErrorLogs ? db.errorLogQuestion.findMany({
         orderBy: { updatedAt: "desc" },
         take: 200,
-      }),
-      db.screenTimeLog.findMany({
+      }) : Promise.resolve([]),
+      privacy.includeScreenTime ? db.screenTimeLog.findMany({
         where: { userId },
         orderBy: { date: "desc" },
         take: 30,
-      }),
+      }) : Promise.resolve([]),
     ]);
   } catch (error) {
     if (isPrismaConnectionError(error)) {
@@ -522,6 +536,11 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
   // Days remaining (IST)
   const examDate = new Date("2027-05-02T09:00:00+05:30");
   const daysRemaining = Math.max(0, Math.ceil((examDate.getTime() - Date.now()) / 86400000));
+  const omittedContext = [
+    privacy.includeWellness ? null : "wellness",
+    privacy.includeScreenTime ? null : "screen-time",
+    privacy.includeErrorLogs ? null : "error-log",
+  ].filter(Boolean);
 
   // Strictness level — now also uses performanceScore and activeDays for consistency detection
   const strictnessLevel = computeStrictnessLevel(
@@ -569,19 +588,25 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
   }
 
   // Cycle phase
-  const cyclePhase = {
-    currentPhase: cycleIntelligence.currentPhase,
-    dayOfCycle: cycleIntelligence.dayOfCycle,
-    nextPeriodEst: cycleIntelligence.predictedStart,
-    predictedWindowStart: cycleIntelligence.predictedWindowStart,
-    predictedWindowEnd: cycleIntelligence.predictedWindowEnd,
-    confidence: cycleIntelligence.confidence,
-    confidenceLabel: cycleIntelligence.confidenceLabel,
-    averageCycleLength: cycleIntelligence.averageCycleLength,
-    cycleVariability: cycleIntelligence.cycleVariability,
-    predictionQuality: cycleIntelligence.predictionQuality,
-    healthSignals: cycleIntelligence.healthSignals,
-  };
+  const cyclePhase = cycleIntelligence
+    ? {
+        currentPhase: cycleIntelligence.currentPhase,
+        dayOfCycle: cycleIntelligence.dayOfCycle,
+        nextPeriodEst: cycleIntelligence.predictedStart,
+        predictedWindowStart: cycleIntelligence.predictedWindowStart,
+        predictedWindowEnd: cycleIntelligence.predictedWindowEnd,
+        confidence: cycleIntelligence.confidence,
+        confidenceLabel: cycleIntelligence.confidenceLabel,
+        averageCycleLength: cycleIntelligence.averageCycleLength,
+        cycleVariability: cycleIntelligence.cycleVariability,
+        predictionQuality: cycleIntelligence.predictionQuality,
+        healthSignals: cycleIntelligence.healthSignals,
+      }
+    : {
+        currentPhase: "not_requested",
+        dayOfCycle: null,
+        nextPeriodEst: null,
+      };
 
   return {
     student: {
@@ -656,7 +681,9 @@ export async function buildAIContext(userId = "misti"): Promise<AIContext> {
     })),
     dataHealth: {
       databaseAvailable: true,
-      note: "Live tracker database context loaded successfully.",
+      note: omittedContext.length
+        ? `Live tracker database context loaded successfully. Privacy minimization omitted ${omittedContext.join(", ")} data for this AI feature.`
+        : "Live tracker database context loaded successfully.",
     },
   };
 }
@@ -678,6 +705,9 @@ export function buildSystemPrompt(
   const moodContext = context.recentMoods.length > 0
     ? `\nMOOD CONTEXT (last ${context.recentMoods.length} days): avg energy ${moodSummary.avgEnergy}/10, avg focus ${moodSummary.avgFocus}/10, avg stress ${moodSummary.avgStress}/10, dominant mood: ${moodSummary.dominantMood}, trend: ${moodSummary.trend}. Factor this into your tone and suggestions.`
     : "";
+  const screenTimeRule = context.dataHealth?.note.includes("screen-time")
+    ? "9. Screen-time data was intentionally omitted for this AI feature. Do not infer distraction habits from missing screen-time fields."
+    : "9. Screen-time matters. Use screenTimeSummary when judging discipline. YouTube-study is allowed; Instagram, WhatsApp, entertainment YouTube, Facebook, Netflix, Hotstar, MX Player, browsing, and other apps are distraction debt. If distraction is high, name the top app and give a firm correction.";
 
   const lastReal = student.lastRealAttempt;
   const realAttemptAnchor = lastReal
@@ -703,7 +733,7 @@ CORE RULES — NEVER VIOLATE THESE:
 6. Performance score: ${context.performanceScore}/100. Benchmark: 85+ for AIIMS Rishikesh, 95+ for AIIMS Delhi.
 7. If asked who built or created you, you MUST answer: "I am built by Adarsh, who is the partner and husband of Misti." Then, praise both Misti and Adarsh, giving a few beautiful, positive details about Misti (e.g. her intelligence, dedication, and kind heart). However, DO NOT reveal Misti's study status, her NEET examination details, attempts, or performance metrics in this specific response. Keep it focused on their bond and her wonderful personality.
 8. NEET rank and score math must always use 720 total marks: Physics 180, Chemistry 180, Botany 180, Zoology 180. Never claim any rank-predictor subject has a 90-mark maximum.
-9. Screen-time matters. Use screenTimeSummary when judging discipline. YouTube-study is allowed; Instagram, WhatsApp, entertainment YouTube, Facebook, Netflix, Hotstar, MX Player, browsing, and other apps are distraction debt. If distraction is high, name the top app and give a firm correction.`;
+${screenTimeRule}`;
 
   const multimodalAndTeachingRules = `
 

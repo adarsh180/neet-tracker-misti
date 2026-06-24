@@ -134,13 +134,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { conversationId, message = "", mode = "neet-guru" } = body;
     const files = normalizeAttachments(body);
+    const resolvedMode = mode as "neet-guru" | "rank" | "quiz" | "cycle";
 
     if (!message.trim() && files.length === 0) {
       return NextResponse.json({ error: "Message or file is required" }, { status: 400 });
     }
 
-    const context = await buildAIContext(session.userId);
-    const resolvedMode = mode as "neet-guru" | "rank" | "quiz" | "cycle";
+    const context = await buildAIContext(session.userId, {
+      includeWellness: resolvedMode === "cycle",
+      includeScreenTime: false,
+      includeErrorLogs: resolvedMode === "rank" || resolvedMode === "quiz",
+    });
     const systemPrompt = buildSystemPrompt(context, resolvedMode);
     const memoryPrompt = await buildMemoryContextForPrompt({
       latestMessage: message || (files.length ? `Attached files:\n${getAttachmentSummary(files)}` : ""),
