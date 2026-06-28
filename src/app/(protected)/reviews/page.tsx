@@ -7,6 +7,15 @@ import {
 } from "lucide-react";
 import { Bar, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from "recharts";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
+import {
+  computeReviewScore,
+  computeReviewComparison,
+  gradeForIndex,
+  indexForGrade,
+  type ComparisonPoint,
+  type ReviewComparison,
+  type ReviewScoreInput,
+} from "@/lib/review-score";
 
 type ReviewQuestion = { id: string; question: string; options: string[] };
 
@@ -44,11 +53,14 @@ type ReviewCardData = {
       testsTaken: number;
       avgTestPercentage: number | null;
       distractionHours: number;
+      performanceIndex?: number;
     };
   };
   questions: ReviewQuestion[];
   verdict: ReviewVerdict | null;
 };
+
+type ScoreMeta = { index: number; grade: string; comparison: ReviewComparison };
 
 const VERDICT_META: Record<ReviewVerdict["verdict"], { label: string; color: string }> = {
   HONEST: { label: "Honest", color: "var(--success)" },
@@ -56,8 +68,6 @@ const VERDICT_META: Record<ReviewVerdict["verdict"], { label: string; color: str
   INCONSISTENT: { label: "Inconsistent", color: "hsl(28, 90%, 58%)" },
   FAKING: { label: "Faked logs detected", color: "var(--danger)" },
 };
-
-const GRADE_SCORE: Record<string, number> = { "A+": 100, A: 92, "B+": 82, B: 72, C: 58, D: 42, F: 25 };
 
 function formatRange(start: string, end: string) {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", timeZone: "Asia/Kolkata" };
@@ -76,6 +86,73 @@ function cardHours(card: ReviewCardData) {
 function cardQuestions(card: ReviewCardData) {
   if (card.review.metrics) return card.review.metrics.questions;
   return card.review.subjectBreakdown.reduce((sum, row) => sum + row.questions, 0);
+}
+
+// Rebuild the deterministic scoring input from a card's stored metrics + flags so
+// the grade is recomputed identically to the server — this corrects older cards
+// (whose grade was once AI-written) on display, without mutating the database.
+function cardScoreInput(card: ReviewCardData): ReviewScoreInput | null {
+  const m = card.review.metrics;
+  if (!m) return null;
+  return {
+    hours: m.hours,
+    questions: m.questions,
+    activeDays: m.activeDays,
+    periodDays: m.periodDays,
+    topicsCompleted: m.topicsCompleted,
+    revisions: m.revisions,
+    testsTaken: m.testsTaken,
+    avgTestPercentage: m.avgTestPercentage,
+    distractionHours: m.distractionHours,
+    integritySignals: (card.review.integritySignals ?? []).map((signal) => ({ severity: signal.severity })),
+  };
+}
+
+function cardIndex(card: ReviewCardData): number {
+  const stored = card.review.metrics?.performanceIndex;
+  if (typeof stored === "number") return stored;
+  const input = cardScoreInput(card);
+  if (input) return computeReviewScore(input).index;
+  return indexForGrade(card.review.grade);
+}
+
+// Per-card index, corrected grade, and period-over-period comparison, keyed by id.
+function buildScoreMeta(cards: ReviewCardData[] | null): Map<string, ScoreMeta> {
+  const meta = new Map<string, ScoreMeta>();
+  if (!cards) return meta;
+
+  for (const period of ["WEEKLY", "MONTHLY"] as const) {
+    // Oldest → newest so each card sees only the periods that preceded it.
+    const chronological = cards
+      .filter((card) => card.period === period)
+      .slice()
+      .sort((a, b) => a.periodStart.localeCompare(b.periodStart));
+
+    const points: ComparisonPoint[] = chronological.map((card) => ({
+      index: cardIndex(card),
+      hours: cardHours(card),
+      questions: cardQuestions(card),
+    }));
+
+    chronological.forEach((card, i) => {
+      const comparison = computeReviewComparison(points[i], i > 0 ? points[i - 1] : null, points.slice(0, i));
+      meta.set(card.id, { index: points[i].index, grade: gradeForIndex(points[i].index), comparison });
+    });
+  }
+
+  return meta;
+}
+
+const PERIOD_NOUN: Record<"WEEKLY" | "MONTHLY", string> = { WEEKLY: "week", MONTHLY: "month" };
+const MOMENTUM_LABEL: Record<ReviewComparison["momentum"], string> = {
+  improving: "improving",
+  declining: "declining",
+  stable: "holding steady",
+  unknown: "—",
+};
+
+function signed(value: number, suffix = "") {
+  return `${value >= 0 ? "+" : ""}${value}${suffix}`;
 }
 
 export default function ReviewsPage() {
@@ -119,6 +196,8 @@ export default function ReviewsPage() {
     };
   }, [cards]);
 
+  const scoreMeta = useMemo(() => buildScoreMeta(cards), [cards]);
+
   return (
     <div className="rv-wrap">
       <header className="rv-head">
@@ -154,18 +233,18 @@ export default function ReviewsPage() {
         <>
           <h2 className="rv-section">Current review</h2>
           {current.map((card) => (
-            <ReviewCardView key={card.id} card={card} onUpdated={replaceCard} defaultOpen={card.status === "AWAITING_ANSWERS"} />
+            <ReviewCardView key={card.id} card={card} meta={scoreMeta.get(card.id)} onUpdated={replaceCard} defaultOpen={card.status === "AWAITING_ANSWERS"} />
           ))}
         </>
       )}
 
-      {!loading && !error && cards && cards.length >= 2 && <ProgressCharts cards={cards} />}
+      {!loading && !error && cards && cards.length >= 2 && <ProgressCharts cards={cards} scoreMeta={scoreMeta} />}
 
       {!loading && !error && history.length > 0 && (
         <>
           <h2 className="rv-section"><History size={15} /> History</h2>
           {history.map((card) => (
-            <ReviewCardView key={card.id} card={card} onUpdated={replaceCard} defaultOpen={false} />
+            <ReviewCardView key={card.id} card={card} meta={scoreMeta.get(card.id)} onUpdated={replaceCard} defaultOpen={false} />
           ))}
         </>
       )}
@@ -213,7 +292,7 @@ export default function ReviewsPage() {
   );
 }
 
-function ProgressCharts({ cards }: { cards: ReviewCardData[] }) {
+function ProgressCharts({ cards, scoreMeta }: { cards: ReviewCardData[]; scoreMeta: Map<string, ScoreMeta> }) {
   const [tab, setTab] = useState<"WEEKLY" | "MONTHLY">("WEEKLY");
 
   const data = useMemo(
@@ -222,20 +301,23 @@ function ProgressCharts({ cards }: { cards: ReviewCardData[] }) {
         .filter((card) => card.period === tab)
         .slice()
         .reverse()
-        .map((card) => ({
-          label: new Date(`${card.periodStart}T12:00:00+05:30`).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            timeZone: "Asia/Kolkata",
-          }),
-          hours: cardHours(card),
-          questions: cardQuestions(card),
-          grade: card.review.grade,
-          gradeScore: GRADE_SCORE[card.review.grade] ?? 50,
-          integrity: card.verdict?.integrityScore ?? null,
-          verdict: card.verdict ? VERDICT_META[card.verdict.verdict].label : "Truth Check pending",
-        })),
-    [cards, tab],
+        .map((card) => {
+          const meta = scoreMeta.get(card.id);
+          return {
+            label: new Date(`${card.periodStart}T12:00:00+05:30`).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              timeZone: "Asia/Kolkata",
+            }),
+            hours: cardHours(card),
+            questions: cardQuestions(card),
+            grade: meta?.grade ?? card.review.grade,
+            gradeScore: meta?.index ?? indexForGrade(card.review.grade),
+            integrity: card.verdict?.integrityScore ?? null,
+            verdict: card.verdict ? VERDICT_META[card.verdict.verdict].label : "Truth Check pending",
+          };
+        }),
+    [cards, tab, scoreMeta],
   );
 
   if (data.length < 2 && cards.filter((card) => card.period === (tab === "WEEKLY" ? "MONTHLY" : "WEEKLY")).length < 2) {
@@ -285,7 +367,7 @@ function ProgressCharts({ cards }: { cards: ReviewCardData[] }) {
                     const payload = (item as { payload?: { grade?: string; questions?: number; verdict?: string } }).payload;
                     if (name === "Study hours") return [`${value}h (grade ${payload?.grade}, ${payload?.questions} Qs)`, name];
                     if (name === "Integrity") return [`${value}/100 (${payload?.verdict})`, name];
-                    if (name === "Grade") return [`${payload?.grade}`, name];
+                    if (name === "Grade") return [`${payload?.grade} · ${value}/100 index`, name];
                     return [String(value ?? ""), name];
                   }}
                 />
@@ -324,10 +406,12 @@ function ProgressCharts({ cards }: { cards: ReviewCardData[] }) {
 
 function ReviewCardView({
   card,
+  meta,
   onUpdated,
   defaultOpen,
 }: {
   card: ReviewCardData;
+  meta?: ScoreMeta;
   onUpdated: (card: ReviewCardData) => void;
   defaultOpen: boolean;
 }) {
@@ -337,6 +421,9 @@ function ReviewCardView({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const review = card.review;
+  const grade = meta?.grade ?? review.grade;
+  const periodNoun = PERIOD_NOUN[card.period];
+  const comparison = meta?.comparison;
   const allAnswered = card.questions.every((question) => answers[question.id] !== undefined);
 
   const submit = async () => {
@@ -369,7 +456,7 @@ function ReviewCardView({
           {card.period === "WEEKLY" ? "Weekly" : "Monthly"}
         </span>
         <span className="rc-range">{formatRange(card.periodStart, card.periodEnd)}</span>
-        <span className="rc-grade">Grade {review.grade}</span>
+        <span className="rc-grade">Grade {grade}{meta ? ` · ${meta.index}/100` : ""}</span>
         {card.status === "AWAITING_ANSWERS" ? (
           <span className="rc-badge rc-badge--pending"><ShieldAlert size={13} /> Truth Check pending</span>
         ) : verdictMeta ? (
@@ -392,6 +479,35 @@ function ReviewCardView({
               <span><strong>{review.metrics.topicsCompleted}</strong> topics done</span>
               <span><strong>{review.metrics.revisions}</strong> revisions</span>
               <span><strong>{review.metrics.testsTaken}</strong> tests{review.metrics.avgTestPercentage !== null ? ` · ${review.metrics.avgTestPercentage}%` : ""}</span>
+            </div>
+          )}
+
+          {meta && comparison && (
+            <div className="rc-compare">
+              <span className="rc-compare-index">Performance <strong>{meta.index}/100</strong> ({grade})</span>
+              {comparison.vsPrevious && (
+                <>
+                  <span className={comparison.vsPrevious.indexDelta >= 0 ? "rc-up" : "rc-down"}>
+                    {comparison.vsPrevious.indexDelta >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {signed(comparison.vsPrevious.indexDelta)} pts vs last {periodNoun}
+                  </span>
+                  <span>
+                    {signed(comparison.vsPrevious.hoursDelta, "h")}
+                    {comparison.vsPrevious.hoursPct !== null ? ` (${signed(comparison.vsPrevious.hoursPct, "%")})` : ""} · {signed(comparison.vsPrevious.questionsDelta)} Qs
+                  </span>
+                </>
+              )}
+              {comparison.vsBaseline !== null && (
+                <span className={comparison.vsBaseline >= 0 ? "rc-up" : "rc-down"}>
+                  {signed(comparison.vsBaseline)} vs recent avg ({comparison.baselineIndex})
+                </span>
+              )}
+              {comparison.rank !== null && comparison.totalPeriods > 1 && (
+                <span className="rc-compare-rank">
+                  {comparison.rank === 1 ? `Best ${periodNoun} so far` : `#${comparison.rank} of ${comparison.totalPeriods} ${periodNoun}s`}
+                </span>
+              )}
+              {comparison.momentum !== "unknown" && <span>Momentum: {MOMENTUM_LABEL[comparison.momentum]}</span>}
             </div>
           )}
 
@@ -527,6 +643,17 @@ function ReviewCardView({
         .rc-metrics { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 10px 14px; border-radius: 12px; background: var(--bg-elevated); }
         .rc-metrics span { font-size: 12px; color: var(--text-secondary); }
         .rc-metrics strong { color: var(--gold); font-size: 13px; }
+        .rc-compare {
+          display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+          padding: 10px 14px; border-radius: 12px;
+          background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.06);
+        }
+        .rc-compare span { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-secondary); }
+        .rc-compare-index { font-weight: 600; color: var(--text-primary) !important; }
+        .rc-compare-index strong { color: var(--gold); font-size: 13px; }
+        .rc-compare-rank { color: var(--gold-bright) !important; font-weight: 700; }
+        .rc-compare :global(.rc-up) { color: var(--success); font-weight: 700; }
+        .rc-compare :global(.rc-down) { color: hsl(28, 90%, 60%); font-weight: 700; }
         .rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .rc-col h4, .rc-signals h4, .rc-focus h4 {
           font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;

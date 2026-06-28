@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { chatWithAI } from "@/lib/openrouter";
 import { sendWebPushNotification } from "@/lib/web-push";
 import { getISTDateString } from "@/lib/daily-planner";
+import { computeReviewScore, type ReviewScoreInput } from "@/lib/review-score";
 
 /**
  * Review Agent - weekly & monthly report cards with an integrity audit.
@@ -74,6 +75,8 @@ export type ReviewContent = {
     testsTaken: number;
     avgTestPercentage: number | null;
     distractionHours: number;
+    /** Deterministic 0-100 composite performance index (source of truth for the grade). */
+    performanceIndex?: number;
   };
 };
 
@@ -751,6 +754,24 @@ async function generateReviewCard(period: ReviewPeriod, range: { start: string; 
   const aiTail = normalizeIntegrityQuestions([], [...generated.questions, ...deterministic.questions], policy.ai);
   generated.questions = normalizeIntegrityQuestions(bankQuestions, aiTail, policy.total);
 
+  // Deterministic performance score — the single source of truth for the grade.
+  // The AI writes the prose, but the grade must be a reproducible, monotonic
+  // function of the logged numbers so it is consistent across periods.
+  const scoreInput: ReviewScoreInput = {
+    hours: stats.totals.hours,
+    questions: stats.totals.questions,
+    activeDays: stats.totals.activeDays,
+    periodDays: stats.totals.periodDays,
+    topicsCompleted: stats.totals.topicsCompleted,
+    revisions: stats.totals.revisions,
+    testsTaken: stats.totals.testsTaken,
+    avgTestPercentage: stats.totals.avgTestPercentage,
+    distractionHours: stats.totals.totalDistractionHours,
+    integritySignals: signals.map((signal) => ({ severity: signal.severity })),
+  };
+  const score = computeReviewScore(scoreInput);
+  generated.review.grade = score.grade;
+
   // Exact numbers for the progress graphs — always from the data, never the AI.
   generated.review.metrics = {
     hours: stats.totals.hours,
@@ -762,6 +783,7 @@ async function generateReviewCard(period: ReviewPeriod, range: { start: string; 
     testsTaken: stats.totals.testsTaken,
     avgTestPercentage: stats.totals.avgTestPercentage,
     distractionHours: stats.totals.totalDistractionHours,
+    performanceIndex: score.index,
   };
 
   return db.reviewCard.create({
