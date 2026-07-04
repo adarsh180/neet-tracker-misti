@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   Activity,
   ArrowRight,
@@ -152,21 +152,96 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("en-IN").format(Math.round(value));
 }
 
-function buildSparkline(values: number[], width = 460, height = 120) {
-  if (!values.length) return "";
+interface PulsePoint {
+  x: number;
+  y: number;
+}
+
+interface PulseGeometry {
+  line: string;
+  area: string;
+  points: PulsePoint[];
+  last: PulsePoint;
+  baseY: number;
+}
+
+// Monotone cubic Hermite spline (Fritsch–Carlson) rendered as bezier segments.
+// Produces a smooth flowing curve that never overshoots the data — so the fill
+// never dips below the baseline and peaks never balloon past their value.
+function smoothLine(points: PulsePoint[]): string {
+  const n = points.length;
+  if (n === 0) return "";
+  if (n === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const dx: number[] = [];
+  const slope: number[] = [];
+  for (let i = 0; i < n - 1; i += 1) {
+    dx[i] = xs[i + 1] - xs[i];
+    slope[i] = dx[i] === 0 ? 0 : (ys[i + 1] - ys[i]) / dx[i];
+  }
+
+  const m: number[] = new Array(n);
+  m[0] = slope[0];
+  m[n - 1] = slope[n - 2];
+  for (let i = 1; i < n - 1; i += 1) {
+    m[i] = slope[i - 1] * slope[i] <= 0 ? 0 : (slope[i - 1] + slope[i]) / 2;
+  }
+  for (let i = 0; i < n - 1; i += 1) {
+    if (slope[i] === 0) {
+      m[i] = 0;
+      m[i + 1] = 0;
+    } else {
+      const a = m[i] / slope[i];
+      const b = m[i + 1] / slope[i];
+      const h = Math.hypot(a, b);
+      if (h > 3) {
+        const t = 3 / h;
+        m[i] = t * a * slope[i];
+        m[i + 1] = t * b * slope[i];
+      }
+    }
+  }
+
+  let d = `M ${xs[0].toFixed(2)} ${ys[0].toFixed(2)}`;
+  for (let i = 0; i < n - 1; i += 1) {
+    const c1x = xs[i] + dx[i] / 3;
+    const c1y = ys[i] + (m[i] * dx[i]) / 3;
+    const c2x = xs[i + 1] - dx[i] / 3;
+    const c2y = ys[i + 1] - (m[i + 1] * dx[i]) / 3;
+    d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${xs[i + 1].toFixed(2)} ${ys[i + 1].toFixed(2)}`;
+  }
+  return d;
+}
+
+function buildPulseGeometry(values: number[], width: number, height: number): PulseGeometry {
+  const empty: PulseGeometry = { line: "", area: "", points: [], last: { x: 0, y: 0 }, baseY: height };
+  if (!values.length || width <= 0 || height <= 0) return empty;
+
+  const padX = 14;
+  const padTop = 18;
+  const padBottom = 16;
+  const plotW = Math.max(1, width - padX * 2);
+  const plotH = Math.max(1, height - padTop - padBottom);
 
   const max = Math.max(...values, 1);
   const min = Math.min(...values, 0);
   const range = Math.max(1, max - min);
-  const stepX = values.length === 1 ? 0 : width / (values.length - 1);
+  const stepX = values.length === 1 ? 0 : plotW / (values.length - 1);
 
-  return values
-    .map((value, index) => {
-      const x = index * stepX;
-      const y = height - ((value - min) / range) * (height - 18) - 9;
-      return `${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
+  const points: PulsePoint[] = values.map((value, index) => ({
+    x: padX + index * stepX,
+    y: padTop + (1 - (value - min) / range) * plotH,
+  }));
+
+  const line = smoothLine(points);
+  const first = points[0];
+  const last = points[points.length - 1];
+  const baseY = height;
+  const area = `${line} L ${last.x.toFixed(2)} ${baseY} L ${first.x.toFixed(2)} ${baseY} Z`;
+
+  return { line, area, points, last, baseY };
 }
 
 function subjectVisual(slug: string): SubjectVisual {
@@ -182,6 +257,8 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [upscConfidence, setUpscConfidence] = useState<PrepConfidence | null>(null);
   const [loading, setLoading] = useState(true);
+  const pulseSvgRef = useRef<SVGSVGElement>(null);
+  const [pulseSize, setPulseSize] = useState({ width: 620, height: 184 });
 
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
@@ -212,13 +289,38 @@ export default function DashboardPage() {
     fetchUpscConfidence();
   }, [fetchMetrics, fetchUpscConfidence]);
 
+  // Measure the chart box so the SVG is drawn in real pixels (1:1 viewBox).
+  // This keeps stroke width uniform and the endpoint dot a true circle —
+  // no preserveAspectRatio="none" distortion — while staying fully responsive.
+  useEffect(() => {
+    const node = pulseSvgRef.current;
+    if (!node) return;
+    const measure = () => {
+      const rect = node.getBoundingClientRect();
+      if (rect.width && rect.height) {
+        setPulseSize((prev) =>
+          Math.abs(prev.width - rect.width) < 0.5 && Math.abs(prev.height - rect.height) < 0.5
+            ? prev
+            : { width: rect.width, height: rect.height },
+        );
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   const overall = clamp(metrics?.overallPct ?? 0, 0, 100);
   const subjects = useMemo(() => metrics?.subjects ?? [], [metrics?.subjects]);
   const studyPulse = useMemo(() => {
     if (metrics?.pulse?.length) return metrics.pulse;
     return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   }, [metrics]);
-  const sparkPath = useMemo(() => buildSparkline(studyPulse), [studyPulse]);
+  const pulseGeometry = useMemo(
+    () => buildPulseGeometry(studyPulse, pulseSize.width, pulseSize.height),
+    [studyPulse, pulseSize.width, pulseSize.height],
+  );
   const topSubject = useMemo(() => {
     return [...subjects].sort((a, b) => b.completionPct - a.completionPct)[0] ?? null;
   }, [subjects]);
@@ -340,20 +442,74 @@ export default function DashboardPage() {
           </div>
 
           <div className="pulse-chart">
-            <svg viewBox="0 0 460 120" preserveAspectRatio="none" role="img" aria-label="Fourteen day study pulse">
+            <svg
+              ref={pulseSvgRef}
+              className="pulse-svg"
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${pulseSize.width} ${pulseSize.height}`}
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="Fourteen day study pulse"
+            >
               <defs>
-                <linearGradient id="pulseStroke" x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="0%" stopColor="hsl(150, 55%, 55%)" />
-                  <stop offset="44%" stopColor="hsl(38, 88%, 62%)" />
-                  <stop offset="100%" stopColor="hsl(285, 62%, 68%)" />
+                <linearGradient id="pulseStroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="hsl(158, 64%, 52%)" />
+                  <stop offset="52%" stopColor="hsl(120, 52%, 56%)" />
+                  <stop offset="100%" stopColor="hsl(45, 92%, 62%)" />
                 </linearGradient>
-                <linearGradient id="pulseFill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(255, 214, 138, 0.24)" />
-                  <stop offset="100%" stopColor="rgba(255, 214, 138, 0)" />
+                <linearGradient id="pulseFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsla(150, 58%, 58%, 0.28)" />
+                  <stop offset="55%" stopColor="hsla(105, 46%, 56%, 0.10)" />
+                  <stop offset="100%" stopColor="hsla(70, 60%, 60%, 0)" />
                 </linearGradient>
+                <radialGradient id="pulseDot" cx="0.5" cy="0.5" r="0.5">
+                  <stop offset="0%" stopColor="hsl(50, 96%, 78%)" />
+                  <stop offset="100%" stopColor="hsl(45, 92%, 60%)" />
+                </radialGradient>
               </defs>
-              <path d={`${sparkPath} L 460 120 L 0 120 Z`} fill="url(#pulseFill)" />
-              <path d={sparkPath} fill="none" stroke="url(#pulseStroke)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+
+              {[0.28, 0.52, 0.76].map((ratio) => (
+                <line
+                  key={ratio}
+                  className="pulse-grid"
+                  x1={0}
+                  x2={pulseSize.width}
+                  y1={pulseSize.height * ratio}
+                  y2={pulseSize.height * ratio}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+
+              <path className="pulse-area" d={pulseGeometry.area} fill="url(#pulseFill)" />
+              <path
+                className="pulse-glow"
+                d={pulseGeometry.line}
+                fill="none"
+                stroke="url(#pulseStroke)"
+                strokeWidth={7}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+              <path
+                className="pulse-line"
+                d={pulseGeometry.line}
+                pathLength={1}
+                fill="none"
+                stroke="url(#pulseStroke)"
+                strokeWidth={2.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+
+              {pulseGeometry.points.length > 0 && (
+                <g className="pulse-endpoint">
+                  <circle className="pulse-dot-ring" cx={pulseGeometry.last.x} cy={pulseGeometry.last.y} r={9} fill="hsl(48, 92%, 66%)" />
+                  <circle className="pulse-dot-core" cx={pulseGeometry.last.x} cy={pulseGeometry.last.y} r={3.4} fill="url(#pulseDot)" />
+                </g>
+              )}
             </svg>
           </div>
 
@@ -1025,16 +1181,109 @@ export default function DashboardPage() {
         }
 
         .pulse-chart {
+          position: relative;
           height: 210px;
           padding: 18px 0 8px;
           border-top: 1px solid rgba(255,255,255,0.06);
           border-bottom: 1px solid rgba(255,255,255,0.06);
         }
 
-        .pulse-chart svg {
+        .pulse-svg {
+          display: block;
           width: 100%;
           height: 100%;
-          filter: drop-shadow(0 10px 18px rgba(0,0,0,0.2));
+          overflow: visible;
+        }
+
+        .pulse-grid {
+          stroke: rgba(255,255,255,0.05);
+          stroke-width: 1;
+          stroke-dasharray: 2 7;
+          opacity: 0;
+          animation: pulseGridIn 900ms ease 220ms forwards;
+        }
+
+        .pulse-area {
+          opacity: 0;
+          transform-box: fill-box;
+          transform-origin: bottom;
+          transform: scaleY(0.82);
+          animation: pulseAreaRise 1200ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+        }
+
+        .pulse-glow {
+          opacity: 0;
+          filter: blur(7px);
+          animation: pulseGlowIn 1400ms ease 620ms forwards;
+        }
+
+        .pulse-line {
+          stroke-dasharray: 1;
+          stroke-dashoffset: 1;
+          filter: drop-shadow(0 6px 14px rgba(0,0,0,0.28));
+          animation: pulseLineDraw 1700ms cubic-bezier(0.65, 0, 0.35, 1) 120ms forwards;
+        }
+
+        .pulse-endpoint {
+          opacity: 0;
+          animation: pulseEndpointIn 500ms ease 1600ms forwards;
+        }
+
+        .pulse-dot-ring {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: pulseDotBreathe 2600ms ease-in-out 1800ms infinite;
+        }
+
+        .pulse-dot-core {
+          filter: drop-shadow(0 0 6px hsla(48, 92%, 66%, 0.8));
+        }
+
+        @keyframes pulseLineDraw {
+          to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes pulseAreaRise {
+          from { opacity: 0; transform: scaleY(0.82); }
+          to { opacity: 1; transform: scaleY(1); }
+        }
+
+        @keyframes pulseGlowIn {
+          from { opacity: 0; }
+          to { opacity: 0.55; }
+        }
+
+        @keyframes pulseGridIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes pulseEndpointIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes pulseDotBreathe {
+          0% { transform: scale(0.7); opacity: 0.55; }
+          70% { transform: scale(2.6); opacity: 0; }
+          100% { transform: scale(2.6); opacity: 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .pulse-area,
+          .pulse-glow,
+          .pulse-grid,
+          .pulse-endpoint {
+            opacity: 1;
+            animation: none;
+          }
+          .pulse-area { transform: scaleY(1); }
+          .pulse-glow { opacity: 0.5; }
+          .pulse-line {
+            stroke-dashoffset: 0;
+            animation: none;
+          }
+          .pulse-dot-ring { animation: none; opacity: 0.4; }
         }
 
         .pulse-notes {
@@ -1518,6 +1767,18 @@ export default function DashboardPage() {
             linear-gradient(180deg, rgba(255,255,255,0.74), rgba(244,229,206,0.42)),
             rgba(255,255,255,0.42);
           box-shadow: inset 0 1px 6px rgba(83,57,35,0.08);
+        }
+
+        :global(html[data-theme="light"]) .pulse-grid {
+          stroke: rgba(83, 57, 35, 0.08);
+        }
+
+        :global(html[data-theme="light"]) .pulse-glow {
+          filter: blur(6px);
+        }
+
+        :global(html[data-theme="light"]) .pulse-line {
+          filter: drop-shadow(0 4px 10px rgba(83, 57, 35, 0.18));
         }
 
         :global(html[data-theme="light"]) .subject-track i {
