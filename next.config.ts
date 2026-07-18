@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Chromium's compressed runtime assets are loaded dynamically at request
+  // time, so Next's static tracer cannot discover them automatically. Keep the
+  // include scoped to the PDF route to avoid bloating unrelated functions.
+  outputFileTracingIncludes: {
+    "/api/practice/*/report.pdf": [
+      "./node_modules/@sparticuz/chromium/bin/**/*",
+    ],
+  },
   images: {
     remotePatterns: [],
   },
