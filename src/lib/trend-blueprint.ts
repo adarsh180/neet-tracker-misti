@@ -204,7 +204,11 @@ function allocateByWeight<T extends { key: string; weight: number }>(total: numb
       entry.count += 1;
       remaining -= 1;
     });
-  return rows.filter((entry) => entry.count > 0).map(({ remainder: _remainder, ...entry }) => entry);
+  return rows.filter((entry) => entry.count > 0).map((entry) => {
+    const { remainder, ...quota } = entry;
+    void remainder;
+    return quota;
+  });
 }
 
 function applyCoverageAndCap(total: number, rows: Array<TrendChapterQuota>, seed: string) {
@@ -366,7 +370,10 @@ export function buildTrendAssemblyPlan(request: {
   };
 }
 
-export function buildDistributionAudit(questions: PracticeQuestion[], context?: { blueprintWarnings?: string[]; assemblyAudits?: unknown[] }) {
+export function buildDistributionAudit(
+  questions: PracticeQuestion[],
+  context?: { blueprintWarnings?: string[]; assemblyAudits?: unknown[]; qualityGate?: unknown },
+) {
   const subjectMap = new Map<string, { total: number; chapters: Map<string, number>; classes: Map<string, number> }>();
   for (const question of questions) {
     const entry = subjectMap.get(question.subject) ?? { total: 0, chapters: new Map<string, number>(), classes: new Map<string, number>() };
@@ -393,6 +400,7 @@ export function buildDistributionAudit(questions: PracticeQuestion[], context?: 
     ),
     warnings: context?.blueprintWarnings ?? [],
     assemblyAudits: context?.assemblyAudits ?? [],
+    qualityGate: context?.qualityGate ?? null,
   };
 }
 

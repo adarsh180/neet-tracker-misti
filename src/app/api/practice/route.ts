@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import {
+  NEET_FULL_TEST_DURATION_MINUTES,
+  NEET_FULL_TEST_QUESTIONS,
+  NEET_MAX_PRACTICE_DURATION_MINUTES,
+} from "@/lib/neet-exam-policy";
+import {
   PRACTICE_MAX_QUESTIONS,
   PRACTICE_MIN_QUESTIONS,
   PRACTICE_SUBJECTS,
+  InsufficientStrictStockError,
   createPracticeTest,
   normalizeAiFreshPercent,
   sanitizePracticeTest,
@@ -25,6 +31,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const tests = await db.practiceTest.findMany({
+    where: { userId: session.userId },
     orderBy: { createdAt: "desc" },
     take: 30,
   });
@@ -56,11 +63,12 @@ export async function POST(request: NextRequest) {
 
   const chapter = typeof body.chapter === "string" && body.chapter.trim() ? body.chapter.trim().slice(0, 160) : null;
   const chapters = Array.isArray(body.chapters)
-    ? body.chapters.map((entry: unknown) => String(entry ?? "").trim()).filter(Boolean).slice(0, 20)
+    ? body.chapters.map((entry: unknown) => String(entry ?? "").trim()).filter(Boolean).slice(0, 100)
     : chapter
       ? [chapter]
       : [];
   if (mode === "CHAPTER" && chapters.length === 0) return NextResponse.json({ error: "Chapter is required" }, { status: 400 });
+  if (mode === "UNIT" && chapters.length === 0) return NextResponse.json({ error: "Select at least one chapter for a unit test" }, { status: 400 });
 
   const topic = typeof body.topic === "string" && body.topic.trim() ? body.topic.trim().slice(0, 160) : null;
   if (mode === "TOPIC" && !topic) return NextResponse.json({ error: "Topic is required" }, { status: 400 });
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
   const pyqYear = typeof body.pyqYear === "string" && /^\d{4}$/.test(body.pyqYear) ? body.pyqYear : null;
   if (mode === "PYQ_YEAR" && !pyqYear) return NextResponse.json({ error: "PYQ year is required" }, { status: 400 });
 
-  const questionCount = Number(body.questionCount);
+  const questionCount = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" ? NEET_FULL_TEST_QUESTIONS : Number(body.questionCount);
   if (!Number.isFinite(questionCount) || questionCount < PRACTICE_MIN_QUESTIONS || questionCount > PRACTICE_MAX_QUESTIONS) {
     return NextResponse.json(
       { error: `Question count must be between ${PRACTICE_MIN_QUESTIONS} and ${PRACTICE_MAX_QUESTIONS}` },
@@ -82,9 +90,11 @@ export async function POST(request: NextRequest) {
   if ((mode === "UNIT" || mode === "SECTIONAL") && !classLevel) {
     return NextResponse.json({ error: "Class level is required for this mode" }, { status: 400 });
   }
-  const durationMinutes = Number.isFinite(Number(body.durationMinutes))
-    ? Math.max(1, Math.min(180, Math.round(Number(body.durationMinutes))))
-    : undefined;
+  const durationMinutes = mode === "FULL_LENGTH" || mode === "PYQ_YEAR"
+    ? NEET_FULL_TEST_DURATION_MINUTES
+    : Number.isFinite(Number(body.durationMinutes))
+      ? Math.max(1, Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, Math.round(Number(body.durationMinutes))))
+      : undefined;
 
   const config: PracticeConfig = {
     mode,
@@ -100,7 +110,17 @@ export async function POST(request: NextRequest) {
     durationMinutes,
     difficulty,
   };
-  const test = await createPracticeTest(config);
-
-  return NextResponse.json({ test: sanitizePracticeTest(test) }, { status: 201 });
+  try {
+    const test = await createPracticeTest(config, session.userId);
+    return NextResponse.json({ test: sanitizePracticeTest(test) }, { status: 201 });
+  } catch (error) {
+    if (error instanceof InsufficientStrictStockError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code, details: error.details },
+        { status: 409 },
+      );
+    }
+    console.error("[practice] create failed:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not create test" }, { status: 500 });
+  }
 }

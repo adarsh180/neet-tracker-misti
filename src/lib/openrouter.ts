@@ -1,39 +1,47 @@
 const OPENROUTER_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 
-// Fallback order (user-specified): gemma-4-26b-a4b-it -> gemma-4-31b-it ->
-// gemini-3.5-flash -> gemini-2.5-flash. Keys keep their historical names so the
-// existing references (AI_MODELS.fallback1 / .primary / .emergencyFallback) stay
-// valid; each id is env-overridable in case AI-Studio naming differs.
+// Cost-controlled order: Flash-Lite handles routine structured work, 2.5 Flash
+// provides an independent reliable pass, and 3.5 Flash is the final escalation.
+// Historical property names remain as aliases because older maintenance scripts
+// import them. Gemini Pro models are deliberately excluded from default lanes.
+const LOW_COST_MODEL = process.env.AI_MODEL_1 || "gemini-3.1-flash-lite";
+const RELIABLE_MODEL = process.env.AI_MODEL_2 || "gemini-2.5-flash";
+const QUALITY_MODEL = process.env.AI_MODEL_3 || "gemini-3.5-flash";
+
 export const AI_MODELS = {
-  fallback1: process.env.AI_MODEL_1 || "gemma-4-26b-a4b-it",
-  primary: process.env.AI_MODEL_2 || "gemma-4-31b-it",
-  bulkFlash: process.env.AI_MODEL_3 || "gemini-3.5-flash",
-  emergencyFallback: process.env.AI_MODEL_4 || "gemini-2.5-flash",
+  lowCost: LOW_COST_MODEL,
+  reliable: RELIABLE_MODEL,
+  quality: QUALITY_MODEL,
+  fallback1: LOW_COST_MODEL,
+  primary: RELIABLE_MODEL,
+  bulkFlash: QUALITY_MODEL,
+  emergencyFallback: process.env.AI_MODEL_4 || QUALITY_MODEL,
 };
 
 // Default attempt order for chatWithAI/streamWithAI.
 export const MODELS_LIST = [
-  AI_MODELS.fallback1,
-  AI_MODELS.primary,
-  AI_MODELS.bulkFlash,
-  AI_MODELS.emergencyFallback,
+  AI_MODELS.lowCost,
+  AI_MODELS.reliable,
+  AI_MODELS.quality,
 ];
 
-// High-throughput order for bulk bank work (verify/repair/generate). Leads with
-// the cheap Gemma pair, then the 2M-TPM gemini-3.5-flash, then 2.5-flash.
+// High-throughput bank work always tries the cheapest capable model first.
 export const BANK_MODELS = MODELS_LIST;
 // Independent second pass for double-blind verification (different lead model so
 // the two solves are genuinely independent).
 export const BANK_SECOND_PASS_MODELS = [
-  AI_MODELS.bulkFlash,
-  AI_MODELS.primary,
-  AI_MODELS.fallback1,
-  AI_MODELS.emergencyFallback,
+  AI_MODELS.reliable,
+  AI_MODELS.lowCost,
+  AI_MODELS.quality,
 ];
+
+export type ChatContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
-  content: string;
+  content: string | ChatContentPart[];
 }
 
 export interface AIResponse {
@@ -45,7 +53,7 @@ export interface AIResponse {
 function foldSystemIntoUser(messages: ChatMessage[]): ChatMessage[] {
   const systemContent = messages
     .filter((message) => message.role === "system")
-    .map((message) => message.content.trim())
+    .map((message) => typeof message.content === "string" ? message.content.trim() : "")
     .filter(Boolean)
     .join("\n\n");
 
@@ -57,7 +65,9 @@ function foldSystemIntoUser(messages: ChatMessage[]): ChatMessage[] {
   return [
     {
       role: "user" as const,
-      content: `Instruction:\n${systemContent}\n\nRequest:\n${firstMessage.content}`,
+      content: typeof firstMessage.content === "string"
+        ? `Instruction:\n${systemContent}\n\nRequest:\n${firstMessage.content}`
+        : [{ type: "text", text: `Instruction:\n${systemContent}` }, ...firstMessage.content],
     },
     ...rest,
   ];

@@ -11,44 +11,44 @@ datasource db {
 }
 
 model Subject {
-  id          String    @id @default(cuid())
-  slug        String    @unique // botany, zoology, physics, chemistry
-  name        String
-  emoji       String
-  color       String    // hex color for UI
-  topics      Topic[]
-  dailyGoals  DailyGoal[]
-  testRecords TestRecord[]
-  errorPatterns ErrorPattern[]
-  tasks       Task[]
+  id              String           @id @default(cuid())
+  slug            String           @unique // botany, zoology, physics, chemistry
+  name            String
+  emoji           String
+  color           String // hex color for UI
+  topics          Topic[]
+  dailyGoals      DailyGoal[]
+  testRecords     TestRecord[]
+  errorPatterns   ErrorPattern[]
+  tasks           Task[]
   missionSessions MissionSession[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@map("subjects")
 }
 
 model Topic {
-  id             String    @id @default(cuid())
-  subjectId      String
-  subject        Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  name           String
-  chapter        String?   // chapter name/number
-  chapterOrder   Int       @default(0)
-  classLevel     String?   // "11" or "12"
-  topicOrder     Int       @default(0)
-  isCompleted    Boolean   @default(false)
-  completedAt    DateTime?
-  questionsSolved Int      @default(0)
-  revisions      Revision[]
-  
+  id              String     @id @default(cuid())
+  subjectId       String
+  subject         Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  name            String
+  chapter         String? // chapter name/number
+  chapterOrder    Int        @default(0)
+  classLevel      String? // "11" or "12"
+  topicOrder      Int        @default(0)
+  isCompleted     Boolean    @default(false)
+  completedAt     DateTime?
+  questionsSolved Int        @default(0)
+  revisions       Revision[]
+
   // Spaced Repetition System (SRS)
   nextReviewDate DateTime?
   easeFactor     Float     @default(2.5) // SuperMemo-2 
-  interval       Int       @default(0)   // Days until next review
+  interval       Int       @default(0) // Days until next review
 
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("topics")
 }
@@ -64,17 +64,17 @@ model Revision {
 }
 
 model DailyGoal {
-  id             String   @id @default(cuid())
-  subjectId      String
-  subject        Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  date           DateTime @db.Date
-  hoursStudied   Float    @default(0)
-  questionsSolved Int     @default(0)
-  disciplineScore Int     @default(0)
-  completionPercent Int   @default(0)
-  notes          String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String   @id @default(cuid())
+  subjectId         String
+  subject           Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  date              DateTime @db.Date
+  hoursStudied      Float    @default(0)
+  questionsSolved   Int      @default(0)
+  disciplineScore   Int      @default(0)
+  completionPercent Int      @default(0)
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@unique([subjectId, date])
   @@map("daily_goals")
@@ -104,85 +104,85 @@ model ScreenTimeLog {
 }
 
 model TestRecord {
-  id          String     @id @default(cuid())
-  subjectId   String?
-  subject     Subject?   @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  testType    String     // SECTIONAL, FULL_LENGTH, AITS, UNIT_TEST
-  testName    String
-  score       Float
-  maxScore    Float
-  percentage  Float
-  rank        Int?
-  totalStudents Int?
-  institute   String?
-  staminaDecay Int?       // 1-10 rating on mental fatigue post-test
-  correctCount Int?
-  wrongCount   Int?
-  skippedCount Int?
-  guessedCount Int?
-  negativeMarksLost Float?
-  physicsScore    Float?
-  chemistryScore  Float?
-  botanyScore     Float?
-  zoologyScore    Float?
+  id                   String   @id @default(cuid())
+  subjectId            String?
+  subject              Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  testType             String // SECTIONAL, FULL_LENGTH, AITS, UNIT_TEST
+  testName             String
+  score                Float
+  maxScore             Float
+  percentage           Float
+  rank                 Int?
+  totalStudents        Int?
+  institute            String?
+  staminaDecay         Int? // 1-10 rating on mental fatigue post-test
+  correctCount         Int?
+  wrongCount           Int?
+  skippedCount         Int?
+  guessedCount         Int?
+  negativeMarksLost    Float?
+  physicsScore         Float?
+  chemistryScore       Float?
+  botanyScore          Float?
+  zoologyScore         Float?
   physicsTimeMinutes   Int?
   chemistryTimeMinutes Int?
   botanyTimeMinutes    Int?
   zoologyTimeMinutes   Int?
-  difficultyLevel String?
-  reliabilityLevel String?
+  difficultyLevel      String?
+  reliabilityLevel     String?
   linkedErrorLogTestId String?
-  takenAt     DateTime
-  notes       String?    @db.Text
-  createdAt   DateTime   @default(now())
+  takenAt              DateTime
+  notes                String?  @db.Text
+  createdAt            DateTime @default(now())
 
   @@index([linkedErrorLogTestId])
   @@map("test_records")
 }
 
 model ErrorLogTest {
-  id              String             @id @default(cuid())
-  testName        String
-  testType        String             // AITS, SECTIONAL, UNIT, FLT, PYQ, REAL_ATTEMPT
-  questionCount   Int
-  takenAt         DateTime           @default(now())
-  notes           String?            @db.Text
-  questions       ErrorLogQuestion[]
-  analyses        ErrorLogAnalysis[]
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id            String             @id @default(cuid())
+  testName      String
+  testType      String // AITS, SECTIONAL, UNIT, FLT, PYQ, REAL_ATTEMPT
+  questionCount Int
+  takenAt       DateTime           @default(now())
+  notes         String?            @db.Text
+  questions     ErrorLogQuestion[]
+  analyses      ErrorLogAnalysis[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   @@index([testType, takenAt])
   @@map("error_log_tests")
 }
 
 model ErrorLogQuestion {
-  id              String       @id @default(cuid())
-  testId          String
-  test            ErrorLogTest @relation(fields: [testId], references: [id], onDelete: Cascade)
-  questionNumber  Int
-  questionSummary String?      @db.Text
-  subject         String
-  chapter         String?
-  topic           String?
-  attemptStatus   String       @default("SKIPPED") // ATTEMPTED, SKIPPED
-  outcome         String       @default("UNMARKED") // CORRECT, WRONG, UNMARKED
-  correctAnswer   String?      @db.Text
-  whyCorrect      String?      @db.Text
-  whereLacked     String?      @db.Text
-  contentStatus   String       @default("HAD_CONTENT") // HAD_CONTENT, WEAK_CONTENT, NOT_STUDIED, OUT_OF_SYLLABUS
-  outOfSyllabus   Boolean      @default(false)
-  notStudied      Boolean      @default(false)
-  difficulty      String       @default("MEDIUM") // EASY, MEDIUM, HARD
-  solveMethod     String?      // DIRECT, ELIMINATION, GUESS, BLIND_GUESS
-  optionsEliminated Int?       // 0-3 options ruled out before answering
-  confidence      Int?
-  timeSpentSeconds Int?
-  reasonTags      Json?
-  actionFix       String?      @db.Text
-  notes           String?      @db.Text
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                String       @id @default(cuid())
+  testId            String
+  test              ErrorLogTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  questionNumber    Int
+  questionSummary   String?      @db.Text
+  subject           String
+  chapter           String?
+  topic             String?
+  attemptStatus     String       @default("SKIPPED") // ATTEMPTED, SKIPPED
+  outcome           String       @default("UNMARKED") // CORRECT, WRONG, UNMARKED
+  correctAnswer     String?      @db.Text
+  whyCorrect        String?      @db.Text
+  whereLacked       String?      @db.Text
+  contentStatus     String       @default("HAD_CONTENT") // HAD_CONTENT, WEAK_CONTENT, NOT_STUDIED, OUT_OF_SYLLABUS
+  outOfSyllabus     Boolean      @default(false)
+  notStudied        Boolean      @default(false)
+  difficulty        String       @default("MEDIUM") // EASY, MEDIUM, HARD
+  solveMethod       String? // DIRECT, ELIMINATION, GUESS, BLIND_GUESS
+  optionsEliminated Int? // 0-3 options ruled out before answering
+  confidence        Int?
+  timeSpentSeconds  Int?
+  reasonTags        Json?
+  actionFix         String?      @db.Text
+  notes             String?      @db.Text
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   @@index([subject, chapter])
   @@index([outcome, contentStatus])
@@ -190,101 +190,101 @@ model ErrorLogQuestion {
 }
 
 model ErrorLogAnalysis {
-  id            String        @id @default(cuid())
-  testId        String
-  test          ErrorLogTest  @relation(fields: [testId], references: [id], onDelete: Cascade)
-  response      String        @db.LongText
-  model         String?
-  summaryJson   Json?
-  createdAt     DateTime      @default(now())
+  id          String       @id @default(cuid())
+  testId      String
+  test        ErrorLogTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  response    String       @db.LongText
+  model       String?
+  summaryJson Json?
+  createdAt   DateTime     @default(now())
 
   @@index([testId, createdAt])
   @@map("error_log_analyses")
 }
 
 model ErrorLogGlobalAnalysis {
-  id            String   @id @default(cuid())
-  response      String   @db.LongText
-  model         String?
-  summaryJson   Json?
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  response    String   @db.LongText
+  model       String?
+  summaryJson Json?
+  createdAt   DateTime @default(now())
 
   @@map("error_log_global_analyses")
 }
 
 model CycleEntry {
-  id          String    @id @default(cuid())
-  userId      String    @default("misti")
-  startDate   DateTime  @db.Date
-  endDate     DateTime? @db.Date
-  flowLevel   String    // LIGHT, MODERATE, HEAVY, SPOTTING
-  symptoms    String?   @db.Text
-  mood        String?   // HAPPY, ANXIOUS, TIRED, NORMAL, CRAMPY
-  notes       String?   @db.Text
-  dayDetails  Json?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(cuid())
+  userId     String    @default("misti")
+  startDate  DateTime  @db.Date
+  endDate    DateTime? @db.Date
+  flowLevel  String // LIGHT, MODERATE, HEAVY, SPOTTING
+  symptoms   String?   @db.Text
+  mood       String? // HAPPY, ANXIOUS, TIRED, NORMAL, CRAMPY
+  notes      String?   @db.Text
+  dayDetails Json?
+  createdAt  DateTime  @default(now())
 
   @@index([userId, startDate])
   @@map("cycle_entries")
 }
 
 model CyclePrediction {
-  id                String   @id @default(cuid())
-  userId            String   @default("misti")
-  currentPhase      String
-  dayOfCycle        Int?
-  predictedStart    DateTime @db.Date
-  windowStart       DateTime @db.Date
-  windowEnd         DateTime @db.Date
-  confidence        Float
-  confidenceLabel   String
+  id                 String   @id @default(cuid())
+  userId             String   @default("misti")
+  currentPhase       String
+  dayOfCycle         Int?
+  predictedStart     DateTime @db.Date
+  windowStart        DateTime @db.Date
+  windowEnd          DateTime @db.Date
+  confidence         Float
+  confidenceLabel    String
   averageCycleLength Float
-  cycleVariability  Float
-  evidenceJson      Json
-  createdAt         DateTime @default(now())
+  cycleVariability   Float
+  evidenceJson       Json
+  createdAt          DateTime @default(now())
 
   @@index([userId, createdAt])
   @@map("cycle_predictions")
 }
 
 model AiConversation {
-  id        String       @id @default(cuid())
+  id        String      @id @default(cuid())
   title     String?
-  mode      String       @default("neet-guru") // neet-guru, rank, quiz, cycle
+  mode      String      @default("neet-guru") // neet-guru, rank, quiz, cycle
   messages  AiMessage[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   @@map("ai_conversations")
 }
 
 model AiMessage {
-  id             String         @id @default(cuid())
-  conversationId String
-  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  role           String         // user | assistant
-  content        String         @db.LongText
+  id              String         @id @default(cuid())
+  conversationId  String
+  conversation    AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role            String // user | assistant
+  content         String         @db.LongText
   attachmentsJson Json?
-  createdAt      DateTime       @default(now())
+  createdAt       DateTime       @default(now())
 
   @@map("ai_messages")
 }
 
 model AiMemoryProfile {
-  id                  String   @id @default(cuid())
-  userId              String   @unique
-  displayName         String
-  version             Int      @default(1)
-  stats               Json
-  preferences         Json
-  strengths           Json
-  weaknesses          Json
-  misconceptions      Json
-  behavioralPatterns  Json
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  displayName           String
+  version               Int      @default(1)
+  stats                 Json
+  preferences           Json
+  strengths             Json
+  weaknesses            Json
+  misconceptions        Json
+  behavioralPatterns    Json
   conversationSnapshots Json
-  rollingSummary      String   @db.LongText
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  rollingSummary        String   @db.LongText
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@map("ai_memory_profiles")
 }
@@ -318,27 +318,27 @@ model PushSubscription {
 }
 
 model RankPrediction {
-  id              String   @id @default(cuid())
-  predictedRank   Int
-  predictedScore  Float
-  confidence      Float    // 0-100
-  analysisJson    String   @db.LongText // JSON blob with full analysis
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  predictedRank  Int
+  predictedScore Float
+  confidence     Float // 0-100
+  analysisJson   String   @db.LongText // JSON blob with full analysis
+  createdAt      DateTime @default(now())
 
   @@map("rank_predictions")
 }
 
 model MoodEntry {
-  id          String   @id @default(cuid())
-  userId      String   @default("misti")
-  date        DateTime @db.Date
-  mood        String   // AMAZING, GOOD, OKAY, LOW, TERRIBLE
-  energy      Int      // 1-10
-  focus       Int      // 1-10
-  stress      Int      // 1-10 (1=calm, 10=very stressed)
-  note        String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String   @default("misti")
+  date      DateTime @db.Date
+  mood      String // AMAZING, GOOD, OKAY, LOW, TERRIBLE
+  energy    Int // 1-10
+  focus     Int // 1-10
+  stress    Int // 1-10 (1=calm, 10=very stressed)
+  note      String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([date])
   @@index([userId, date])
@@ -362,27 +362,27 @@ model PyqYearProgress {
 }
 
 model QuizSession {
-  id          String   @id @default(cuid())
-  subject     String
-  topic       String?
-  difficulty  String
-  score       Int
-  maxScore    Int
-  accuracy    Float
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  subject    String
+  topic      String?
+  difficulty String
+  score      Int
+  maxScore   Int
+  accuracy   Float
+  createdAt  DateTime @default(now())
 
   @@map("quiz_sessions")
 }
 
 model ErrorPattern {
-  id          String   @id @default(cuid())
-  subjectId   String
-  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  errorType   String   // e.g., "Calculation", "Formula", "Conceptual", "Silly"
-  frequency   Int      @default(1)
-  notes       String?  @db.Text
-  updatedAt   DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  errorType String // e.g., "Calculation", "Formula", "Conceptual", "Silly"
+  frequency Int      @default(1)
+  notes     String?  @db.Text
+  updatedAt DateTime @updatedAt
+
   @@map("error_patterns")
 }
 
@@ -442,29 +442,29 @@ enum MissionSessionStatus {
 }
 
 model Task {
-  id                String              @id @default(cuid())
-  title             String
-  description       String?             @db.Text
-  status            TaskStatus          @default(TODO)
-  priority          TaskPriority        @default(MEDIUM)
-  source            TaskSource          @default(MANUAL)
-  missionId         String?
-  mission           MissionSession?     @relation(fields: [missionId], references: [id], onDelete: SetNull)
-  subjectId         String?
-  subject           Subject?            @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  dueDate           DateTime?           @db.Date
-  plannedMinutes    Int?
-  actualMinutes     Int?
-  orderIndex        Int                 @default(0)
-  lastAgentSummary  String?             @db.Text
-  aiAssistEnabled   Boolean             @default(true)
-  startedAt         DateTime?
-  completedAt       DateTime?
-  skippedAt         DateTime?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  agentRuns         TaskAgentRun[]
-  timelineEvents    TaskTimelineEvent[]
+  id               String              @id @default(cuid())
+  title            String
+  description      String?             @db.Text
+  status           TaskStatus          @default(TODO)
+  priority         TaskPriority        @default(MEDIUM)
+  source           TaskSource          @default(MANUAL)
+  missionId        String?
+  mission          MissionSession?     @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  subjectId        String?
+  subject          Subject?            @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  dueDate          DateTime?           @db.Date
+  plannedMinutes   Int?
+  actualMinutes    Int?
+  orderIndex       Int                 @default(0)
+  lastAgentSummary String?             @db.Text
+  aiAssistEnabled  Boolean             @default(true)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  skippedAt        DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  agentRuns        TaskAgentRun[]
+  timelineEvents   TaskTimelineEvent[]
 
   @@index([status, orderIndex])
   @@index([dueDate])
@@ -473,49 +473,49 @@ model Task {
 }
 
 model TaskAgentRun {
-  id              String              @id @default(cuid())
-  taskId           String
-  task             Task                @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  trigger          TaskAgentTrigger
-  status           TaskAgentRunStatus  @default(SUCCESS)
-  prompt           String              @db.LongText
-  response         String              @db.LongText
-  suggestionsJson  Json?
-  model            String?
-  createdAt        DateTime            @default(now())
+  id              String             @id @default(cuid())
+  taskId          String
+  task            Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  trigger         TaskAgentTrigger
+  status          TaskAgentRunStatus @default(SUCCESS)
+  prompt          String             @db.LongText
+  response        String             @db.LongText
+  suggestionsJson Json?
+  model           String?
+  createdAt       DateTime           @default(now())
 
   @@index([taskId, createdAt])
   @@map("task_agent_runs")
 }
 
 model TaskTimelineEvent {
-  id          String                @id @default(cuid())
-  taskId       String
-  task         Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  type         TaskTimelineEventType
-  label        String
-  detail       String?               @db.Text
-  createdAt    DateTime              @default(now())
+  id        String                @id @default(cuid())
+  taskId    String
+  task      Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type      TaskTimelineEventType
+  label     String
+  detail    String?               @db.Text
+  createdAt DateTime              @default(now())
 
   @@index([taskId, createdAt])
   @@map("task_timeline_events")
 }
 
 model MissionSession {
-  id                 String               @id @default(cuid())
-  kind               MissionKind
-  status             MissionSessionStatus @default(READY)
-  title              String
-  goal               String?              @db.Text
-  summary            String?              @db.Text
-  responseMarkdown   String               @db.LongText
-  responseJson       Json
-  model              String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  subjectId          String?
-  subject            Subject?             @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  tasks              Task[]
+  id               String               @id @default(cuid())
+  kind             MissionKind
+  status           MissionSessionStatus @default(READY)
+  title            String
+  goal             String?              @db.Text
+  summary          String?              @db.Text
+  responseMarkdown String               @db.LongText
+  responseJson     Json
+  model            String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  subjectId        String?
+  subject          Subject?             @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  tasks            Task[]
 
   @@index([kind, createdAt])
   @@map("mission_sessions")
@@ -524,15 +524,15 @@ model MissionSession {
 model ReviewCard {
   id            String    @id @default(cuid())
   userId        String    @default("misti")
-  period        String    // WEEKLY | MONTHLY
-  periodKey     String    // e.g. "2026-06-08" (week start) or "2026-05" (month)
+  period        String // WEEKLY | MONTHLY
+  periodKey     String // e.g. "2026-06-08" (week start) or "2026-05" (month)
   periodStart   DateTime  @db.Date
   periodEnd     DateTime  @db.Date
   status        String    @default("AWAITING_ANSWERS") // AWAITING_ANSWERS | COMPLETED
-  reviewJson    Json      // the review card content
-  questionsJson Json      // integrity questions incl. private evidence/expected answers
-  answersJson   Json?     // her submitted answers
-  verdictJson   Json?     // integrity verdict after evaluation
+  reviewJson    Json // the review card content
+  questionsJson Json // integrity questions incl. private evidence/expected answers
+  answersJson   Json? // her submitted answers
+  verdictJson   Json? // integrity verdict after evaluation
   model         String?
   notifiedAt    DateTime?
   completedAt   DateTime?
@@ -545,91 +545,152 @@ model ReviewCard {
 }
 
 model PracticeTest {
-  id             String    @id @default(cuid())
-  title          String
-  mode           String    // FULL_LENGTH | SECTIONAL | UNIT | SUBJECT | CHAPTER | TOPIC | PYQ_YEAR
-  subject        String?   // subject slug, null for full syllabus
-  chapter        String?
-  topic          String?
-  pyqYear        String?
-  questionCount  Int
-  aiFreshPercent Int       @default(6)
-  durationMinutes Int      @default(180)
-  difficulty     String    @default("MIXED") // MIXED | EASY | MODERATE | TOUGH
-  status         String    @default("GENERATING") // GENERATING | READY | RUNNING | PAUSED | COMPLETED
-  filtersJson    Json?
-  questionsJson  Json      // questions incl. private correctIndex/explanation
-  weakZonesJson  Json?     // weak-zone snapshot used to steer generation
-  answersJson    Json?
-  questionStatusesJson Json?
-  currentQuestionIndex Int @default(0)
-  remainingSeconds Int?
-  pauseLogsJson Json?
-  securityEventsJson Json?
-  submitType String?
-  autoSubmitReason String?
-  totalActiveSeconds Int?
-  totalPausedSeconds Int?
-  testSeed      String?
-  blueprintVersion String?
-  paperTemplate String?
+  id                    String                   @id @default(cuid())
+  userId                String                   @default("misti")
+  title                 String
+  mode                  String // FULL_LENGTH | SECTIONAL | UNIT | SUBJECT | CHAPTER | TOPIC | PYQ_YEAR
+  subject               String? // subject slug, null for full syllabus
+  chapter               String?
+  topic                 String?
+  pyqYear               String?
+  questionCount         Int
+  aiFreshPercent        Int                      @default(6)
+  durationMinutes       Int                      @default(180)
+  difficulty            String                   @default("MIXED") // MIXED | EASY | MODERATE | TOUGH
+  status                String                   @default("GENERATING") // GENERATING | READY | RUNNING | PAUSED | COMPLETED
+  filtersJson           Json?
+  questionsJson         Json // questions incl. private correctIndex/explanation
+  weakZonesJson         Json? // weak-zone snapshot used to steer generation
+  answersJson           Json?
+  questionStatusesJson  Json?
+  currentQuestionIndex  Int                      @default(0)
+  remainingSeconds      Int?
+  pauseLogsJson         Json?
+  securityEventsJson    Json?
+  submitType            String?
+  autoSubmitReason      String?
+  totalActiveSeconds    Int?
+  totalPausedSeconds    Int?
+  testSeed              String?
+  blueprintVersion      String?
+  paperTemplate         String?
   distributionAuditJson Json?
   blueprintWarningsJson Json?
-  resultJson     Json?
-  model          String?
-  testRecordId   String?
-  errorLogTestId String?
-  startedAt      DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  resultJson            Json?
+  model                 String?
+  testRecordId          String?
+  errorLogTestId        String?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  reviews               PracticeQuestionReview[]
+  reportArtifacts       PracticeReportArtifact[]
+  sourceBookmarks       QuestionBookmark[]       @relation("BookmarkSourceTest")
 
   @@index([status, createdAt])
+  @@index([userId, status, createdAt])
   @@map("practice_tests")
 }
 
+model PracticeQuestionReview {
+  id                String       @id @default(cuid())
+  testId            String
+  test              PracticeTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  questionId        String       @db.VarChar(80)
+  questionNumber    Int
+  bankQuestionId    String?
+  subject           String
+  chapter           String
+  topic             String?
+  selectedIndex     Int?
+  correctIndex      Int
+  outcome           String // CORRECT | WRONG | SKIPPED
+  mistakeTag        String? // GUESS_WORK | ELIMINATION_WORK | NOT_STUDIED | SILLY_MISTAKE | CUSTOM
+  customMistakeText String?      @db.Text
+  timeSpentSeconds  Int?
+  reviewComplete    Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@unique([testId, questionId])
+  @@index([testId, outcome])
+  @@index([mistakeTag, updatedAt])
+  @@map("practice_question_reviews")
+}
+
+model PracticeReportArtifact {
+  id           String       @id @default(cuid())
+  testId       String
+  test         PracticeTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  revisionHash String       @unique @db.VarChar(64)
+  status       String       @default("READY")
+  pathname     String?      @db.VarChar(768)
+  downloadUrl  String?      @db.VarChar(768)
+  byteSize     Int?
+  error        String?      @db.Text
+  generatedAt  DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([testId, generatedAt])
+  @@map("practice_report_artifacts")
+}
+
 model BankQuestion {
-  id           String    @id @default(cuid())
-  subject      String
-  classLevel   String?
-  chapter      String
-  topic        String?
-  source       String
-  sourceRef    String
-  difficulty   String
-  question     String    @db.Text
-  optionsJson  Json
-  correctIndex Int
-  explanation  String    @db.Text
-  verified     Boolean   @default(false)
-  qualityStatus String   @default("UNVERIFIED") // UNVERIFIED | VERIFIED_STRICT | NEEDS_REVIEW | NEEDS_VISUAL_ASSET | REJECTED
-  qualityScore  Float?
-  verifiedAt    DateTime?
-  rejectedAt    DateTime?
-  verifierModel String?
-  verifierRuns  Json?
-  rejectReason  String?  @db.Text
-  trendChapterId String?
-  questionForm   String?
-  subtopic       String?
-  isDiagramBased Boolean  @default(false)
-  isGraphBased   Boolean  @default(false)
-  duplicateClusterId String?
-  sourceQuality  Float?
-  pyqSimilarityScore Float?
-  trendMetaJson  Json?
-  visualAssetUrl String?   @db.VarChar(768)
-  visualAssetAlt String?   @db.Text
-  visualAssetKind String?  @db.VarChar(40)
-  visualMetaJson Json?
-  contentHash  String    @unique @db.VarChar(64)
-  timesServed  Int       @default(0)
-  timesCorrect Int       @default(0)
-  timesWrong   Int       @default(0)
-  lastServedAt DateTime?
-  importBatch  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                     String               @id @default(cuid())
+  subject                String
+  classLevel             String?
+  chapter                String
+  topic                  String?
+  source                 String
+  sourceRef              String
+  difficulty             String
+  question               String               @db.Text
+  optionsJson            Json
+  correctIndex           Int
+  explanation            String               @db.Text
+  optionExplanationsJson Json?
+  verified               Boolean              @default(false)
+  qualityStatus          String               @default("UNVERIFIED") // UNVERIFIED | VERIFIED_STRICT | NEEDS_REVIEW | NEEDS_VISUAL_ASSET | REJECTED
+  qualityScore           Float?
+  verifiedAt             DateTime?
+  rejectedAt             DateTime?
+  verifierModel          String?
+  verifierRuns           Json?
+  verificationMethod     String               @default("UNVERIFIED") @db.VarChar(48)
+  verificationVersion    String?              @db.VarChar(48)
+  rejectReason           String?              @db.Text
+  trendChapterId         String?
+  questionForm           String?
+  subtopic               String?
+  isDiagramBased         Boolean              @default(false)
+  isGraphBased           Boolean              @default(false)
+  duplicateClusterId     String?
+  sourceQuality          Float?
+  pyqSimilarityScore     Float?
+  trendMetaJson          Json?
+  visualAssetUrl         String?              @db.VarChar(768)
+  visualAssetAlt         String?              @db.Text
+  visualAssetKind        String?              @db.VarChar(40)
+  visualMetaJson         Json?
+  visualAssetId          String?
+  visualAsset            QuestionVisualAsset? @relation(fields: [visualAssetId], references: [id], onDelete: SetNull)
+  bookmarks              QuestionBookmark[]
+  selectionKey           String?              @db.VarChar(64)
+  exam                   String?              @db.VarChar(40)
+  examYear               Int?
+  paperCode              String?              @db.VarChar(80)
+  paperQuestionNumber    Int?
+  provenanceJson         Json?
+  contentHash            String               @unique @db.VarChar(64)
+  timesServed            Int                  @default(0)
+  timesCorrect           Int                  @default(0)
+  timesWrong             Int                  @default(0)
+  lastServedAt           DateTime?
+  importBatch            String?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
 
   @@index([subject, chapter, difficulty])
   @@index([subject, chapter, source])
@@ -639,7 +700,51 @@ model BankQuestion {
   @@index([questionForm])
   @@index([duplicateClusterId])
   @@index([visualAssetKind])
+  @@index([visualAssetId])
+  @@index([qualityStatus, verified, subject, chapter, difficulty], map: "bq_qv_scd_idx")
+  @@index([qualityStatus, verified, subject, classLevel, difficulty], map: "bq_qv_scld_idx")
+  @@index([qualityStatus, verified, subject, selectionKey], map: "bq_qv_ss_idx")
+  @@index([qualityStatus, verified, examYear, paperCode, paperQuestionNumber], map: "bq_qv_pyq_idx")
   @@map("bank_questions")
+}
+
+model QuestionBookmark {
+  id               String        @id @default(cuid())
+  userId           String        @default("misti")
+  contentHash      String        @db.VarChar(64)
+  bankQuestionId   String?
+  bankQuestion     BankQuestion? @relation(fields: [bankQuestionId], references: [id], onDelete: SetNull)
+  sourceTestId     String?
+  sourceTest       PracticeTest? @relation("BookmarkSourceTest", fields: [sourceTestId], references: [id], onDelete: SetNull)
+  sourceQuestionId String        @db.VarChar(80)
+  subject          String
+  classLevel       String?
+  chapter          String
+  topic            String?
+  questionJson     Json
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([userId, contentHash])
+  @@index([userId, subject, classLevel, chapter])
+  @@index([bankQuestionId])
+  @@index([sourceTestId])
+  @@map("question_bookmarks")
+}
+
+model QuestionVisualAsset {
+  id          String         @id @default(cuid())
+  contentHash String         @unique @db.VarChar(64)
+  mimeType    String         @db.VarChar(80)
+  kind        String         @db.VarChar(40)
+  altText     String         @db.Text
+  byteSize    Int
+  fileData    Bytes          @db.LongBlob
+  questions   BankQuestion[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("question_visual_assets")
 }
 
 model BankFillJob {

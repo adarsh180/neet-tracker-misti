@@ -4,6 +4,13 @@ import type { PracticeTest, Prisma } from "@prisma/client";
 
 import { extractJsonArray } from "@/lib/ai-json";
 import { db } from "@/lib/db";
+import {
+  NEET_FULL_SUBJECT_COUNTS,
+  NEET_FULL_SUBJECTS,
+  NEET_FULL_TEST_DURATION_MINUTES,
+  NEET_FULL_TEST_QUESTIONS,
+  NEET_MAX_PRACTICE_DURATION_MINUTES,
+} from "@/lib/neet-exam-policy";
 import { AI_MODELS, chatWithAI } from "@/lib/openrouter";
 import { assembleQuestionsFromBank, fillQuestionBank, writeBackBankStats, type BankAssemblyAudit } from "@/lib/question-bank";
 import { cleanQuestionOptions, cleanQuestionText } from "@/lib/text-cleanup";
@@ -31,11 +38,11 @@ import { buildDistributionAudit, TREND_BLUEPRINT_VERSION, TREND_FULL_TEMPLATE } 
 export const PRACTICE_BATCH_SIZE = 5;
 const PRACTICE_AI_TIMEOUT_MS = 300000;
 
-// gemma-4-26b-a4b finishes long question batches reliably; 31b consistently
-// times out on them, so it rides second here instead of burning the budget.
-const PRACTICE_MODELS = [AI_MODELS.fallback1, AI_MODELS.primary, AI_MODELS.emergencyFallback];
-export const PRACTICE_MIN_QUESTIONS = 50;
-export const PRACTICE_MAX_QUESTIONS = 180;
+// Runtime generation is disabled below, but retain the cost-controlled fallback
+// lane for explicit maintenance: Flash-Lite -> 2.5 Flash -> 3.5 Flash.
+const PRACTICE_MODELS = [AI_MODELS.lowCost, AI_MODELS.reliable, AI_MODELS.quality];
+export const PRACTICE_MIN_QUESTIONS = 10;
+export const PRACTICE_MAX_QUESTIONS = NEET_FULL_TEST_QUESTIONS;
 export const PRACTICE_DEFAULT_AI_FRESH_PERCENT = 0;
 export const PRACTICE_MAX_AI_FRESH_PERCENT = 0;
 export const PRACTICE_MAX_AI_FRESH_QUESTIONS = 0;
@@ -67,6 +74,7 @@ export type PracticeQuestion = {
   options: string[]; // exactly 4
   correctIndex: number; // private until completed
   explanation: string; // private until completed
+  optionExplanations?: string[]; // private until completed; one rationale per option
   verified: boolean;
   visualAssetUrl?: string | null;
   visualAssetAlt?: string | null;
@@ -75,6 +83,8 @@ export type PracticeQuestion = {
 };
 
 export type PracticeAnswer = { id: string; optionIndex: number | null };
+export const PRACTICE_MISTAKE_TAGS = ["GUESS_WORK", "ELIMINATION_WORK", "NOT_STUDIED", "SILLY_MISTAKE", "CUSTOM"] as const;
+export type PracticeMistakeTag = (typeof PRACTICE_MISTAKE_TAGS)[number];
 export type CBTQuestionStatus = "NOT_VISITED" | "NOT_ANSWERED" | "ANSWERED" | "MARKED_FOR_REVIEW" | "ANSWERED_MARKED_FOR_REVIEW";
 
 export type CBTSubmitType = "MANUAL" | "AUTO" | "TIME_UP";
@@ -169,16 +179,46 @@ async function snapshotWeakZones(): Promise<WeakZone[]> {
 function buildTitle(config: PracticeConfig) {
   if (config.mode === "FULL_LENGTH") return `Full-length mock · ${config.questionCount} Qs`;
   if (config.mode === "PYQ_YEAR") return `NEET ${config.pyqYear} PYQ session · ${config.questionCount} Qs`;
+  if (config.mode === "SECTIONAL") return `Class ${config.classLevel} sectional · ${config.questionCount} Qs`;
+  if (config.mode === "UNIT") return `Class ${config.classLevel} custom unit · ${config.questionCount} Qs`;
   const subject = config.subject ? SUBJECT_NAMES[config.subject] : "Mixed";
   if (config.mode === "SUBJECT") return `${subject} sectional · ${config.questionCount} Qs`;
   if (config.mode === "CHAPTER") return `${subject} — ${config.chapter} · ${config.questionCount} Qs`;
   return `${subject} — ${config.topic} · ${config.questionCount} Qs`;
 }
 
-export async function createPracticeTest(config: PracticeConfig) {
-  const count = Math.max(PRACTICE_MIN_QUESTIONS, Math.min(PRACTICE_MAX_QUESTIONS, Math.round(config.questionCount)));
+function isOfficialNeetPaperMode(mode: PracticeMode | string) {
+  return mode === "FULL_LENGTH" || mode === "PYQ_YEAR";
+}
+
+function normalizePracticeQuestionCount(config: PracticeConfig) {
+  if (isOfficialNeetPaperMode(config.mode)) return NEET_FULL_TEST_QUESTIONS;
+  return Math.max(PRACTICE_MIN_QUESTIONS, Math.min(PRACTICE_MAX_QUESTIONS, Math.round(config.questionCount)));
+}
+
+function normalizePracticeDuration(config: PracticeConfig, questionCount: number) {
+  if (isOfficialNeetPaperMode(config.mode)) return NEET_FULL_TEST_DURATION_MINUTES;
+  const requested = Number(config.durationMinutes);
+  const fallback = Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, questionCount);
+  if (!Number.isFinite(requested)) return fallback;
+  return Math.max(1, Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, Math.round(requested)));
+}
+
+export class InsufficientStrictStockError extends Error {
+  readonly code = "INSUFFICIENT_STRICT_STOCK";
+  readonly details: unknown;
+
+  constructor(message: string, details?: unknown) {
+    super(message);
+    this.name = "InsufficientStrictStockError";
+    this.details = details;
+  }
+}
+
+export async function createPracticeTest(config: PracticeConfig, userId = "misti") {
+  const count = normalizePracticeQuestionCount(config);
   const aiFreshPercent = normalizeAiFreshPercent(config.aiFreshPercent);
-  const durationMinutes = Math.max(1, Math.min(180, Math.round(config.durationMinutes ?? count)));
+  const durationMinutes = normalizePracticeDuration(config, count);
   const weakZones = await snapshotWeakZones();
   const testSeed = randomUUID();
   const filters = {
@@ -189,8 +229,9 @@ export async function createPracticeTest(config: PracticeConfig) {
     pyqYear: config.pyqYear ?? null,
   };
 
-  return db.practiceTest.create({
+  const created = await db.practiceTest.create({
     data: {
+      userId,
       title: buildTitle({ ...config, questionCount: count }),
       mode: config.mode,
       subject: config.subject ?? null,
@@ -210,6 +251,17 @@ export async function createPracticeTest(config: PracticeConfig) {
       paperTemplate: TREND_FULL_TEMPLATE,
     },
   });
+
+  const progress = await generateNextBatch(created.id, { allowRuntimeTopUp: false });
+  if (progress.status !== "READY") {
+    await db.practiceTest.delete({ where: { id: created.id } }).catch(() => undefined);
+    throw new InsufficientStrictStockError(
+      `The strict verified bank can supply ${progress.generated}/${progress.target} questions for this exact selection. No out-of-scope or unverified questions were used.`,
+      progress,
+    );
+  }
+
+  return db.practiceTest.findUniqueOrThrow({ where: { id: created.id } });
 }
 
 // ---------------------------------------------------------------------------
@@ -219,8 +271,7 @@ export async function createPracticeTest(config: PracticeConfig) {
 function subjectPlanForBatch(test: PracticeTest, batchSize: number, existing: PracticeQuestion[]): string[] {
   if (test.subject) return Array(batchSize).fill(SUBJECT_NAMES[test.subject as PracticeSubjectSlug] ?? test.subject);
 
-  // Full syllabus / PYQ year: keep the NEET 25/25/25/25 balance across the paper.
-  const targetPerSubject = Math.ceil(test.questionCount / 4);
+  // Full syllabus / PYQ year: keep the NEET 45/45/45/45 subject balance across the paper.
   const counts = new Map<string, number>(Object.values(SUBJECT_NAMES).map((name) => [name, 0]));
   for (const question of existing) counts.set(question.subject, (counts.get(question.subject) ?? 0) + 1);
 
@@ -235,19 +286,15 @@ function subjectPlanForBatch(test: PracticeTest, batchSize: number, existing: Pr
 
 function sourcePlanLine(test: PracticeTest, plan: string[]) {
   if (test.mode === "PYQ_YEAR") {
-    return `Every question MUST be a real NEET UG ${test.pyqYear} previous-year question (source "NEET_PYQ", sourceRef "NEET ${test.pyqYear}"). Reproduce the actual exam questions faithfully.`;
+    return `Runtime generation is forbidden for PYQ mode. Only authenticated, question-numbered NEET UG ${test.pyqYear} rows imported from an official paper and answer key may be used.`;
   }
   const bioCount = plan.filter((subject) => subject === "Botany" || subject === "Zoology").length;
   return [
-    `SOURCE PRIORITY (strict order, label each question):`,
-    `1. "NEET_PYQ" — real NEET UG previous-year questions from the last 20+ years (1998–2025). Use for ~50% of the batch. sourceRef like "NEET 2019".`,
+    `SOURCE POLICY: create original questions only; never fabricate or paraphrase a PYQ.`,
+    `Use source "AI" and sourceRef "Original - automated strict pipeline".`,
     bioCount === plan.length
-      ? `2. (JEE_PYQ not applicable — biology batch.)`
-      : `2. "JEE_PYQ" — real JEE Main PYQs, ONLY for Physics/Chemistry, single-correct only. ~20%. sourceRef like "JEE Main 2021 (26 Aug Shift 1)".`,
-    `3. "INSTITUTE" — questions in the exact style and standard of Allen, Aakash, Physics Wallah, or Motion test series. ~15%. sourceRef like "Allen test-series standard".`,
-    `4. "PLATFORM" — questions matching standard problems found on legitimate prep platforms. ~10%.`,
-    `5. "AI" — original questions you compose, strictly inside NCERT class 11–12 syllabus. ~5%. sourceRef "Original".`,
-    `If you are not CERTAIN of a PYQ's exact wording and answer, do NOT fake it — use a lower-priority source label instead. Never mislabel.`,
+      ? `Biology must be directly NCERT-faithful and NEET UG standard.`
+      : `Physics and Chemistry may use JEE Main-level conceptual and calculation toughness while staying inside the NEET syllabus.`,
   ].join("\n");
 }
 
@@ -266,12 +313,12 @@ function buildGenerationPrompt(test: PracticeTest, batchSize: number, existing: 
         ? `Restrict every question to the topic "${test.topic}"${test.chapter ? ` (chapter "${test.chapter}")` : ""}.`
         : `Cover the full NEET UG syllabus scope for the listed subjects (NCERT class 11 + 12).`;
 
-  // Plain-text bullets, NOT a JSON array — a JSON string list here teaches the
+  // Plain-text bullets, not a JSON array; a JSON string list here teaches the
   // model to mimic that flat shape and break the output schema.
-  const avoid = existing.slice(-24).map((question) => `• ${question.question.slice(0, 70).replace(/\s+/g, " ")}`).join("\n");
+  const avoid = existing.slice(-24).map((question) => `- ${question.question.slice(0, 70).replace(/\s+/g, " ")}`).join("\n");
 
   return [
-    `You are the question-setter for a NEET UG practice paper. Produce EXACTLY ${batchSize} single-correct MCQs as a JSON array. NTA standard: 4 options, one correct, +4/−1 marking.`,
+    `You are the question-setter for a NEET UG practice paper. Produce EXACTLY ${batchSize} single-correct MCQs as a JSON array. NTA standard: 4 options, one correct, +4/-1 marking.`,
     `IMPORTANT: Do NOT write planning notes, thoughts, or analysis. Begin your reply with "[" and output only the JSON array.`,
     `Subject plan for this batch (follow exactly): ${Object.entries(planCounts).map(([subject, count]) => `${subject}: ${count}`).join(", ")}.`,
     scope,
@@ -282,14 +329,15 @@ function buildGenerationPrompt(test: PracticeTest, batchSize: number, existing: 
       : "",
     `FORMAT RULES:
 1. Respond with a valid JSON array ONLY. No markdown fences, no prose, no wrapper object.
-2. Each item: { "subject": "Physics|Chemistry|Botany|Zoology", "chapter": "exact NCERT chapter", "topic": "specific topic", "source": "NEET_PYQ|JEE_PYQ|INSTITUTE|PLATFORM|NCERT|AI", "sourceRef": "string", "difficulty": "EASY|MODERATE|TOUGH", "question": "string", "options": ["A","B","C","D"], "correctIndex": 0-3, "explanation": "1-3 short sentences on why the key is right" }
+2. Each item: { "subject": "Physics|Chemistry|Botany|Zoology", "chapter": "exact NCERT chapter", "topic": "specific topic", "source": "AI", "sourceRef": "Original - automated strict pipeline", "difficulty": "EASY|MODERATE|TOUGH", "question": "string", "options": ["A","B","C","D"], "correctIndex": 0-3, "explanation": "complete solution", "optionExplanations": ["why A", "why B", "why C", "why D"] }
 3. Write all math/chemistry in LaTeX: inline $...$. Use \\times for multiplication. Plain text for biology.
 4. Options must be plausible, mutually exclusive, similar length. Exactly one correct.
-5. Assertion-Reason and Match-the-column formats are allowed (state them fully in the question text).
-6. The correctIndex MUST be verifiably correct — solve each question yourself before keying it.
+5. Use current NEET style, not generic coaching filler: include statement-based, Assertion-Reason, Match/List, table/data and calculation-trap questions where natural. State every table, graph, diagram, assertion, list, or data set fully inside the question text unless a real visualAssetUrl exists.
+6. The correctIndex MUST be verifiably correct - solve each question yourself before keying it.
 7. Write clean UTF-8 text only. For equations prefer LaTeX commands like \\times, \\Delta, \\leq, \\geq, \\to, \\mu, and \\pi. Never output broken encoding artifacts or unreadable copied symbols.
-8. BE COMPACT: keep each question under 90 words, each option under 18 words, each explanation under 45 words. The whole array must stay well under 3000 tokens.
-9. Every array item MUST be a complete JSON object wrapped in { } with all the keys from rule 2.${avoid ? `\n10. Do not repeat these already-used questions:\n${avoid}` : ""}`,
+8. BE COMPACT: keep each question under 110 words, each option under 22 words, each explanation under 65 words. The whole array must stay well under 3000 tokens.
+9. Every distractor must test a real NEET misconception. optionExplanations must specifically explain why every choice is correct or incorrect. Avoid "all of these" and "none of these" unless the other three options make it uniquely defensible.
+10. Every array item MUST be a complete JSON object wrapped in { } with all the keys from rule 2.${avoid ? `\n11. Do not repeat these already-used questions:\n${avoid}` : ""}`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -338,6 +386,104 @@ function validateBatch(raw: RawQuestion[] | null, startIndex: number): PracticeQ
     });
   }
   return valid;
+}
+
+function normalizePaperStem(question: PracticeQuestion) {
+  return `${question.question} ${question.options.join("|")}`
+    .toLowerCase()
+    .replace(/\\[,;:! ]/g, "")
+    .replace(/\s*([{}_^=+\-*/|()[\]])\s*/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasUsableQuestionShape(question: PracticeQuestion) {
+  const options = cleanQuestionOptions(question.options);
+  return (
+    cleanQuestionText(question.question).length > 0 &&
+    options.length === 4 &&
+    Number.isInteger(question.correctIndex) &&
+    question.correctIndex >= 0 &&
+    question.correctIndex <= 3 &&
+    cleanQuestionText(question.explanation).length > 0 &&
+    !((question.visualAssetKind || question.visualAssetUrl || question.visualAssetAlt) && !question.visualAssetUrl)
+  );
+}
+
+function normalizeGeneratedPaper(test: PracticeTest, questions: PracticeQuestion[]) {
+  const warnings: string[] = [];
+  const seen = new Set<string>();
+  const deduped: PracticeQuestion[] = [];
+
+  for (const question of questions) {
+    if (!hasUsableQuestionShape(question)) {
+      warnings.push(`Dropped malformed question candidate from ${question.subject}/${question.chapter}.`);
+      continue;
+    }
+    const stem = normalizePaperStem(question);
+    if (seen.has(stem)) {
+      warnings.push(`Dropped duplicate question candidate from ${question.subject}/${question.chapter}.`);
+      continue;
+    }
+    seen.add(stem);
+    deduped.push(question);
+  }
+
+  if (!isOfficialNeetPaperMode(test.mode) || test.questionCount !== NEET_FULL_TEST_QUESTIONS) {
+    return { questions: deduped, warnings };
+  }
+
+  const counts = new Map<string, number>();
+  const balanced: PracticeQuestion[] = [];
+  for (const question of deduped) {
+    const subject = question.subject as keyof typeof NEET_FULL_SUBJECT_COUNTS;
+    const cap = NEET_FULL_SUBJECT_COUNTS[subject];
+    if (!cap) {
+      warnings.push(`Dropped out-of-paper subject "${question.subject}" from official NEET paper.`);
+      continue;
+    }
+    const current = counts.get(question.subject) ?? 0;
+    if (current >= cap) {
+      warnings.push(`Held back extra ${question.subject} question to preserve 45/45/45/45 NEET balance.`);
+      continue;
+    }
+    counts.set(question.subject, current + 1);
+    balanced.push(question);
+  }
+
+  return { questions: balanced, warnings };
+}
+
+function buildPracticePaperQualityGate(test: PracticeTest, questions: PracticeQuestion[]) {
+  const blockers: string[] = [];
+  const warnings: string[] = [];
+  const malformed = questions.filter((question) => !hasUsableQuestionShape(question)).length;
+  if (malformed) blockers.push(`${malformed} malformed question(s) remain in the paper.`);
+
+  const duplicateCount = questions.length - new Set(questions.map(normalizePaperStem)).size;
+  if (duplicateCount) blockers.push(`${duplicateCount} duplicate question stem(s) remain in the paper.`);
+
+  const unverified = questions.filter((question) => !question.verified).length;
+  if (unverified) warnings.push(`${unverified} question(s) are usable but not strict-bank verified.`);
+
+  if (isOfficialNeetPaperMode(test.mode)) {
+    if (questions.length !== NEET_FULL_TEST_QUESTIONS) {
+      blockers.push(`Official NEET mock needs exactly ${NEET_FULL_TEST_QUESTIONS} questions; assembled ${questions.length}.`);
+    }
+    for (const subject of NEET_FULL_SUBJECTS) {
+      const actual = questions.filter((question) => question.subject === subject).length;
+      const expected = NEET_FULL_SUBJECT_COUNTS[subject];
+      if (actual !== expected) blockers.push(`${subject} must have ${expected} questions; assembled ${actual}.`);
+    }
+  }
+
+  return {
+    ready: blockers.length === 0,
+    blockers,
+    warnings,
+    strictVerifiedCount: questions.length - unverified,
+    unverifiedCount: unverified,
+  };
 }
 
 /**
@@ -398,7 +544,7 @@ async function verifyBatch(questions: PracticeQuestion[]): Promise<PracticeQuest
   }
 }
 
-export async function generateNextBatch(testId: string) {
+export async function generateNextBatch(testId: string, options: { allowRuntimeTopUp?: boolean } = {}) {
   const test = await db.practiceTest.findUnique({ where: { id: testId } });
   if (!test) throw new Error("Practice test not found");
   if (test.status !== "GENERATING") {
@@ -412,6 +558,7 @@ export async function generateNextBatch(testId: string) {
   const assemblyAudits: BankAssemblyAudit[] = [];
   const generationWarnings: string[] = [];
   const strictFillReports: unknown[] = [];
+  const allowRuntimeTopUp = options.allowRuntimeTopUp === true;
   const aiFreshPercent = normalizeAiFreshPercent(test.aiFreshPercent);
   const aiFreshCount = practiceAiFreshQuestionCount(test.questionCount, aiFreshPercent);
   const bankTarget = Math.max(0, test.questionCount - aiFreshCount);
@@ -480,7 +627,7 @@ export async function generateNextBatch(testId: string) {
       if (bankQuestions.length < neededFromBank) {
         const shortfall = neededFromBank - bankQuestions.length;
         generationWarnings.push(`Strict bank shortage before top-up: needed ${neededFromBank}, found ${bankQuestions.length}.`);
-        await requestStrictTopUp(shortfall);
+        if (allowRuntimeTopUp) await requestStrictTopUp(shortfall);
         bankQuestions = await addBankQuestions(shortfall);
         if (bankQuestions.length < shortfall) {
           generationWarnings.push(`Strict bank still short by ${shortfall - bankQuestions.length} after top-up.`);
@@ -509,9 +656,8 @@ export async function generateNextBatch(testId: string) {
       ];
 
       let candidates: PracticeQuestion[] = [];
-      // Attempt 1: gemma-4 lane. Attempt 2: flash, which is more schema-reliable,
-      // when the first response can't be parsed into valid questions.
-      for (const lane of [PRACTICE_MODELS, [AI_MODELS.emergencyFallback]]) {
+      // First use the cost-controlled lane; final retry uses 3.5 Flash only.
+      for (const lane of [PRACTICE_MODELS, [AI_MODELS.quality]]) {
         const result = await chatWithAI(messages, 12000, 0.4, PRACTICE_AI_TIMEOUT_MS, lane);
         model = result.model;
         candidates = validateBatch(extractJsonArray<RawQuestion>(result.content), existing.length);
@@ -533,7 +679,7 @@ export async function generateNextBatch(testId: string) {
     let fallbackBankQuestions = await addBankQuestions(stillNeeded);
     if (fallbackBankQuestions.length < stillNeeded) {
       const shortfall = stillNeeded - fallbackBankQuestions.length;
-      await requestStrictTopUp(shortfall);
+      if (allowRuntimeTopUp) await requestStrictTopUp(shortfall);
       fallbackBankQuestions = await addBankQuestions(shortfall);
       if (fallbackBankQuestions.length < shortfall) {
         generationWarnings.push(`Question assembly is waiting for ${shortfall - fallbackBankQuestions.length} more strict verified row(s).`);
@@ -544,21 +690,28 @@ export async function generateNextBatch(testId: string) {
     }
   }
 
+  const normalizedPaper = normalizeGeneratedPaper(test, existing);
+  existing = normalizedPaper.questions;
+  generationWarnings.push(...normalizedPaper.warnings);
+
   const done = existing.length >= test.questionCount;
   // On completion, re-index to unique sequential ids. Bank + AI-fresh assembly can
   // otherwise collide ids (two "q50"), which corrupts the answer map and the review.
   // Safe because the exam only ever uses the READY snapshot.
   const questions = done ? existing.map((question, index) => ({ ...question, id: `q${index + 1}` })) : existing;
+  const qualityGate = buildPracticePaperQualityGate(test, questions);
+  const ready = done && qualityGate.ready;
   const distributionAudit = buildDistributionAudit(questions, {
-    blueprintWarnings: [...assemblyAudits.flatMap((audit) => audit.warnings), ...generationWarnings],
+    blueprintWarnings: [...assemblyAudits.flatMap((audit) => audit.warnings), ...generationWarnings, ...qualityGate.blockers, ...qualityGate.warnings],
     assemblyAudits: strictFillReports.length ? [...assemblyAudits, { strictFillReports }] : assemblyAudits,
+    qualityGate,
   });
 
   const updated = await db.practiceTest.update({
     where: { id: test.id },
     data: {
       questionsJson: questions as unknown as Prisma.InputJsonValue,
-      status: done ? "READY" : "GENERATING",
+      status: ready ? "READY" : "GENERATING",
       model,
       blueprintVersion: TREND_BLUEPRINT_VERSION,
       paperTemplate: TREND_FULL_TEMPLATE,
@@ -572,7 +725,7 @@ export async function generateNextBatch(testId: string) {
     generated: questions.length,
     target: test.questionCount,
     added: questions.length - initialGeneratedCount,
-    retryAfterMs: done ? 0 : 60000,
+    retryAfterMs: ready ? 0 : 60000,
     waitingForStrictStock: !done && generationWarnings.length > 0,
   };
 }
@@ -615,7 +768,7 @@ function gradeTest(questions: PracticeQuestion[], answers: PracticeAnswer[], tim
   return {
     score,
     maxScore,
-    percentage: maxScore ? Math.round((Math.max(score, 0) / maxScore) * 1000) / 10 : 0,
+    percentage: maxScore ? Math.round((score / maxScore) * 1000) / 10 : 0,
     correct,
     wrong,
     skipped,
@@ -703,6 +856,31 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
 
   await writeBackBankStats(questions, answerMap);
 
+  await db.practiceQuestionReview.createMany({
+    data: questions.map((question, index) => {
+      const selectedIndex = answerMap.get(question.id);
+      const outcome = selectedIndex === null || selectedIndex === undefined
+        ? "SKIPPED"
+        : selectedIndex === question.correctIndex
+          ? "CORRECT"
+          : "WRONG";
+      return {
+        testId: test.id,
+        questionId: question.id,
+        questionNumber: index + 1,
+        bankQuestionId: question.bankId ?? null,
+        subject: question.subject,
+        chapter: question.chapter,
+        topic: question.topic,
+        selectedIndex: selectedIndex ?? null,
+        correctIndex: question.correctIndex,
+        outcome,
+        reviewComplete: outcome === "CORRECT",
+      };
+    }),
+    skipDuplicates: true,
+  });
+
   const updated = await db.practiceTest.update({
     where: { id: test.id },
     data: {
@@ -725,6 +903,63 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
   });
 
   return { test: updated, result };
+}
+
+export async function getPracticeQuestionReviews(testId: string) {
+  return db.practiceQuestionReview.findMany({
+    where: { testId },
+    orderBy: { questionNumber: "asc" },
+  });
+}
+
+export async function savePracticeQuestionReview(input: {
+  testId: string;
+  questionId: string;
+  mistakeTag: PracticeMistakeTag | null;
+  customMistakeText?: string | null;
+}) {
+  const tag = input.mistakeTag;
+  if (tag && !PRACTICE_MISTAKE_TAGS.includes(tag)) throw new Error("Unknown mistake tag");
+  const customText = cleanQuestionText(input.customMistakeText).slice(0, 1200) || null;
+  if (tag === "CUSTOM" && !customText) throw new Error("Describe the custom mistake before saving");
+
+  const review = await db.practiceQuestionReview.findUnique({
+    where: { testId_questionId: { testId: input.testId, questionId: input.questionId } },
+  });
+  if (!review) throw new Error("Question review not found");
+
+  const reviewComplete = review.outcome === "CORRECT" || Boolean(tag);
+  const updated = await db.practiceQuestionReview.update({
+    where: { id: review.id },
+    data: {
+      mistakeTag: tag,
+      customMistakeText: tag === "CUSTOM" ? customText : null,
+      reviewComplete,
+    },
+  });
+
+  if (review.outcome !== "CORRECT") {
+    const errorQuestion = await db.errorLogQuestion.findFirst({
+      where: {
+        test: { notes: { contains: input.testId } },
+        questionNumber: review.questionNumber,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (errorQuestion) {
+      await db.errorLogQuestion.update({
+        where: { id: errorQuestion.id },
+        data: {
+          solveMethod: tag === "GUESS_WORK" ? "GUESS" : tag === "ELIMINATION_WORK" ? "ELIMINATION" : errorQuestion.solveMethod,
+          notStudied: tag === "NOT_STUDIED",
+          reasonTags: tag ? [tag] : [],
+          whereLacked: customText ?? errorQuestion.whereLacked,
+        },
+      });
+    }
+  }
+
+  return updated;
 }
 
 // ---------------------------------------------------------------------------
@@ -790,6 +1025,7 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
           // The key and reasoning unlock only after submission.
           correctIndex: completed ? question.correctIndex : null,
           explanation: completed ? cleanQuestionText(question.explanation) : null,
+          optionExplanations: completed ? cleanQuestionOptions(question.optionExplanations ?? []) : null,
         }))
       : undefined,
   };

@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
 import Module from "node:module";
@@ -20,7 +20,7 @@ require("ts-node").register({
   },
 });
 
-const { insertBankQuestions } = require("../src/lib/question-bank.ts");
+const { insertBankQuestions, validateBankQuestion } = require("../src/lib/question-bank.ts");
 
 function parseArgs(argv) {
   const args = { files: [] };
@@ -96,6 +96,15 @@ function unwrapJsonRows(parsed) {
 async function loadRows(filePath) {
   const text = await readFile(filePath, "utf8");
   if (/\.json$/i.test(filePath)) return unwrapJsonRows(JSON.parse(text));
+  if (/\.jsonl$/i.test(filePath)) {
+    return text.split(/\r?\n/).filter(Boolean).map((line, index) => {
+      try {
+        return JSON.parse(line);
+      } catch (error) {
+        throw new Error(`${filePath}:${index + 1}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+  }
   if (/\.csv$/i.test(filePath)) return parseCsv(text);
   throw new Error(`Unsupported import file: ${filePath}`);
 }
@@ -105,7 +114,7 @@ const importDir = path.resolve(args.dir || "data/bank-import");
 const filePaths = args.files.length
   ? args.files.map((file) => path.resolve(file))
   : (await readdir(importDir))
-      .filter((file) => /\.(json|csv)$/i.test(file))
+      .filter((file) => /\.(json|jsonl|csv)$/i.test(file))
       .map((file) => path.join(importDir, file));
 
 if (!filePaths.length) {
@@ -117,6 +126,35 @@ let grand = { total: 0, valid: 0, inserted: 0, duplicate: 0, invalid: 0 };
 
 for (const filePath of filePaths) {
   const rows = await loadRows(filePath);
+  if (args["dry-run"]) {
+    const invalid = [];
+    const valid = [];
+    rows.forEach((row, index) => {
+      const result = validateBankQuestion(row, Boolean(args.trusted));
+      if (result.question) valid.push(result.question);
+      else invalid.push({ index, reason: result.reason ?? "invalid row" });
+    });
+    const unique = new Set(valid.map((row) => row.contentHash));
+    const uniqueRows = new Map(valid.map((row) => [row.contentHash, row]));
+    grand.total += rows.length;
+    grand.valid += valid.length;
+    grand.inserted += unique.size;
+    grand.duplicate += valid.length - unique.size;
+    grand.invalid += invalid.length;
+    console.log(`${path.basename(filePath)} dry-run valid=${valid.length} unique=${unique.size} duplicate=${valid.length - unique.size} invalid=${invalid.length}`);
+    for (const entry of invalid.slice(0, 20)) console.log(`invalid\trow=${entry.index + 1}\t${entry.reason}`);
+    if (args["write-valid"]) {
+      const outputPath = path.resolve(String(args["write-valid"]));
+      await writeFile(outputPath, `${[...uniqueRows.values()].map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
+      console.log(`wrote validated unique rows to ${outputPath}`);
+    }
+    if (args["write-invalid"]) {
+      const outputPath = path.resolve(String(args["write-invalid"]));
+      await writeFile(outputPath, `${invalid.map((entry) => JSON.stringify({ ...entry, row: rows[entry.index] })).join("\n")}${invalid.length ? "\n" : ""}`, "utf8");
+      console.log(`wrote invalid rows to ${outputPath}`);
+    }
+    continue;
+  }
   const report = await insertBankQuestions(rows, {
     trusted: Boolean(args.trusted),
     importBatch: path.basename(filePath),

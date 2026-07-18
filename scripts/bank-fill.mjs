@@ -18,11 +18,13 @@ require("ts-node").register({
     target: "ES2020",
   },
 });
+require("@next/env").loadEnvConfig(process.cwd());
 
 const {
   fillQuestionBank,
   getBankStatus,
 } = require("../src/lib/question-bank.ts");
+const { db } = require("../src/lib/db.ts");
 
 function parseArgs(argv) {
   const args = {};
@@ -62,12 +64,29 @@ if (args.status) {
   process.exit(0);
 }
 
-const count = args.count ? Number(args.count) : args["max-questions"] ? Number(args["max-questions"]) : 300;
-const maxQuestions = args["max-questions"] ? Number(args["max-questions"]) : count;
+let count = args.count ? Number(args.count) : args["max-questions"] ? Number(args["max-questions"]) : 300;
+let maxQuestions = args["max-questions"] ? Number(args["max-questions"]) : count;
+if (args["target-strict"]) {
+  const currentStrict = await db.bankQuestion.count({ where: { qualityStatus: "VERIFIED_STRICT", verified: true } });
+  const targetStrict = Math.max(currentStrict, Number(args["target-strict"]));
+  count = targetStrict - currentStrict;
+  maxQuestions = count;
+  console.log(`Current strict bank: ${currentStrict}. Strict target: ${targetStrict}. Remaining accepted inserts: ${count}.`);
+  if (count === 0) process.exit(0);
+} else if (args["target-total"]) {
+  const currentTotal = await db.bankQuestion.count();
+  const targetTotal = Math.max(currentTotal, Number(args["target-total"]));
+  count = targetTotal - currentTotal;
+  maxQuestions = count;
+  console.log(`Current bank: ${currentTotal}. Target: ${targetTotal}. Remaining inserts: ${count}.`);
+  if (count === 0) process.exit(0);
+}
 
 if (!args.all && (!args.subject || !args.chapter)) {
   console.error('Usage: node scripts/bank-fill.mjs --subject physics --chapter "Laws of Motion" --count 200');
   console.error("   or: node scripts/bank-fill.mjs --all --max-questions 1000");
+  console.error("   or: node scripts/bank-fill.mjs --all --target-strict 300000 --time-budget-minutes 60");
+  console.error("   or: node scripts/bank-fill.mjs --all --target-total 300000 --time-budget-minutes 60");
   console.error("   or: node scripts/bank-fill.mjs --status");
   process.exit(1);
 }
@@ -78,6 +97,9 @@ const report = await fillQuestionBank({
   count,
   all: Boolean(args.all),
   maxQuestions,
+  timeBudgetMs: Math.max(1, Number(args["time-budget-minutes"] ?? 2)) * 60_000,
+  batchSize: Number(args.batch ?? 8),
 });
 
 console.log(JSON.stringify(report, null, 2));
+await db.$disconnect();

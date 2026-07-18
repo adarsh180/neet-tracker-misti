@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { generateNextBatch } from "@/lib/practice-engine";
+import { db } from "@/lib/db";
 import { getPrivateSession } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +16,11 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  const owned = await db.practiceTest.findFirst({ where: { id, userId: session.userId }, select: { id: true } });
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
-    const progress = await generateNextBatch(id);
+    const progress = await generateNextBatch(id, { allowRuntimeTopUp: false });
     return NextResponse.json(progress);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

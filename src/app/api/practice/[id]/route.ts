@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
-import { sanitizePracticeTest, submitPracticeTest, type PracticeAnswer, type PracticeSubmitMeta } from "@/lib/practice-engine";
+import {
+  PRACTICE_MISTAKE_TAGS,
+  getPracticeQuestionReviews,
+  sanitizePracticeTest,
+  savePracticeQuestionReview,
+  submitPracticeTest,
+  type PracticeAnswer,
+  type PracticeMistakeTag,
+  type PracticeSubmitMeta,
+} from "@/lib/practice-engine";
 import { getPrivateSession } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +21,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const test = await db.practiceTest.findUnique({ where: { id } });
+  const test = await db.practiceTest.findFirst({ where: { id, userId: session.userId } });
   if (!test) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json({ test: sanitizePracticeTest(test) });
+  const reviews = test.status === "COMPLETED" ? await getPracticeQuestionReviews(test.id) : [];
+  return NextResponse.json({ test: { ...sanitizePracticeTest(test), reviews } });
 }
 
 // Submit answers → grade on NTA scheme → auto-feed TestRecord + Error Log.
@@ -25,6 +35,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
+  const owned = await db.practiceTest.findFirst({ where: { id, userId: session.userId }, select: { id: true } });
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const answers: PracticeAnswer[] = Array.isArray(body.answers)
     ? body.answers
@@ -58,7 +70,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       totalPausedSeconds: Number.isFinite(Number(body.totalPausedSeconds)) ? Number(body.totalPausedSeconds) : undefined,
     };
     const { test, result } = await submitPracticeTest(id, answers, timeTakenSeconds, meta);
-    return NextResponse.json({ test: sanitizePracticeTest(test), result });
+    const reviews = await getPracticeQuestionReviews(test.id);
+    return NextResponse.json({ test: { ...sanitizePracticeTest(test), reviews }, result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const status = /not found/i.test(message) ? 404 : /already submitted|still generating/i.test(message) ? 400 : 500;
@@ -74,8 +87,29 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const action = String(body.action ?? "");
-  const test = await db.practiceTest.findUnique({ where: { id } });
+  const test = await db.practiceTest.findFirst({ where: { id, userId: session.userId } });
   if (!test) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (action === "review") {
+    if (test.status !== "COMPLETED") return NextResponse.json({ error: "Submit the test before reviewing answers" }, { status: 400 });
+    const mistakeTag = body.mistakeTag === null || body.mistakeTag === ""
+      ? null
+      : PRACTICE_MISTAKE_TAGS.includes(body.mistakeTag as PracticeMistakeTag)
+        ? body.mistakeTag as PracticeMistakeTag
+        : undefined;
+    if (mistakeTag === undefined) return NextResponse.json({ error: "Unknown mistake tag" }, { status: 400 });
+    try {
+      const review = await savePracticeQuestionReview({
+        testId: test.id,
+        questionId: String(body.questionId ?? ""),
+        mistakeTag,
+        customMistakeText: typeof body.customMistakeText === "string" ? body.customMistakeText : null,
+      });
+      const reviews = await getPracticeQuestionReviews(test.id);
+      return NextResponse.json({ review, reviews });
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Could not save review" }, { status: 400 });
+    }
+  }
   if (test.status === "COMPLETED") return NextResponse.json({ error: "Already completed" }, { status: 400 });
 
   const common = {
@@ -111,7 +145,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const test = await db.practiceTest.findUnique({ where: { id }, select: { id: true, status: true } });
+  const test = await db.practiceTest.findFirst({ where: { id, userId: session.userId }, select: { id: true, status: true } });
   if (!test) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (test.status === "COMPLETED") {
     return NextResponse.json({ error: "Completed tests are part of your record and cannot be deleted here" }, { status: 400 });
