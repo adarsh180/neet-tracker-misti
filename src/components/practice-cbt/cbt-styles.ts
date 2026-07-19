@@ -17,15 +17,22 @@ export const listStyles = `
   .folder-section-head strong { display: block; color: var(--text-primary); font-size: 13px; font-weight: 650; }
   .folder-section-head span { display: block; margin-top: 2px; color: var(--text-muted); font-size: 10.5px; }
   .folder-rail { display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr)); gap: 12px; }
-  .test-folder { position: relative; min-height: 118px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: end; gap: 3px 8px; padding: 15px; overflow: hidden; border-radius: 13px; border: 1px solid color-mix(in srgb, var(--text-muted) 19%, transparent); background: color-mix(in srgb, var(--bg-elevated) 96%, #c6ae7b 4%); color: var(--text-primary); text-align: left; cursor: pointer; box-shadow: 0 5px 14px rgba(0,0,0,.045); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+  .test-folder { position: relative; min-height: 118px; display: block; padding: 0; overflow: hidden; border-radius: 13px; border: 1px solid color-mix(in srgb, var(--text-muted) 19%, transparent); background: color-mix(in srgb, var(--bg-elevated) 96%, #c6ae7b 4%); color: var(--text-primary); text-align: left; box-shadow: 0 5px 14px rgba(0,0,0,.045); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
   .test-folder::before { content: ""; position: absolute; left: -1px; top: -1px; width: 58px; height: 13px; border: inherit; border-bottom: 0; border-radius: 9px 9px 0 0; background: inherit; }
   .test-folder:hover, .test-folder.active, .test-folder.drop-ready { transform: translateY(-1px); border-color: color-mix(in srgb, var(--gold) 26%, var(--glass-border)); box-shadow: 0 8px 18px rgba(0,0,0,.065); }
   .test-folder.drop-ready { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--gold) 52%, transparent), 0 8px 18px rgba(0,0,0,.065); }
   .test-folder.permanent { border-color: color-mix(in srgb, var(--gold) 20%, var(--glass-border)); background: color-mix(in srgb, var(--bg-elevated) 95%, var(--gold) 5%); }
+  .test-folder.folder-busy { opacity: .58; pointer-events: none; }
+  .folder-open-button { width: 100%; min-height: 118px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: end; gap: 3px 8px; padding: 15px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
   .folder-art { position: absolute; left: 13px; top: 20px; color: color-mix(in srgb, var(--gold) 68%, var(--text-secondary)); }
   .folder-art svg { fill: color-mix(in srgb, currentColor 13%, transparent); stroke-width: 1.5; }
-  .test-folder strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 650; }
-  .test-folder small { color: var(--text-muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .folder-open-button strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 650; }
+  .folder-open-button small { color: var(--text-muted); font-size: 10.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .folder-card-actions { position: absolute; z-index: 2; top: 9px; right: 9px; display: flex; gap: 4px; }
+  .folder-card-actions button { width: 29px; height: 29px; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; color: var(--text-muted); background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); cursor: pointer; opacity: .72; transition: var(--t-fast); }
+  .folder-card-actions button:hover:not(:disabled), .folder-card-actions button:focus-visible { opacity: 1; color: var(--gold); border-color: var(--glass-border); background: var(--bg-elevated); }
+  .folder-card-actions button:last-child:hover:not(:disabled), .folder-card-actions button:last-child:focus-visible { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 24%, transparent); }
+  .folder-card-actions button:disabled { cursor: wait; opacity: .35; }
   .folder-create { display: grid; grid-template-columns: auto minmax(130px, 1fr) auto; align-items: center; gap: 9px; max-width: 430px; margin-top: 12px; padding: 8px 9px 8px 12px; border: 1px solid var(--glass-border); border-radius: 12px; color: var(--gold); background: var(--bg-elevated); }
   .folder-create input { min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 12.5px; }
   .folder-create button { border: 0; border-radius: 9px; padding: 7px 11px; background: var(--gold-dim); color: var(--gold); font-size: 11.5px; font-weight: 750; cursor: pointer; }
@@ -38,12 +45,26 @@ export const listStyles = `
   .folder-workspace-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; margin-bottom: 22px; padding: 2px 2px 18px; border-bottom: 1px solid var(--glass-border); }
   .folder-workspace-back { grid-column: 1 / -1; width: fit-content; display: inline-flex; align-items: center; gap: 4px; border: 0; padding: 0; background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; }
   .folder-workspace-back:hover { color: var(--text-primary); }
+  .folder-breadcrumbs { grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; min-width: 0; margin-top: -7px; overflow-x: auto; color: var(--text-muted); scrollbar-width: thin; }
+  .folder-breadcrumbs > button, .folder-breadcrumbs span button { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 3px; border: 0; background: transparent; color: var(--text-muted); font-size: 10.5px; cursor: pointer; }
+  .folder-breadcrumbs span { display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+  .folder-breadcrumbs button:hover:not(:disabled) { color: var(--gold); }
+  .folder-breadcrumbs button:disabled { color: var(--text-secondary); cursor: default; }
   .folder-workspace-title { display: flex; align-items: center; gap: 13px; min-width: 0; }
   .folder-workspace-icon { width: 52px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 9px; color: color-mix(in srgb, var(--gold) 68%, var(--text-secondary)); background: color-mix(in srgb, var(--bg-elevated) 92%, #c6ae7b 8%); border: 1px solid var(--glass-border); }
   .folder-workspace-icon svg { fill: color-mix(in srgb, currentColor 12%, transparent); stroke-width: 1.5; }
   .folder-workspace-title span:not(.folder-workspace-icon) { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .11em; }
   .folder-workspace-title h1 { margin: 2px 0 0; color: var(--text-primary); font: 600 24px/1.15 var(--font-display), 'Playfair Display', serif; }
   .folder-workspace-title p { margin: 4px 0 0; color: var(--text-secondary); font-size: 11.5px; }
+  .folder-delete-trigger:hover:not(:disabled) { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 24%, transparent); background: color-mix(in srgb, var(--danger) 7%, transparent); }
+  .folder-action-card { width: min(450px, calc(100vw - 28px)); text-align: left; }
+  .folder-action-card h2 { text-align: left; }
+  .folder-action-card > p { text-align: left; }
+  .folder-modal-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; color: var(--gold); background: var(--gold-dim); border: 1px solid var(--gold-glow); }
+  .folder-modal-icon.danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); border-color: color-mix(in srgb, var(--danger) 22%, transparent); }
+  .folder-name-field { display: grid; gap: 7px; margin: 20px 0 4px; color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .folder-name-field input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: 11px; outline: 0; background: var(--bg-elevated); color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .folder-name-field input:focus { border-color: var(--gold-glow); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 8%, transparent); }
   .cbt-test-row { display: flex; align-items: center; gap: 12px; padding: 15px 18px; border-radius: 14px; background: var(--bg-surface); border: 1px solid var(--glass-border); transition: var(--t-fast); }
   .cbt-test-row:hover { border-color: var(--glass-border-mid); }
   .cbt-test-row.dragging { opacity: .55; border-color: var(--gold-glow); }
@@ -285,6 +306,7 @@ export const questionStyles = `
   .q-instruction { padding: 10px 16px; background: #fff8e7; border-bottom: 1px solid #ead7a8; color: #674d16; font-size: 12px; line-height: 1.45; }
   .question-text { font-size: 16px; line-height: 1.75; color: #111827; margin: 0; padding: 22px 24px 18px; max-width: 980px; }
   .question-text, .option-copy { overflow-wrap: anywhere; word-break: normal; }
+  .question-text .katex, .option-copy .katex { white-space: nowrap; }
   .question-text .katex-display, .option-copy .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 3px 0; }
   .question-visual { margin: 0 24px 18px; max-width: 860px; }
   .question-visual img { max-width: 100%; height: auto; border-radius: 0; background: #fff; padding: 8px; border: 1px solid #cbd5e1; display: block; }
@@ -479,6 +501,8 @@ export const reviewStyles = `
   .review-option.wrong { border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: hsla(0,72%,62%,.06); }
   .review-option.wrong svg { color: var(--danger); margin-top: 3px; }
   .review-option-copy { min-width: 0; }
+  .review-card .katex { white-space: nowrap; font-size: 1.02em; }
+  .review-card .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
   .option-rationale { margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--glass-border); color: var(--text-muted); font-size: 12px; }
   .review-visual { display: block; max-width: min(100%, 760px); max-height: 420px; object-fit: contain; margin: 14px 0; padding: 8px; background: #fff; border: 1px solid var(--glass-border); }
   .review-explanation { margin-top: 14px; padding: 13px 16px; border-radius: 11px; border-left: 2px solid var(--gold); background: var(--gold-dim); color: var(--text-secondary); font-size: 13px; line-height: 1.6; }

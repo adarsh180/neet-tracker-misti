@@ -46,6 +46,7 @@
     "bank:adjudicate-new-json-deterministic": "node scripts/adjudicate-new-json-deterministic-v1.mjs",
     "bank:verify-promoted-serving": "npx tsx scripts/verify-promoted-question-serving.ts",
     "bank:report-runtime-servable": "npx tsx scripts/report-runtime-servable.ts",
+    "bank:audit-question-rendering": "npx tsx scripts/audit-question-rendering.ts",
     "bank:production-backup": "node scripts/backup-production-bank.mjs",
     "bank:production-replace": "node scripts/replace-production-bank.mjs",
     "bank:visual-profile": "node scripts/profile-bank-visual-templates.mjs",

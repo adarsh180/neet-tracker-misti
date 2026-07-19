@@ -50,3 +50,107 @@
 [auth] trusted_device_sessions unavailable; using legacy cookie until migration is applied.
 [auth] trusted_device_sessions unavailable; using legacy cookie until migration is applied.
 ⚠ Fast Refresh had to perform a full reload when ./src/components/practice-cbt/practice-cbt-client.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[prep-confidence:upsc] Error: Remote confidence endpoint returned 401
+    at fetchRemoteConfidence (src\app\api\prep-confidence\route.ts:18:11)
+    at async GET (src\app\api\prep-confidence\route.ts:47:22)
+  16 |
+  17 |   if (!response.ok) {
+> 18 |     throw new Error(`Remote confidence endpoint returned ${response.status}`);
+     |           ^
+  19 |   }
+  20 |
+  21 |   return response.json();
+[prep-confidence:upsc] Error: Remote confidence endpoint returned 401
+    at fetchRemoteConfidence (src\app\api\prep-confidence\route.ts:18:11)
+    at async GET (src\app\api\prep-confidence\route.ts:47:22)
+  16 |
+  17 |   if (!response.ok) {
+> 18 |     throw new Error(`Remote confidence endpoint returned ${response.status}`);
+     |           ^
+  19 |   }
+  20 |
+  21 |   return response.json();
+⨯ Error [PrismaClientValidationError]: 
+Invalid `{imported module ./src/lib/db.ts}["db"].practiceTestFolder.findMany()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1tckld9._.js:467:167
+
+  464 }, {
+  465     status: 401
+  466 });
+→ 467 const folders = await {imported module ./src/lib/db.ts}["db"].practiceTestFolder.findMany({
+        where: {
+          userId: "misti"
+        },
+        orderBy: [
+          {
+            position: "asc"
+          },
+          {
+            createdAt: "asc"
+          }
+        ],
+        include: {
+          _count: {
+            select: {
+              tests: true,
+              children: true
+              ~~~~~~~~
+            }
+          }
+        }
+      })
+
+Unknown field `children` for select statement on model `PracticeTestFolderCountOutputType`. Available options are marked with ?.
+    at <unknown> (src\app\api\practice\folders\route.ts:13:47)
+    at async GET (src\app\api\practice\folders\route.ts:13:19)
+  11 |   const session = await getPrivateSession();
+  12 |   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+> 13 |   const folders = await db.practiceTestFolder.findMany({
+     |                                               ^
+  14 |     where: { userId: session.userId },
+  15 |     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+  16 |     include: { _count: { select: { tests: true, children: true } } }, {
+  clientVersion: '6.19.3'
+}
+⨯ Error [PrismaClientValidationError]: 
+Invalid `{imported module ./src/lib/db.ts}["db"].practiceTestFolder.findMany()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1tckld9._.js:467:167
+
+  464 }, {
+  465     status: 401
+  466 });
+→ 467 const folders = await {imported module ./src/lib/db.ts}["db"].practiceTestFolder.findMany({
+        where: {
+          userId: "misti"
+        },
+        orderBy: [
+          {
+            position: "asc"
+          },
+          {
+            createdAt: "asc"
+          }
+        ],
+        include: {
+          _count: {
+            select: {
+              tests: true,
+              children: true
+              ~~~~~~~~
+            }
+          }
+        }
+      })
+
+Unknown field `children` for select statement on model `PracticeTestFolderCountOutputType`. Available options are marked with ?.
+    at <unknown> (src\app\api\practice\folders\route.ts:13:47)
+    at async GET (src\app\api\practice\folders\route.ts:13:19)
+  11 |   const session = await getPrivateSession();
+  12 |   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+> 13 |   const folders = await db.practiceTestFolder.findMany({
+     |                                               ^
+  14 |     where: { userId: session.userId },
+  15 |     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+  16 |     include: { _count: { select: { tests: true, children: true } } }, {
+  clientVersion: '6.19.3'
+}

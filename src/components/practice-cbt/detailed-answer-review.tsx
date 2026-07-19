@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { normalizeQuestionMarkdown } from "@/lib/question-markdown";
 
 type MistakeTag = "GUESS_WORK" | "ELIMINATION_WORK" | "NOT_STUDIED" | "SILLY_MISTAKE" | "CUSTOM";
 
@@ -43,7 +44,7 @@ const TAGS: Array<{ value: MistakeTag; label: string }> = [
 ];
 
 function Markdown({ text }: { text: string }) {
-  return <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{text}</ReactMarkdown>;
+  return <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{normalizeQuestionMarkdown(text)}</ReactMarkdown>;
 }
 
 export default function DetailedAnswerReview({ testId, questions, answers, initialReviews }: {

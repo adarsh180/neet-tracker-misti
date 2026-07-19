@@ -10,6 +10,7 @@ import {
   BookMarked,
   CheckCircle2,
   ChevronLeft,
+  ChevronRight,
   Circle,
   Clock3,
   DoorOpen,
@@ -20,9 +21,11 @@ import {
   Folder,
   FolderOpen,
   FolderPlus,
+  FolderTree,
   GripVertical,
   Loader2,
   Pause,
+  Pencil,
   Play,
   RotateCcw,
   Save,
@@ -53,6 +56,7 @@ import {
   NEET_FULL_TEST_QUESTIONS,
   NEET_MAX_PRACTICE_DURATION_MINUTES,
 } from "@/lib/neet-exam-policy";
+import { normalizeQuestionMarkdown } from "@/lib/question-markdown";
 
 type PracticeSource = "NEET_PYQ" | "JEE_PYQ" | "INSTITUTE" | "PLATFORM" | "NCERT" | "AI";
 type PracticeDifficulty = "EASY" | "MODERATE" | "TOUGH";
@@ -136,6 +140,16 @@ type PracticeTest = {
   totalPausedSeconds?: number | null;
   questions?: Question[];
   reviews?: QuestionReview[];
+};
+
+type TestFolder = {
+  id: string;
+  name: string;
+  color: string;
+  parentId: string | null;
+  position: number;
+  testCount: number;
+  childCount: number;
 };
 
 type Phase = "list" | "bookmarks" | "setup" | "generating" | "preflight" | "exam" | "result";
@@ -268,12 +282,12 @@ function MarkdownBlock({ text }: { text: string }) {
   return (
     <div className="cbt-md">
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-        {text}
+        {normalizeQuestionMarkdown(text)}
       </ReactMarkdown>
       <style jsx>{`
         .cbt-md :global(p) { margin: 0 0 8px; }
         .cbt-md :global(p:last-child) { margin-bottom: 0; }
-        .cbt-md :global(.katex) { font-size: 1.03em; }
+        .cbt-md :global(.katex) { font-size: 1.03em; white-space: nowrap; }
         .cbt-md :global(table) { border-collapse: collapse; margin: 10px 0; width: max-content; max-width: 100%; }
         .cbt-md :global(td), .cbt-md :global(th) { border: 1px solid var(--glass-border-mid); padding: 6px 10px; font-size: 13px; }
         .cbt-md :global(img) { display: block; max-width: min(100%, 760px); max-height: 440px; object-fit: contain; margin: 14px auto; border-radius: 8px; border: 1px solid var(--glass-border); background: #fff; }
@@ -622,10 +636,14 @@ function PracticeList({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [reattemptingId, setReattemptingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<PracticeTest | null>(null);
-  const [folders, setFolders] = useState<Array<{ id: string; name: string; color: string; testCount: number }>>([]);
+  const [folders, setFolders] = useState<TestFolder[]>([]);
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [renamingFolder, setRenamingFolder] = useState<TestFolder | null>(null);
+  const [renameFolderName, setRenameFolderName] = useState("");
+  const [confirmFolderDelete, setConfirmFolderDelete] = useState<TestFolder | null>(null);
+  const [folderBusyId, setFolderBusyId] = useState<string | null>(null);
 
   const loadFolders = useCallback(async () => {
     const response = await fetch("/api/practice/folders", { cache: "no-store" });
@@ -638,22 +656,88 @@ function PracticeList({
   const createFolder = async () => {
     const name = newFolderName.trim();
     if (!name) return;
+    const parentId = initialFolderId && initialFolderId !== "all" ? initialFolderId : null;
     setCreatingFolder(true);
     setActionError(null);
     try {
       const response = await fetch("/api/practice/folders", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, parentId }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not create folder");
       setNewFolderName("");
-      await loadFolders();
+      setFolders((current) => [
+        ...current.map((folder) => folder.id === parentId ? { ...folder, childCount: folder.childCount + 1 } : folder),
+        payload.folder,
+      ]);
     } catch (folderError) {
       setActionError(folderError instanceof Error ? folderError.message : "Could not create folder");
     } finally {
       setCreatingFolder(false);
+    }
+  };
+
+  const beginRenameFolder = (folder: TestFolder) => {
+    setRenamingFolder(folder);
+    setRenameFolderName(folder.name);
+    setActionError(null);
+  };
+
+  const renameFolder = async () => {
+    if (!renamingFolder) return;
+    const name = renameFolderName.replace(/\s+/g, " ").trim();
+    if (!name || name === renamingFolder.name) {
+      setRenamingFolder(null);
+      return;
+    }
+    const original = renamingFolder;
+    setFolderBusyId(original.id);
+    setFolders((current) => current.map((folder) => folder.id === original.id ? { ...folder, name } : folder));
+    setRenamingFolder(null);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/practice/folders/${original.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not rename folder");
+      setFolders((current) => current.map((folder) => folder.id === original.id ? { ...folder, ...payload.folder } : folder));
+    } catch (renameError) {
+      setFolders((current) => current.map((folder) => folder.id === original.id ? original : folder));
+      setActionError(renameError instanceof Error ? renameError.message : "Could not rename folder");
+    } finally {
+      setFolderBusyId(null);
+    }
+  };
+
+  const deleteFolder = async () => {
+    if (!confirmFolderDelete) return;
+    const target = confirmFolderDelete;
+    const snapshot = folders;
+    setFolderBusyId(target.id);
+    setConfirmFolderDelete(null);
+    setActionError(null);
+    setFolders((current) => current
+      .filter((folder) => folder.id !== target.id)
+      .map((folder) => folder.parentId === target.id ? { ...folder, parentId: target.parentId } : folder));
+    try {
+      const response = await fetch(`/api/practice/folders/${target.id}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not delete folder");
+      await Promise.all([loadFolders(), onDeleted()]);
+      if (initialFolderId === target.id) {
+        if (payload.parentId) onFolderOpen(payload.parentId);
+        else onBackToFolders();
+      }
+    } catch (deleteError) {
+      setFolders(snapshot);
+      setActionError(deleteError instanceof Error ? deleteError.message : "Could not delete folder");
+    } finally {
+      setFolderBusyId(null);
     }
   };
 
@@ -685,6 +769,35 @@ function PracticeList({
     ? folders.find((folder) => folder.id === initialFolderId) ?? null
     : null;
   const activeFolderName = isAllTestsFolder ? "All Tests" : activeFolder?.name ?? "Loading folder…";
+  const displayedFolders = isAllTestsFolder
+    ? []
+    : initialFolderId && !activeFolder
+      ? []
+      : folders.filter((folder) => folder.parentId === (activeFolder?.id ?? null));
+  const folderById = new Map(folders.map((folder) => [folder.id, folder]));
+  const breadcrumbs: TestFolder[] = [];
+  if (activeFolder) {
+    const visited = new Set<string>();
+    let cursor: TestFolder | undefined = activeFolder;
+    while (cursor && !visited.has(cursor.id)) {
+      visited.add(cursor.id);
+      breadcrumbs.unshift(cursor);
+      cursor = cursor.parentId ? folderById.get(cursor.parentId) : undefined;
+    }
+  }
+  const folderPath = (folder: TestFolder) => {
+    const path: string[] = [folder.name];
+    const visited = new Set([folder.id]);
+    let parentId = folder.parentId;
+    while (parentId && !visited.has(parentId)) {
+      visited.add(parentId);
+      const parent = folderById.get(parentId);
+      if (!parent) break;
+      path.unshift(parent.name);
+      parentId = parent.parentId;
+    }
+    return path.join(" / ");
+  };
 
   const deleteTest = async (id: string) => {
     setDeletingId(id);
@@ -721,12 +834,26 @@ function PracticeList({
     <div className="cbt-list">
       {initialFolderId ? (
         <header className="folder-workspace-head">
-          <button className="folder-workspace-back" type="button" onClick={onBackToFolders}><ChevronLeft size={15} /> Practice Arena</button>
+          <button className="folder-workspace-back" type="button" onClick={() => {
+            if (activeFolder?.parentId) onFolderOpen(activeFolder.parentId);
+            else onBackToFolders();
+          }}><ChevronLeft size={15} /> {activeFolder?.parentId ? folderById.get(activeFolder.parentId)?.name ?? "Parent folder" : "Practice Arena"}</button>
+          {!isAllTestsFolder && breadcrumbs.length > 0 && (
+            <nav className="folder-breadcrumbs" aria-label="Folder path">
+              <button type="button" onClick={onBackToFolders}>Practice Arena</button>
+              {breadcrumbs.map((folder, index) => (
+                <span key={folder.id}><ChevronRight size={12} /><button type="button" disabled={index === breadcrumbs.length - 1} onClick={() => onFolderOpen(folder.id)}>{folder.name}</button></span>
+              ))}
+            </nav>
+          )}
           <div className="folder-workspace-title">
             <span className="folder-workspace-icon"><FolderOpen size={30} /></span>
-            <div><span>{isAllTestsFolder ? "Permanent collection" : "Custom collection"}</span><h1>{activeFolderName}</h1><p>{visibleTests.length} saved {visibleTests.length === 1 ? "test" : "tests"} · open, review or re-attempt at any time</p></div>
+            <div><span>{isAllTestsFolder ? "Permanent collection" : activeFolder?.parentId ? "Nested collection" : "Custom collection"}</span><h1>{activeFolderName}</h1><p>{visibleTests.length} saved {visibleTests.length === 1 ? "test" : "tests"} · {displayedFolders.length} subfolder{displayedFolders.length === 1 ? "" : "s"}</p></div>
           </div>
-          <div className="cbt-list-actions"><button className="cbt-ghost cbt-bookmark-entry" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button><button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button></div>
+          <div className="cbt-list-actions">
+            {!isAllTestsFolder && activeFolder && <><button className="cbt-ghost small" disabled={folderBusyId === activeFolder.id} onClick={() => beginRenameFolder(activeFolder)}><Pencil size={14} /> Rename</button><button className="cbt-ghost small folder-delete-trigger" disabled={folderBusyId === activeFolder.id} onClick={() => setConfirmFolderDelete(activeFolder)}><Trash2 size={14} /> Delete</button></>}
+            <button className="cbt-ghost cbt-bookmark-entry" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button><button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button>
+          </div>
         </header>
       ) : (
         <header className="cbt-list-head">
@@ -740,26 +867,34 @@ function PracticeList({
       )}
       {error && <p className="cbt-error">{error}</p>}
       {actionError && <p className="cbt-error">{actionError}</p>}
-      {!initialFolderId && <section className="test-folders" aria-label="Test folders">
+      {!isAllTestsFolder && <section className="test-folders" aria-label={activeFolder ? `Subfolders in ${activeFolder.name}` : "Test folders"}>
         <div className="folder-section-head">
-          <div><strong>Test folders</strong><span>All Tests always keeps every attempt. Custom folders help organise selected tests.</span></div>
+          <div><strong>{activeFolder ? `Folders inside ${activeFolder.name}` : "Test folders"}</strong><span>{activeFolder ? "Create as many nested levels as you need." : "All Tests always keeps every attempt. Custom folders organise selected tests."}</span></div>
         </div>
         <div className="folder-rail">
-          <button className="test-folder all permanent" type="button" onClick={() => onFolderOpen("all")}>
-            <span className="folder-art"><FolderOpen size={34} /></span><strong>All Tests</strong><small>{tests.length} total</small>
-          </button>
-          {folders.map((folder) => (
-            <button className={`test-folder tone-${folder.color.toLowerCase()}`} title={folder.name} type="button" key={folder.id} onClick={() => onFolderOpen(folder.id)} onDragOver={(event) => { event.preventDefault(); event.currentTarget.classList.add("drop-ready"); }} onDragLeave={(event) => event.currentTarget.classList.remove("drop-ready")} onDrop={(event) => { event.preventDefault(); event.currentTarget.classList.remove("drop-ready"); if (draggingId) void moveTest(draggingId, folder.id); }}>
-              <span className="folder-art"><Folder size={36} /></span><strong>{folder.name}</strong><small>{folder.testCount}</small>
+          {!activeFolder && <article className="test-folder permanent">
+            <button className="folder-open-button" type="button" onClick={() => onFolderOpen("all")}>
+              <span className="folder-art"><FolderOpen size={34} /></span><strong>All Tests</strong><small>{tests.length} total · permanent</small>
             </button>
+          </article>}
+          {displayedFolders.map((folder) => (
+            <article className={`test-folder tone-${folder.color.toLowerCase()} ${folderBusyId === folder.id ? "folder-busy" : ""}`} title={folder.name} key={folder.id} onDragOver={(event) => { event.preventDefault(); event.currentTarget.classList.add("drop-ready"); }} onDragLeave={(event) => event.currentTarget.classList.remove("drop-ready")} onDrop={(event) => { event.preventDefault(); event.currentTarget.classList.remove("drop-ready"); const testId = draggingId || event.dataTransfer.getData("text/plain"); if (testId) void moveTest(testId, folder.id); }}>
+              <button className="folder-open-button" type="button" onClick={() => onFolderOpen(folder.id)}>
+                <span className="folder-art"><Folder size={36} /></span><strong>{folder.name}</strong><small>{folder.testCount} test{folder.testCount === 1 ? "" : "s"} · {folder.childCount} folder{folder.childCount === 1 ? "" : "s"}</small>
+              </button>
+              <div className="folder-card-actions">
+                <button type="button" disabled={folderBusyId === folder.id} onClick={() => beginRenameFolder(folder)} aria-label={`Rename ${folder.name}`} title="Rename folder"><Pencil size={13} /></button>
+                <button type="button" disabled={folderBusyId === folder.id} onClick={() => setConfirmFolderDelete(folder)} aria-label={`Delete ${folder.name}`} title="Delete folder"><Trash2 size={13} /></button>
+              </div>
+            </article>
           ))}
         </div>
         <div className="folder-create">
-          <FolderPlus size={18} />
-          <input value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void createFolder(); }} placeholder="New folder name" maxLength={80} aria-label="New folder name" />
+          {activeFolder ? <FolderTree size={18} /> : <FolderPlus size={18} />}
+          <input value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void createFolder(); }} placeholder={activeFolder ? "New subfolder name" : "New folder name"} maxLength={80} aria-label={activeFolder ? "New subfolder name" : "New folder name"} />
           <button type="button" disabled={creatingFolder || !newFolderName.trim()} onClick={() => void createFolder()}>{creatingFolder ? <Loader2 className="cbt-spin" size={14} /> : "Create"}</button>
         </div>
-        <p className="folder-help"><GripVertical size={13} /> Drag an Arena test onto a custom folder, or use its folder menu on touch devices. Filed tests remain in All Tests.</p>
+        <p className="folder-help"><GripVertical size={13} /> Drag a test onto any visible folder, or use the folder menu on touch devices. Every test remains in All Tests.</p>
       </section>}
       {!initialFolderId && !loading && tests.length > 0 && (
         <div className="arena-inbox-head"><div><strong>Practice Arena</strong><span>{visibleTests.length} unfiled {visibleTests.length === 1 ? "test" : "tests"}</span></div><small>Tests moved to a custom folder leave this list.</small></div>
@@ -797,12 +932,41 @@ function PracticeList({
                 </button>
                 <select className="test-folder-select" aria-label={`Move ${test.title} to folder`} value={test.folderId ?? ""} onChange={(event) => void moveTest(test.id, event.target.value || null)}>
                   <option value="">Practice Arena</option>
-                  {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
+                  {folders.map((folder) => <option key={folder.id} value={folder.id}>{folderPath(folder)}</option>)}
                 </select>
               </div>
             </article>
           ))}
           {!visibleTests.length && <div className="cbt-empty folder-empty"><FolderOpen size={28} /><span>{initialFolderId ? (isAllTestsFolder ? "No tests have been created yet." : "This collection is empty. Return to Practice Arena and move or drag a test into this folder.") : "The Practice Arena is organised. Open All Tests to see every attempt, or create a new test."}</span></div>}
+        </div>
+      )}
+      {renamingFolder && (
+        <div className="submit-overlay" role="dialog" aria-modal="true" aria-labelledby="rename-folder-title">
+          <form className="submit-card folder-action-card" onSubmit={(event) => { event.preventDefault(); void renameFolder(); }}>
+            <button className="modal-close" type="button" onClick={() => setRenamingFolder(null)} aria-label="Close"><X size={17} /></button>
+            <span className="folder-modal-icon"><Pencil size={22} /></span>
+            <h2 id="rename-folder-title">Rename folder</h2>
+            <p>Its tests and subfolders will stay exactly where they are.</p>
+            <label className="folder-name-field"><span>Folder name</span><input autoFocus value={renameFolderName} onChange={(event) => setRenameFolderName(event.target.value)} maxLength={80} /></label>
+            <div className="submit-actions">
+              <button className="cbt-ghost" type="button" onClick={() => setRenamingFolder(null)}>Cancel</button>
+              <button className="cbt-primary" type="submit" disabled={!renameFolderName.trim() || folderBusyId === renamingFolder.id}><Pencil size={14} /> Save name</button>
+            </div>
+          </form>
+        </div>
+      )}
+      {confirmFolderDelete && (
+        <div className="submit-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-folder-title">
+          <div className="submit-card delete-attempt-card folder-action-card">
+            <button className="modal-close" onClick={() => setConfirmFolderDelete(null)} aria-label="Close"><X size={17} /></button>
+            <span className="folder-modal-icon danger"><Trash2 size={22} /></span>
+            <h2 id="delete-folder-title">Delete “{confirmFolderDelete.name}”?</h2>
+            <p>The folder itself will be deleted. Its {confirmFolderDelete.testCount} test{confirmFolderDelete.testCount === 1 ? "" : "s"} and {confirmFolderDelete.childCount} immediate subfolder{confirmFolderDelete.childCount === 1 ? "" : "s"} will be safely moved to the parent level. Nothing is removed from All Tests.</p>
+            <div className="submit-actions">
+              <button className="cbt-ghost" disabled={Boolean(folderBusyId)} onClick={() => setConfirmFolderDelete(null)}>Keep folder</button>
+              <button className="danger-btn" disabled={Boolean(folderBusyId)} onClick={() => void deleteFolder()}><Trash2 size={15} /> Delete folder</button>
+            </div>
+          </div>
         </div>
       )}
       {confirmDelete && (

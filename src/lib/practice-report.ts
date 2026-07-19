@@ -1,5 +1,6 @@
 import katex from "katex";
 
+import { normalizeQuestionMarkdown } from "@/lib/question-markdown";
 import { cleanQuestionText } from "@/lib/text-cleanup";
 import type { PracticeQuestion, PracticeResult } from "@/lib/practice-engine";
 
@@ -44,14 +45,15 @@ function escapeHtml(value: unknown) {
 }
 
 function richText(value: unknown) {
-  const text = cleanQuestionText(value);
+  const text = normalizeQuestionMarkdown(cleanQuestionText(value));
   const parts: string[] = [];
   let cursor = 0;
-  for (const match of text.matchAll(/\$([^$]+)\$/g)) {
+  for (const match of text.matchAll(/\$\$([\s\S]+?)\$\$|\$([^$\n]+)\$/g)) {
     const index = match.index ?? 0;
     parts.push(escapeHtml(text.slice(cursor, index)));
     try {
-      parts.push(katex.renderToString(match[1], { throwOnError: false, output: "html" }));
+      const displayMode = match[1] !== undefined;
+      parts.push(katex.renderToString(match[1] ?? match[2], { throwOnError: false, output: "html", displayMode }));
     } catch {
       parts.push(escapeHtml(match[0]));
     }
@@ -136,6 +138,6 @@ const REPORT_CSS = `
   .report-grid { display:grid; grid-template-columns: 1.35fr .65fr; gap:12px; }.panel { border:1px solid #dbe4ee; border-radius:10px; padding:14px; }.panel h2,.section-title h2 { margin:0 0 10px; font-size:15px; color:#164e7a; }.panel table { width:100%; border-collapse:collapse; }.panel td { padding:7px 4px; border-bottom:1px solid #e2e8f0; }.panel td:last-child { text-align:right; font-weight:700; }
   .section-title { margin:22px 0 10px; padding-top:15px; border-top:2px solid #164e7a; page-break-before:always; }.section-title p { margin:0; color:#64748b; }
   .question-card { break-inside: avoid; margin:0 0 12px; padding:14px; border:1px solid #cbd5e1; border-radius:9px; }.question-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; color:#64748b; font-size:10px; text-transform:uppercase; }.question-meta strong { color:#164e7a; font-size:12px; }.question-meta em { margin-left:auto; font-style:normal; font-weight:800; }.stem { font-size:13px; margin-bottom:9px; }.question-image { display:block; max-width:100%; max-height:280px; object-fit:contain; margin:10px auto; }
-  .options { display:grid; gap:5px; }.option { display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:8px; padding:7px 8px; border:1px solid #e2e8f0; border-radius:7px; }.option>b { width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid #94a3b8;font-size:10px; }.option>span { font-size:9px;font-weight:700;color:#64748b; }.option.correct { border-color:#86c69a;background:#f0fdf4; }.option.correct>b { background:#15803d;color:#fff;border-color:#15803d; }.option.selected-wrong { border-color:#e6a29e;background:#fff7f6; }.option small { display:block;margin-top:4px;padding-top:4px;border-top:1px dashed #cbd5e1;color:#64748b; }
-  .explanation { margin-top:9px; padding:9px; background:#eff6ff; border-left:3px solid #2563eb; }.explanation>strong { display:block;color:#164e7a;margin-bottom:3px; }.reflection { margin-top:7px; padding:7px 9px; background:#f8fafc; color:#475569; }.katex { font-size:1em; }
+  .options { display:grid; gap:5px; }.option { display:grid; grid-template-columns:22px minmax(0,1fr) auto; align-items:start; gap:8px; padding:7px 8px; border:1px solid #e2e8f0; border-radius:7px; }.option>b { width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid #94a3b8;font-size:10px; }.option>span { font-size:9px;font-weight:700;color:#64748b; }.option.correct { border-color:#86c69a;background:#f0fdf4; }.option.correct>b { background:#15803d;color:#fff;border-color:#15803d; }.option.selected-wrong { border-color:#e6a29e;background:#fff7f6; }.option small { display:block;margin-top:4px;padding-top:4px;border-top:1px dashed #cbd5e1;color:#64748b; }
+  .explanation { margin-top:9px; padding:9px; background:#eff6ff; border-left:3px solid #2563eb; }.explanation>strong { display:block;color:#164e7a;margin-bottom:3px; }.reflection { margin-top:7px; padding:7px 9px; background:#f8fafc; color:#475569; }.katex { font-size:1em; white-space:nowrap; }.katex-display { max-width:100%; overflow:hidden; }
 `;

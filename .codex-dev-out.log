@@ -709,3 +709,132 @@ The table `trusted_device_sessions` does not exist in the current database.
  GET /api/notifications 200 in 947ms (next.js: 29ms, application-code: 918ms)
  GET /api/notifications 200 in 1071ms (next.js: 6ms, application-code: 1064ms)
  GET /api/notifications 200 in 1282ms (next.js: 17ms, application-code: 1265ms)
+  Reload env: .env
+  Reload env: .env.local
+ GET /signin?next=%2Fpractice 200 in 740ms (next.js: 362ms, application-code: 378ms)
+ GET /offline 200 in 360ms (next.js: 109ms, application-code: 252ms)
+ POST /api/auth/login 200 in 2.5s (next.js: 141ms, application-code: 2.4s)
+ GET /dashboard 200 in 555ms (next.js: 350ms, proxy.ts: 11ms, application-code: 193ms)
+ GET /api/auth/session 200 in 1193ms (next.js: 138ms, application-code: 1055ms)
+ GET /api/auth/session 200 in 2.1s (next.js: 155ms, application-code: 1925ms)
+ GET /api/dashboard/metrics 200 in 2.5s (next.js: 103ms, application-code: 2.4s)
+ GET /api/notifications 200 in 2.6s (next.js: 146ms, application-code: 2.5s)
+ GET /api/prep-confidence?target=upsc 200 in 3.5s (next.js: 77ms, application-code: 3.4s)
+ GET /api/prep-confidence?target=upsc 200 in 3.7s (next.js: 20ms, application-code: 3.6s)
+ GET /api/dashboard/metrics 200 in 4.3s (next.js: 9ms, application-code: 4.3s)
+ GET /api/notifications 200 in 1126ms (next.js: 6ms, application-code: 1120ms)
+ GET /api/notifications 200 in 34ms (next.js: 9ms, application-code: 25ms)
+ GET /practice 200 in 1369ms (next.js: 270ms, proxy.ts: 11ms, application-code: 1088ms)
+ GET /api/auth/session 200 in 735ms (next.js: 7ms, application-code: 728ms)
+ GET /api/notifications 200 in 1299ms (next.js: 6ms, application-code: 1294ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].practiceTestFolder.findMany()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1tckld9._.js:467:167
+
+  464 }, {
+  465     status: 401
+  466 });
+→ 467 const folders = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].practiceTestFolder.findMany({
+        where: {
+          userId: "misti"
+        },
+        orderBy: [
+          {
+            position: "asc"
+          },
+          {
+            createdAt: "asc"
+          }
+        ],
+        include: {
+          _count: {
+            select: {
+              tests: true,
+              children: true
+              ~~~~~~~~
+            }
+          }
+        }
+      })
+
+Unknown field `children` for select statement on model `PracticeTestFolderCountOutputType`. Available options are marked with ?.
+ GET /api/practice/folders 500 in 1470ms (next.js: 360ms, application-code: 1110ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].practiceTestFolder.findMany()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1tckld9._.js:467:167
+
+  464 }, {
+  465     status: 401
+  466 });
+→ 467 const folders = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].practiceTestFolder.findMany({
+        where: {
+          userId: "misti"
+        },
+        orderBy: [
+          {
+            position: "asc"
+          },
+          {
+            createdAt: "asc"
+          }
+        ],
+        include: {
+          _count: {
+            select: {
+              tests: true,
+              children: true
+              ~~~~~~~~
+            }
+          }
+        }
+      })
+
+Unknown field `children` for select statement on model `PracticeTestFolderCountOutputType`. Available options are marked with ?.
+ GET /api/practice/folders 500 in 1801ms (next.js: 143ms, application-code: 1658ms)
+ GET /api/practice 200 in 2.1s (next.js: 335ms, application-code: 1743ms)
+ GET /api/practice 200 in 1986ms (next.js: 221ms, application-code: 1765ms)
+ GET /api/notifications 200 in 1108ms (next.js: 6ms, application-code: 1102ms)
+ GET /api/notifications 200 in 850ms (next.js: 5ms, application-code: 844ms)
+ GET /api/notifications 200 in 799ms (next.js: 5ms, application-code: 795ms)
+ GET /api/notifications 200 in 924ms (next.js: 6ms, application-code: 918ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].practiceTestFolder.aggregate()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1tckld9._.js:530:168
+
+  527     });
+  528 }
+  529 try {
+→ 530     const last = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].practiceTestFolder.aggregate({
+            select: {
+              _max: {
+                select: {
+                  position: true
+                }
+              }
+            },
+            where: {
+              userId: "misti",
+              parentId: null,
+              ~~~~~~~~
+          ?   AND?: PracticeTestFolderWhereInput | PracticeTestFolderWhereInput[],
+          ?   OR?: PracticeTestFolderWhereInput[],
+          ?   NOT?: PracticeTestFolderWhereInput | PracticeTestFolderWhereInput[],
+          ?   id?: StringFilter | String,
+          ?   name?: StringFilter | String,
+          ?   color?: StringFilter | String,
+          ?   position?: IntFilter | Int,
+          ?   createdAt?: DateTimeFilter | DateTime,
+          ?   updatedAt?: DateTimeFilter | DateTime,
+          ?   tests?: PracticeTestListRelationFilter
+            }
+          })
+
+Unknown argument `parentId`. Available options are marked with ?.
+ POST /api/practice/folders 400 in 637ms (next.js: 8ms, application-code: 629ms)
+ GET /api/notifications 200 in 855ms (next.js: 7ms, application-code: 848ms)
+ GET /api/notifications 200 in 817ms (next.js: 5ms, application-code: 812ms)
+ GET /api/notifications 200 in 931ms (next.js: 5ms, application-code: 926ms)
+ GET /api/notifications 200 in 872ms (next.js: 6ms, application-code: 867ms)
+ GET /api/notifications 200 in 897ms (next.js: 6ms, application-code: 892ms)
+ GET /api/notifications 200 in 916ms (next.js: 5ms, application-code: 910ms)
+ GET /api/notifications 200 in 847ms (next.js: 6ms, application-code: 841ms)

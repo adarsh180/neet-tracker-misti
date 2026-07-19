@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { normalizeQuestionMarkdown } from "@/lib/question-markdown";
 
 type BookmarkQuestion = {
   question: string;
@@ -51,7 +52,7 @@ type FolderRow = {
 const SUBJECT_ORDER = ["Physics", "Chemistry", "Botany", "Zoology"];
 
 function Markdown({ text }: { text: string }) {
-  return <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{text}</ReactMarkdown>;
+  return <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{normalizeQuestionMarkdown(text)}</ReactMarkdown>;
 }
 
 function folderKey(subject: string, classLabel: string, chapter: string) {
@@ -284,6 +285,8 @@ export default function BookmarkLibrary({ onBack }: { onBack: () => void }) {
         .bookmark-explanation { padding: 13px 14px; border-left: 2px solid var(--gold); border-radius: 0 10px 10px 0; background: var(--gold-dim); color: var(--text-secondary); font-size: 12.5px; line-height: 1.65; }
         .bookmark-explanation > strong { display: block; margin-bottom: 5px; color: var(--gold); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; }
         .bookmark-question :global(p), .bookmark-options :global(p), .bookmark-explanation :global(p) { margin: 0; overflow-wrap: anywhere; }
+        .bookmark-library :global(.katex) { white-space: nowrap; font-size: 1.02em; }
+        .bookmark-library :global(.katex-display) { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
         @media (max-width: 820px) {
           .bookmark-workspace { grid-template-columns: 1fr; }
           .bookmark-sidebar { max-height: 330px; overflow: auto; border-right: 0; border-bottom: 1px solid var(--glass-border); }

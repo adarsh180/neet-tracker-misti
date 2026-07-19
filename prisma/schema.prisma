@@ -545,10 +545,10 @@ model ReviewCard {
 }
 
 model PracticeTest {
-  id                    String                   @id @default(cuid())
-  userId                String                   @default("misti")
+  id                    String                        @id @default(cuid())
+  userId                String                        @default("misti")
   folderId              String?
-  folder                PracticeTestFolder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder                PracticeTestFolder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
   title                 String
   mode                  String // FULL_LENGTH | SECTIONAL | UNIT | SUBJECT | CHAPTER | TOPIC | PYQ_YEAR
   subject               String? // subject slug, null for full syllabus
@@ -556,16 +556,16 @@ model PracticeTest {
   topic                 String?
   pyqYear               String?
   questionCount         Int
-  aiFreshPercent        Int                      @default(6)
-  durationMinutes       Int                      @default(180)
-  difficulty            String                   @default("MIXED") // MIXED | EASY | MODERATE | TOUGH
-  status                String                   @default("GENERATING") // GENERATING | READY | RUNNING | PAUSED | COMPLETED
+  aiFreshPercent        Int                           @default(6)
+  durationMinutes       Int                           @default(180)
+  difficulty            String                        @default("MIXED") // MIXED | EASY | MODERATE | TOUGH
+  status                String                        @default("GENERATING") // GENERATING | READY | RUNNING | PAUSED | COMPLETED
   filtersJson           Json?
   questionsJson         Json // questions incl. private correctIndex/explanation
   weakZonesJson         Json? // weak-zone snapshot used to steer generation
   answersJson           Json?
   questionStatusesJson  Json?
-  currentQuestionIndex  Int                      @default(0)
+  currentQuestionIndex  Int                           @default(0)
   remainingSeconds      Int?
   pauseLogsJson         Json?
   securityEventsJson    Json?
@@ -587,12 +587,12 @@ model PracticeTest {
   proctorConsentAt      DateTime?
   proctorReportSentAt   DateTime?
   proctorReportStatus   String?
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
   reviews               PracticeQuestionReview[]
   reportArtifacts       PracticeReportArtifact[]
   analyses              PracticePerformanceAnalysis[]
-  sourceBookmarks       QuestionBookmark[]       @relation("BookmarkSourceTest")
+  sourceBookmarks       QuestionBookmark[]            @relation("BookmarkSourceTest")
 
   @@index([status, createdAt])
   @@index([userId, status, createdAt])
@@ -601,17 +601,21 @@ model PracticeTest {
 }
 
 model PracticeTestFolder {
-  id        String         @id @default(cuid())
-  userId    String         @default("misti")
-  name      String         @db.VarChar(80)
-  color     String         @default("GOLD") @db.VarChar(24)
-  position  Int            @default(0)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id        String               @id @default(cuid())
+  userId    String               @default("misti")
+  name      String               @db.VarChar(80)
+  color     String               @default("GOLD") @db.VarChar(24)
+  position  Int                  @default(0)
+  parentId  String?
+  parent    PracticeTestFolder?  @relation("PracticeFolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  PracticeTestFolder[] @relation("PracticeFolderTree")
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
   tests     PracticeTest[]
 
   @@unique([userId, name])
   @@index([userId, position, createdAt])
+  @@index([userId, parentId, position, createdAt])
   @@map("practice_test_folders")
 }
 

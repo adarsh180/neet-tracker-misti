@@ -15,11 +15,11 @@ async function main() {
       source: "AI",
       sourceRef: "Automated strict sample",
       difficulty: "MODERATE",
-      question: "A $2\,kg$ block is pulled by $10\,N$ on a smooth horizontal surface. Its acceleration is:",
-      options: ["$2\,m\,s^{-2}$", "$5\,m\,s^{-2}$", "$10\,m\,s^{-2}$", "$20\,m\,s^{-2}$"],
-      correctIndex: 1,
-      explanation: "Using $F=ma$, $a=F/m=10/2=5\,m\,s^{-2}$.",
-      optionExplanations: ["This divides the mass by force.", "Correct: $10/2=5$.", "This treats force as acceleration.", "This multiplies force and mass."],
+      question: String.raw`A closed gas system absorbs \(550\,\mathrm{J}\) of heat and does \(175\,\mathrm{J}\) of work. What is the change in internal energy?`,
+      options: [String.raw`\(725\,\mathrm{J}\)`, String.raw`\(-375\,\mathrm{J}\)`, String.raw`\(375\,\mathrm{J}\)`, String.raw`\(550\,\mathrm{J}\)`],
+      correctIndex: 2,
+      explanation: String.raw`Using \(\Delta U=Q-W\), the result is \(375\,\mathrm{J}\).`,
+      optionExplanations: ["This adds heat and work.", "This reverses the sign.", String.raw`Correct: \(550-175=375\,\mathrm{J}\).`, "This ignores work."],
       verified: true,
     },
     {
@@ -63,7 +63,7 @@ async function main() {
     totalActiveSeconds: 124,
     resultJson: result,
     questionsJson: questions,
-    answersJson: [{ id: "q1", optionIndex: 2 }, { id: "q2", optionIndex: 1 }],
+    answersJson: [{ id: "q1", optionIndex: 0 }, { id: "q2", optionIndex: 1 }],
   };
   const reviews = [
     { questionId: "q1", questionNumber: 1, outcome: "WRONG", mistakeTag: "SILLY_MISTAKE", customMistakeText: null, reviewComplete: true },
@@ -80,6 +80,13 @@ async function main() {
   try {
     const page = await browser.newPage();
     await page.setContent(buildPracticeReportHtml(test, reviews, "http://localhost:3000"), { waitUntil: "load" });
+    const mathAudit = await page.evaluate(() => ({
+      katexNodes: document.querySelectorAll(".katex").length,
+      hasRawMathCommand: document.body.innerText.includes("\\mathrm"),
+    }));
+    if (mathAudit.katexNodes < 6 || mathAudit.hasRawMathCommand) {
+      throw new Error(`Math rendering audit failed: ${JSON.stringify(mathAudit)}`);
+    }
     await page.emulateMediaType("print");
     const pdf = await page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true });
     await writeFile(outputPath, pdf);
