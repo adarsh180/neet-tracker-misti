@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Camera, CheckCircle2, Loader2, ShieldCheck, Volume2, Waves } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, Expand, Loader2, ShieldCheck, Volume2, Waves } from "lucide-react";
+
+import { exitExamFullscreen, isExamFullscreenActive, requestExamFullscreen } from "@/lib/exam-fullscreen";
 
 type PreflightTest = { id: string; title: string; questionCount: number; durationMinutes?: number };
 
@@ -40,11 +42,14 @@ export default function TestPreflight({ test, onCancel, onComplete }: {
   const [agreed, setAgreed] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [enteringFullscreen, setEnteringFullscreen] = useState(false);
+  const [fullscreenReady, setFullscreenReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(60);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stopSoundRef = useRef<(() => void) | null>(null);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     document.body.classList.add("cbt-preflight-active");
@@ -58,6 +63,17 @@ export default function TestPreflight({ test, onCancel, onComplete }: {
   }, [cameraReady]);
 
   useEffect(() => {
+    const syncFullscreen = () => setFullscreenReady(isExamFullscreenActive());
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    document.addEventListener("webkitfullscreenchange", syncFullscreen);
+    syncFullscreen();
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreen);
+    };
+  }, []);
+
+  useEffect(() => {
     if (stage !== "calm") return;
     const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
     return () => window.clearInterval(timer);
@@ -65,10 +81,12 @@ export default function TestPreflight({ test, onCancel, onComplete }: {
 
   useEffect(() => {
     if (stage !== "calm" || seconds > 0 || !streamRef.current) return;
+    if (!isExamFullscreenActive() || completedRef.current) return;
+    completedRef.current = true;
     stopSoundRef.current?.();
     stopSoundRef.current = null;
     onComplete(streamRef.current);
-  }, [onComplete, seconds, stage]);
+  }, [fullscreenReady, onComplete, seconds, stage]);
 
   const requestCamera = async () => {
     setRequesting(true);
@@ -90,15 +108,45 @@ export default function TestPreflight({ test, onCancel, onComplete }: {
 
   const beginCalm = async () => {
     if (!agreed || !cameraReady) return;
-    const response = await fetch(`/api/practice/${test.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "proctor-consent" }),
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) { setError(payload.error || "Could not record consent"); return; }
-    stopSoundRef.current = startNatureSound();
-    setStage("calm");
+    setEnteringFullscreen(true);
+    setError(null);
+    // This must be the first awaited browser action. Fullscreen APIs only work
+    // while the student's click still carries transient user activation.
+    const acquiredFullscreen = await requestExamFullscreen();
+    if (!acquiredFullscreen) {
+      setError("Fullscreen permission is required. Allow fullscreen in the browser, then tap the button again.");
+      setEnteringFullscreen(false);
+      return;
+    }
+    setFullscreenReady(true);
+    try {
+      const response = await fetch(`/api/practice/${test.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "proctor-consent" }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not record consent");
+      stopSoundRef.current = startNatureSound();
+      setStage("calm");
+    } catch (consentError) {
+      await exitExamFullscreen();
+      setError(consentError instanceof Error ? consentError.message : "Could not record consent");
+    } finally {
+      setEnteringFullscreen(false);
+    }
+  };
+
+  const reacquireFullscreenAndStart = async () => {
+    if (!streamRef.current || completedRef.current) return;
+    setEnteringFullscreen(true);
+    setError(null);
+    const acquiredFullscreen = await requestExamFullscreen();
+    setFullscreenReady(acquiredFullscreen);
+    setEnteringFullscreen(false);
+    if (!acquiredFullscreen) {
+      setError("The browser blocked fullscreen. Keep this page active, allow fullscreen, and try again.");
+    }
   };
 
   const cancel = () => {
@@ -119,6 +167,17 @@ export default function TestPreflight({ test, onCancel, onComplete }: {
         <div className="calm-time">{seconds}<small>seconds</small></div>
         <div className="calm-progress"><span style={{ width: `${progress}%` }} /></div>
         <div className="sound-on"><Volume2 size={14} /> Gentle nature sound is playing</div>
+        {seconds === 0 && !fullscreenReady && (
+          <div className="fullscreen-gate" role="alert">
+            <strong>Fullscreen is required before the test can begin.</strong>
+            <span>The timer has not started and no test time has been lost.</span>
+            <button type="button" disabled={enteringFullscreen} onClick={() => void reacquireFullscreenAndStart()}>
+              {enteringFullscreen ? <Loader2 className="spin" size={15} /> : <Expand size={15} />}
+              Enter fullscreen and start test
+            </button>
+          </div>
+        )}
+        {error && <p className="preflight-error">{error}</p>}
         <style jsx>{styles}</style>
       </section>
     );
@@ -166,7 +225,10 @@ export default function TestPreflight({ test, onCancel, onComplete }: {
       </div>
       <label className="consent-check"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /><span>I have read both declarations and voluntarily consent to camera-based integrity checks for this attempt. / मैंने दोनों घोषणाएँ पढ़ ली हैं और इस प्रयास के लिए कैमरा-आधारित सत्यापन की सहमति देती हूँ।</span></label>
       {error && <p className="preflight-error">{error}</p>}
-      <button className="begin-calm" type="button" disabled={!agreed || !cameraReady} onClick={() => void beginCalm()}>Agree and begin calm minute</button>
+      <button className="begin-calm" type="button" disabled={!agreed || !cameraReady || enteringFullscreen} onClick={() => void beginCalm()}>
+        {enteringFullscreen ? <Loader2 className="spin" size={15} /> : <Expand size={15} />}
+        Agree, enter fullscreen and begin calm minute
+      </button>
       <style jsx>{styles}</style>
     </section>
   );
@@ -206,6 +268,11 @@ const styles = `
   .calm-progress { width: min(420px, 100%); height: 5px; overflow: hidden; border-radius: 999px; background: var(--bg-elevated); }
   .calm-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--botany), var(--gold)); transition: width 1s linear; }
   .sound-on { display: flex; align-items: center; gap: 6px; margin-top: 14px; color: var(--text-muted); font-size: 11px; }
+  .fullscreen-gate { width: min(470px, 100%); display: grid; justify-items: center; gap: 7px; margin-top: 18px; padding: 16px; border: 1px solid color-mix(in srgb, var(--danger) 42%, var(--glass-border)); border-radius: 14px; background: color-mix(in srgb, var(--danger) 8%, var(--bg-elevated)); }
+  .fullscreen-gate strong { color: var(--text-primary); font-size: 13px; }
+  .fullscreen-gate span { color: var(--text-secondary); font-size: 11.5px; }
+  .fullscreen-gate button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 4px; border: 1px solid var(--gold-glow); border-radius: 10px; padding: 10px 14px; background: var(--gold-dim); color: var(--gold); font-weight: 750; cursor: pointer; }
+  .fullscreen-gate button:disabled { opacity: .5; cursor: wait; }
   .spin { animation: spin 1s linear infinite; }
   @keyframes breathe { 0%,100% { transform: scale(.9); } 45% { transform: scale(1.12); } }
   @keyframes spin { to { transform: rotate(360deg); } }

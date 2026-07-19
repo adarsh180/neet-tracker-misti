@@ -57,6 +57,7 @@ import {
   NEET_MAX_PRACTICE_DURATION_MINUTES,
 } from "@/lib/neet-exam-policy";
 import { normalizeQuestionMarkdown } from "@/lib/question-markdown";
+import { exitExamFullscreen, isExamFullscreenActive, requestExamFullscreen } from "@/lib/exam-fullscreen";
 
 type PracticeSource = "NEET_PYQ" | "JEE_PYQ" | "INSTITUTE" | "PLATFORM" | "NCERT" | "AI";
 type PracticeDifficulty = "EASY" | "MODERATE" | "TOUGH";
@@ -300,19 +301,23 @@ export function useFullscreenExamMode(containerRef: React.RefObject<HTMLElement 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    const sync = () => setIsFullscreen(isExamFullscreenActive());
     document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
     sync();
-    return () => document.removeEventListener("fullscreenchange", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+    };
   }, []);
 
   const enterFullscreen = useCallback(async () => {
     const node = containerRef.current ?? document.documentElement;
-    if (!document.fullscreenElement && node.requestFullscreen) await node.requestFullscreen().catch(() => undefined);
+    return requestExamFullscreen(node);
   }, [containerRef]);
 
   const exitFullscreen = useCallback(async () => {
-    if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen().catch(() => undefined);
+    await exitExamFullscreen();
   }, []);
 
   return { isFullscreen, enterFullscreen, exitFullscreen };
@@ -392,19 +397,21 @@ export function useCBTSecurityGuard({
     };
     const onBlur = () => trigger("WINDOW_BLUR");
     const onFullscreen = () => {
-      if (!document.fullscreenElement) trigger("FULLSCREEN_EXIT");
+      if (!isExamFullscreenActive()) trigger("FULLSCREEN_EXIT");
     };
     const onPopState = () => trigger("BACK_NAVIGATION");
     const onBeforeUnload = () => trigger("RELOAD");
 
     document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("webkitfullscreenchange", onFullscreen);
     window.addEventListener("blur", onBlur);
     window.addEventListener("popstate", onPopState);
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("fullscreenchange", onFullscreen);
+      document.removeEventListener("webkitfullscreenchange", onFullscreen);
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("popstate", onPopState);
       window.removeEventListener("beforeunload", onBeforeUnload);
