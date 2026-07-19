@@ -925,17 +925,31 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
 }
 
 export async function writeBackBankStats(questions: PracticeQuestion[], answerMap: Map<string, number | null>) {
-  const withBankIds = questions.filter((question) => question.bankId);
-  await Promise.all(
-    withBankIds.map((question) => {
-      const chosen = answerMap.get(question.id);
-      if (chosen === null || chosen === undefined) return Promise.resolve();
-      return db.bankQuestion.update({
-        where: { id: question.bankId },
-        data: chosen === question.correctIndex ? { timesCorrect: { increment: 1 } } : { timesWrong: { increment: 1 } },
-      });
-    }),
-  );
+  const correctIds = new Set<string>();
+  const wrongIds = new Set<string>();
+  for (const question of questions) {
+    if (!question.bankId) continue;
+    const chosen = answerMap.get(question.id);
+    if (chosen === null || chosen === undefined) continue;
+    if (chosen === question.correctIndex) correctIds.add(question.bankId);
+    else wrongIds.add(question.bankId);
+  }
+
+  // A 180-question submission must not fan out into 180 simultaneous writes.
+  // TiDB's serverless pool is deliberately small, so update each outcome group
+  // with one statement and keep total connection usage constant.
+  if (correctIds.size) {
+    await db.bankQuestion.updateMany({
+      where: { id: { in: [...correctIds] } },
+      data: { timesCorrect: { increment: 1 } },
+    });
+  }
+  if (wrongIds.size) {
+    await db.bankQuestion.updateMany({
+      where: { id: { in: [...wrongIds] } },
+      data: { timesWrong: { increment: 1 } },
+    });
+  }
 }
 
 function bankRowToValidated(row: BankQuestion): ValidatedBankQuestion {

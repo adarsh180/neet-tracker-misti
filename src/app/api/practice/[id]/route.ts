@@ -71,13 +71,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       totalPausedSeconds: Number.isFinite(Number(body.totalPausedSeconds)) ? Number(body.totalPausedSeconds) : undefined,
     };
     const { test, result } = await submitPracticeTest(id, answers, timeTakenSeconds, meta);
-    const reviews = await getPracticeQuestionReviews(test.id);
+    let reviews: Awaited<ReturnType<typeof getPracticeQuestionReviews>> = [];
+    try {
+      reviews = await getPracticeQuestionReviews(test.id);
+    } catch (reviewError) {
+      // The attempt is already complete and durable at this point. A secondary
+      // review read must not turn a successful submission into an error screen.
+      console.error(`[practice:${test.id}] review response deferred:`, reviewError);
+    }
     return NextResponse.json({ test: { ...sanitizePracticeTest(test), reviews }, result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = /not found/i.test(message) ? 404 : /already submitted|still generating/i.test(message) ? 400 : 500;
-    if (status === 500) console.error("[practice/:id] submit failed:", err);
-    return NextResponse.json({ error: message }, { status });
+    const status = /not found/i.test(message)
+      ? 404
+      : /already being processed/i.test(message)
+        ? 409
+        : /already submitted|still generating/i.test(message)
+          ? 400
+          : 503;
+    if (status === 503) console.error("[practice/:id] submit failed:", err);
+    const publicMessage = status === 503
+      ? "We could not confirm submission just now. Your answers are still on this screen; wait a moment and tap Submit again."
+      : status === 409
+        ? "Your submission is already being saved. Please wait a moment, then open the result."
+        : message;
+    return NextResponse.json({ error: publicMessage, retryable: status === 409 || status === 503 }, { status });
   }
 }
 

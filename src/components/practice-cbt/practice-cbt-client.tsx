@@ -109,6 +109,16 @@ type PyqAvailability = { year: number; count: number; complete: boolean; paperCo
 type AttemptEvent = { type: string; at: string; detail?: string };
 type ProctorEvidence = AttemptEvent & { imageDataUrl: string };
 
+const SUBMISSION_RETRY_MESSAGE = "We could not confirm submission just now. Your answers are safe on this screen; wait a moment and tap Submit again.";
+
+function safeSubmissionError(error: unknown) {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (/^(We could not confirm submission|Your submission is already being saved|Practice test not found|This test is still generating)/i.test(message)) {
+    return message;
+  }
+  return SUBMISSION_RETRY_MESSAGE;
+}
+
 type PracticeTest = {
   id: string;
   folderId?: string | null;
@@ -1316,7 +1326,6 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
       const response = await fetch(`/api/practice/${test.id}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        keepalive: true,
         body: JSON.stringify({
           answers: answerArray(questions, answers),
           timeTakenSeconds: totalActiveSeconds,
@@ -1331,8 +1340,11 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
           totalPausedSeconds,
         }),
       });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || "Submission failed");
+      const json = await response.json().catch(() => ({})) as { error?: unknown; test?: PracticeTest };
+      if (!response.ok) {
+        throw new Error(typeof json.error === "string" ? json.error : SUBMISSION_RETRY_MESSAGE);
+      }
+      if (!json.test) throw new Error(SUBMISSION_RETRY_MESSAGE);
       try {
         await fetch(`/api/practice/${test.id}/proctor-report`, {
           method: "POST",
@@ -1352,7 +1364,7 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
     } catch (err) {
       submittingRef.current = false;
       setSubmitting(false);
-      setSubmitError(err instanceof Error ? err.message : "Submission failed");
+      setSubmitError(safeSubmissionError(err));
     }
   }, [answers, currentIndex, exitFullscreen, onSubmitted, pauseLogs, questionStatuses, questions, remainingSeconds, securityEvents, test.id, totalActiveSeconds, totalPausedSeconds]);
 
@@ -1822,7 +1834,7 @@ export function SubmitModal({
   return (
     <div className="submit-overlay">
       <div className="submit-card">
-        <button className="modal-close" onClick={onClose} aria-label="Close"><X size={16} /></button>
+        <button className="modal-close" onClick={onClose} disabled={submitting} aria-label="Close"><X size={16} /></button>
         <AlertTriangle size={28} />
         <h2>Submit CBT Practice Test?</h2>
         <p>{answered} answered · {total - answered} not answered · {formatClock(remainingSeconds)} left. After submission, answer keys and explanations unlock.</p>

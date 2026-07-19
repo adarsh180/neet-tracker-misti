@@ -782,7 +782,18 @@ const ERROR_DIFFICULTY: Record<PracticeDifficulty, string> = { EASY: "EASY", MOD
 export async function submitPracticeTest(testId: string, answers: PracticeAnswer[], timeTakenSeconds: number | null, meta: PracticeSubmitMeta = {}) {
   const test = await db.practiceTest.findUnique({ where: { id: testId } });
   if (!test) throw new Error("Practice test not found");
-  if (test.status === "COMPLETED") throw new Error("This test is already submitted");
+  if (test.status === "COMPLETED") {
+    const savedResult = test.resultJson as unknown as PracticeResult | null;
+    return {
+      test,
+      result: savedResult ?? gradeTest(
+        test.questionsJson as unknown as PracticeQuestion[],
+        Array.isArray(test.answersJson) ? test.answersJson as unknown as PracticeAnswer[] : answers,
+        test.totalActiveSeconds ?? timeTakenSeconds,
+      ),
+    };
+  }
+  if (test.status === "SUBMITTING") throw new Error("Submission is already being processed");
   if (!["READY", "RUNNING", "PAUSED"].includes(test.status)) throw new Error("This test is still generating");
 
   const questions = test.questionsJson as unknown as PracticeQuestion[];
@@ -795,8 +806,38 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
 
   const subjectRow = test.subject ? await db.subject.findUnique({ where: { slug: test.subject } }) : null;
 
+  // Claim and complete the attempt in one transaction. A rapid second tap can
+  // never create duplicate TestRecord or ErrorLog rows.
+  const completion = await db.$transaction(async (tx) => {
+    const claimed = await tx.practiceTest.updateMany({
+      where: { id: test.id, status: { in: ["READY", "RUNNING", "PAUSED"] } },
+      data: { status: "SUBMITTING" },
+    });
+    if (claimed.count !== 1) {
+      const current = await tx.practiceTest.findUnique({ where: { id: test.id } });
+      if (current?.status === "COMPLETED") {
+        return { test: current, result: current.resultJson as unknown as PracticeResult, fresh: false };
+      }
+      throw new Error("Submission is already being processed");
+    }
+
+    // Older submission code could create these records before a later bank-stat
+    // write timed out. Clear only unlinked artifacts for this exact attempt so
+    // its retry produces one canonical dashboard/error-log record.
+    if (!test.errorLogTestId && !test.testRecordId) {
+      const staleLogs = await tx.errorLogTest.findMany({
+        where: { notes: `Auto-logged from Practice Arena (${test.id}).` },
+        select: { id: true },
+      });
+      if (staleLogs.length) {
+        const staleLogIds = staleLogs.map((row) => row.id);
+        await tx.testRecord.deleteMany({ where: { linkedErrorLogTestId: { in: staleLogIds } } });
+        await tx.errorLogTest.deleteMany({ where: { id: { in: staleLogIds } } });
+      }
+    }
+
   // 1. Error log — every wrong and skipped question, with the key and reasoning.
-  const errorLogTest = await db.errorLogTest.create({
+  const errorLogTest = await tx.errorLogTest.create({
     data: {
       testName: test.title,
       testType: test.mode === "PYQ_YEAR" ? "PYQ" : isFullLength ? "FLT" : "SECTIONAL",
@@ -830,7 +871,7 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
   });
 
   // 2. Test record — feeds dashboard, Rank Predictor, Review Agent, NEET-GURU.
-  const testRecord = await db.testRecord.create({
+  const testRecord = await tx.testRecord.create({
     data: {
       subjectId: subjectRow?.id ?? null,
       testType: isFullLength ? "FULL_LENGTH" : "SECTIONAL",
@@ -838,7 +879,7 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
       score: result.score,
       maxScore: result.maxScore,
       percentage: result.percentage,
-      institute: "Practice Arena (AI)",
+      institute: "Practice Arena",
       correctCount: result.correct,
       wrongCount: result.wrong,
       skippedCount: result.skipped,
@@ -854,9 +895,7 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
     },
   });
 
-  await writeBackBankStats(questions, answerMap);
-
-  await db.practiceQuestionReview.createMany({
+  await tx.practiceQuestionReview.createMany({
     data: questions.map((question, index) => {
       const selectedIndex = answerMap.get(question.id);
       const outcome = selectedIndex === null || selectedIndex === undefined
@@ -881,7 +920,7 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
     skipDuplicates: true,
   });
 
-  const updated = await db.practiceTest.update({
+  const updated = await tx.practiceTest.update({
     where: { id: test.id },
     data: {
       status: "COMPLETED",
@@ -904,7 +943,20 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
     },
   });
 
-  return { test: updated, result };
+    return { test: updated, result, fresh: true };
+  }, { maxWait: 10_000, timeout: 45_000 });
+
+  if (completion.fresh) {
+    try {
+      // These counters are analytics only. A counter failure must never hide or
+      // roll back a successfully saved test, result, review, or error log.
+      await writeBackBankStats(questions, answerMap);
+    } catch (statsError) {
+      console.error(`[practice:${test.id}] bank-stat write-back skipped:`, statsError);
+    }
+  }
+
+  return { test: completion.test, result: completion.result };
 }
 
 export async function createPracticeReattempt(testId: string, userId: string) {

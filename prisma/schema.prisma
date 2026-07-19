@@ -559,7 +559,7 @@ model PracticeTest {
   aiFreshPercent        Int                           @default(6)
   durationMinutes       Int                           @default(180)
   difficulty            String                        @default("MIXED") // MIXED | EASY | MODERATE | TOUGH
-  status                String                        @default("GENERATING") // GENERATING | READY | RUNNING | PAUSED | COMPLETED
+  status                String                        @default("GENERATING") // GENERATING | READY | RUNNING | PAUSED | SUBMITTING | COMPLETED
   filtersJson           Json?
   questionsJson         Json // questions incl. private correctIndex/explanation
   weakZonesJson         Json? // weak-zone snapshot used to steer generation
