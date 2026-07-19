@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  allowedDevOrigins: process.env.ALLOWED_DEV_ORIGIN ? [process.env.ALLOWED_DEV_ORIGIN] : [],
   // Chromium's compressed runtime assets are loaded dynamically at request
   // time, so Next's static tracer cannot discover them automatically. Keep the
   // include scoped to the PDF route to avoid bloating unrelated functions.
@@ -39,7 +40,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()",
+            value: "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()",
           },
           {
             key: "X-Frame-Options",

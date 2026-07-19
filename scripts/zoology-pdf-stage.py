@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Stage Zoology questions from local PhysicsWallah PDF source packs.
+Stage Zoology or Botany questions from local PhysicsWallah PDF source packs.
 
 Mirrors scripts/physics-pdf-stage.py, with three differences that the zoology
 material forces:
@@ -34,14 +34,14 @@ except Exception as exc:  # pragma: no cover - environment guard
     sys.exit(1)
 
 
-DEFAULT_SOURCE = r"E:\projects\questions-bank\zoology"
-DEFAULT_OUT = "data/zoology-pdf-stage"
-DEFAULT_VISUAL_OUT = "public/bank-visuals/zoology"
-VISUAL_URL_PREFIX = "/bank-visuals/zoology"
+DEFAULT_SOURCES = {
+    "Zoology": r"E:\projects\questions-bank\zoology",
+    "Botany": r"E:\projects\questions-bank\botany",
+}
 
 # Chapter is encoded cleanly in the filename, so filename rules are reliable.
 # Order matters: more specific patterns first.
-CHAPTER_RULES: list[tuple[str, str, list[str]]] = [
+ZOOLOGY_CHAPTER_RULES: list[tuple[str, str, list[str]]] = [
     ("Structural Organisation in Animals", "11", [r"structural organi[sz]ation", r"animal tissues?", r"\bfrog\b", r"cockroach", r"earthworm"]),
     ("Animal Kingdom", "11", [r"animal kingdom", r"classification of animals", r"non[- ]?chordata", r"\bchordata\b"]),
     ("Biomolecules", "11", [r"biomolecule"]),
@@ -65,6 +65,26 @@ CHAPTER_RULES: list[tuple[str, str, list[str]]] = [
     ("Biodiversity and Conservation", "12", [r"biodiversity", r"conservation"]),
 ]
 
+BOTANY_CHAPTER_RULES: list[tuple[str, str, list[str]]] = [
+    ("Anatomy of Flowering Plants", "11", [r"anatomy of flowering"]),
+    ("Morphology of Flowering Plants", "11", [r"morphology of flowering"]),
+    ("Biological Classification", "11", [r"biological classification"]),
+    ("Cell Cycle and Cell Division", "11", [r"cell cycle", r"cell division"]),
+    ("Cell: The Unit of Life", "11", [r"cell\s*[-:]?\s*the unit", r"cell the unit"]),
+    ("Photosynthesis in Higher Plants", "11", [r"photosynthesis"]),
+    ("Respiration in Plants", "11", [r"respiration in plants"]),
+    ("Plant Growth and Development", "11", [r"plant growth", r"growth and development"]),
+    ("Plant Kingdom", "11", [r"plant kingdom"]),
+    ("The Living World", "11", [r"living world"]),
+    ("Sexual Reproduction in Flowering Plants", "12", [r"sexual reproduction in flowering"]),
+    ("Principles of Inheritance and Variation", "12", [r"principles? of inheritance", r"inheritance and variation"]),
+    ("Molecular Basis of Inheritance", "12", [r"molecular basis"]),
+    ("Microbes in Human Welfare", "12", [r"microbes? in human welfare"]),
+    ("Organisms and Populations", "12", [r"organisms? and populations?"]),
+    ("Ecosystem", "12", [r"\becosystem\b"]),
+    ("Biodiversity and Conservation", "12", [r"biodiversity", r"conservation"]),
+]
+
 VISUAL_RE = re.compile(
     r"\b(?:figure|fig\.?|diagram|shown|given below|labelled?|label the|match (?:list|the|column)|column[- ]?i\b|graph|plot)\b",
     re.I,
@@ -73,9 +93,7 @@ GRAPH_RE = re.compile(r"\b(?:graph|plot|slope|area under|curve)\b", re.I)
 ANSWER_KEY_HEADING_RE = re.compile(r"^\s*(?:answer key|answers?)\s*:?\s*$", re.I)
 SOLUTION_HEADING_RE = re.compile(r"^\s*(?:hints?\s*&\s*solutions?|solutions?|detailed solutions?)\s*:?\s*$", re.I)
 ANY_ANSWER_HEADING_RE = re.compile(r"^\s*(?:answer key|answers?|hints?\s*&\s*solutions?|solutions?|detailed solutions?)\s*:?\s*$", re.I)
-# Other subjects (zoology is our own); used to catch cross-subject leakage.
-SECTION_BREAK_RE = re.compile(r"^\s*(?:physics|chemistry|botany)\s*$", re.I)
-OTHER_SUBJECT_RE = re.compile(r"\b(?:PHYSICS|CHEMISTRY|BOTANY)\b")
+# Cross-subject leakage is selected dynamically for Zoology vs Botany.
 Q_STYLE_RE = re.compile(r"^\s*Q\s*\.?\s*(\d{1,4})\b", re.I)
 NUM_STYLE_RE = re.compile(r"^\s*(\d{1,4})\s*\.\s*(.*)$")
 INLINE_OPTION_RE = re.compile(
@@ -150,10 +168,11 @@ def stable_hash(*parts: str) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Stage local Zoology PDF questions into JSON files.")
-    parser.add_argument("--source", default=DEFAULT_SOURCE, help="Root folder containing Zoology PDFs.")
-    parser.add_argument("--out", default=DEFAULT_OUT, help="Output directory for staged data.")
-    parser.add_argument("--visual-out", default=DEFAULT_VISUAL_OUT, help="Output directory for cropped visual PNGs.")
+    parser = argparse.ArgumentParser(description="Stage local Zoology or Botany PDF questions into JSON files.")
+    parser.add_argument("--subject", choices=("Zoology", "Botany"), default="Zoology")
+    parser.add_argument("--source", default="", help="Root folder containing the selected subject PDFs.")
+    parser.add_argument("--out", default="", help="Output directory for staged data.")
+    parser.add_argument("--visual-out", default="", help="Output directory for cropped visual PNGs.")
     parser.add_argument("--limit-files", type=int, default=0, help="Only process the first N PDFs.")
     parser.add_argument("--folder", default="", help="Optional top-level folder filter, e.g. pyq or kattar.")
     parser.add_argument("--min-explanation", type=int, default=35, help="Minimum explanation chars for bankReady.")
@@ -161,13 +180,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def infer_chapter(rel_path: Path) -> tuple[str, str]:
+def infer_chapter(rel_path: Path, subject: str) -> tuple[str, str]:
     text = " ".join(rel_path.parts).lower()
     text = re.sub(r"[_\-]+", " ", text)
-    for chapter, class_level, patterns in CHAPTER_RULES:
+    chapter_rules = BOTANY_CHAPTER_RULES if subject == "Botany" else ZOOLOGY_CHAPTER_RULES
+    for chapter, class_level, patterns in chapter_rules:
         if any(re.search(pattern, text, re.I) for pattern in patterns):
             return chapter, class_level
-    return "Animal Kingdom", "11"
+    return ("The Living World", "11") if subject == "Botany" else ("Animal Kingdom", "11")
 
 
 def infer_source(folder: str, file_name: str) -> tuple[str, str]:
@@ -316,12 +336,14 @@ def parse_question_options(block_lines: list[str], q_no: int) -> tuple[str, list
             continue
         markers.append((match.start(), match.end(), option_index))
 
+    # Compound MCQs can contain an A-D statement list followed by the actual
+    # A-D answer choices. The final complete marker run is the answer set; using
+    # the first run truncates the stem and binds the statements as options.
     chosen: list[tuple[int, int, int]] = []
     for start in range(0, max(0, len(markers) - 3)):
         run = markers[start: start + 4]
         if [entry[2] for entry in run] == [0, 1, 2, 3]:
             chosen = run
-            break
     if not chosen:
         return strip_question_marker(flat, q_no), []
 
@@ -351,8 +373,13 @@ def answer_key_region(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def solution_region(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
     heading_idx = find_heading(lines, SOLUTION_HEADING_RE)
-    if heading_idx is not None:
-        return lines[heading_idx:]
+    first_solution_idx = next(
+        (idx for idx, item in enumerate(lines) if re.match(r"^\s*Q\s*\.?\s*\d{1,3}\b.*Text Solution", item["text"], re.I)),
+        None,
+    )
+    starts = [idx for idx in (heading_idx, first_solution_idx) if idx is not None]
+    if starts:
+        return lines[min(starts):]
     return []
 
 
@@ -469,7 +496,8 @@ def suspicious_options(options: list[str]) -> bool:
 
 
 def crop_visual(doc: "fitz.Document", row_lines: list[dict[str, Any]], next_line: dict[str, Any] | None,
-                page_dims: dict[int, tuple[float, float]], visual_dir: Path, content_hash: str) -> str | None:
+                page_dims: dict[int, tuple[float, float]], visual_dir: Path, content_hash: str,
+                visual_url_prefix: str) -> str | None:
     """Render the column slice that holds a visual question to a PNG; return its URL."""
     if not row_lines:
         return None
@@ -495,13 +523,14 @@ def crop_visual(doc: "fitz.Document", row_lines: list[dict[str, Any]], next_line
         pix.save(out_path)
     except Exception:
         return None
-    return f"{VISUAL_URL_PREFIX}/{content_hash}.png"
+    return f"{visual_url_prefix}/{content_hash}.png"
 
 
-def stage_pdf(pdf_path: Path, root: Path, min_explanation: int, visual_dir: Path, render_visuals: bool) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def stage_pdf(pdf_path: Path, root: Path, min_explanation: int, visual_dir: Path, render_visuals: bool,
+              subject_name: str, visual_url_prefix: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     rel = pdf_path.relative_to(root)
     folder = rel.parts[0] if len(rel.parts) > 1 else "."
-    chapter, class_level = infer_chapter(rel)
+    chapter, class_level = infer_chapter(rel, subject_name)
     source, source_ref = infer_source(folder, pdf_path.name)
     difficulty = infer_difficulty(folder)
 
@@ -549,13 +578,15 @@ def stage_pdf(pdf_path: Path, root: Path, min_explanation: int, visual_dir: Path
         option_suspicion = suspicious_options(options)
         relevant_explanation = explanation_relevant(question, options, answer, explanation)
         substantive_explanation = explanation_has_substance(question, options, explanation)
-        leaked_section = bool(OTHER_SUBJECT_RE.search(explanation))
+        other_subjects = [name for name in ("Physics", "Chemistry", "Botany", "Zoology") if name != subject_name]
+        other_subject_re = re.compile(r"\b(?:" + "|".join(other_subjects) + r")\b", re.I)
+        leaked_section = bool(other_subject_re.search(explanation))
         content_hash = stable_hash(question, *options)
 
         visual_url = None
         if visual and render_visuals and len(options) == 4 and answer is not None:
             next_line = lines[next_idx] if next_idx < len(lines) else None
-            visual_url = crop_visual(doc, block_lines, next_line, page_dims, visual_dir, content_hash)
+            visual_url = crop_visual(doc, block_lines, next_line, page_dims, visual_dir, content_hash, visual_url_prefix)
 
         confidence = 0.0
         confidence += 0.35 if len(question) >= 25 else 0.0
@@ -612,7 +643,7 @@ def stage_pdf(pdf_path: Path, root: Path, min_explanation: int, visual_dir: Path
             "contentHash": content_hash,
         }
         rows.append({
-            "subject": "Zoology",
+            "subject": subject_name,
             "classLevel": class_level,
             "chapter": chapter,
             "topic": None,
@@ -692,9 +723,11 @@ def bank_import_row(row: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> None:
     args = parse_args()
-    source = Path(args.source)
-    out = Path(args.out)
-    visual_dir = Path(args.visual_out)
+    subject_slug = args.subject.lower()
+    source = Path(args.source or DEFAULT_SOURCES[args.subject])
+    out = Path(args.out or f"data/{subject_slug}-pdf-stage")
+    visual_dir = Path(args.visual_out or f"public/bank-visuals/{subject_slug}")
+    visual_url_prefix = f"/bank-visuals/{subject_slug}"
     out.mkdir(parents=True, exist_ok=True)
     if not source.exists():
         raise SystemExit(f"Source path does not exist: {source}")
@@ -709,7 +742,10 @@ def main() -> None:
     file_stats: list[dict[str, Any]] = []
     invalid_errors: list[dict[str, str]] = []
     for pdf in pdfs:
-        rows, stats = stage_pdf(pdf, source, args.min_explanation, visual_dir, not args.no_visuals)
+        rows, stats = stage_pdf(
+            pdf, source, args.min_explanation, visual_dir, not args.no_visuals,
+            args.subject, visual_url_prefix,
+        )
         all_rows.extend(rows)
         file_stats.append(stats)
         if stats.get("error"):
@@ -753,23 +789,23 @@ def main() -> None:
         "fileStats": file_stats,
     }
 
-    (out / "zoology-pdf-questions.jsonl").write_text(
+    (out / f"{subject_slug}-pdf-questions.jsonl").write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in all_rows), encoding="utf-8")
-    (out / "zoology-pdf-bank-ready.json").write_text(
+    (out / f"{subject_slug}-pdf-bank-ready.json").write_text(
         json.dumps(bank_ready, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    (out / "zoology-pdf-parked.jsonl").write_text(
+    (out / f"{subject_slug}-pdf-parked.jsonl").write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in parked_rows), encoding="utf-8")
-    (out / "zoology-pdf-review.jsonl").write_text(
+    (out / f"{subject_slug}-pdf-review.jsonl").write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in review_rows), encoding="utf-8")
-    (out / "zoology-pdf-report.json").write_text(
+    (out / f"{subject_slug}-pdf-report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print(json.dumps({key: report[key] for key in [
         "pdfsScanned", "pages", "stagedRows", "bankReadyRows", "parkedRows",
         "reviewRows", "withAnswer", "withExplanation", "needsVisualAsset", "visualCropped",
     ]}, indent=2))
-    print(f"Report: {out / 'zoology-pdf-report.json'}")
-    print(f"Bank-ready import rows: {out / 'zoology-pdf-bank-ready.json'}")
+    print(f"Report: {out / f'{subject_slug}-pdf-report.json'}")
+    print(f"Bank-ready import rows: {out / f'{subject_slug}-pdf-bank-ready.json'}")
 
 
 if __name__ == "__main__":

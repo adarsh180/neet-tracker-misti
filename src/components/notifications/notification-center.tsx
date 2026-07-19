@@ -276,7 +276,7 @@ export function NotificationCenter({
   useEffect(() => {
     let id = localStorage.getItem(clientIdKey);
     if (!id) {
-      id = crypto.randomUUID();
+      id = globalThis.crypto?.randomUUID?.() ?? `client-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
       localStorage.setItem(clientIdKey, id);
     }
     setClientId(id);

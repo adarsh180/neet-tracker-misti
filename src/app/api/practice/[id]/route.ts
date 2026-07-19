@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import {
   PRACTICE_MISTAKE_TAGS,
+  deletePracticeTestRecord,
   getPracticeQuestionReviews,
   sanitizePracticeTest,
   savePracticeQuestionReview,
@@ -89,6 +90,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const action = String(body.action ?? "");
   const test = await db.practiceTest.findFirst({ where: { id, userId: session.userId } });
   if (!test) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (action === "move-folder") {
+    const folderId = typeof body.folderId === "string" && body.folderId ? body.folderId : null;
+    if (folderId) {
+      const folder = await db.practiceTestFolder.findFirst({ where: { id: folderId, userId: session.userId }, select: { id: true } });
+      if (!folder) return NextResponse.json({ error: "Folder not found" }, { status: 404 });
+    }
+    const updated = await db.practiceTest.update({ where: { id }, data: { folderId } });
+    return NextResponse.json({ test: sanitizePracticeTest(updated) });
+  }
+  if (action === "proctor-consent") {
+    if (test.status === "COMPLETED" || test.status === "GENERATING") return NextResponse.json({ error: "This attempt cannot enter proctoring" }, { status: 400 });
+    const updated = await db.practiceTest.update({
+      where: { id },
+      data: { proctorConsentAt: test.proctorConsentAt ?? new Date(), proctorReportStatus: "PENDING" },
+    });
+    return NextResponse.json({ test: sanitizePracticeTest(updated) });
+  }
   if (action === "review") {
     if (test.status !== "COMPLETED") return NextResponse.json({ error: "Submit the test before reviewing answers" }, { status: 400 });
     const mistakeTag = body.mistakeTag === null || body.mistakeTag === ""
@@ -145,12 +163,11 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const test = await db.practiceTest.findFirst({ where: { id, userId: session.userId }, select: { id: true, status: true } });
-  if (!test) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (test.status === "COMPLETED") {
-    return NextResponse.json({ error: "Completed tests are part of your record and cannot be deleted here" }, { status: 400 });
+  try {
+    const deleted = await deletePracticeTestRecord(id, session.userId);
+    return NextResponse.json({ ok: true, ...deleted });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not delete test";
+    return NextResponse.json({ error: message }, { status: /not found/i.test(message) ? 404 : 500 });
   }
-
-  await db.practiceTest.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
 }

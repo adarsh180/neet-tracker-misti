@@ -101,18 +101,29 @@ export default function DetailedAnswerReview({ testId, questions, answers, initi
   };
 
   const saveReview = async (questionId: string, mistakeTag: MistakeTag | null) => {
+    const previous = reviews;
+    const customMistakeText = mistakeTag === "CUSTOM" ? customDrafts[questionId] ?? "" : null;
+    // Update the visible reflection immediately; the request reconciles in the
+    // background and rolls back only if persistence fails.
+    setReviews((current) => current.map((review) => review.questionId === questionId ? {
+      ...review,
+      mistakeTag,
+      customMistakeText,
+      reviewComplete: review.outcome === "CORRECT" || Boolean(mistakeTag),
+    } : review));
     setSavingId(questionId);
     setSaveError(null);
     try {
       const response = await fetch(`/api/practice/${testId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "review", questionId, mistakeTag, customMistakeText: mistakeTag === "CUSTOM" ? customDrafts[questionId] ?? "" : null }),
+        body: JSON.stringify({ action: "review", questionId, mistakeTag, customMistakeText }),
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Could not save reflection");
       setReviews(json.reviews ?? []);
     } catch (error) {
+      setReviews(previous);
       setSaveError(error instanceof Error ? error.message : "Could not save reflection");
     } finally {
       setSavingId(null);

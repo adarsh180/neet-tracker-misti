@@ -5,7 +5,7 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
-  Award, BarChart3, CheckCircle2, ChevronLeft, Circle, Clock3, Flag, Layers, Target, TrendingUp, XCircle,
+  Award, BarChart3, BrainCircuit, CheckCircle2, ChevronLeft, Circle, Clock3, Flag, Layers, Loader2, Sparkles, Target, TrendingUp, XCircle,
 } from "lucide-react";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
 import { estimateCalibratedRank } from "@/lib/neet-rank-calibration";
@@ -50,6 +50,20 @@ export type AnalyticsTest = {
   result: AnalyticsResult | null;
   answers: { id: string; optionIndex: number | null }[] | null;
   questions?: AnalyticsQuestion[];
+};
+
+type ManualAnalysis = {
+  status: string;
+  model: string | null;
+  error: string | null;
+  deterministicJson: {
+    overview: { accuracy: number; confidence95: { low: number; high: number }; completionRate: number; secondsPerAttempt: number | null };
+    chapters: Array<{ name: string; total: number; posteriorMastery: number; priority: number }>;
+    mistakeTags: Array<{ tag: string; count: number; shareOfMisses: number }>;
+    staminaDelta: number;
+    evidenceLimits: string[];
+  };
+  narrativeJson: null | { headline: string; strengths: string[]; priorities: string[]; recurringMistakes: string[]; nextTestPlan: string[]; caution: string };
 };
 
 const MODE_LABEL: Record<string, string> = {
@@ -102,6 +116,24 @@ export default function PracticeAnalytics({ test, onBack }: { test: AnalyticsTes
   const answers = useMemo(() => new Map((test.answers ?? []).map((a) => [a.id, a.optionIndex])), [test.answers]);
   const [dim, setDim] = useState<"subject" | "chapter" | "topic">("subject");
   const [history, setHistory] = useState<{ label: string; accuracy: number; percentage: number }[]>([]);
+  const [manualAnalysis, setManualAnalysis] = useState<ManualAnalysis | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  const runManualAnalysis = async () => {
+    setAnalysing(true);
+    setAnalysisError(null);
+    try {
+      const response = await fetch(`/api/practice/${test.id}/analysis`, { method: "POST" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not analyse this test");
+      setManualAnalysis(payload.analysis);
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "Could not analyse this test");
+    } finally {
+      setAnalysing(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/practice", { cache: "no-store" })
@@ -126,6 +158,9 @@ export default function PracticeAnalytics({ test, onBack }: { test: AnalyticsTes
   const score720 = Math.round((result.percentage / 100) * 720);
   const air = estimateCalibratedRank(score720);
   const overallAccuracy = accuracy(result);
+  const attemptedCount = result.correct + result.wrong;
+  const minimumRankSample = Math.min(30, Math.ceil(test.questionCount * 0.6));
+  const rankEligible = attemptedCount >= minimumRankSample;
 
   const outcomePie = [
     { name: "Correct", value: result.correct, fill: OUTCOME_COLOR.correct },
@@ -146,7 +181,7 @@ export default function PracticeAnalytics({ test, onBack }: { test: AnalyticsTes
     const qs = questions.filter((q) => q.difficulty === d);
     const correct = qs.filter((q) => answers.get(q.id) === q.correctIndex).length;
     const attempted = qs.filter((q) => answers.get(q.id) !== null && answers.get(q.id) !== undefined).length;
-    return { difficulty: d, total: qs.length, correct, accuracy: attempted ? Math.round((correct / attempted) * 100) : 0 };
+    return { difficulty: d, total: qs.length, attempted, correct, accuracy: attempted ? Math.round((correct / attempted) * 100) : 0 };
   }).filter((r) => r.total > 0);
 
   const buckets = bucketBy(questions, answers, dim);
@@ -167,15 +202,36 @@ export default function PracticeAnalytics({ test, onBack }: { test: AnalyticsTes
             <span><Circle size={13} /> {result.skipped} skipped</span>
             <span><Clock3 size={13} /> {fmtClock(test.totalActiveSeconds ?? result.timeTakenSeconds ?? 0)}</span>
           </div>
+          <button className="pa-ai-button" type="button" disabled={analysing} onClick={() => void runManualAnalysis()}>{analysing ? <Loader2 className="pa-spin" size={15} /> : <Sparkles size={15} />}{manualAnalysis ? "Re-run deep analysis" : "Run statistical + AI analysis"}</button>
         </div>
         <div className="pa-air">
           <div className="pa-air-icon"><Award size={20} /></div>
-          <span className="pa-air-label">Projected AIR</span>
-          <strong className="pa-air-rank">{air.rank.toLocaleString("en-IN")}</strong>
-          <span className="pa-air-range">{air.rankRange.best.toLocaleString("en-IN")} – {air.rankRange.worst.toLocaleString("en-IN")}</span>
-          <span className="pa-air-note">if this accuracy held over a full 720-mark NEET paper (≈{score720}/720)</span>
+          {rankEligible ? (
+            <><span className="pa-air-label">Projected AIR</span><strong className="pa-air-rank">{air.rank.toLocaleString("en-IN")}</strong><span className="pa-air-range">{air.rankRange.best.toLocaleString("en-IN")} – {air.rankRange.worst.toLocaleString("en-IN")}</span><span className="pa-air-note">if this performance held over a full 720-mark NEET paper (≈{score720}/720)</span></>
+          ) : (
+            <><span className="pa-air-label">Rank projection paused</span><strong className="pa-air-sample">Insufficient sample</strong><span className="pa-air-note">Attempt at least {minimumRankSample} questions before an AIR estimate is shown. Current: {attemptedCount}.</span></>
+          )}
         </div>
       </section>
+
+      {analysisError && <p className="pa-analysis-error">{analysisError}</p>}
+      {manualAnalysis && (
+        <section className="pa-card pa-insight-card">
+          <div className="pa-insight-head"><div><span><BrainCircuit size={15} /> Evidence-backed coach</span><h2>{manualAnalysis.narrativeJson?.headline ?? "Deterministic analysis complete"}</h2></div><small>{manualAnalysis.model ? `Narrative: ${manualAnalysis.model}` : "Statistics only"}</small></div>
+          <div className="pa-insight-metrics">
+            <div><strong>{manualAnalysis.deterministicJson.overview.accuracy}%</strong><span>observed accuracy</span></div>
+            <div><strong>{manualAnalysis.deterministicJson.overview.confidence95.low}–{manualAnalysis.deterministicJson.overview.confidence95.high}%</strong><span>95% confidence interval</span></div>
+            <div><strong>{manualAnalysis.deterministicJson.overview.completionRate}%</strong><span>attempted</span></div>
+            <div><strong>{manualAnalysis.deterministicJson.staminaDelta > 0 ? "+" : ""}{manualAnalysis.deterministicJson.staminaDelta}%</strong><span>last-vs-first quartile</span></div>
+          </div>
+          <div className="pa-insight-columns">
+            <div><h3>Priority chapters</h3>{manualAnalysis.deterministicJson.chapters.slice(0, 4).map((chapter) => <p key={chapter.name}><strong>{chapter.name}</strong><span>{chapter.posteriorMastery}% Bayesian mastery · {chapter.total} Q</span></p>)}</div>
+            <div><h3>Coach priorities</h3>{(manualAnalysis.narrativeJson?.priorities ?? ["Complete the pending mistake reflections, then re-run this analysis."]).slice(0, 4).map((item) => <p key={item}>{item}</p>)}</div>
+            <div><h3>Next test plan</h3>{(manualAnalysis.narrativeJson?.nextTestPlan ?? manualAnalysis.deterministicJson.evidenceLimits).slice(0, 4).map((item) => <p key={item}>{item}</p>)}</div>
+          </div>
+          {manualAnalysis.error && <p className="pa-model-note">The narrative model was unavailable; the mathematical analysis above is still valid.</p>}
+        </section>
+      )}
 
       {/* Outcome donut + subject bars */}
       <div className="pa-grid2">
@@ -254,7 +310,7 @@ export default function PracticeAnalytics({ test, onBack }: { test: AnalyticsTes
                 <span className={`pa-diff-tag pa-diff-${d.difficulty.toLowerCase()}`}>{d.difficulty.toLowerCase()}</span>
                 <div className="pa-row-bar"><span style={{ width: `${d.accuracy}%` }} /></div>
                 <span className="pa-row-acc">{d.accuracy}%</span>
-                <span className="pa-diff-count">{d.correct}/{d.total}</span>
+                <span className="pa-diff-count">{d.correct}/{d.attempted} tried · {d.total} total</span>
               </div>
             ))}
           </div>
@@ -313,6 +369,27 @@ const paStyles = `
   .pa-sub { margin: 7px 0 14px; color: var(--text-secondary); font-size: 13px; }
   .pa-metrics { display: flex; flex-wrap: wrap; gap: 8px 18px; }
   .pa-metrics span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .pa-ai-button { display: inline-flex; align-items: center; gap: 7px; margin-top: 16px; border: 1px solid var(--gold-glow); border-radius: 11px; padding: 9px 13px; background: var(--gold-dim); color: var(--gold); font-size: 11.5px; font-weight: 750; cursor: pointer; }
+  .pa-ai-button:disabled { opacity: .55; cursor: wait; }
+  .pa-spin { animation: pa-spin 1s linear infinite; }
+  .pa-analysis-error { margin: 0; padding: 10px 12px; border-radius: 10px; background: hsla(0,72%,62%,.08); color: var(--danger); font-size: 12px; }
+  .pa-insight-card { border-color: var(--gold-glow); background: linear-gradient(135deg, var(--gold-dim), transparent 48%), var(--bg-surface); }
+  .pa-insight-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .pa-insight-head span { display: flex; align-items: center; gap: 6px; color: var(--gold); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+  .pa-insight-head h2 { margin: 6px 0 0; font: 600 20px/1.35 var(--font-display), serif; color: var(--text-primary); }
+  .pa-insight-head small { color: var(--text-muted); font-size: 10px; }
+  .pa-insight-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin: 17px 0; }
+  .pa-insight-metrics div { padding: 12px; border-radius: 12px; background: var(--bg-elevated); border: 1px solid var(--glass-border); }
+  .pa-insight-metrics strong, .pa-insight-metrics span { display: block; }
+  .pa-insight-metrics strong { color: var(--gold); font-size: 17px; }
+  .pa-insight-metrics span { margin-top: 3px; color: var(--text-muted); font-size: 10.5px; }
+  .pa-insight-columns { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+  .pa-insight-columns h3 { margin: 0 0 8px; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+  .pa-insight-columns p { margin: 0 0 8px; color: var(--text-secondary); font-size: 11.5px; line-height: 1.5; }
+  .pa-insight-columns p strong, .pa-insight-columns p span { display: block; }
+  .pa-insight-columns p strong { color: var(--text-primary); }
+  .pa-insight-columns p span { color: var(--text-muted); font-size: 10.5px; }
+  .pa-model-note { margin: 10px 0 0; color: var(--text-muted); font-size: 10.5px; }
   .pa-good { color: var(--success); }
   .pa-bad { color: var(--danger); }
   .pa-air {
@@ -323,6 +400,7 @@ const paStyles = `
   .pa-air-icon { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: var(--gold); background: var(--gold-dim); margin-bottom: 4px; }
   .pa-air-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
   .pa-air-rank { font-size: 30px; font-weight: 800; color: var(--gold-bright); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .pa-air-sample { margin: 5px 0 2px; color: var(--text-primary); font-size: 17px; }
   .pa-air-range { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
   .pa-air-note { font-size: 10.5px; color: var(--text-muted); text-align: center; line-height: 1.4; margin-top: 4px; max-width: 168px; }
   .pa-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -349,7 +427,7 @@ const paStyles = `
   .pa-row-counts .s, .pa-row-legend .s { color: var(--text-muted); }
   .pa-row-legend { margin: 12px 0 0; font-size: 11px; color: var(--text-muted); }
   .pa-diff { display: flex; flex-direction: column; gap: 12px; }
-  .pa-diff-row { display: grid; grid-template-columns: 80px minmax(0, 1fr) 38px 44px; gap: 10px; align-items: center; }
+  .pa-diff-row { display: grid; grid-template-columns: 80px minmax(0, 1fr) 38px minmax(92px, auto); gap: 10px; align-items: center; }
   .pa-diff-tag { font-size: 11px; font-weight: 700; text-transform: capitalize; display: inline-flex; align-items: center; gap: 5px; }
   .pa-diff-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .pa-diff-easy { color: var(--success); }
@@ -361,5 +439,9 @@ const paStyles = `
     .pa-hero { grid-template-columns: 1fr; }
     .pa-air { min-width: 0; }
     .pa-grid2 { grid-template-columns: 1fr; }
+    .pa-insight-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .pa-insight-columns { grid-template-columns: 1fr; }
+    .pa-insight-head { flex-direction: column; }
   }
+  @keyframes pa-spin { to { transform: rotate(360deg); } }
 `;

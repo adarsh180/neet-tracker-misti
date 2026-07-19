@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { PracticeTest, Prisma } from "@prisma/client";
+import { Prisma, type PracticeTest } from "@prisma/client";
 
 import { extractJsonArray } from "@/lib/ai-json";
 import { db } from "@/lib/db";
@@ -88,7 +88,7 @@ export type PracticeMistakeTag = (typeof PRACTICE_MISTAKE_TAGS)[number];
 export type CBTQuestionStatus = "NOT_VISITED" | "NOT_ANSWERED" | "ANSWERED" | "MARKED_FOR_REVIEW" | "ANSWERED_MARKED_FOR_REVIEW";
 
 export type CBTSubmitType = "MANUAL" | "AUTO" | "TIME_UP";
-export type CBTAutoSubmitReason = "TAB_SWITCH" | "FULLSCREEN_EXIT" | "BACK_NAVIGATION" | "RELOAD" | "WINDOW_BLUR" | "ROUTE_LEAVE" | "TIME_UP";
+export type CBTAutoSubmitReason = "TAB_SWITCH" | "FULLSCREEN_EXIT" | "BACK_NAVIGATION" | "RELOAD" | "WINDOW_BLUR" | "ROUTE_LEAVE" | "PAUSE_LIMIT" | "TIME_UP";
 
 export type PracticeResult = {
   score: number;
@@ -890,7 +890,9 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
       currentQuestionIndex: Number.isInteger(meta.currentQuestionIndex) ? Number(meta.currentQuestionIndex) : test.currentQuestionIndex,
       remainingSeconds: Number.isFinite(Number(meta.remainingSeconds)) ? Math.max(0, Math.round(Number(meta.remainingSeconds))) : test.remainingSeconds,
       pauseLogsJson: (meta.pauseLogs ?? test.pauseLogsJson ?? null) as Prisma.InputJsonValue,
-      securityEventsJson: (meta.securityEvents ?? test.securityEventsJson ?? null) as Prisma.InputJsonValue,
+      // Camera-proctoring events and images are intentionally ephemeral. The
+      // browser sends them directly to the mail route after submission.
+      securityEventsJson: Prisma.JsonNull,
       submitType: meta.submitType ?? "MANUAL",
       autoSubmitReason: meta.autoSubmitReason ?? null,
       totalActiveSeconds: Number.isFinite(Number(meta.totalActiveSeconds)) ? Math.max(0, Math.round(Number(meta.totalActiveSeconds))) : (timeTakenSeconds ?? null),
@@ -903,6 +905,142 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
   });
 
   return { test: updated, result };
+}
+
+export async function createPracticeReattempt(testId: string, userId: string) {
+  const source = await db.practiceTest.findFirst({ where: { id: testId, userId } });
+  if (!source) throw new Error("Practice test not found");
+  if (source.status !== "COMPLETED") throw new Error("Only a completed test can be re-attempted");
+
+  const filters = source.filtersJson && typeof source.filtersJson === "object" && !Array.isArray(source.filtersJson)
+    ? source.filtersJson as Record<string, unknown>
+    : {};
+  const rootAttemptId = typeof filters.reattemptRootId === "string" ? filters.reattemptRootId : source.id;
+  const titleBase = source.title.replace(/\s+-\s+Re-attempt(?:\s+\d+)?$/i, "").trim();
+  const sourceQuestions = Array.isArray(source.questionsJson)
+    ? source.questionsJson as unknown as PracticeQuestion[]
+    : [];
+  const bankQuestionIds = [...new Set(sourceQuestions.map((question) => question.bankId).filter((id): id is string => Boolean(id)))];
+
+  return db.$transaction(async (tx) => {
+    const relatedAttempts = await tx.practiceTest.findMany({
+      where: { userId },
+      select: { filtersJson: true },
+    });
+    const previousAttempts = relatedAttempts.filter((entry) => {
+      const entryFilters = entry.filtersJson && typeof entry.filtersJson === "object" && !Array.isArray(entry.filtersJson)
+        ? entry.filtersJson as Record<string, unknown>
+        : {};
+      return entryFilters.reattemptRootId === rootAttemptId;
+    }).length;
+
+    const created = await tx.practiceTest.create({
+      data: {
+        userId,
+        title: `${titleBase} - Re-attempt ${previousAttempts + 1}`,
+        mode: source.mode,
+        subject: source.subject,
+        chapter: source.chapter,
+        topic: source.topic,
+        pyqYear: source.pyqYear,
+        questionCount: source.questionCount,
+        aiFreshPercent: 0,
+        durationMinutes: source.durationMinutes,
+        difficulty: source.difficulty,
+        status: "READY",
+        filtersJson: {
+          ...filters,
+          reattemptRootId: rootAttemptId,
+          reattemptOf: source.id,
+          reattemptNumber: previousAttempts + 1,
+        } as Prisma.InputJsonValue,
+        questionsJson: source.questionsJson as Prisma.InputJsonValue,
+        weakZonesJson: source.weakZonesJson ?? undefined,
+        remainingSeconds: source.durationMinutes * 60,
+        testSeed: `${source.testSeed ?? source.id}:reattempt:${Date.now()}`,
+        blueprintVersion: source.blueprintVersion,
+        paperTemplate: source.paperTemplate,
+        distributionAuditJson: source.distributionAuditJson ?? undefined,
+        blueprintWarningsJson: source.blueprintWarningsJson ?? undefined,
+        model: "DATABASE_REATTEMPT",
+      },
+    });
+
+    if (bankQuestionIds.length) {
+      await tx.bankQuestion.updateMany({
+        where: { id: { in: bankQuestionIds } },
+        data: { timesServed: { increment: 1 }, lastServedAt: new Date() },
+      });
+    }
+    return created;
+  });
+}
+
+export async function deletePracticeTestRecord(testId: string, userId: string) {
+  return db.$transaction(async (tx) => {
+    const test = await tx.practiceTest.findFirst({
+      where: { id: testId, userId },
+      select: { id: true, testRecordId: true, errorLogTestId: true, questionsJson: true },
+    });
+    if (!test) throw new Error("Practice test not found");
+
+    const reviews = await tx.practiceQuestionReview.findMany({
+      where: { testId: test.id, bankQuestionId: { not: null } },
+      select: { bankQuestionId: true, outcome: true },
+    });
+    const bankDeltas = new Map<string, { served: number; correct: number; wrong: number }>();
+    const questions = Array.isArray(test.questionsJson)
+      ? test.questionsJson as unknown as PracticeQuestion[]
+      : [];
+    for (const question of questions) {
+      if (!question.bankId) continue;
+      const delta = bankDeltas.get(question.bankId) ?? { served: 0, correct: 0, wrong: 0 };
+      delta.served += 1;
+      bankDeltas.set(question.bankId, delta);
+    }
+    for (const review of reviews) {
+      if (!review.bankQuestionId) continue;
+      const delta = bankDeltas.get(review.bankQuestionId) ?? { served: 0, correct: 0, wrong: 0 };
+      // Legacy attempts may have reviews but no bank IDs embedded in questionsJson.
+      if (!bankDeltas.has(review.bankQuestionId)) delta.served += 1;
+      if (review.outcome === "CORRECT") delta.correct += 1;
+      if (review.outcome === "WRONG") delta.wrong += 1;
+      bankDeltas.set(review.bankQuestionId, delta);
+    }
+
+    const deltaGroups = new Map<string, { ids: string[]; served: number; correct: number; wrong: number }>();
+    for (const [bankQuestionId, delta] of bankDeltas) {
+      const key = `${delta.served}:${delta.correct}:${delta.wrong}`;
+      const group = deltaGroups.get(key) ?? { ids: [], ...delta };
+      group.ids.push(bankQuestionId);
+      deltaGroups.set(key, group);
+    }
+
+    // A test normally collapses into only three grouped statements (correct,
+    // wrong, skipped). This avoids an interactive TiDB round-trip per question,
+    // which could expire the transaction for 50-180 question papers.
+    for (const group of deltaGroups.values()) {
+      await tx.bankQuestion.updateMany({
+        where: {
+          id: { in: group.ids },
+          timesServed: { gte: group.served },
+          timesCorrect: { gte: group.correct },
+          timesWrong: { gte: group.wrong },
+        },
+        data: {
+          timesServed: { decrement: group.served },
+          timesCorrect: { decrement: group.correct },
+          timesWrong: { decrement: group.wrong },
+        },
+      });
+    }
+
+    await tx.practiceTest.delete({ where: { id: test.id } });
+    if (test.testRecordId) await tx.testRecord.deleteMany({ where: { id: test.testRecordId } });
+    if (test.errorLogTestId) await tx.errorLogTest.deleteMany({ where: { id: test.errorLogTestId } });
+
+    return { deletedTestId: test.id, reversedQuestionStats: reviews.length };
+  });
 }
 
 export async function getPracticeQuestionReviews(testId: string) {
@@ -972,6 +1110,7 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
 
   return {
     id: test.id,
+    folderId: test.folderId,
     title: test.title,
     mode: test.mode,
     subject: test.subject,
@@ -993,6 +1132,9 @@ export function sanitizePracticeTest(test: PracticeTest, includeQuestions = true
     createdAt: test.createdAt,
     startedAt: test.startedAt,
     completedAt: test.completedAt,
+    proctorConsentAt: test.proctorConsentAt,
+    proctorReportSentAt: test.proctorReportSentAt,
+    proctorReportStatus: test.proctorReportStatus,
     testRecordId: test.testRecordId,
     errorLogTestId: test.errorLogTestId,
     result: completed ? (test.resultJson as unknown as PracticeResult | null) : null,

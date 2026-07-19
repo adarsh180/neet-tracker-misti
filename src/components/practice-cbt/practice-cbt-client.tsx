@@ -17,9 +17,14 @@ import {
   Expand,
   FilePlus2,
   Flag,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  GripVertical,
   Loader2,
   Pause,
   Play,
+  RotateCcw,
   Save,
   ShieldAlert,
   ShieldCheck,
@@ -34,6 +39,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
+import { useRouter } from "next/navigation";
 
 import SmoothLink from "@/components/layout/smooth-link";
 import { CHAPTERS, SUBJECT_SLUGS, type ClassLevel, type NeetSubjectSlug } from "@/data/syllabus/neet-chapters";
@@ -41,6 +47,7 @@ import { allCBTStyles } from "@/components/practice-cbt/cbt-styles";
 import PracticeAnalytics, { type AnalyticsTest } from "@/components/practice-cbt/practice-analytics";
 import DetailedAnswerReview from "@/components/practice-cbt/detailed-answer-review";
 import BookmarkLibrary from "@/components/practice-cbt/bookmark-library";
+import TestPreflight from "@/components/practice-cbt/test-preflight";
 import {
   NEET_FULL_TEST_DURATION_MINUTES,
   NEET_FULL_TEST_QUESTIONS,
@@ -52,7 +59,7 @@ type PracticeDifficulty = "EASY" | "MODERATE" | "TOUGH";
 type AttemptStatus = "GENERATING" | "READY" | "RUNNING" | "PAUSED" | "COMPLETED";
 type CBTQuestionStatus = "NOT_VISITED" | "NOT_ANSWERED" | "ANSWERED" | "MARKED_FOR_REVIEW" | "ANSWERED_MARKED_FOR_REVIEW";
 type SubmitType = "MANUAL" | "AUTO" | "TIME_UP";
-type AutoSubmitReason = "TAB_SWITCH" | "FULLSCREEN_EXIT" | "BACK_NAVIGATION" | "RELOAD" | "WINDOW_BLUR" | "ROUTE_LEAVE" | "TIME_UP";
+type AutoSubmitReason = "TAB_SWITCH" | "FULLSCREEN_EXIT" | "BACK_NAVIGATION" | "RELOAD" | "WINDOW_BLUR" | "ROUTE_LEAVE" | "PAUSE_LIMIT" | "TIME_UP";
 
 type Question = {
   id: string;
@@ -95,9 +102,11 @@ type QuestionReview = {
 };
 type PyqAvailability = { year: number; count: number; complete: boolean; paperCodes: string[] };
 type AttemptEvent = { type: string; at: string; detail?: string };
+type ProctorEvidence = AttemptEvent & { imageDataUrl: string };
 
 type PracticeTest = {
   id: string;
+  folderId?: string | null;
   title: string;
   mode: string;
   subject: string | null;
@@ -129,7 +138,7 @@ type PracticeTest = {
   reviews?: QuestionReview[];
 };
 
-type Phase = "list" | "bookmarks" | "setup" | "generating" | "exam" | "result";
+type Phase = "list" | "bookmarks" | "setup" | "generating" | "preflight" | "exam" | "result";
 type SetupMode = "CHAPTER" | "TOPIC" | "UNIT" | "SECTIONAL" | "FULL_LENGTH" | "PYQ_YEAR";
 
 const SUBJECTS: { slug: NeetSubjectSlug; label: string; short: string; accent: string }[] = [
@@ -157,6 +166,8 @@ const MODE_LABEL: Record<string, string> = {
   PYQ_YEAR: "NEET PYQ Year",
 };
 
+const PROCTOR_EMAIL_ENABLED = process.env.NEXT_PUBLIC_PROCTOR_EMAIL_ENABLED === "true";
+
 // A violation pauses the exam with a warning; only repeated violations submit.
 // (Instant submit-on-blur destroyed real attempts — one alt-tab ended the mock.)
 const MAX_SECURITY_VIOLATIONS = 3;
@@ -171,6 +182,19 @@ const STATUS_META: Record<CBTQuestionStatus, { label: string; className: string 
 
 function nowEvent(type: string, detail?: string): AttemptEvent {
   return { type, detail, at: new Date().toISOString() };
+}
+
+async function captureCameraFrame(video: HTMLVideoElement | null) {
+  if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null;
+  const width = Math.min(640, video.videoWidth);
+  const height = Math.round((width / video.videoWidth) * video.videoHeight);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.drawImage(video, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", 0.62);
 }
 
 function formatClock(totalSeconds: number) {
@@ -374,12 +398,21 @@ export function useCBTSecurityGuard({
   }, [enabled, trigger]);
 }
 
-export default function PracticeCBTClient() {
+export default function PracticeCBTClient({ initialFolderId = null }: { initialFolderId?: string | null }) {
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("list");
   const [tests, setTests] = useState<PracticeTest[]>([]);
   const [active, setActive] = useState<PracticeTest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [proctorStream, setProctorStream] = useState<MediaStream | null>(null);
+
+  const stopProctorStream = useCallback(() => {
+    setProctorStream((stream) => {
+      stream?.getTracks().forEach((track) => track.stop());
+      return null;
+    });
+  }, []);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -400,6 +433,15 @@ export default function PracticeCBTClient() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("year")) setPhase("setup");
   }, [loadList]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [phase]);
+
+  useEffect(() => {
+    document.body.classList.toggle("cbt-result-active", phase === "result");
+    return () => document.body.classList.remove("cbt-result-active");
+  }, [phase]);
 
   // Patch one test in both the list and the active selection so live progress
   // is reflected everywhere without a refresh.
@@ -475,19 +517,19 @@ export default function PracticeCBTClient() {
     setActive(test);
     if (test.status === "GENERATING") setPhase("generating");
     else if (test.status === "COMPLETED") setPhase("result");
-    else setPhase("exam");
+    else setPhase("preflight");
   }, []);
 
   return (
     <div className="cbt-page">
-      {phase === "list" && <PracticeList tests={tests} loading={loading} error={error} onNew={() => setPhase("setup")} onBookmarks={() => setPhase("bookmarks")} onOpen={openTest} onDeleted={loadList} />}
+      {phase === "list" && <PracticeList tests={tests} loading={loading} error={error} initialFolderId={initialFolderId} onNew={() => setPhase("setup")} onBookmarks={() => setPhase("bookmarks")} onOpen={openTest} onDeleted={loadList} onFolderOpen={(folderId) => router.push(`/practice/folders/${folderId}`)} onBackToFolders={() => router.push("/practice")} />}
       {phase === "bookmarks" && <BookmarkLibrary onBack={() => setPhase("list")} />}
       {phase === "setup" && (
         <TestSetup
           onBack={() => setPhase("list")}
           onCreated={(test) => {
             setActive(test);
-            setPhase(test.status === "READY" ? "exam" : "generating");
+            setPhase(test.status === "READY" ? "preflight" : "generating");
           }}
         />
       )}
@@ -496,7 +538,7 @@ export default function PracticeCBTClient() {
           test={active}
           onReady={(test) => {
             setActive(test);
-            setPhase("exam");
+            setPhase("preflight");
           }}
           onExit={() => {
             setActive(null);
@@ -505,15 +547,25 @@ export default function PracticeCBTClient() {
           }}
         />
       )}
+      {phase === "preflight" && active && (
+        <TestPreflight
+          test={active}
+          onCancel={() => { stopProctorStream(); setActive(null); setPhase("list"); }}
+          onComplete={(stream) => { setProctorStream(stream); setPhase("exam"); }}
+        />
+      )}
       {phase === "exam" && active && (
         <CBTPracticeArena
           test={active}
+          proctorStream={proctorStream}
           onSubmitted={(test) => {
+            stopProctorStream();
             setActive(test);
             setPhase("result");
             void loadList();
           }}
           onExit={() => {
+            stopProctorStream();
             setActive(null);
             setPhase("list");
             void loadList();
@@ -551,6 +603,9 @@ function PracticeList({
   onBookmarks,
   onOpen,
   onDeleted,
+  initialFolderId,
+  onFolderOpen,
+  onBackToFolders,
 }: {
   tests: PracticeTest[];
   loading: boolean;
@@ -559,47 +614,212 @@ function PracticeList({
   onBookmarks: () => void;
   onOpen: (id: string) => void;
   onDeleted: () => void;
+  initialFolderId: string | null;
+  onFolderOpen: (folderId: string) => void;
+  onBackToFolders: () => void;
 }) {
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reattemptingId, setReattemptingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<PracticeTest | null>(null);
+  const [folders, setFolders] = useState<Array<{ id: string; name: string; color: string; testCount: number }>>([]);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const loadFolders = useCallback(async () => {
+    const response = await fetch("/api/practice/folders", { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok) setFolders(payload.folders ?? []);
+  }, []);
+
+  useEffect(() => { void loadFolders(); }, [loadFolders]);
+
+  const createFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
+    setCreatingFolder(true);
+    setActionError(null);
+    try {
+      const response = await fetch("/api/practice/folders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not create folder");
+      setNewFolderName("");
+      await loadFolders();
+    } catch (folderError) {
+      setActionError(folderError instanceof Error ? folderError.message : "Could not create folder");
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
+
+  const moveTest = async (testId: string, folderId: string | null) => {
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/practice/${testId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "move-folder", folderId }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not move test");
+      await Promise.all([loadFolders(), onDeleted()]);
+    } catch (moveError) {
+      setActionError(moveError instanceof Error ? moveError.message : "Could not move test");
+    } finally {
+      setDraggingId(null);
+    }
+  };
+
+  const isAllTestsFolder = initialFolderId === "all";
+  const visibleTests = isAllTestsFolder
+    ? tests
+    : initialFolderId
+      ? tests.filter((test) => test.folderId === initialFolderId)
+      : tests.filter((test) => !test.folderId);
+  const activeFolder = initialFolderId && !isAllTestsFolder
+    ? folders.find((folder) => folder.id === initialFolderId) ?? null
+    : null;
+  const activeFolderName = isAllTestsFolder ? "All Tests" : activeFolder?.name ?? "Loading folder…";
+
   const deleteTest = async (id: string) => {
-    await fetch(`/api/practice/${id}`, { method: "DELETE" });
-    onDeleted();
+    setDeletingId(id);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/practice/${id}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not delete this attempt");
+      setConfirmDelete(null);
+      onDeleted();
+    } catch (deleteError) {
+      setActionError(deleteError instanceof Error ? deleteError.message : "Could not delete this attempt");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const reattemptTest = async (id: string) => {
+    setReattemptingId(id);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/practice/${id}/reattempt`, { method: "POST" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.test?.id) throw new Error(payload.error || "Could not create the re-attempt");
+      onOpen(payload.test.id);
+    } catch (reattemptError) {
+      setActionError(reattemptError instanceof Error ? reattemptError.message : "Could not create the re-attempt");
+    } finally {
+      setReattemptingId(null);
+    }
   };
 
   return (
     <div className="cbt-list">
-      <header className="cbt-list-head">
-        <div className="cbt-brand-mark"><ShieldCheck size={22} /></div>
-        <div>
-          <h1>NTA CBT Practice Arena</h1>
-          <p>Strict database questions, saved attempts, detailed review and database-backed bookmarks.</p>
-        </div>
-        <div className="cbt-list-actions"><button className="cbt-secondary" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button><button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button></div>
-      </header>
+      {initialFolderId ? (
+        <header className="folder-workspace-head">
+          <button className="folder-workspace-back" type="button" onClick={onBackToFolders}><ChevronLeft size={15} /> Practice Arena</button>
+          <div className="folder-workspace-title">
+            <span className="folder-workspace-icon"><FolderOpen size={30} /></span>
+            <div><span>{isAllTestsFolder ? "Permanent collection" : "Custom collection"}</span><h1>{activeFolderName}</h1><p>{visibleTests.length} saved {visibleTests.length === 1 ? "test" : "tests"} · open, review or re-attempt at any time</p></div>
+          </div>
+          <div className="cbt-list-actions"><button className="cbt-ghost cbt-bookmark-entry" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button><button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button></div>
+        </header>
+      ) : (
+        <header className="cbt-list-head">
+          <div className="cbt-brand-mark"><ShieldCheck size={22} /></div>
+          <div>
+            <h1>NTA CBT Practice Arena</h1>
+            <p>Strict database questions, saved attempts, detailed review and database-backed bookmarks.</p>
+          </div>
+          <div className="cbt-list-actions"><button className="cbt-ghost cbt-bookmark-entry" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button><button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button></div>
+        </header>
+      )}
       {error && <p className="cbt-error">{error}</p>}
+      {actionError && <p className="cbt-error">{actionError}</p>}
+      {!initialFolderId && <section className="test-folders" aria-label="Test folders">
+        <div className="folder-section-head">
+          <div><strong>Test folders</strong><span>All Tests always keeps every attempt. Custom folders help organise selected tests.</span></div>
+        </div>
+        <div className="folder-rail">
+          <button className="test-folder all permanent" type="button" onClick={() => onFolderOpen("all")}>
+            <span className="folder-art"><FolderOpen size={34} /></span><strong>All Tests</strong><small>{tests.length} total</small>
+          </button>
+          {folders.map((folder) => (
+            <button className={`test-folder tone-${folder.color.toLowerCase()}`} title={folder.name} type="button" key={folder.id} onClick={() => onFolderOpen(folder.id)} onDragOver={(event) => { event.preventDefault(); event.currentTarget.classList.add("drop-ready"); }} onDragLeave={(event) => event.currentTarget.classList.remove("drop-ready")} onDrop={(event) => { event.preventDefault(); event.currentTarget.classList.remove("drop-ready"); if (draggingId) void moveTest(draggingId, folder.id); }}>
+              <span className="folder-art"><Folder size={36} /></span><strong>{folder.name}</strong><small>{folder.testCount}</small>
+            </button>
+          ))}
+        </div>
+        <div className="folder-create">
+          <FolderPlus size={18} />
+          <input value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void createFolder(); }} placeholder="New folder name" maxLength={80} aria-label="New folder name" />
+          <button type="button" disabled={creatingFolder || !newFolderName.trim()} onClick={() => void createFolder()}>{creatingFolder ? <Loader2 className="cbt-spin" size={14} /> : "Create"}</button>
+        </div>
+        <p className="folder-help"><GripVertical size={13} /> Drag an Arena test onto a custom folder, or use its folder menu on touch devices. Filed tests remain in All Tests.</p>
+      </section>}
+      {!initialFolderId && !loading && tests.length > 0 && (
+        <div className="arena-inbox-head"><div><strong>Practice Arena</strong><span>{visibleTests.length} unfiled {visibleTests.length === 1 ? "test" : "tests"}</span></div><small>Tests moved to a custom folder leave this list.</small></div>
+      )}
       {loading ? (
         <div className="cbt-empty"><Loader2 className="cbt-spin" size={24} /> Loading attempts...</div>
       ) : tests.length === 0 ? (
         <div className="cbt-empty"><BookOpenCheck size={28} /> <span>No CBT attempts yet.</span><button className="cbt-primary" onClick={onNew}>Build first test</button></div>
       ) : (
-        <div className="cbt-test-list">
-          {tests.map((test) => (
-            <article className="cbt-test-row" key={test.id}>
+        <div className={`cbt-test-list ${initialFolderId ? "folder-test-grid" : ""}`}>
+          {visibleTests.map((test) => (
+            <article className={`cbt-test-row ${draggingId === test.id ? "dragging" : ""}`} key={test.id} draggable onDragStart={(event) => { setDraggingId(test.id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", test.id); }} onDragEnd={() => setDraggingId(null)}>
+              <GripVertical className="test-drag-handle" size={17} aria-hidden="true" />
               <button className="cbt-test-main" onClick={() => onOpen(test.id)}>
                 <strong>{test.title || MODE_LABEL[test.mode] || test.mode}</strong>
                 <span>{MODE_LABEL[test.mode] ?? test.mode} · {test.questionCount} questions · {test.durationMinutes ?? 180} min · {new Date(test.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}</span>
               </button>
-              <span className={`cbt-test-chip cbt-test-chip-${test.status.toLowerCase()}`}>
-                {test.status === "COMPLETED" && test.result ? (
-                  `${test.result.score}/${test.result.maxScore}`
-                ) : test.status === "GENERATING" ? (
-                  <span className="cbt-gen-chip"><Loader2 className="cbt-spin" size={12} /> <AnimatedCount value={test.generatedCount} />/{test.questionCount}</span>
-                ) : (
-                  test.status
+              <div className="test-row-actions">
+                <span className={`cbt-test-chip cbt-test-chip-${test.status.toLowerCase()}`}>
+                  {test.status === "COMPLETED" && test.result ? (
+                    `${test.result.score}/${test.result.maxScore}`
+                  ) : test.status === "GENERATING" ? (
+                    <span className="cbt-gen-chip"><Loader2 className="cbt-spin" size={12} /> <AnimatedCount value={test.generatedCount} />/{test.questionCount}</span>
+                  ) : (
+                    test.status
+                  )}
+                </span>
+                {test.status === "COMPLETED" && (
+                  <button className="cbt-icon-btn cbt-reattempt-btn" disabled={reattemptingId === test.id} onClick={() => void reattemptTest(test.id)} aria-label="Re-attempt test">
+                    {reattemptingId === test.id ? <Loader2 className="cbt-spin" size={15} /> : <RotateCcw size={15} />}
+                  </button>
                 )}
-              </span>
-              {test.status !== "COMPLETED" && <button className="cbt-icon-btn" onClick={() => deleteTest(test.id)} aria-label="Delete test"><Trash2 size={15} /></button>}
+                <button className="cbt-icon-btn" disabled={deletingId === test.id} onClick={() => setConfirmDelete(test)} aria-label="Delete test">
+                  {deletingId === test.id ? <Loader2 className="cbt-spin" size={15} /> : <Trash2 size={15} />}
+                </button>
+                <select className="test-folder-select" aria-label={`Move ${test.title} to folder`} value={test.folderId ?? ""} onChange={(event) => void moveTest(test.id, event.target.value || null)}>
+                  <option value="">Practice Arena</option>
+                  {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
+                </select>
+              </div>
             </article>
           ))}
+          {!visibleTests.length && <div className="cbt-empty folder-empty"><FolderOpen size={28} /><span>{initialFolderId ? (isAllTestsFolder ? "No tests have been created yet." : "This collection is empty. Return to Practice Arena and move or drag a test into this folder.") : "The Practice Arena is organised. Open All Tests to see every attempt, or create a new test."}</span></div>}
+        </div>
+      )}
+      {confirmDelete && (
+        <div className="submit-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-attempt-title">
+          <div className="submit-card delete-attempt-card">
+            <button className="modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close"><X size={17} /></button>
+            <Trash2 size={28} />
+            <h2 id="delete-attempt-title">Delete this attempt?</h2>
+            <p><strong>{confirmDelete.title}</strong></p>
+            <p>This removes the attempt, performance record, error-log entries and its influence on question statistics. Bookmarked questions remain saved.</p>
+            <div className="submit-actions">
+              <button className="cbt-ghost" disabled={Boolean(deletingId)} onClick={() => setConfirmDelete(null)}>Keep attempt</button>
+              <button className="danger-btn" disabled={Boolean(deletingId)} onClick={() => void deleteTest(confirmDelete.id)}>
+                {deletingId ? <Loader2 className="cbt-spin" size={15} /> : <Trash2 size={15} />} Delete permanently
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -850,11 +1070,14 @@ function GenerationView({ test, onReady, onExit }: { test: PracticeTest; onReady
   );
 }
 
-export function CBTPracticeArena({ test, onSubmitted, onExit }: { test: PracticeTest; onSubmitted: (test: PracticeTest) => void; onExit: () => void }) {
+export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: { test: PracticeTest; proctorStream: MediaStream | null; onSubmitted: (test: PracticeTest) => void; onExit: () => void }) {
   const questions = useMemo(() => test.questions ?? [], [test.questions]);
   const arenaRef = useRef<HTMLDivElement>(null);
   const submittingRef = useRef(false);
   const pauseIntentRef = useRef(false);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const evidenceRef = useRef<ProctorEvidence[]>([]);
+  const manualPauseCountRef = useRef((test.pauseLogs ?? []).filter((event) => event.type === "PAUSE_MANUAL").length);
   const [attemptStatus, setAttemptStatus] = useState<AttemptStatus>(test.status);
   const [currentIndex, setCurrentIndex] = useState(Math.min(test.currentQuestionIndex ?? 0, Math.max(0, questions.length - 1)));
   const [answers, setAnswers] = useState<Record<string, number | null>>(() => answersFromList(test.answers));
@@ -873,6 +1096,17 @@ export function CBTPracticeArena({ test, onSubmitted, onExit }: { test: Practice
     (test.securityEvents ?? []).filter((event) => event.type !== "RELOAD" && event.type !== "BACK_NAVIGATION").length,
   );
   const { isFullscreen, enterFullscreen, exitFullscreen } = useFullscreenExamMode(arenaRef);
+
+  useEffect(() => {
+    if (cameraVideoRef.current && proctorStream) cameraVideoRef.current.srcObject = proctorStream;
+  }, [proctorStream]);
+
+  const captureEvidence = useCallback(async (type: string, detail?: string) => {
+    if (!PROCTOR_EMAIL_ENABLED) return;
+    if (evidenceRef.current.length >= 3) return;
+    const imageDataUrl = await captureCameraFrame(cameraVideoRef.current);
+    if (imageDataUrl) evidenceRef.current.push({ ...nowEvent(type, detail), imageDataUrl });
+  }, []);
 
   // Distraction-free exam: hide the app's floating chrome (notification bell,
   // quick-nav fab, theme toggle) while the arena is mounted.
@@ -928,6 +1162,20 @@ export function CBTPracticeArena({ test, onSubmitted, onExit }: { test: Practice
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Submission failed");
+      try {
+        await fetch(`/api/practice/${test.id}/proctor-report`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            events: finalSecurityEvents.map((event) => ({ reason: event.type, at: event.at, detail: event.detail })),
+            evidence: PROCTOR_EMAIL_ENABLED
+              ? evidenceRef.current.map((event) => ({ reason: event.type, at: event.at, detail: event.detail, imageDataUrl: event.imageDataUrl }))
+              : [],
+          }),
+        });
+      } finally {
+        evidenceRef.current = [];
+      }
       await exitFullscreen();
       onSubmitted(json.test);
     } catch (err) {
@@ -941,19 +1189,22 @@ export function CBTPracticeArena({ test, onSubmitted, onExit }: { test: Practice
     enabled: attemptStatus === "RUNNING" && !submitting,
     onViolation: (reason) => {
       if (pauseIntentRef.current) return;
-      setSecurityEvents((prev) => [...prev, nowEvent(reason)]);
-      // Reload / back-navigation: snapshot and let the attempt resume later.
-      if (reason === "RELOAD" || reason === "BACK_NAVIGATION") {
-        void saveNow("autosave");
-        return;
-      }
-      const count = ++violationCountRef.current;
-      if (count >= MAX_SECURITY_VIOLATIONS) {
-        void submitAttempt("AUTO", reason);
-        return;
-      }
-      setViolationNotice({ reason, count });
-      void pauseTest();
+      void (async () => {
+        setSecurityEvents((prev) => [...prev, nowEvent(reason)]);
+        await captureEvidence(reason, "Integrity interruption");
+        // Reload / back-navigation: snapshot and let the attempt resume later.
+        if (reason === "RELOAD" || reason === "BACK_NAVIGATION") {
+          void saveNow("autosave");
+          return;
+        }
+        const count = ++violationCountRef.current;
+        if (count >= MAX_SECURITY_VIOLATIONS) {
+          void submitAttempt("AUTO", reason);
+          return;
+        }
+        setViolationNotice({ reason, count });
+        void pauseTest("SECURITY");
+      })();
     },
   });
 
@@ -1025,9 +1276,19 @@ export function CBTPracticeArena({ test, onSubmitted, onExit }: { test: Practice
     void saveNow("autosave");
   };
 
-  const pauseTest = async () => {
+  const pauseTest = async (origin: "MANUAL" | "SECURITY" = "MANUAL") => {
     pauseIntentRef.current = true;
-    const nextLogs = [...pauseLogs, nowEvent("PAUSE")];
+    if (origin === "MANUAL") {
+      const count = ++manualPauseCountRef.current;
+      const event = nowEvent("PAUSE_MANUAL", `Manual pause ${count}/${MAX_SECURITY_VIOLATIONS}`);
+      setSecurityEvents((previous) => [...previous, event]);
+      await captureEvidence(event.type, event.detail);
+      if (count >= MAX_SECURITY_VIOLATIONS) {
+        void submitAttempt("AUTO", "PAUSE_LIMIT");
+        return;
+      }
+    }
+    const nextLogs = [...pauseLogs, nowEvent(origin === "MANUAL" ? "PAUSE_MANUAL" : "PAUSE_SECURITY")];
     setPauseLogs(nextLogs);
     setAttemptStatus("PAUSED");
     await fetch(`/api/practice/${test.id}`, {
@@ -1067,12 +1328,13 @@ export function CBTPracticeArena({ test, onSubmitted, onExit }: { test: Practice
 
   return (
     <div ref={arenaRef} className="arena-shell">
+      <video ref={cameraVideoRef} className="proctor-camera-feed" autoPlay playsInline muted aria-hidden="true" />
       <CBTTopBar
         remainingSeconds={remainingSeconds}
         isFullscreen={isFullscreen}
         saving={saving}
         savedAt={savedAt}
-        onPause={pauseTest}
+        onPause={() => void pauseTest("MANUAL")}
         onSubmit={() => setConfirmOpen(true)}
         onFullscreen={enterFullscreen}
         status={attemptStatus}

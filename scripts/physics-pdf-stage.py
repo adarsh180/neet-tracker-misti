@@ -279,13 +279,13 @@ def parse_question_options(block_lines: list[str], q_no: int) -> tuple[str, list
             continue
         markers.append((match.start(), match.end(), option_index))
 
-    # Pick the first clean 0,1,2,3 marker run.
+    # Compound MCQs can contain an A-D statement list before the actual A-D
+    # answer set. The final complete marker run preserves that list in the stem.
     chosen: list[tuple[int, int, int]] = []
     for start in range(0, max(0, len(markers) - 3)):
         run = markers[start : start + 4]
         if [entry[2] for entry in run] == [0, 1, 2, 3]:
             chosen = run
-            break
     if not chosen:
         return strip_question_marker(flat, q_no), []
 
@@ -325,8 +325,13 @@ def answer_key_region(lines: list[dict[str, Any]], folder: str) -> list[dict[str
 
 def solution_region(lines: list[dict[str, Any]], folder: str) -> list[dict[str, Any]]:
     heading_idx = find_heading(lines, SOLUTION_HEADING_RE)
-    if heading_idx is not None:
-        return bounded_region(lines, heading_idx, folder)
+    first_solution_idx = next(
+        (idx for idx, item in enumerate(lines) if re.match(r"^\s*Q\s*\.?\s*\d{1,3}\b.*Text Solution", item["text"], re.I)),
+        None,
+    )
+    starts = [idx for idx in (heading_idx, first_solution_idx) if idx is not None]
+    if starts:
+        return bounded_region(lines, min(starts), folder)
     # Fallback for PDFs that only have solutions without a heading.
     return lines[int(len(lines) * 0.6) :]
 
@@ -421,7 +426,7 @@ def explanation_relevant(question: str, options: list[str], answer: int | None, 
         return False
     q_tokens = content_tokens(question)
     e_tokens = content_tokens(explanation)
-    if len(q_tokens & e_tokens) >= 2:
+    if len(q_tokens & e_tokens) >= 3:
         return True
     if answer is not None and 0 <= answer < len(options):
         option_tokens = content_tokens(options[answer])
@@ -444,6 +449,41 @@ def explanation_has_substance(question: str, options: list[str], explanation: st
     if len(residual) < 35:
         return False
     return bool(re.search(r"[=+\-x/]|because|hence|therefore|using|given|formula|law|equation|since|so", residual, re.I))
+
+
+def normalized_compare(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", compact(value).lower())
+
+
+def explanation_is_option_echo(question: str, options: list[str], explanation: str) -> bool:
+    """Reject a repeated question/options block masquerading as a solution."""
+    explanation_text = normalized_compare(explanation)
+    question_text = normalized_compare(question)
+    option_texts = [normalized_compare(option) for option in options]
+    question_prefix = question_text[: min(120, len(question_text))]
+    fuzzy_prefix = question_text[1 : min(120, len(question_text))]
+    if len(question_text) < 20 or (question_prefix not in explanation_text and fuzzy_prefix not in explanation_text):
+        return False
+    matched_options = sum(1 for option in option_texts if option and option in explanation_text)
+    if matched_options < 3:
+        return False
+    # Source solutions that genuinely restate a problem still contain a worked
+    # derivation after it. The PDF sets processed here repeatedly use this exact
+    # shape for answer-only pages, so repeating the stem plus >=3 choices is not
+    # admissible as a solution without a later manual derivation pass.
+    return True
+
+
+def explanation_shape_mismatch(question: str, explanation: str) -> bool:
+    question_has_statements = bool(re.search(r"\bstatement\s*(?:i|ii|1|2)\b", question, re.I))
+    explanation_has_statements = bool(re.search(r"\bstatement\s*(?:i|ii|1|2)\b", explanation, re.I))
+    return explanation_has_statements and not question_has_statements
+
+
+def has_extraction_noise(question: str, options: list[str], explanation: str) -> bool:
+    values = [question, explanation, *options]
+    noise = re.compile(r"Master\s+NCERT|PW\s+Books\s+APP|PHYSICS\s+WALLAH|[âÃïÊË][^\s]?", re.I)
+    return any(noise.search(value) for value in values) or any(len(option) > 180 for option in options)
 
 
 def suspicious_options(options: list[str]) -> bool:
@@ -501,6 +541,9 @@ def stage_pdf(pdf_path: Path, root: Path, min_explanation: int) -> tuple[list[di
         option_suspicion = suspicious_options(options)
         relevant_explanation = explanation_relevant(question, options, answer, explanation)
         substantive_explanation = explanation_has_substance(question, options, explanation)
+        option_echo = explanation_is_option_echo(question, options, explanation)
+        shape_mismatch = explanation_shape_mismatch(question, explanation)
+        extraction_noise = has_extraction_noise(question, options, explanation)
         confidence = 0.0
         confidence += 0.35 if len(question) >= 25 else 0.0
         confidence += 0.25 if len(options) == 4 and all(len(opt) >= 1 for opt in options) else 0.0
@@ -518,6 +561,9 @@ def stage_pdf(pdf_path: Path, root: Path, min_explanation: int) -> tuple[list[di
             and not option_suspicion
             and relevant_explanation
             and substantive_explanation
+            and not option_echo
+            and not shape_mismatch
+            and not extraction_noise
             and question_form == "MCQ"
             and folder.lower() != "test"
         )
@@ -558,6 +604,9 @@ def stage_pdf(pdf_path: Path, root: Path, min_explanation: int) -> tuple[list[di
                 "solutionAnswerAgrees": explanation_answer is None or explanation_answer == answer,
                 "explanationRelevant": relevant_explanation,
                 "explanationSubstantive": substantive_explanation,
+                "explanationOptionEcho": option_echo,
+                "explanationShapeMismatch": shape_mismatch,
+                "extractionNoise": extraction_noise,
                 "suspiciousOptions": option_suspicion,
                 "parseConfidence": round(confidence, 3),
                 "bankReady": bank_ready,

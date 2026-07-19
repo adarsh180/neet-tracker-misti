@@ -547,6 +547,8 @@ model ReviewCard {
 model PracticeTest {
   id                    String                   @id @default(cuid())
   userId                String                   @default("misti")
+  folderId              String?
+  folder                PracticeTestFolder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
   title                 String
   mode                  String // FULL_LENGTH | SECTIONAL | UNIT | SUBJECT | CHAPTER | TOPIC | PYQ_YEAR
   subject               String? // subject slug, null for full syllabus
@@ -582,15 +584,53 @@ model PracticeTest {
   errorLogTestId        String?
   startedAt             DateTime?
   completedAt           DateTime?
+  proctorConsentAt      DateTime?
+  proctorReportSentAt   DateTime?
+  proctorReportStatus   String?
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
   reviews               PracticeQuestionReview[]
   reportArtifacts       PracticeReportArtifact[]
+  analyses              PracticePerformanceAnalysis[]
   sourceBookmarks       QuestionBookmark[]       @relation("BookmarkSourceTest")
 
   @@index([status, createdAt])
   @@index([userId, status, createdAt])
+  @@index([userId, folderId, createdAt])
   @@map("practice_tests")
+}
+
+model PracticeTestFolder {
+  id        String         @id @default(cuid())
+  userId    String         @default("misti")
+  name      String         @db.VarChar(80)
+  color     String         @default("GOLD") @db.VarChar(24)
+  position  Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  tests     PracticeTest[]
+
+  @@unique([userId, name])
+  @@index([userId, position, createdAt])
+  @@map("practice_test_folders")
+}
+
+model PracticePerformanceAnalysis {
+  id                String       @id @default(cuid())
+  testId            String
+  test              PracticeTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  userId            String       @default("misti")
+  deterministicJson Json
+  narrativeJson     Json?
+  model             String?
+  status            String       @default("READY")
+  error             String?      @db.Text
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([testId, createdAt])
+  @@index([userId, createdAt])
+  @@map("practice_performance_analyses")
 }
 
 model PracticeQuestionReview {

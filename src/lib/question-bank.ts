@@ -501,8 +501,12 @@ function pushWarning(audit: BankAssemblyAudit | undefined, warning: string) {
 
 function sourceWhereForRequest(request: { mode: BankAssemblyRequest["mode"] }) {
   if (request.mode === "PYQ_YEAR") return "NEET_PYQ";
-  if (request.mode === "FULL_LENGTH") return { notIn: ["JEE_PYQ", "AI"] };
-  return { not: "AI" };
+  // Academic provenance is not itself a quality decision. Normal tests may use
+  // AI-origin rows only after the independent academic pipeline has promoted
+  // them to VERIFIED_STRICT; baseWhere below enforces that gate. PYQ remains
+  // official-only, and full NEET mocks continue to exclude JEE paper rows.
+  if (request.mode === "FULL_LENGTH") return { not: "JEE_PYQ" };
+  return undefined;
 }
 
 function subjectChapterCap(subject: NeetSubject, requestedSubjectCount: number) {
@@ -511,6 +515,15 @@ function subjectChapterCap(subject: NeetSubject, requestedSubjectCount: number) 
 }
 
 type BankSelectionState = { exclude: Set<string>; duplicateClusters: Set<string> };
+
+async function duplicateClustersForBankIds(ids: string[]) {
+  if (!ids.length) return new Set<string>();
+  const rows = await db.bankQuestion.findMany({
+    where: { id: { in: ids }, duplicateClusterId: { not: null } },
+    select: { duplicateClusterId: true },
+  });
+  return new Set(rows.map((row) => row.duplicateClusterId).filter((cluster): cluster is string => Boolean(cluster)));
+}
 
 function selectionPivot(seed: string, subject: NeetSubject) {
   return createHash("sha256").update(`${seed}:${subject}`).digest("hex");
@@ -617,7 +630,11 @@ async function assembleTrendQuestions(
   audit?: BankAssemblyAudit,
 ) {
   const selected: BankQuestion[] = [];
-  const state = { exclude: new Set(request.excludeBankIds ?? []), duplicateClusters: new Set<string>() };
+  const excludedBankIds = request.excludeBankIds ?? [];
+  const state = {
+    exclude: new Set(excludedBankIds),
+    duplicateClusters: await duplicateClustersForBankIds(excludedBankIds),
+  };
   const plan = buildTrendAssemblyPlan({
     mode: request.mode,
     subjects,
@@ -718,7 +735,7 @@ async function assembleTrendQuestions(
   return selected.slice(0, request.desiredCount);
 }
 
-type BankAssemblyRequest = {
+export type BankAssemblyRequest = {
   mode: "FULL_LENGTH" | "SECTIONAL" | "UNIT" | "SUBJECT" | "CHAPTER" | "TOPIC" | "PYQ_YEAR";
   subject?: PracticeSubjectSlug | null;
   subjects?: PracticeSubjectSlug[] | null;
@@ -740,6 +757,8 @@ type BankAssemblyRequest = {
 export async function assembleQuestionsFromBank(request: BankAssemblyRequest): Promise<PracticeQuestion[]> {
   const selected: BankQuestion[] = [];
   const exclude = new Set(request.excludeBankIds ?? []);
+  const duplicateClusters = await duplicateClustersForBankIds([...exclude]);
+  const selectionState: BankSelectionState = { exclude, duplicateClusters };
   const subjects = request.subjects?.length
     ? request.subjects
     : request.subject
@@ -837,12 +856,14 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
       const pool = await db.bankQuestion.findMany({
         where,
         orderBy: [{ timesServed: "asc" }, { lastServedAt: "asc" }, { createdAt: "asc" }],
-        take: Math.max(diffBucket.count * 8, diffBucket.count),
+        // Variant-heavy imports can place many members of one verified family
+        // next to each other. Fetch a wider window so cluster de-duplication
+        // still has enough distinct concepts to satisfy the requested bucket.
+        take: Math.min(4000, Math.max(diffBucket.count * 40, 400)),
       });
-      const picked = shuffle(pool.filter((row) => !exclude.has(row.id) && isStrictlyServeableBankRow(row)))
-        .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)
-        .slice(0, diffBucket.count);
-      picked.forEach((row) => exclude.add(row.id));
+      const orderedPool = shuffle(pool.filter((row) => isStrictlyServeableBankRow(row)))
+        .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed);
+      const picked = takeFromCandidatePool(orderedPool, diffBucket.count, selectionState);
       selected.push(...picked);
       audit?.quotas.push({
         subject,
@@ -871,12 +892,11 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
           source: sourceWhereForRequest(request),
         },
         orderBy: [{ timesServed: "asc" }, { lastServedAt: "asc" }, { createdAt: "asc" }],
-        take: Math.max(shortfall * 8, shortfall),
+        take: Math.min(4000, Math.max(shortfall * 40, 400)),
       });
-      const fallback = shuffle(fallbackPool.filter((row) => !exclude.has(row.id) && isStrictlyServeableBankRow(row)))
-        .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed)
-        .slice(0, shortfall);
-      fallback.forEach((row) => exclude.add(row.id));
+      const orderedFallbackPool = shuffle(fallbackPool.filter((row) => isStrictlyServeableBankRow(row)))
+        .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed);
+      const fallback = takeFromCandidatePool(orderedFallbackPool, shortfall, selectionState);
       selected.push(...fallback);
       audit?.quotas.push({
         subject,

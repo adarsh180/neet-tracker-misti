@@ -1,0 +1,711 @@
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.75.86.92:3000
+- Environments: .env.local, .env
+✓ Ready in 2.6s
+- Experiments (use with caution):
+  · serverActions
+  ✓ viewTransition
+
+ GET /signin 200 in 1874ms (next.js: 932ms, application-code: 942ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].loginRateLimit.findUnique()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1-9n_8u._.js:351:166
+
+  348 async function getLoginCooldown(email, request) {
+  349     const { scopeHash } = getRateLimitHashes(email, request);
+  350     try {
+→ 351         const record = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].loginRateLimit.findUnique(
+The table `login_rate_limits` does not exist in the current database.
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].loginRateLimit.updateMany()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1-9n_8u._.js:420:151
+
+  417 async function recordSuccessfulLogin(email, request) {
+  418     const { scopeHash } = getRateLimitHashes(email, request);
+  419     try {
+→ 420         await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].loginRateLimit.updateMany(
+The table `login_rate_limits` does not exist in the current database.
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1-9n_8u._.js:212:173
+
+  209 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  210 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  211 try {
+→ 212     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ POST /api/auth/login 200 in 4.3s (next.js: 556ms, application-code: 3.8s)
+ GET /dashboard 200 in 671ms (next.js: 183ms, proxy.ts: 246ms, application-code: 242ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1-9n_8u._.js:212:173
+
+  209 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  210 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  211 try {
+→ 212     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 558ms (next.js: 108ms, application-code: 450ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__1-9n_8u._.js:212:173
+
+  209 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  210 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  211 try {
+→ 212     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 1447ms (next.js: 149ms, application-code: 1297ms)
+ GET /api/dashboard/metrics 200 in 2.2s (next.js: 159ms, application-code: 2.1s)
+ GET /api/dashboard/metrics 200 in 1789ms (next.js: 38ms, application-code: 1750ms)
+ GET /api/prep-confidence?target=upsc 200 in 2.8s (next.js: 102ms, application-code: 2.7s)
+ GET /api/prep-confidence?target=upsc 200 in 3.7s (next.js: 354ms, application-code: 3.3s)
+○ Compiling /practice ...
+ GET /practice 200 in 10.7s (next.js: 9.5s, proxy.ts: 113ms, application-code: 1067ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0iycowc._.js:212:173
+
+  209 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  210 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  211 try {
+→ 212     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 857ms (next.js: 241ms, application-code: 615ms)
+ GET /api/notifications 200 in 794ms (next.js: 218ms, application-code: 576ms)
+ GET /api/practice/folders 200 in 1285ms (next.js: 794ms, application-code: 490ms)
+ GET /api/practice/folders 200 in 1401ms (next.js: 861ms, application-code: 540ms)
+ GET /api/practice 200 in 1747ms (next.js: 1159ms, application-code: 587ms)
+ GET /api/practice 200 in 2.5s (next.js: 1214ms, application-code: 1275ms)
+ GET /api/notifications 200 in 513ms (next.js: 11ms, application-code: 502ms)
+ GET /api/notifications 200 in 288ms (next.js: 10ms, application-code: 278ms)
+ GET /api/notifications 200 in 294ms (next.js: 11ms, application-code: 283ms)
+ GET /api/notifications 200 in 389ms (next.js: 8ms, application-code: 381ms)
+ GET /practice 200 in 410ms (next.js: 24ms, proxy.ts: 16ms, application-code: 370ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0iycowc._.js:212:173
+
+  209 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  210 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  211 try {
+→ 212     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 372ms (next.js: 9ms, application-code: 363ms)
+ GET /api/notifications 200 in 301ms (next.js: 10ms, application-code: 291ms)
+ GET /api/notifications 200 in 574ms (next.js: 10ms, application-code: 564ms)
+ GET /api/practice/folders 200 in 333ms (next.js: 16ms, application-code: 317ms)
+ GET /api/practice/folders 200 in 457ms (next.js: 43ms, application-code: 415ms)
+ GET /api/practice 200 in 745ms (next.js: 66ms, application-code: 679ms)
+ GET /api/practice 200 in 1272ms (next.js: 85ms, application-code: 1187ms)
+ GET /api/notifications 200 in 437ms (next.js: 6ms, application-code: 430ms)
+ GET /api/notifications 200 in 235ms (next.js: 7ms, application-code: 228ms)
+ GET /api/notifications 200 in 278ms (next.js: 8ms, application-code: 271ms)
+ GET /api/notifications 200 in 252ms (next.js: 11ms, application-code: 242ms)
+ GET /api/notifications 200 in 326ms (next.js: 9ms, application-code: 317ms)
+ GET /api/notifications 200 in 242ms (next.js: 9ms, application-code: 233ms)
+ GET /api/notifications 200 in 392ms (next.js: 9ms, application-code: 383ms)
+ GET /api/notifications 200 in 440ms (next.js: 9ms, application-code: 431ms)
+ GET /api/notifications 200 in 264ms (next.js: 7ms, application-code: 257ms)
+ GET /api/notifications 200 in 282ms (next.js: 8ms, application-code: 274ms)
+ GET /api/notifications 200 in 323ms (next.js: 11ms, application-code: 312ms)
+ GET /api/notifications 200 in 289ms (next.js: 8ms, application-code: 281ms)
+ GET /api/notifications 200 in 367ms (next.js: 11ms, application-code: 355ms)
+ GET /api/notifications 200 in 381ms (next.js: 9ms, application-code: 372ms)
+ GET /api/notifications 200 in 268ms (next.js: 9ms, application-code: 260ms)
+ GET /api/notifications 200 in 261ms (next.js: 8ms, application-code: 254ms)
+ GET /api/notifications 200 in 239ms (next.js: 9ms, application-code: 230ms)
+ GET /api/notifications 200 in 234ms (next.js: 7ms, application-code: 227ms)
+ POST /api/practice/cmrqo6yqm0001jp04yrzp7xo2/reattempt 201 in 5.7s (next.js: 3.8s, application-code: 1841ms)
+ GET /api/notifications 200 in 273ms (next.js: 8ms, application-code: 264ms)
+ GET /api/notifications 200 in 376ms (next.js: 8ms, application-code: 368ms)
+ GET /api/practice/cmrret7o10005w2skzmuzc8r8 200 in 3.3s (next.js: 2.9s, application-code: 361ms)
+ GET /api/notifications 200 in 252ms (next.js: 7ms, application-code: 245ms)
+ GET /api/notifications 200 in 465ms (next.js: 7ms, application-code: 458ms)
+ GET /api/notifications 200 in 252ms (next.js: 9ms, application-code: 242ms)
+ GET /api/notifications 200 in 243ms (next.js: 8ms, application-code: 235ms)
+ GET /api/notifications 200 in 245ms (next.js: 7ms, application-code: 238ms)
+ GET /api/notifications 200 in 293ms (next.js: 9ms, application-code: 284ms)
+ GET /api/notifications 200 in 250ms (next.js: 8ms, application-code: 242ms)
+ GET /api/notifications 200 in 389ms (next.js: 8ms, application-code: 381ms)
+ GET /api/notifications 200 in 272ms (next.js: 8ms, application-code: 264ms)
+ GET /api/notifications 200 in 311ms (next.js: 12ms, application-code: 298ms)
+ GET /api/notifications 200 in 259ms (next.js: 8ms, application-code: 251ms)
+ GET /api/notifications 200 in 347ms (next.js: 8ms, application-code: 340ms)
+ GET /api/notifications 200 in 272ms (next.js: 9ms, application-code: 263ms)
+ GET /api/notifications 200 in 354ms (next.js: 7ms, application-code: 347ms)
+ GET /api/notifications 200 in 290ms (next.js: 10ms, application-code: 279ms)
+ GET /api/notifications 200 in 238ms (next.js: 8ms, application-code: 230ms)
+✓ Compiled in 128ms
+ GET /api/notifications 200 in 286ms (next.js: 258ms, application-code: 28ms)
+ GET /practice 200 in 3.3s (next.js: 626ms, proxy.ts: 328ms, application-code: 2.4s)
+ GET /api/notifications 200 in 692ms (next.js: 272ms, application-code: 419ms)
+ GET /practice 200 in 3.1s (next.js: 1046ms, proxy.ts: 21ms, application-code: 2.1s)
+ GET /practice 200 in 671ms (next.js: 19ms, proxy.ts: 36ms, application-code: 616ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 479ms (next.js: 117ms, application-code: 362ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 367ms (next.js: 17ms, application-code: 350ms)
+ GET /api/notifications 200 in 321ms (next.js: 32ms, application-code: 289ms)
+ GET /api/notifications 200 in 329ms (next.js: 13ms, application-code: 317ms)
+ GET /api/practice/folders 200 in 420ms (next.js: 132ms, application-code: 288ms)
+ GET /api/practice/folders 200 in 494ms (next.js: 220ms, application-code: 275ms)
+ GET /api/practice/folders 200 in 261ms (next.js: 11ms, application-code: 250ms)
+ GET /api/practice 200 in 728ms (next.js: 333ms, application-code: 395ms)
+ GET /api/practice 200 in 627ms (next.js: 236ms, application-code: 392ms)
+ GET /api/practice 200 in 311ms (next.js: 10ms, application-code: 301ms)
+ GET /api/practice/folders 200 in 1027ms (next.js: 21ms, application-code: 1006ms)
+ GET /api/practice 200 in 1323ms (next.js: 30ms, application-code: 1294ms)
+ GET /api/notifications 200 in 466ms (next.js: 12ms, application-code: 454ms)
+ GET /api/notifications 200 in 508ms (next.js: 11ms, application-code: 496ms)
+ GET /api/notifications 200 in 252ms (next.js: 7ms, application-code: 245ms)
+ GET /api/notifications 200 in 255ms (next.js: 9ms, application-code: 247ms)
+ GET /api/notifications 200 in 227ms (next.js: 8ms, application-code: 219ms)
+ GET /api/notifications 200 in 225ms (next.js: 8ms, application-code: 217ms)
+ GET /api/notifications 200 in 336ms (next.js: 6ms, application-code: 330ms)
+ GET /api/notifications 200 in 332ms (next.js: 7ms, application-code: 325ms)
+ GET /api/practice/cmrret7o10005w2skzmuzc8r8 200 in 399ms (next.js: 101ms, application-code: 298ms)
+ GET /api/notifications 200 in 291ms (next.js: 8ms, application-code: 283ms)
+ GET /api/notifications 200 in 248ms (next.js: 7ms, application-code: 240ms)
+ GET /api/notifications 200 in 249ms (next.js: 8ms, application-code: 242ms)
+ GET /api/notifications 200 in 256ms (next.js: 9ms, application-code: 246ms)
+ GET /api/practice/cmrret7o10005w2skzmuzc8r8 200 in 195ms (next.js: 17ms, application-code: 179ms)
+ GET /api/notifications 200 in 297ms (next.js: 7ms, application-code: 289ms)
+ GET /api/notifications 200 in 398ms (next.js: 6ms, application-code: 392ms)
+ GET /api/notifications 200 in 268ms (next.js: 9ms, application-code: 260ms)
+ GET /api/notifications 200 in 398ms (next.js: 7ms, application-code: 391ms)
+ GET /api/notifications 200 in 308ms (next.js: 8ms, application-code: 299ms)
+ GET /api/notifications 200 in 289ms (next.js: 8ms, application-code: 281ms)
+ GET /api/notifications 200 in 238ms (next.js: 6ms, application-code: 233ms)
+ GET /api/notifications 200 in 245ms (next.js: 6ms, application-code: 239ms)
+✓ Compiled in 363ms
+ GET /api/notifications 200 in 190ms (next.js: 156ms, application-code: 34ms)
+ GET /practice 200 in 2.9s (next.js: 662ms, proxy.ts: 333ms, application-code: 1947ms)
+ GET /api/notifications 200 in 500ms (next.js: 180ms, application-code: 321ms)
+ GET /practice 200 in 3.5s (next.js: 1070ms, proxy.ts: 337ms, application-code: 2.1s)
+ GET /practice 200 in 865ms (next.js: 210ms, proxy.ts: 73ms, application-code: 582ms)
+ GET /practice 200 in 676ms (next.js: 66ms, proxy.ts: 217ms, application-code: 393ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 521ms (next.js: 148ms, application-code: 373ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 420ms (next.js: 11ms, application-code: 409ms)
+ GET /api/notifications 200 in 326ms (next.js: 12ms, application-code: 315ms)
+ GET /api/notifications 200 in 315ms (next.js: 14ms, application-code: 300ms)
+ GET /api/practice/folders 200 in 464ms (next.js: 65ms, application-code: 399ms)
+ GET /api/practice/folders 200 in 592ms (next.js: 196ms, application-code: 396ms)
+ GET /api/practice 200 in 697ms (next.js: 182ms, application-code: 514ms)
+ GET /api/practice/folders 200 in 437ms (next.js: 23ms, application-code: 414ms)
+ GET /api/practice/folders 200 in 401ms (next.js: 7ms, application-code: 393ms)
+ GET /api/practice 200 in 1051ms (next.js: 214ms, application-code: 838ms)
+ GET /api/practice 200 in 614ms (next.js: 14ms, application-code: 601ms)
+ GET /api/practice 200 in 1390ms (next.js: 165ms, application-code: 1225ms)
+ GET /api/notifications 200 in 255ms (next.js: 9ms, application-code: 246ms)
+ GET /api/notifications 200 in 251ms (next.js: 7ms, application-code: 244ms)
+ GET /api/notifications 200 in 293ms (next.js: 8ms, application-code: 286ms)
+ GET /api/notifications 200 in 242ms (next.js: 7ms, application-code: 235ms)
+ GET /api/notifications 200 in 248ms (next.js: 9ms, application-code: 239ms)
+ GET /api/notifications 200 in 289ms (next.js: 8ms, application-code: 282ms)
+ GET /api/notifications 200 in 331ms (next.js: 8ms, application-code: 323ms)
+ GET /api/notifications 200 in 356ms (next.js: 7ms, application-code: 349ms)
+ GET /api/notifications 200 in 211ms (next.js: 7ms, application-code: 204ms)
+ GET /api/notifications 200 in 219ms (next.js: 7ms, application-code: 213ms)
+ GET /api/notifications 200 in 309ms (next.js: 10ms, application-code: 299ms)
+ GET /api/notifications 200 in 239ms (next.js: 7ms, application-code: 233ms)
+ GET /api/notifications 200 in 263ms (next.js: 11ms, application-code: 251ms)
+ GET /api/notifications 200 in 347ms (next.js: 10ms, application-code: 336ms)
+ GET /api/notifications 200 in 410ms (next.js: 11ms, application-code: 399ms)
+ GET /api/notifications 200 in 371ms (next.js: 10ms, application-code: 360ms)
+prisma:error 
+Invalid `tx.bankQuestion.updateMany()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0fb1dnw._.js:4671:35
+
+  4668     bankDeltas.set(review.bankQuestionId, delta);
+  4669 }
+  4670 for (const [bankQuestionId, delta] of bankDeltas){
+→ 4671     await tx.bankQuestion.updateMany(
+Transaction API error: Transaction not found. Transaction ID is invalid, refers to an old closed transaction Prisma doesn't have information about anymore, or was obtained before disconnecting.
+ DELETE /api/practice/cmrret7o10005w2skzmuzc8r8 404 in 5.4s (next.js: 208ms, application-code: 5.2s)
+ GET /api/notifications 200 in 254ms (next.js: 9ms, application-code: 245ms)
+ GET /api/notifications 200 in 229ms (next.js: 9ms, application-code: 221ms)
+ GET /api/notifications 200 in 238ms (next.js: 8ms, application-code: 230ms)
+ GET /api/notifications 200 in 261ms (next.js: 7ms, application-code: 253ms)
+ GET /api/notifications 200 in 250ms (next.js: 7ms, application-code: 243ms)
+ GET /api/notifications 200 in 345ms (next.js: 9ms, application-code: 335ms)
+ GET /api/notifications 200 in 262ms (next.js: 7ms, application-code: 255ms)
+ GET /api/notifications 200 in 325ms (next.js: 6ms, application-code: 319ms)
+ GET /api/notifications 200 in 283ms (next.js: 9ms, application-code: 274ms)
+ GET /api/notifications 200 in 1318ms (next.js: 9ms, application-code: 1309ms)
+ GET /api/notifications 200 in 230ms (next.js: 9ms, application-code: 221ms)
+ GET /api/notifications 200 in 257ms (next.js: 8ms, application-code: 249ms)
+ GET /api/notifications 200 in 700ms (next.js: 103ms, application-code: 597ms)
+ GET /api/notifications 200 in 713ms (next.js: 83ms, application-code: 630ms)
+ GET /practice 200 in 2.0s (next.js: 521ms, proxy.ts: 600ms, application-code: 900ms)
+ GET /practice 200 in 1044ms (next.js: 26ms, proxy.ts: 131ms, application-code: 887ms)
+ GET /practice 200 in 785ms (next.js: 56ms, proxy.ts: 51ms, application-code: 679ms)
+ GET /practice 200 in 785ms (next.js: 222ms, proxy.ts: 52ms, application-code: 510ms)
+ GET /practice 200 in 354ms (next.js: 24ms, proxy.ts: 27ms, application-code: 302ms)
+ GET /practice 200 in 356ms (next.js: 168ms, proxy.ts: 29ms, application-code: 160ms)
+ GET /api/notifications 200 in 262ms (next.js: 10ms, application-code: 251ms)
+ GET /api/notifications 200 in 308ms (next.js: 9ms, application-code: 299ms)
+ GET /api/notifications 200 in 254ms (next.js: 10ms, application-code: 243ms)
+ GET /api/notifications 200 in 372ms (next.js: 10ms, application-code: 362ms)
+ GET /api/notifications 200 in 228ms (next.js: 17ms, application-code: 211ms)
+ GET /api/notifications 200 in 309ms (next.js: 14ms, application-code: 295ms)
+ GET /api/notifications 200 in 240ms (next.js: 8ms, application-code: 232ms)
+ GET /api/notifications 200 in 414ms (next.js: 15ms, application-code: 399ms)
+ DELETE /api/practice/cmrret7o10005w2skzmuzc8r8 200 in 1698ms (next.js: 228ms, application-code: 1471ms)
+ GET /api/practice 200 in 461ms (next.js: 212ms, application-code: 249ms)
+ GET /api/notifications 200 in 272ms (next.js: 23ms, application-code: 249ms)
+ GET /api/notifications 200 in 412ms (next.js: 7ms, application-code: 405ms)
+ GET /api/notifications 200 in 335ms (next.js: 34ms, application-code: 301ms)
+ GET /api/notifications 200 in 263ms (next.js: 11ms, application-code: 252ms)
+ GET /api/notifications 200 in 388ms (next.js: 7ms, application-code: 381ms)
+ GET /api/notifications 200 in 434ms (next.js: 6ms, application-code: 428ms)
+ GET /api/practice/cmrqo6yqm0001jp04yrzp7xo2 200 in 582ms (next.js: 27ms, application-code: 556ms)
+ GET /api/notifications 200 in 262ms (next.js: 7ms, application-code: 255ms)
+ GET /api/practice 200 in 294ms (next.js: 8ms, application-code: 286ms)
+ GET /api/practice 200 in 467ms (next.js: 7ms, application-code: 459ms)
+ GET /api/practice/bookmarks?testId=cmrqo6yqm0001jp04yrzp7xo2 200 in 1761ms (next.js: 842ms, application-code: 919ms)
+ GET /api/practice/bookmarks?testId=cmrqo6yqm0001jp04yrzp7xo2 200 in 1773ms (next.js: 791ms, application-code: 982ms)
+ GET /api/notifications 200 in 1285ms (next.js: 9ms, application-code: 1276ms)
+ GET /api/notifications 200 in 266ms (next.js: 7ms, application-code: 259ms)
+ GET /api/notifications 200 in 283ms (next.js: 9ms, application-code: 274ms)
+ GET /api/notifications 200 in 283ms (next.js: 6ms, application-code: 276ms)
+ GET /api/notifications 200 in 279ms (next.js: 6ms, application-code: 274ms)
+ GET /api/notifications 200 in 258ms (next.js: 6ms, application-code: 252ms)
+ GET /api/notifications 200 in 250ms (next.js: 6ms, application-code: 244ms)
+ GET /api/notifications 200 in 369ms (next.js: 6ms, application-code: 363ms)
+ GET /api/notifications 200 in 359ms (next.js: 5ms, application-code: 354ms)
+ GET /api/notifications 200 in 250ms (next.js: 7ms, application-code: 243ms)
+ GET /api/notifications 200 in 255ms (next.js: 7ms, application-code: 248ms)
+ GET /api/notifications 200 in 296ms (next.js: 8ms, application-code: 288ms)
+ GET /api/notifications 200 in 261ms (next.js: 7ms, application-code: 254ms)
+ GET /api/notifications 200 in 238ms (next.js: 8ms, application-code: 230ms)
+ GET /api/notifications 200 in 347ms (next.js: 7ms, application-code: 340ms)
+ GET /api/notifications 200 in 253ms (next.js: 10ms, application-code: 243ms)
+ GET /api/notifications 200 in 362ms (next.js: 9ms, application-code: 353ms)
+ GET /api/notifications 200 in 233ms (next.js: 8ms, application-code: 225ms)
+ GET /api/notifications 200 in 220ms (next.js: 7ms, application-code: 213ms)
+ GET /api/notifications 200 in 266ms (next.js: 7ms, application-code: 259ms)
+ GET /api/notifications 200 in 256ms (next.js: 6ms, application-code: 250ms)
+ GET /api/notifications 200 in 409ms (next.js: 11ms, application-code: 398ms)
+ GET /api/notifications 200 in 392ms (next.js: 6ms, application-code: 386ms)
+ GET /api/notifications 200 in 274ms (next.js: 8ms, application-code: 266ms)
+ GET /api/notifications 200 in 312ms (next.js: 7ms, application-code: 305ms)
+ GET /api/notifications 200 in 267ms (next.js: 6ms, application-code: 261ms)
+ GET /api/notifications 200 in 263ms (next.js: 6ms, application-code: 258ms)
+ GET /api/notifications 200 in 254ms (next.js: 5ms, application-code: 248ms)
+ GET /api/notifications 200 in 257ms (next.js: 6ms, application-code: 251ms)
+ GET /api/notifications 200 in 373ms (next.js: 7ms, application-code: 366ms)
+ GET /api/notifications 200 in 383ms (next.js: 8ms, application-code: 375ms)
+✓ Compiled in 464ms
+ GET /practice 200 in 2.6s (next.js: 603ms, proxy.ts: 357ms, application-code: 1684ms)
+ GET /practice 200 in 2.2s (next.js: 87ms, proxy.ts: 1251ms, application-code: 849ms)
+ GET /practice 200 in 3.0s (next.js: 103ms, proxy.ts: 796ms, application-code: 2.1s)
+ GET /practice 200 in 801ms (next.js: 77ms, proxy.ts: 59ms, application-code: 664ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 546ms (next.js: 138ms, application-code: 408ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 395ms (next.js: 23ms, application-code: 372ms)
+ GET /api/notifications 200 in 292ms (next.js: 8ms, application-code: 284ms)
+ GET /api/notifications 200 in 324ms (next.js: 14ms, application-code: 310ms)
+ GET /api/practice/folders 200 in 737ms (next.js: 133ms, application-code: 604ms)
+ GET /api/practice 200 in 829ms (next.js: 388ms, application-code: 442ms)
+ GET /api/practice 200 in 423ms (next.js: 68ms, application-code: 355ms)
+ GET /api/practice/folders 200 in 279ms (next.js: 8ms, application-code: 271ms)
+ GET /api/practice 200 in 515ms (next.js: 175ms, application-code: 340ms)
+ GET /api/practice 200 in 223ms (next.js: 17ms, application-code: 206ms)
+ GET /api/practice/folders 200 in 1195ms (next.js: 162ms, application-code: 1033ms)
+ GET /api/practice/folders 200 in 1215ms (next.js: 137ms, application-code: 1078ms)
+ GET /api/notifications 200 in 534ms (next.js: 12ms, application-code: 522ms)
+ GET /api/notifications 200 in 508ms (next.js: 7ms, application-code: 500ms)
+ GET /api/notifications 200 in 279ms (next.js: 9ms, application-code: 270ms)
+ GET /api/notifications 200 in 270ms (next.js: 7ms, application-code: 263ms)
+✓ Compiled in 639ms
+ GET /api/notifications 200 in 1914ms (next.js: 9ms, application-code: 1905ms)
+ GET /api/notifications 200 in 1834ms (next.js: 550ms, application-code: 1284ms)
+ GET /practice 200 in 1843ms (next.js: 1197ms, proxy.ts: 324ms, application-code: 322ms)
+ GET /practice 200 in 147ms (next.js: 15ms, proxy.ts: 12ms, application-code: 120ms)
+ GET /api/notifications 200 in 383ms (next.js: 7ms, application-code: 376ms)
+ GET /api/notifications 200 in 419ms (next.js: 8ms, application-code: 411ms)
+ GET /api/notifications 200 in 258ms (next.js: 9ms, application-code: 249ms)
+ GET /api/notifications 200 in 247ms (next.js: 7ms, application-code: 240ms)
+ GET /api/notifications 200 in 282ms (next.js: 21ms, application-code: 261ms)
+ GET /api/notifications 200 in 287ms (next.js: 7ms, application-code: 280ms)
+ GET /api/notifications 200 in 257ms (next.js: 8ms, application-code: 248ms)
+ GET /api/notifications 200 in 358ms (next.js: 7ms, application-code: 350ms)
+✓ Compiled in 31ms
+ GET /api/notifications 200 in 2.8s (next.js: 1179ms, application-code: 1636ms)
+ GET /practice 200 in 1365ms (next.js: 65ms, proxy.ts: 1179ms, application-code: 121ms)
+ GET /api/notifications 200 in 2.8s (next.js: 1334ms, application-code: 1484ms)
+ GET /practice 200 in 3.5s (next.js: 760ms, proxy.ts: 285ms, application-code: 2.4s)
+ GET /practice 200 in 3.5s (next.js: 1558ms, proxy.ts: 315ms, application-code: 1607ms)
+ GET /practice 200 in 509ms (next.js: 27ms, proxy.ts: 176ms, application-code: 306ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 494ms (next.js: 107ms, application-code: 387ms)
+prisma:error 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create()` invocation in
+E:\projects\neet-tracker\.next\dev\server\chunks\[root-of-the-server]__0zp7for._.js:239:173
+
+  236 const token = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomBytes"])(32).toString("base64url");
+  237 const expiresAt = new Date(Date.now() + TRUSTED_SESSION_MAX_AGE_SECONDS * 1000);
+  238 try {
+→ 239     const session = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].trustedDeviceSession.create(
+The table `trusted_device_sessions` does not exist in the current database.
+ GET /api/auth/session 200 in 371ms (next.js: 12ms, application-code: 360ms)
+ GET /api/notifications 200 in 276ms (next.js: 7ms, application-code: 269ms)
+ GET /api/notifications 200 in 269ms (next.js: 9ms, application-code: 260ms)
+ GET /api/practice/folders 200 in 351ms (next.js: 64ms, application-code: 286ms)
+ GET /api/practice/folders 200 in 513ms (next.js: 224ms, application-code: 289ms)
+ GET /api/practice/folders 200 in 263ms (next.js: 14ms, application-code: 249ms)
+ GET /api/practice 200 in 742ms (next.js: 169ms, application-code: 573ms)
+ GET /api/practice 200 in 753ms (next.js: 267ms, application-code: 486ms)
+ GET /api/practice/folders 200 in 270ms (next.js: 30ms, application-code: 240ms)
+ GET /api/practice 200 in 461ms (next.js: 60ms, application-code: 401ms)
+ GET /api/practice 200 in 403ms (next.js: 14ms, application-code: 389ms)
+ GET /api/notifications 200 in 266ms (next.js: 9ms, application-code: 258ms)
+ GET /api/notifications 200 in 1199ms (next.js: 8ms, application-code: 1190ms)
+ GET /api/notifications 200 in 276ms (next.js: 14ms, application-code: 263ms)
+ GET /api/notifications 200 in 370ms (next.js: 7ms, application-code: 362ms)
+ GET /api/notifications 200 in 290ms (next.js: 5ms, application-code: 285ms)
+ GET /api/notifications 200 in 257ms (next.js: 7ms, application-code: 250ms)
+ GET /api/notifications 200 in 253ms (next.js: 7ms, application-code: 246ms)
+ GET /api/notifications 200 in 276ms (next.js: 7ms, application-code: 269ms)
+ GET /api/notifications 200 in 253ms (next.js: 10ms, application-code: 244ms)
+ GET /api/notifications 200 in 342ms (next.js: 7ms, application-code: 335ms)
+ GET /api/notifications 200 in 254ms (next.js: 10ms, application-code: 244ms)
+ GET /api/notifications 200 in 270ms (next.js: 8ms, application-code: 262ms)
+ GET /api/notifications 200 in 296ms (next.js: 9ms, application-code: 287ms)
+ GET /api/notifications 200 in 374ms (next.js: 7ms, application-code: 367ms)
+ GET /api/notifications 200 in 269ms (next.js: 7ms, application-code: 262ms)
+ GET /api/notifications 200 in 361ms (next.js: 5ms, application-code: 357ms)
+ GET /api/notifications 200 in 356ms (next.js: 9ms, application-code: 348ms)
+ GET /api/notifications 200 in 276ms (next.js: 8ms, application-code: 268ms)
+ GET /api/notifications 200 in 256ms (next.js: 8ms, application-code: 249ms)
+ GET /api/notifications 200 in 395ms (next.js: 7ms, application-code: 388ms)
+ GET /api/notifications 200 in 281ms (next.js: 7ms, application-code: 275ms)
+ GET /api/notifications 200 in 279ms (next.js: 9ms, application-code: 269ms)
+ GET /api/notifications 200 in 341ms (next.js: 7ms, application-code: 334ms)
+ GET /api/notifications 200 in 244ms (next.js: 7ms, application-code: 237ms)
+ GET /api/notifications 200 in 258ms (next.js: 8ms, application-code: 250ms)
+ GET /api/notifications 200 in 246ms (next.js: 7ms, application-code: 238ms)
+ GET /api/notifications 200 in 394ms (next.js: 6ms, application-code: 388ms)
+ GET /api/notifications 200 in 272ms (next.js: 6ms, application-code: 266ms)
+ GET /api/notifications 200 in 406ms (next.js: 7ms, application-code: 399ms)
+ GET /api/notifications 200 in 277ms (next.js: 6ms, application-code: 271ms)
+ GET /api/notifications 200 in 286ms (next.js: 7ms, application-code: 278ms)
+ GET /api/notifications 200 in 267ms (next.js: 7ms, application-code: 259ms)
+ GET /api/notifications 200 in 269ms (next.js: 8ms, application-code: 261ms)
+ GET /api/notifications 200 in 370ms (next.js: 8ms, application-code: 362ms)
+ GET /api/notifications 200 in 266ms (next.js: 7ms, application-code: 259ms)
+ GET /api/notifications 200 in 382ms (next.js: 6ms, application-code: 376ms)
+ GET /api/notifications 200 in 250ms (next.js: 7ms, application-code: 244ms)
+ GET /api/notifications 200 in 237ms (next.js: 8ms, application-code: 228ms)
+ GET /api/notifications 200 in 301ms (next.js: 7ms, application-code: 294ms)
+ GET /api/notifications 200 in 260ms (next.js: 6ms, application-code: 255ms)
+ GET /api/notifications 200 in 263ms (next.js: 7ms, application-code: 256ms)
+ GET /api/notifications 200 in 354ms (next.js: 8ms, application-code: 347ms)
+ GET /api/notifications 200 in 316ms (next.js: 7ms, application-code: 309ms)
+ GET /api/notifications 200 in 436ms (next.js: 9ms, application-code: 427ms)
+ GET /api/notifications 200 in 244ms (next.js: 7ms, application-code: 237ms)
+ GET /api/notifications 200 in 273ms (next.js: 7ms, application-code: 266ms)
+ GET /api/notifications 200 in 253ms (next.js: 6ms, application-code: 247ms)
+ GET /api/notifications 200 in 376ms (next.js: 6ms, application-code: 369ms)
+ GET /api/notifications 200 in 257ms (next.js: 6ms, application-code: 250ms)
+ GET /api/notifications 200 in 264ms (next.js: 7ms, application-code: 257ms)
+ GET /api/notifications 200 in 331ms (next.js: 8ms, application-code: 324ms)
+ GET /api/notifications 200 in 286ms (next.js: 13ms, application-code: 273ms)
+ GET /api/notifications 200 in 259ms (next.js: 7ms, application-code: 252ms)
+ GET /api/notifications 200 in 281ms (next.js: 9ms, application-code: 272ms)
+ GET /api/notifications 200 in 366ms (next.js: 6ms, application-code: 360ms)
+ GET /api/notifications 200 in 371ms (next.js: 8ms, application-code: 364ms)
+ GET /api/notifications 200 in 242ms (next.js: 9ms, application-code: 233ms)
+ GET /api/notifications 200 in 469ms (next.js: 8ms, application-code: 461ms)
+ GET /api/notifications 200 in 299ms (next.js: 9ms, application-code: 290ms)
+ GET /api/notifications 200 in 271ms (next.js: 7ms, application-code: 264ms)
+ GET /api/notifications 200 in 235ms (next.js: 8ms, application-code: 227ms)
+ GET /api/notifications 200 in 287ms (next.js: 10ms, application-code: 277ms)
+ GET /api/notifications 200 in 259ms (next.js: 8ms, application-code: 252ms)
+ GET /api/notifications 200 in 251ms (next.js: 10ms, application-code: 240ms)
+ GET /api/notifications 200 in 412ms (next.js: 9ms, application-code: 404ms)
+ GET /api/notifications 200 in 234ms (next.js: 6ms, application-code: 228ms)
+ GET /api/notifications 200 in 316ms (next.js: 6ms, application-code: 309ms)
+ GET /api/notifications 200 in 331ms (next.js: 6ms, application-code: 324ms)
+ GET /api/notifications 200 in 246ms (next.js: 6ms, application-code: 240ms)
+ GET /api/notifications 200 in 285ms (next.js: 5ms, application-code: 280ms)
+ GET /api/notifications 200 in 270ms (next.js: 6ms, application-code: 264ms)
+ GET /api/notifications 200 in 380ms (next.js: 7ms, application-code: 373ms)
+ GET /api/notifications 200 in 265ms (next.js: 6ms, application-code: 259ms)
+ GET /api/notifications 200 in 270ms (next.js: 7ms, application-code: 262ms)
+ GET /api/notifications 200 in 383ms (next.js: 8ms, application-code: 375ms)
+ GET /api/notifications 200 in 282ms (next.js: 5ms, application-code: 277ms)
+ GET /api/notifications 200 in 234ms (next.js: 6ms, application-code: 228ms)
+ GET /api/notifications 200 in 287ms (next.js: 6ms, application-code: 281ms)
+ GET /api/notifications 200 in 444ms (next.js: 7ms, application-code: 437ms)
+ GET /api/notifications 200 in 271ms (next.js: 7ms, application-code: 264ms)
+ GET /api/notifications 200 in 272ms (next.js: 7ms, application-code: 265ms)
+ GET /api/notifications 200 in 221ms (next.js: 6ms, application-code: 215ms)
+ GET /api/notifications 200 in 352ms (next.js: 6ms, application-code: 345ms)
+ GET /api/notifications 200 in 271ms (next.js: 7ms, application-code: 264ms)
+ GET /api/notifications 200 in 314ms (next.js: 6ms, application-code: 308ms)
+ GET /api/notifications 200 in 404ms (next.js: 7ms, application-code: 396ms)
+ GET /api/notifications 200 in 247ms (next.js: 7ms, application-code: 240ms)
+ GET /api/notifications 200 in 251ms (next.js: 7ms, application-code: 244ms)
+ GET /api/notifications 200 in 300ms (next.js: 15ms, application-code: 285ms)
+ GET /api/notifications 200 in 519ms (next.js: 6ms, application-code: 513ms)
+ GET /api/notifications 200 in 240ms (next.js: 7ms, application-code: 233ms)
+ GET /signin 200 in 1502ms (next.js: 670ms, application-code: 832ms)
+ GET /practice 200 in 3.6s (next.js: 694ms, proxy.ts: 746ms, application-code: 2.1s)
+ GET /api/auth/session 200 in 1996ms (next.js: 251ms, application-code: 1745ms)
+ GET /api/practice/folders 200 in 1403ms (next.js: 118ms, application-code: 1285ms)
+ GET /api/notifications 200 in 2.7s (next.js: 230ms, application-code: 2.5s)
+ GET /api/practice/folders 200 in 1954ms (next.js: 96ms, application-code: 1858ms)
+ GET /api/practice 200 in 2.8s (next.js: 465ms, application-code: 2.3s)
+ GET /api/practice 200 in 3.2s (next.js: 393ms, application-code: 2.8s)
+ GET /api/notifications 200 in 1253ms (next.js: 9ms, application-code: 1244ms)
+ GET /api/notifications 200 in 1093ms (next.js: 9ms, application-code: 1084ms)
+ GET /api/notifications 200 in 1004ms (next.js: 8ms, application-code: 995ms)
+ GET /api/notifications 200 in 1152ms (next.js: 9ms, application-code: 1143ms)
+ GET /api/notifications 200 in 983ms (next.js: 26ms, application-code: 958ms)
+ POST /api/practice/folders 201 in 1722ms (next.js: 9ms, application-code: 1713ms)
+ GET /api/practice/folders 200 in 981ms (next.js: 11ms, application-code: 970ms)
+ GET /api/notifications 200 in 1301ms (next.js: 8ms, application-code: 1293ms)
+○ Compiling /practice/folders/[folderId] ...
+ GET /api/notifications 200 in 1012ms (next.js: 10ms, application-code: 1002ms)
+ GET /api/notifications 200 in 1270ms (next.js: 13ms, application-code: 1257ms)
+ GET /practice/folders/cmrrg5hao000fw2skvkswx4gt 200 in 12.8s (next.js: 12.6s, proxy.ts: 17ms, application-code: 165ms)
+ GET /api/practice/folders 200 in 876ms (next.js: 10ms, application-code: 866ms)
+ GET /api/practice/folders 200 in 1075ms (next.js: 9ms, application-code: 1066ms)
+ GET /api/practice 200 in 1585ms (next.js: 29ms, application-code: 1556ms)
+ GET /api/practice 200 in 1866ms (next.js: 26ms, application-code: 1839ms)
+ GET /api/notifications 200 in 966ms (next.js: 7ms, application-code: 959ms)
+ GET /api/notifications 200 in 1080ms (next.js: 13ms, application-code: 1067ms)
+ GET /api/notifications 200 in 1069ms (next.js: 11ms, application-code: 1058ms)
+ GET /api/notifications 200 in 1006ms (next.js: 8ms, application-code: 998ms)
+ GET /api/notifications 200 in 1018ms (next.js: 9ms, application-code: 1009ms)
+ GET /api/notifications 200 in 834ms (next.js: 11ms, application-code: 824ms)
+ GET /api/notifications 200 in 1184ms (next.js: 11ms, application-code: 1172ms)
+ GET /api/notifications 200 in 1046ms (next.js: 10ms, application-code: 1036ms)
+ GET /api/notifications 200 in 1032ms (next.js: 8ms, application-code: 1024ms)
+ GET /api/notifications 200 in 1039ms (next.js: 8ms, application-code: 1031ms)
+ GET /api/notifications 200 in 1031ms (next.js: 9ms, application-code: 1022ms)
+ GET /api/notifications 200 in 993ms (next.js: 10ms, application-code: 983ms)
+ GET /practice 200 in 156ms (next.js: 21ms, proxy.ts: 16ms, application-code: 119ms)
+ GET /api/practice/folders 200 in 916ms (next.js: 15ms, application-code: 901ms)
+ GET /api/practice 200 in 1131ms (next.js: 45ms, application-code: 1086ms)
+ GET /api/practice 200 in 1470ms (next.js: 34ms, application-code: 1436ms)
+ GET /api/practice/folders 200 in 1520ms (next.js: 20ms, application-code: 1500ms)
+ GET /api/notifications 200 in 1117ms (next.js: 8ms, application-code: 1110ms)
+ GET /api/notifications 200 in 1078ms (next.js: 7ms, application-code: 1071ms)
+ GET /api/notifications 200 in 1193ms (next.js: 7ms, application-code: 1186ms)
+ GET /api/notifications 200 in 1181ms (next.js: 7ms, application-code: 1174ms)
+ GET /api/notifications 200 in 977ms (next.js: 30ms, application-code: 947ms)
+ GET /practice/folders/cmrrg5hao000fw2skvkswx4gt 200 in 436ms (next.js: 49ms, proxy.ts: 15ms, application-code: 372ms)
+ GET /api/auth/session 200 in 779ms (next.js: 7ms, application-code: 772ms)
+ GET /api/notifications 200 in 1132ms (next.js: 7ms, application-code: 1125ms)
+ GET /api/practice/folders 200 in 934ms (next.js: 16ms, application-code: 918ms)
+ GET /api/practice/folders 200 in 1159ms (next.js: 29ms, application-code: 1130ms)
+ GET /api/practice 200 in 1854ms (next.js: 39ms, application-code: 1815ms)
+ GET /api/practice 200 in 1832ms (next.js: 44ms, application-code: 1788ms)
+ GET /api/notifications 200 in 1197ms (next.js: 7ms, application-code: 1190ms)
+ GET /api/notifications 200 in 1011ms (next.js: 8ms, application-code: 1003ms)
+ GET /api/notifications 200 in 1005ms (next.js: 7ms, application-code: 998ms)
+ GET /api/notifications 200 in 1044ms (next.js: 7ms, application-code: 1037ms)
+ GET /api/notifications 200 in 925ms (next.js: 7ms, application-code: 918ms)
+ GET /api/notifications 200 in 984ms (next.js: 6ms, application-code: 978ms)
+✓ Compiled in 358ms
+ GET /practice/folders/cmrrg5hao000fw2skvkswx4gt 200 in 4.4s (next.js: 498ms, proxy.ts: 535ms, application-code: 3.4s)
+ GET /practice/folders/cmrrg5hao000fw2skvkswx4gt 200 in 3.8s (next.js: 644ms, proxy.ts: 14ms, application-code: 3.2s)
+ GET /api/notifications 200 in 3.3s (next.js: 384ms, application-code: 2.9s)
+ GET /api/auth/session 200 in 1047ms (next.js: 163ms, application-code: 883ms)
+ GET /api/notifications 200 in 1483ms (next.js: 7ms, application-code: 1477ms)
+ GET /api/practice/folders 200 in 1090ms (next.js: 81ms, application-code: 1009ms)
+ GET /api/practice 200 in 1428ms (next.js: 191ms, application-code: 1237ms)
+ GET /api/practice 200 in 1596ms (next.js: 233ms, application-code: 1364ms)
+ GET /api/practice/folders 200 in 1698ms (next.js: 211ms, application-code: 1487ms)
+ GET /api/notifications 200 in 973ms (next.js: 6ms, application-code: 967ms)
+ GET /api/notifications 200 in 958ms (next.js: 6ms, application-code: 952ms)
+ GET /api/notifications 200 in 1054ms (next.js: 8ms, application-code: 1047ms)
+ GET /api/notifications 200 in 968ms (next.js: 10ms, application-code: 958ms)
+ GET /api/notifications 200 in 946ms (next.js: 7ms, application-code: 939ms)
+ GET /api/notifications 200 in 962ms (next.js: 6ms, application-code: 955ms)
+ GET /api/notifications 200 in 1123ms (next.js: 7ms, application-code: 1116ms)
+ GET /api/notifications 200 in 1085ms (next.js: 9ms, application-code: 1076ms)
+ GET /api/notifications 200 in 995ms (next.js: 7ms, application-code: 988ms)
+ GET /api/notifications 200 in 1142ms (next.js: 6ms, application-code: 1136ms)
+ GET /api/notifications 200 in 1080ms (next.js: 6ms, application-code: 1074ms)
+ GET /api/notifications 200 in 1059ms (next.js: 11ms, application-code: 1048ms)
+ GET /api/notifications 200 in 983ms (next.js: 7ms, application-code: 976ms)
+ GET /api/notifications 200 in 1041ms (next.js: 9ms, application-code: 1032ms)
+ GET /api/notifications 200 in 1120ms (next.js: 9ms, application-code: 1111ms)
+ GET /api/notifications 200 in 964ms (next.js: 10ms, application-code: 954ms)
+ GET /api/notifications 200 in 1205ms (next.js: 9ms, application-code: 1196ms)
+ GET /api/notifications 200 in 1238ms (next.js: 8ms, application-code: 1230ms)
+ GET /practice 200 in 880ms (next.js: 713ms, proxy.ts: 18ms, application-code: 150ms)
+ GET /api/practice/folders 200 in 1059ms (next.js: 15ms, application-code: 1045ms)
+ GET /api/practice 200 in 1385ms (next.js: 40ms, application-code: 1345ms)
+ GET /api/practice/folders 200 in 1436ms (next.js: 51ms, application-code: 1385ms)
+ GET /api/practice 200 in 1816ms (next.js: 101ms, application-code: 1715ms)
+ GET /api/notifications 200 in 1812ms (next.js: 101ms, application-code: 1711ms)
+ GET /api/notifications 200 in 1246ms (next.js: 9ms, application-code: 1237ms)
+ GET /api/notifications 200 in 1027ms (next.js: 8ms, application-code: 1019ms)
+ GET /api/notifications 200 in 1131ms (next.js: 10ms, application-code: 1121ms)
+ GET /api/notifications 200 in 1038ms (next.js: 12ms, application-code: 1026ms)
+ GET /api/notifications 200 in 1071ms (next.js: 10ms, application-code: 1061ms)
+ GET /api/notifications 200 in 1046ms (next.js: 12ms, application-code: 1034ms)
+ GET /api/practice/folders 200 in 901ms (next.js: 12ms, application-code: 889ms)
+ GET /api/practice/folders 200 in 1079ms (next.js: 8ms, application-code: 1072ms)
+ GET /api/practice 200 in 1565ms (next.js: 34ms, application-code: 1532ms)
+ GET /api/practice 200 in 2.3s (next.js: 12ms, application-code: 2.3s)
+ GET /api/notifications 200 in 1014ms (next.js: 8ms, application-code: 1006ms)
+ GET /api/notifications 200 in 2.5s (next.js: 7ms, application-code: 2.5s)
+ GET /api/notifications 200 in 1124ms (next.js: 7ms, application-code: 1117ms)
+ GET /api/notifications 200 in 1010ms (next.js: 9ms, application-code: 1001ms)
+ GET /api/notifications 200 in 1047ms (next.js: 14ms, application-code: 1033ms)
+ GET /api/notifications 200 in 1008ms (next.js: 12ms, application-code: 996ms)
+ GET /api/notifications 200 in 1068ms (next.js: 13ms, application-code: 1055ms)
+ GET /api/notifications 200 in 1035ms (next.js: 12ms, application-code: 1023ms)
+ GET /api/notifications 200 in 1123ms (next.js: 12ms, application-code: 1111ms)
+ GET /api/notifications 200 in 1101ms (next.js: 11ms, application-code: 1089ms)
+ GET /api/notifications 200 in 1564ms (next.js: 11ms, application-code: 1553ms)
+ GET /api/notifications 200 in 1218ms (next.js: 12ms, application-code: 1206ms)
+ GET /api/notifications 200 in 915ms (next.js: 7ms, application-code: 909ms)
+ GET /api/notifications 200 in 956ms (next.js: 10ms, application-code: 946ms)
+ GET /api/notifications 200 in 1024ms (next.js: 9ms, application-code: 1015ms)
+ GET /api/notifications 200 in 1149ms (next.js: 20ms, application-code: 1129ms)
+ GET /api/notifications 200 in 993ms (next.js: 8ms, application-code: 985ms)
+ GET /api/notifications 200 in 1063ms (next.js: 10ms, application-code: 1053ms)
+ GET /api/notifications 200 in 1142ms (next.js: 11ms, application-code: 1132ms)
+ GET /api/notifications 200 in 958ms (next.js: 8ms, application-code: 950ms)
+ GET /api/notifications 200 in 968ms (next.js: 6ms, application-code: 962ms)
+ GET /api/notifications 200 in 980ms (next.js: 7ms, application-code: 974ms)
+ GET /api/notifications 200 in 1203ms (next.js: 7ms, application-code: 1196ms)
+ GET /api/notifications 200 in 967ms (next.js: 9ms, application-code: 958ms)
+ GET /api/notifications 200 in 1028ms (next.js: 8ms, application-code: 1020ms)
+ GET /api/notifications 200 in 1170ms (next.js: 8ms, application-code: 1162ms)
+ GET /api/notifications 200 in 1033ms (next.js: 8ms, application-code: 1025ms)
+ GET /api/notifications 200 in 1002ms (next.js: 7ms, application-code: 995ms)
+ GET /api/notifications 200 in 1045ms (next.js: 8ms, application-code: 1037ms)
+ GET /api/notifications 200 in 1043ms (next.js: 17ms, application-code: 1026ms)
+ GET /api/notifications 200 in 1003ms (next.js: 10ms, application-code: 993ms)
+ GET /api/notifications 200 in 1060ms (next.js: 7ms, application-code: 1053ms)
+ GET /api/notifications 200 in 1034ms (next.js: 11ms, application-code: 1023ms)
+ GET /api/notifications 200 in 1032ms (next.js: 9ms, application-code: 1022ms)
+ GET /api/notifications 200 in 1240ms (next.js: 18ms, application-code: 1222ms)
+ GET /api/notifications 200 in 1169ms (next.js: 14ms, application-code: 1155ms)
+ GET /api/notifications 200 in 930ms (next.js: 9ms, application-code: 921ms)
+ GET /api/notifications 200 in 977ms (next.js: 19ms, application-code: 958ms)
+ GET /api/notifications 200 in 1180ms (next.js: 9ms, application-code: 1171ms)
+ GET /api/notifications 200 in 1057ms (next.js: 11ms, application-code: 1046ms)
+ GET /api/notifications 200 in 978ms (next.js: 8ms, application-code: 971ms)
+ GET /api/notifications 200 in 1114ms (next.js: 9ms, application-code: 1105ms)
+ GET /api/notifications 200 in 1004ms (next.js: 14ms, application-code: 989ms)
+ GET /api/notifications 200 in 1090ms (next.js: 13ms, application-code: 1077ms)
+ GET /api/notifications 200 in 1097ms (next.js: 9ms, application-code: 1088ms)
+ GET /api/notifications 200 in 1014ms (next.js: 8ms, application-code: 1006ms)
+ GET /api/notifications 200 in 1070ms (next.js: 11ms, application-code: 1059ms)
+ GET /api/notifications 200 in 999ms (next.js: 13ms, application-code: 986ms)
+ GET /api/notifications 200 in 1023ms (next.js: 7ms, application-code: 1016ms)
+ GET /api/notifications 200 in 1020ms (next.js: 8ms, application-code: 1012ms)
+ GET /api/notifications 200 in 1045ms (next.js: 12ms, application-code: 1034ms)
+ GET /api/notifications 200 in 1132ms (next.js: 8ms, application-code: 1124ms)
+ GET /api/notifications 200 in 1031ms (next.js: 12ms, application-code: 1019ms)
+ GET /api/notifications 200 in 1103ms (next.js: 18ms, application-code: 1085ms)
+ GET /api/notifications 200 in 1081ms (next.js: 9ms, application-code: 1072ms)
+ GET /api/notifications 200 in 1161ms (next.js: 33ms, application-code: 1128ms)
+ GET /api/notifications 200 in 1109ms (next.js: 7ms, application-code: 1102ms)
+ GET /api/notifications 200 in 912ms (next.js: 8ms, application-code: 905ms)
+ GET /api/notifications 200 in 1185ms (next.js: 9ms, application-code: 1176ms)
+ GET /api/notifications 200 in 969ms (next.js: 10ms, application-code: 959ms)
+ GET /api/notifications 200 in 1098ms (next.js: 8ms, application-code: 1090ms)
+ GET /api/notifications 200 in 2.3s (next.js: 18ms, application-code: 2.3s)
+ GET /api/notifications 200 in 1433ms (next.js: 7ms, application-code: 1425ms)
+ GET /api/notifications 200 in 938ms (next.js: 11ms, application-code: 927ms)
+ GET /api/notifications 200 in 959ms (next.js: 8ms, application-code: 951ms)
+ GET /api/notifications 200 in 1099ms (next.js: 7ms, application-code: 1092ms)
+ GET /api/notifications 200 in 928ms (next.js: 7ms, application-code: 922ms)
+ GET /api/notifications 200 in 999ms (next.js: 7ms, application-code: 992ms)
+ GET /api/notifications 200 in 1018ms (next.js: 6ms, application-code: 1011ms)
+ GET /api/notifications 200 in 983ms (next.js: 8ms, application-code: 975ms)
+ GET /api/notifications 200 in 1126ms (next.js: 8ms, application-code: 1118ms)
+ GET /api/notifications 200 in 1126ms (next.js: 8ms, application-code: 1118ms)
+ GET /api/notifications 200 in 995ms (next.js: 7ms, application-code: 987ms)
+ GET /api/notifications 200 in 1091ms (next.js: 24ms, application-code: 1067ms)
+ GET /api/notifications 200 in 1049ms (next.js: 11ms, application-code: 1038ms)
+ GET /api/notifications 200 in 1148ms (next.js: 7ms, application-code: 1141ms)
+ GET /api/notifications 200 in 1085ms (next.js: 10ms, application-code: 1075ms)
+ GET /api/notifications 200 in 929ms (next.js: 8ms, application-code: 921ms)
+ GET /api/notifications 200 in 1031ms (next.js: 10ms, application-code: 1021ms)
+ GET /api/notifications 200 in 920ms (next.js: 8ms, application-code: 913ms)
+ GET /api/notifications 200 in 1129ms (next.js: 8ms, application-code: 1121ms)
+ GET /api/notifications 200 in 1140ms (next.js: 14ms, application-code: 1126ms)
+ GET /api/notifications 200 in 1066ms (next.js: 9ms, application-code: 1056ms)
+ GET /api/notifications 200 in 1119ms (next.js: 8ms, application-code: 1112ms)
+ GET /api/notifications 200 in 943ms (next.js: 12ms, application-code: 932ms)
+ GET /api/notifications 200 in 1168ms (next.js: 8ms, application-code: 1160ms)
+ GET /api/notifications 200 in 900ms (next.js: 9ms, application-code: 890ms)
+ GET /api/notifications 200 in 1054ms (next.js: 9ms, application-code: 1046ms)
+ GET /api/notifications 200 in 1138ms (next.js: 21ms, application-code: 1116ms)
+ GET /api/notifications 200 in 960ms (next.js: 10ms, application-code: 950ms)
+ GET /api/notifications 200 in 1106ms (next.js: 8ms, application-code: 1098ms)
+ GET /api/notifications 200 in 1156ms (next.js: 8ms, application-code: 1148ms)
+ GET /api/notifications 200 in 947ms (next.js: 29ms, application-code: 918ms)
+ GET /api/notifications 200 in 1071ms (next.js: 6ms, application-code: 1064ms)
+ GET /api/notifications 200 in 1282ms (next.js: 17ms, application-code: 1265ms)
