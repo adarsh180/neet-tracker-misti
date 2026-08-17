@@ -16,7 +16,7 @@ type TaskItem = {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  source: "MANUAL" | "AI";
+  source: "MANUAL" | "AI" | "VOICE_ASSISTANT";
   plannedMinutes: number | null;
   dueDate: string | null;
   aiAssistEnabled: boolean;
@@ -443,6 +443,7 @@ export default function TodoPage() {
                     <div className="task-head">
                       <span className="badge badge-glass">{PRIORITY_LABELS[task.priority]}</span>
                       {task.source === "AI" && <span className="badge badge-lotus">AI</span>}
+                      {task.source === "VOICE_ASSISTANT" && <span className="badge badge-lotus">Voice plan</span>}
                     </div>
                     <strong>{task.title}</strong>
                     {task.description && <p>{task.description}</p>}

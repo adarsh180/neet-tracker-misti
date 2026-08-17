@@ -10,11 +10,12 @@ type DailyGoalPayload = {
   questionsSolved?: number;
   disciplineScore?: number;
   completionPercent?: number;
+  intensityLevel?: number;
   notes?: string | null;
 };
 
 async function persistDailyGoalEntry(entry: DailyGoalPayload) {
-  const { subjectId, date, hoursStudied, questionsSolved, disciplineScore, completionPercent, notes } = entry;
+  const { subjectId, date, hoursStudied, questionsSolved, disciplineScore, completionPercent, intensityLevel, notes } = entry;
 
   if (!subjectId || !date) {
     throw new Error("subjectId and date are required");
@@ -35,6 +36,7 @@ async function persistDailyGoalEntry(entry: DailyGoalPayload) {
     questionsSolved === 0 &&
     (disciplineScore ?? 0) === 0 &&
     (completionPercent ?? 0) === 0 &&
+    (intensityLevel ?? 0) === 0 &&
     !notes
   ) {
     if (existing) {
@@ -51,6 +53,7 @@ async function persistDailyGoalEntry(entry: DailyGoalPayload) {
         questionsSolved: questionsSolved ?? existing.questionsSolved,
         disciplineScore: disciplineScore ?? existing.disciplineScore,
         completionPercent: completionPercent ?? existing.completionPercent,
+        intensityLevel: Math.max(0, Math.min(5, intensityLevel ?? existing.intensityLevel)),
         notes: notes ?? existing.notes,
       },
     });
@@ -64,6 +67,7 @@ async function persistDailyGoalEntry(entry: DailyGoalPayload) {
       questionsSolved: questionsSolved ?? 0,
       disciplineScore: disciplineScore ?? 0,
       completionPercent: completionPercent ?? 0,
+      intensityLevel: Math.max(0, Math.min(5, intensityLevel ?? 0)),
       notes: notes ?? null,
     },
   });

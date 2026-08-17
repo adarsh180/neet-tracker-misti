@@ -38,6 +38,30 @@ interface Revision {
   id: string;
   revisedAt: string;
   note: string | null;
+  revisionSessionId?: string | null;
+}
+
+interface StudyActivity {
+  id: string;
+  date: string;
+  topicId: string | null;
+  chapter: string;
+  kind: "NEW_LEARNING" | "PRACTICE" | "REVISION" | "TEST_REVIEW";
+  coverage: "PARTIAL" | "FULL";
+  hoursStudied: number;
+  questionsDelta: number;
+  intensityLevel: number;
+  completionConfirmed: boolean;
+  createdAt: string;
+}
+
+interface RevisionSession {
+  id: string;
+  topicId: string | null;
+  chapter: string;
+  coverage: "PARTIAL" | "FULL";
+  revisedAt: string;
+  undoneAt: string | null;
 }
 
 interface Topic {
@@ -48,8 +72,12 @@ interface Topic {
   classLevel: string | null;
   isCompleted: boolean;
   completedAt: string | null;
+  nextReviewDate: string | null;
   questionsSolved: number;
   revisions: Revision[];
+  _count?: { revisions: number };
+  studyActivities?: StudyActivity[];
+  revisionSessions?: RevisionSession[];
 }
 
 interface Subject {
@@ -59,6 +87,9 @@ interface Subject {
   emoji: string;
   color: string;
   topics: Topic[];
+  studyActivities?: StudyActivity[];
+  revisionSessions?: RevisionSession[];
+  chapterQuestionTotals?: Array<{ chapter: string; questions: number }>;
 }
 
 const SUBJECT_META: Record<string, { gradient: string; dimBg: string; glow: string; varColor: string }> = {
@@ -117,6 +148,15 @@ function prettyDate(iso: string) {
   }
 }
 
+function getTopicLearningState(topic: Topic) {
+  const revisionCount = topic._count?.revisions ?? topic.revisions.length;
+  const reviewDue = topic.nextReviewDate ? new Date(topic.nextReviewDate).getTime() <= Date.now() : false;
+  if (topic.isCompleted && reviewDue) return { label: "Revision due", tone: "due" };
+  if (topic.isCompleted) return { label: "Completed", tone: "complete" };
+  if (topic.questionsSolved > 0 || revisionCount > 0 || (topic.studyActivities?.length ?? 0) > 0) return { label: "In progress", tone: "progress" };
+  return { label: "Not started", tone: "idle" };
+}
+
 type ChapterEntry = {
   chapter: string;
   chapterOrder: number;
@@ -125,6 +165,8 @@ type ChapterEntry = {
   percent: number;
   qs: number;
   revs: number;
+  revisionSessions: number;
+  latestActivity: StudyActivity | null;
 };
 
 const EMPTY_TOPICS: Topic[] = [];
@@ -139,12 +181,16 @@ function toStoredChapterValue(chapter: string) {
 
 function buildChapterEntries(
   topics: Topic[],
-  filters?: { searchQuery: string; filterMode: "all" | "pending" | "done" }
+  activities: StudyActivity[] = [],
+  revisionSessions: RevisionSession[] = [],
+  chapterQuestionTotals: Array<{ chapter: string; questions: number }> = [],
+  filters?: { searchQuery: string; filterMode: "all" | "pending" | "done"; classFilter: "all" | "11" | "12" }
 ) {
   const grouped = new Map<string, Topic[]>();
   const chapterOrderMap = new Map<string, number>();
   const searchQuery = filters?.searchQuery.trim().toLowerCase() ?? "";
   const filterMode = filters?.filterMode ?? "all";
+  const classFilter = filters?.classFilter ?? "all";
 
   for (const topic of topics) {
     const chapter = getChapterLabel(topic.chapter);
@@ -155,8 +201,9 @@ function buildChapterEntries(
     const matchesFilter =
       filterMode === "all" ||
       (filterMode === "done" ? topic.isCompleted : !topic.isCompleted);
+    const matchesClass = classFilter === "all" || topic.classLevel === classFilter;
 
-    if (!matchesSearch || !matchesFilter) {
+    if (!matchesSearch || !matchesFilter || !matchesClass) {
       continue;
     }
 
@@ -176,6 +223,11 @@ function buildChapterEntries(
       const percent = chapterTopics.length
         ? Math.round((done / chapterTopics.length) * 100)
         : 0;
+      const latestActivity: StudyActivity | null = activities
+        .filter((activity) => activity.chapter === chapter)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .at(0) ?? null;
+      const chapterOnlyQuestions = chapterQuestionTotals.find((entry) => entry.chapter === chapter)?.questions ?? 0;
 
       return {
         chapter,
@@ -183,8 +235,10 @@ function buildChapterEntries(
         topics: chapterTopics,
         done,
         percent,
-        qs: chapterTopics.reduce((sum, topic) => sum + topic.questionsSolved, 0),
-        revs: chapterTopics.reduce((sum, topic) => sum + topic.revisions.length, 0),
+        qs: chapterTopics.reduce((sum, topic) => sum + topic.questionsSolved, 0) + chapterOnlyQuestions,
+        revs: chapterTopics.reduce((sum, topic) => sum + (topic._count?.revisions ?? topic.revisions.length), 0),
+        revisionSessions: new Set(revisionSessions.filter((session) => session.chapter === chapter).map((session) => session.id)).size,
+        latestActivity,
       };
     })
     .sort((a, b) => {
@@ -221,6 +275,7 @@ export default function SubjectPage() {
   const [toggling, setToggling] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState<"all" | "pending" | "done">("all");
+  const [classFilter, setClassFilter] = useState<"all" | "11" | "12">("all");
   const [editingQs, setEditingQs] = useState<{ id: string; count: string } | null>(null);
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicChapter, setNewTopicChapter] = useState("");
@@ -243,8 +298,14 @@ export default function SubjectPage() {
         const found = all.find((s) => s.slug === slug);
         setSubject(found || null);
         if (found) {
-          const chs = [...new Set(found.topics.map((t) => t.chapter || "General Topics"))].slice(0, 3);
+          const searchParams = new URLSearchParams(window.location.search);
+          const requestedChapter = searchParams.get("chapter")?.trim();
+          const requestedTopic = searchParams.get("topic")?.trim();
+          const chs = requestedChapter
+            ? [requestedChapter]
+            : [...new Set(found.topics.map((t) => t.chapter || "General Topics"))].slice(0, 3);
           setExpandedChapters(new Set(chs));
+          if (requestedTopic) setSearchQuery(requestedTopic);
         }
       }
     } finally {
@@ -367,20 +428,21 @@ export default function SubjectPage() {
   const subjectTopics = subject?.topics ?? EMPTY_TOPICS;
   const completedTopics = subjectTopics.filter((topic) => topic.isCompleted).length;
   const pct = subjectTopics.length > 0 ? Math.round((completedTopics / subjectTopics.length) * 100) : 0;
-  const totalQs = subjectTopics.reduce((sum, topic) => sum + topic.questionsSolved, 0);
-  const totalRevisions = subjectTopics.reduce((sum, topic) => sum + topic.revisions.length, 0);
+  const chapterOnlyQuestions = (subject?.chapterQuestionTotals ?? []).reduce((sum, entry) => sum + entry.questions, 0);
+  const totalQs = subjectTopics.reduce((sum, topic) => sum + topic.questionsSolved, 0) + chapterOnlyQuestions;
+  const totalRevisions = subjectTopics.reduce((sum, topic) => sum + (topic._count?.revisions ?? topic.revisions.length), 0);
   const pendingTopics = subjectTopics.length - completedTopics;
 
   const allChapterEntries = useMemo(
-    () => buildChapterEntries(subjectTopics),
-    [subjectTopics]
+    () => buildChapterEntries(subjectTopics, subject?.studyActivities ?? [], subject?.revisionSessions ?? [], subject?.chapterQuestionTotals ?? []),
+    [subject?.chapterQuestionTotals, subject?.revisionSessions, subject?.studyActivities, subjectTopics]
   );
   const chapterEntries = useMemo(
-    () => buildChapterEntries(subjectTopics, { searchQuery, filterMode }),
-    [subjectTopics, searchQuery, filterMode]
+    () => buildChapterEntries(subjectTopics, subject?.studyActivities ?? [], subject?.revisionSessions ?? [], subject?.chapterQuestionTotals ?? [], { searchQuery, filterMode, classFilter }),
+    [subject?.chapterQuestionTotals, subject?.revisionSessions, subject?.studyActivities, subjectTopics, searchQuery, filterMode, classFilter]
   );
   const canReorderChapters =
-    filterMode === "all" && !searchQuery.trim() && allChapterEntries.length > 1;
+    filterMode === "all" && classFilter === "all" && !searchQuery.trim() && allChapterEntries.length > 1;
   const chapterEntryMap = useMemo(
     () => new Map(chapterEntries.map((entry) => [entry.chapter, entry])),
     [chapterEntries]
@@ -829,6 +891,19 @@ export default function SubjectPage() {
             ))}
           </div>
 
+          <div className="filter-tabs class-tabs" aria-label="Filter by class">
+            {(["all", "11", "12"] as const).map((value) => (
+              <button
+                key={value}
+                className={`filter-tab ${classFilter === value ? "active" : ""}`}
+                onClick={() => setClassFilter(value)}
+                style={{ "--fc": meta.varColor } as React.CSSProperties}
+              >
+                {value === "all" ? "Both classes" : `Class ${value}`}
+              </button>
+            ))}
+          </div>
+
           <button
             className="btn btn-primary btn-sm add-btn"
             onClick={() => {
@@ -916,7 +991,7 @@ export default function SubjectPage() {
               <p>Try another keyword or switch back to all topics.</p>
             </div>
           ) : (
-            orderedChapterEntries.map(({ chapter, topics, done, percent }) => {
+            orderedChapterEntries.map(({ chapter, topics, done, percent, qs, revisionSessions: sessionCount, latestActivity }) => {
               const isOpen = expandedChapters.has(chapter);
               const isEditingChapter = editingChapter === chapter;
               const chapterBusy = chapterActionBusy === chapter;
@@ -996,7 +1071,11 @@ export default function SubjectPage() {
                             )}
                             <span className="badge badge-gold chapter-badge">{done}/{topics.length}</span>
                           </div>
-                          <div className="chapter-subline">{done} completed - {topics.length - done} pending</div>
+                          <div className="chapter-subline">
+                            <span>{done} completed · {topics.length - done} pending</span>
+                            <span>{qs} questions · {sessionCount} revision session{sessionCount === 1 ? "" : "s"}</span>
+                            {latestActivity && <span className="chapter-latest"><Activity size={10} /> Last activity {prettyDate(latestActivity.date)} · +{latestActivity.questionsDelta} Q</span>}
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -1062,8 +1141,10 @@ export default function SubjectPage() {
                     >
                     <div className="topic-list">
                       {topics.map((topic, idx) => {
-                        const revisionCount = topic.revisions.length;
+                        const revisionCount = topic._count?.revisions ?? topic.revisions.length;
                         const completedAt = topic.completedAt ? prettyDate(topic.completedAt) : null;
+                        const learningState = getTopicLearningState(topic);
+                        const latestTopicActivity = topic.studyActivities?.[0];
 
                         return (
                           <div
@@ -1115,8 +1196,10 @@ export default function SubjectPage() {
 
                               <div className="topic-tags">
                                 {topic.classLevel && <span className="badge badge-lotus">Class {topic.classLevel}</span>}
+                                <span className={`learning-state ${learningState.tone}`}>{learningState.label}</span>
                                 {revisionCount > 0 && <span className="badge badge-gold">Rev {revisionCount}</span>}
                                 {topic.isCompleted && revisionCount === 0 && <span className="badge badge-warning">Needs Revision</span>}
+                                {latestTopicActivity && <span className="activity-chip">{prettyDate(latestTopicActivity.date)} · +{latestTopicActivity.questionsDelta} Q · {latestTopicActivity.kind.replaceAll("_", " ").toLowerCase()}</span>}
                               </div>
                             </div>
 
@@ -1956,6 +2039,17 @@ export default function SubjectPage() {
           margin-top: 6px;
           font-size: 12px;
           color: rgba(255,255,255,0.52);
+          display: flex;
+          align-items: center;
+          gap: 6px 12px;
+          flex-wrap: wrap;
+        }
+
+        .chapter-latest {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: rgba(191,219,254,0.82);
         }
 
         .chapter-right {
@@ -2106,6 +2200,23 @@ export default function SubjectPage() {
           gap: 6px;
           flex-wrap: wrap;
         }
+
+        .learning-state,
+        .activity-chip {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 8px;
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .learning-state.idle { color: rgba(255,255,255,0.46); background: rgba(255,255,255,0.025); }
+        .learning-state.progress { color: #bfdbfe; background: rgba(96,165,250,0.09); border-color: rgba(96,165,250,0.18); }
+        .learning-state.complete { color: #a7f3d0; background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.18); }
+        .learning-state.due { color: #fde68a; background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); }
+        .activity-chip { color: rgba(255,255,255,0.58); background: rgba(255,255,255,0.025); font-weight: 650; }
 
         .topic-actions {
           display: flex;

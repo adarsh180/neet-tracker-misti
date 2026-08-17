@@ -3,19 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "22.x"
+    "node": ">=22.13.0 <23"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npx tsx --test tests/*.test.ts",
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
     "db:studio": "prisma studio",
     "pyq:catalog": "node scripts/generate-jee-pyq-catalog.mjs",
     "pyq:sync": "node scripts/sync-jee-pyq-to-blob.mjs",
     "pyq:import-official": "node scripts/import-official-neet-pyq.mjs",
+    "sources:scrape": "node scripts/scrape-neet-institute-sources.mjs --download",
+    "sources:stage-paper": "node scripts/stage-institute-paper.mjs",
+    "sources:reconcile-pyq": "node scripts/reconcile-staged-pyq.mjs",
+    "syllabus:sync-2026": "node scripts/sync-neet-2026-syllabus.mjs",
+    "reader:import": "node scripts/import-ncert-reader.mjs",
+    "reader:sync-official": "python scripts/sync-official-ncert-reader.py && node scripts/import-ncert-reader.mjs tmp/pdfs/ncert-official/reader-manifest.json",
+    "reader:link-pyq": "node scripts/export-ncert-link-candidates.mjs tmp/pdfs/ncert-official/link-candidates.json && python scripts/match-ncert-pyq-passages.py --manifest tmp/pdfs/ncert-official/reader-manifest.json --candidates tmp/pdfs/ncert-official/link-candidates.json --output tmp/pdfs/ncert-official/ncert-pyq-links.json && node scripts/import-ncert-pyq-links.mjs tmp/pdfs/ncert-official/ncert-pyq-links.json",
+    "reader:name-assets": "python scripts/name-ncert-reader-pdfs.py --manifest tmp/pdfs/ncert-official/reader-manifest.json --output tmp/pdfs/ncert-official/named --report tmp/pdfs/ncert-official/named-assets.json && node scripts/update-ncert-reader-assets.mjs tmp/pdfs/ncert-official/named-assets.json",
     "bank:fill": "node scripts/bank-fill.mjs",
     "bank:upgrade-v2": "node scripts/bank-v2-upgrade.mjs",
     "bank:visual-fill": "node scripts/bank-visual-fill.mjs",
@@ -73,9 +82,9 @@
     "katex": "^0.16.45",
     "lucide-react": "^1.8.0",
     "mysql2": "^3.22.0",
-    "next": "16.2.9",
+    "next": "16.3.1",
     "prisma": "^6.19.3",
-    "puppeteer-core": "^24.43.1",
+    "puppeteer-core": "^25.7.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-katex": "^3.1.0",
@@ -92,12 +101,15 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "16.3.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   },
   "overrides": {
-    "postcss": "8.5.15",
-    "undici": "6.27.0"
+    "ip-address": "10.5.0",
+    "nanoid": "3.3.18",
+    "postcss": "8.5.26",
+    "undici": "6.28.0"
   }
 }

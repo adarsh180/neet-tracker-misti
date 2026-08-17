@@ -60,6 +60,13 @@ const SUBJECT_NAMES: Record<PracticeSubjectSlug, string> = {
 export type PracticeMode = "FULL_LENGTH" | "SECTIONAL" | "UNIT" | "SUBJECT" | "CHAPTER" | "TOPIC" | "PYQ_YEAR";
 export type PracticeSource = "NEET_PYQ" | "JEE_PYQ" | "INSTITUTE" | "PLATFORM" | "NCERT" | "AI";
 export type PracticeDifficulty = "EASY" | "MODERATE" | "TOUGH";
+export type PracticeSourceKind = "PYQ" | "QUESTION_BANK";
+export type PracticeScope = {
+  subject: PracticeSubjectSlug;
+  classLevel: "11" | "12";
+  chapter: string;
+  topics?: string[];
+};
 
 export type PracticeQuestion = {
   id: string;
@@ -108,8 +115,11 @@ export type PracticeConfig = {
   topic?: string | null;
   pyqYear?: string | null;
   classLevel?: string | null;
+  classLevels?: ("11" | "12")[] | null;
   subjects?: PracticeSubjectSlug[] | null;
   chapters?: string[] | null;
+  scopes?: PracticeScope[] | null;
+  sourceKinds?: PracticeSourceKind[] | null;
   questionCount: number;
   aiFreshPercent?: number | null;
   durationMinutes?: number | null;
@@ -180,7 +190,11 @@ function buildTitle(config: PracticeConfig) {
   if (config.mode === "FULL_LENGTH") return `Full-length mock · ${config.questionCount} Qs`;
   if (config.mode === "PYQ_YEAR") return `NEET ${config.pyqYear} PYQ session · ${config.questionCount} Qs`;
   if (config.mode === "SECTIONAL") return `Class ${config.classLevel} sectional · ${config.questionCount} Qs`;
-  if (config.mode === "UNIT") return `Class ${config.classLevel} custom unit · ${config.questionCount} Qs`;
+  if (config.mode === "UNIT") {
+    const classes = config.classLevels?.length ? config.classLevels.join(" + ") : config.classLevel;
+    const scopeCount = config.scopes?.length ?? config.chapters?.length ?? 0;
+    return `${classes ? `Class ${classes} · ` : ""}Custom test${scopeCount ? ` · ${scopeCount} chapters` : ""} · ${config.questionCount} Qs`;
+  }
   const subject = config.subject ? SUBJECT_NAMES[config.subject] : "Mixed";
   if (config.mode === "SUBJECT") return `${subject} sectional · ${config.questionCount} Qs`;
   if (config.mode === "CHAPTER") return `${subject} — ${config.chapter} · ${config.questionCount} Qs`;
@@ -189,6 +203,10 @@ function buildTitle(config: PracticeConfig) {
 
 function isOfficialNeetPaperMode(mode: PracticeMode | string) {
   return mode === "FULL_LENGTH" || mode === "PYQ_YEAR";
+}
+
+function requiresBalancedPcbPaper(test: Pick<PracticeTest, "mode" | "questionCount">) {
+  return (isOfficialNeetPaperMode(test.mode) || test.mode === "SECTIONAL") && test.questionCount === NEET_FULL_TEST_QUESTIONS;
 }
 
 function normalizePracticeQuestionCount(config: PracticeConfig) {
@@ -223,8 +241,11 @@ export async function createPracticeTest(config: PracticeConfig, userId = "misti
   const testSeed = randomUUID();
   const filters = {
     classLevel: config.classLevel ?? null,
+    classLevels: config.classLevels?.length ? config.classLevels : config.classLevel ? [config.classLevel] : null,
     subjects: config.subjects?.length ? config.subjects : config.subject ? [config.subject] : null,
     chapters: config.chapters?.length ? config.chapters : config.chapter ? [config.chapter] : null,
+    scopes: config.scopes?.length ? config.scopes : null,
+    sourceKinds: config.sourceKinds?.length ? config.sourceKinds : ["PYQ", "QUESTION_BANK"],
     topic: config.topic ?? null,
     pyqYear: config.pyqYear ?? null,
   };
@@ -306,11 +327,14 @@ function difficultyLine(difficulty: string) {
 function buildGenerationPrompt(test: PracticeTest, batchSize: number, existing: PracticeQuestion[], weakZones: WeakZone[]) {
   const plan = subjectPlanForBatch(test, batchSize, existing);
   const planCounts = plan.reduce<Record<string, number>>((acc, subject) => ({ ...acc, [subject]: (acc[subject] ?? 0) + 1 }), {});
+  const sectionalClass = (test.filtersJson as { classLevel?: string } | null)?.classLevel;
   const scope =
     test.mode === "CHAPTER"
       ? `Restrict every question to the chapter "${test.chapter}".`
       : test.mode === "TOPIC"
         ? `Restrict every question to the topic "${test.topic}"${test.chapter ? ` (chapter "${test.chapter}")` : ""}.`
+        : test.mode === "SECTIONAL"
+          ? `Restrict every question to the complete NCERT Class ${sectionalClass} syllabus for the listed subjects. Never use a Class ${sectionalClass === "11" ? "12" : "11"} chapter.`
         : `Cover the full NEET UG syllabus scope for the listed subjects (NCERT class 11 + 12).`;
 
   // Plain-text bullets, not a JSON array; a JSON string list here teaches the
@@ -429,7 +453,7 @@ function normalizeGeneratedPaper(test: PracticeTest, questions: PracticeQuestion
     deduped.push(question);
   }
 
-  if (!isOfficialNeetPaperMode(test.mode) || test.questionCount !== NEET_FULL_TEST_QUESTIONS) {
+  if (!requiresBalancedPcbPaper(test)) {
     return { questions: deduped, warnings };
   }
 
@@ -466,7 +490,7 @@ function buildPracticePaperQualityGate(test: PracticeTest, questions: PracticeQu
   const unverified = questions.filter((question) => !question.verified).length;
   if (unverified) warnings.push(`${unverified} question(s) are usable but not strict-bank verified.`);
 
-  if (isOfficialNeetPaperMode(test.mode)) {
+  if (requiresBalancedPcbPaper(test)) {
     if (questions.length !== NEET_FULL_TEST_QUESTIONS) {
       blockers.push(`Official NEET mock needs exactly ${NEET_FULL_TEST_QUESTIONS} questions; assembled ${questions.length}.`);
     }
@@ -572,8 +596,11 @@ export async function generateNextBatch(testId: string, options: { allowRuntimeT
       subject: test.subject as PracticeSubjectSlug | null,
       subjects: ((test.filtersJson as { subjects?: PracticeSubjectSlug[] } | null)?.subjects ?? undefined),
       classLevel: ((test.filtersJson as { classLevel?: string } | null)?.classLevel ?? undefined),
+      classLevels: ((test.filtersJson as { classLevels?: ("11" | "12")[] } | null)?.classLevels ?? undefined),
       chapter: test.chapter,
       chapters: ((test.filtersJson as { chapters?: string[] } | null)?.chapters ?? undefined),
+      scopes: ((test.filtersJson as { scopes?: PracticeScope[] } | null)?.scopes ?? undefined),
+      sourceKinds: ((test.filtersJson as { sourceKinds?: PracticeSourceKind[] } | null)?.sourceKinds ?? undefined),
       topic: test.topic,
       pyqYear: test.pyqYear,
       questionCount: test.questionCount,
@@ -802,7 +829,8 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
   const now = new Date();
 
   const subjectScore = (name: string) => result.subjectScores.find((entry) => entry.subject === name)?.score ?? null;
-  const isFullLength = test.mode === "FULL_LENGTH" || test.mode === "PYQ_YEAR" || test.mode === "SECTIONAL";
+  const hasPcbSubjectBreakdown = test.mode === "FULL_LENGTH" || test.mode === "PYQ_YEAR" || test.mode === "SECTIONAL";
+  const isFullLength = test.mode === "FULL_LENGTH" || test.mode === "PYQ_YEAR";
 
   const subjectRow = test.subject ? await db.subject.findUnique({ where: { slug: test.subject } }) : null;
 
@@ -884,10 +912,10 @@ export async function submitPracticeTest(testId: string, answers: PracticeAnswer
       wrongCount: result.wrong,
       skippedCount: result.skipped,
       negativeMarksLost: result.wrong,
-      physicsScore: isFullLength ? subjectScore("Physics") : null,
-      chemistryScore: isFullLength ? subjectScore("Chemistry") : null,
-      botanyScore: isFullLength ? subjectScore("Botany") : null,
-      zoologyScore: isFullLength ? subjectScore("Zoology") : null,
+      physicsScore: hasPcbSubjectBreakdown ? subjectScore("Physics") : null,
+      chemistryScore: hasPcbSubjectBreakdown ? subjectScore("Chemistry") : null,
+      botanyScore: hasPcbSubjectBreakdown ? subjectScore("Botany") : null,
+      zoologyScore: hasPcbSubjectBreakdown ? subjectScore("Zoology") : null,
       difficultyLevel: test.difficulty,
       linkedErrorLogTestId: errorLogTest.id,
       takenAt: now,

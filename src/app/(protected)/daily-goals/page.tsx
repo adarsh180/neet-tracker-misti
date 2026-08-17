@@ -22,6 +22,7 @@ import {
   Wand2,
   X,
 } from "lucide-react";
+import VoiceDailyLog from "@/components/daily-goals/voice-daily-log";
 
 /* ---------- TYPES ---------- */
 interface DailyGoalEntry {
@@ -32,6 +33,7 @@ interface DailyGoalEntry {
   questionsSolved: number;
   disciplineScore: number;
   completionPercent: number;
+  intensityLevel: number;
   notes: string | null;
   subject: { id: string; name: string; slug: string; color: string };
 }
@@ -44,6 +46,7 @@ interface QueuedDailyGoal {
   questionsSolved: number;
   disciplineScore: number;
   completionPercent: number;
+  intensityLevel: number;
   notes: string | null;
 }
 
@@ -97,6 +100,7 @@ interface SubjectAnalytics {
 interface GoalFormValue {
   hours: string;
   questions: string;
+  intensity: string;
   notes: string;
 }
 
@@ -549,6 +553,7 @@ export default function DailyGoalsPage() {
             initial[g.subjectId] = {
               hours: String(g.hoursStudied),
               questions: String(g.questionsSolved),
+              intensity: g.intensityLevel ? String(g.intensityLevel) : "",
               notes: g.notes || "",
             };
           });
@@ -631,7 +636,7 @@ export default function DailyGoalsPage() {
 
   const setSubjectFormValue = useCallback((subjectId: string, patch: Partial<GoalFormValue>) => {
     setForm((current) => {
-      const existing = current[subjectId] || { hours: "", questions: "", notes: "" };
+      const existing = current[subjectId] || { hours: "", questions: "", intensity: "", notes: "" };
       return {
         ...current,
         [subjectId]: { ...existing, ...patch },
@@ -644,14 +649,14 @@ export default function DailyGoalsPage() {
   }, [setSubjectFormValue]);
 
   const clearSubjectEntry = useCallback((subjectId: string) => {
-    setSubjectFormValue(subjectId, { hours: "", questions: "", notes: "" });
+    setSubjectFormValue(subjectId, { hours: "", questions: "", intensity: "", notes: "" });
   }, [setSubjectFormValue]);
 
   const applyDailyPreset = useCallback((preset: DailyQuickPreset) => {
     setForm((current) => {
       const next: GoalFormState = { ...current };
       subjects.forEach((subject) => {
-        const existing = current[subject.id] || { hours: "", questions: "", notes: "" };
+        const existing = current[subject.id] || { hours: "", questions: "", intensity: "", notes: "" };
         next[subject.id] = {
           ...existing,
           hours: formatPresetHours(preset.hoursPerSubject),
@@ -675,6 +680,7 @@ export default function DailyGoalsPage() {
       next[goal.subjectId] = {
         hours: String(goal.hoursStudied),
         questions: String(goal.questionsSolved),
+        intensity: goal.intensityLevel ? String(goal.intensityLevel) : "",
         notes: goal.notes || "",
       };
     });
@@ -695,13 +701,14 @@ export default function DailyGoalsPage() {
     const disciplineScore = Math.max(0, Math.min(100, parseInt(dailyMeta.disciplineScore) || 0));
     const completionPercent = Math.max(0, Math.min(100, parseInt(dailyMeta.completionPercent) || 0));
     const entries: QueuedDailyGoal[] = Object.entries(form)
-      .filter(([, v]) => v.hours !== "" || v.questions !== "" || v.notes !== "")
+      .filter(([, v]) => v.hours !== "" || v.questions !== "" || v.intensity !== "" || v.notes !== "")
       .map(([subjectId, v]) => ({
         id: `${selectedDate}:${subjectId}`,
         subjectId,
         date: selectedDate,
         hoursStudied: parseFloat(v.hours) || 0,
         questionsSolved: parseInt(v.questions) || 0,
+        intensityLevel: Math.max(0, Math.min(5, parseInt(v.intensity) || 0)),
         disciplineScore,
         completionPercent,
         notes: v.notes || null,
@@ -1166,6 +1173,23 @@ export default function DailyGoalsPage() {
               {pendingOffline > 0 && !loading && <span className="offline-sync-pill">{pendingOffline} queued offline</span>}
             </div>
 
+            <VoiceDailyLog
+              subjects={subjects}
+              selectedDate={selectedDate}
+              initialValues={form}
+              initialDiscipline={dailyMeta.disciplineScore}
+              initialCompletion={dailyMeta.completionPercent}
+              onApplyToManual={(values, meta) => {
+                setForm(values);
+                setDailyMeta(meta);
+              }}
+              onSaved={async () => {
+                setSaved(true);
+                window.setTimeout(() => setSaved(false), 3000);
+                await fetchData(true);
+              }}
+            />
+
             <div className="form-summary-strip">
               <div className="summary-pill">
                 <span className="summary-pill-label">Hours target</span>
@@ -1275,8 +1299,8 @@ export default function DailyGoalsPage() {
             <div className="subjects-list">
               {subjects.length === 0 && !loading && <div className="empty-state">No subjects found.</div>}
               {subjects.map((s) => {
-                const e = form[s.id] || { hours: "", questions: "", notes: "" };
-                const isFilled = e.hours !== "" || e.questions !== "" || e.notes !== "";
+                const e = form[s.id] || { hours: "", questions: "", intensity: "", notes: "" };
+                const isFilled = e.hours !== "" || e.questions !== "" || e.intensity !== "" || e.notes !== "";
                 return (
                   <div className={`subject-row group ${isFilled ? "subject-row-active" : ""}`} key={s.id}>
                     <div className="subject-info">
@@ -1315,6 +1339,20 @@ export default function DailyGoalsPage() {
                           className="glass-input"
                         />
                         <span className="input-suffix">qs</span>
+                      </div>
+                      <div className="input-field">
+                        <label className="input-label">Intensity</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="5"
+                          placeholder="0"
+                          value={e.intensity}
+                          onChange={(ev) => setSubjectFormValue(s.id, { intensity: ev.target.value })}
+                          className="glass-input"
+                          aria-label={`${s.name} intensity from zero to five`}
+                        />
+                        <span className="input-suffix">/5</span>
                       </div>
                     </div>
                     <div className="quick-subject-actions" aria-label={`${s.name} quick fill`}>

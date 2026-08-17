@@ -6,7 +6,7 @@ import { CHAPTERS, canonicalizeChapter, normalizeSubject, type NeetSubject } fro
 import { extractJsonArray } from "./ai-json";
 import { db } from "./db";
 import { BANK_MODELS, BANK_SECOND_PASS_MODELS, chatWithAI } from "./openrouter";
-import type { PracticeDifficulty, PracticeQuestion, PracticeSource, PracticeSubjectSlug } from "./practice-engine";
+import type { PracticeDifficulty, PracticeQuestion, PracticeScope, PracticeSource, PracticeSourceKind, PracticeSubjectSlug } from "./practice-engine";
 import { cleanQuestionOptions, cleanQuestionText, hasUnreadableText, isPlaceholderText } from "./text-cleanup";
 import { buildTrendAssemblyPlan, shouldUseTrendAssembly } from "./trend-blueprint";
 import { renderQuestionVisualSvg } from "./question-visual-svg";
@@ -408,7 +408,7 @@ function shuffle<T>(items: T[]) {
   return [...items].sort(() => Math.random() - 0.5);
 }
 
-function splitEvenly(total: number, buckets: PracticeSubjectSlug[]) {
+function splitEvenly<T>(total: number, buckets: T[]) {
   const base = Math.floor(total / buckets.length);
   let remainder = total % buckets.length;
   return buckets.map((bucket) => ({ bucket, count: base + (remainder-- > 0 ? 1 : 0) }));
@@ -499,13 +499,16 @@ function pushWarning(audit: BankAssemblyAudit | undefined, warning: string) {
   audit.warnings.push(warning);
 }
 
-function sourceWhereForRequest(request: { mode: BankAssemblyRequest["mode"] }) {
+function sourceWhereForRequest(request: { mode: BankAssemblyRequest["mode"]; sourceKinds?: PracticeSourceKind[] | null }) {
   if (request.mode === "PYQ_YEAR") return "NEET_PYQ";
+  const kinds = request.sourceKinds ?? [];
+  if (kinds.length === 1 && kinds[0] === "PYQ") return "NEET_PYQ";
+  if (kinds.length === 1 && kinds[0] === "QUESTION_BANK") return { not: "NEET_PYQ" };
   // Academic provenance is not itself a quality decision. Normal tests may use
   // AI-origin rows only after the independent academic pipeline has promoted
   // them to VERIFIED_STRICT; baseWhere below enforces that gate. PYQ remains
   // official-only, and full NEET mocks continue to exclude JEE paper rows.
-  if (request.mode === "FULL_LENGTH") return { not: "JEE_PYQ" };
+  if (request.mode === "FULL_LENGTH" || request.mode === "SECTIONAL") return { not: "JEE_PYQ" };
   return undefined;
 }
 
@@ -740,8 +743,11 @@ export type BankAssemblyRequest = {
   subject?: PracticeSubjectSlug | null;
   subjects?: PracticeSubjectSlug[] | null;
   classLevel?: string | null;
+  classLevels?: ("11" | "12")[] | null;
   chapter?: string | null;
   chapters?: string[] | null;
+  scopes?: PracticeScope[] | null;
+  sourceKinds?: PracticeSourceKind[] | null;
   topic?: string | null;
   pyqYear?: string | null;
   questionCount: number;
@@ -753,6 +759,80 @@ export type BankAssemblyRequest = {
   testSeed?: string | null;
   audit?: BankAssemblyAudit;
 };
+
+async function assembleScopedQuestions(
+  request: BankAssemblyRequest,
+  state: BankSelectionState,
+  audit?: BankAssemblyAudit,
+) {
+  const selected: BankQuestion[] = [];
+  const scopes = (request.scopes ?? []).filter((scope) =>
+    Boolean(canonicalizeChapter(scope.subject, scope.chapter)) &&
+    (scope.classLevel === "11" || scope.classLevel === "12"),
+  );
+  const scopeBuckets = splitEvenly(request.desiredCount, scopes);
+
+  for (const scopeBucket of scopeBuckets) {
+    const scope = scopeBucket.bucket;
+    const subject = normalizeSubject(scope.subject);
+    const chapter = subject ? canonicalizeChapter(subject, scope.chapter) : null;
+    if (!subject || !chapter) continue;
+    const start = selected.length;
+    for (const diffBucket of splitDifficulty(scopeBucket.count, request.difficulty)) {
+      const pool = await db.bankQuestion.findMany({
+        where: {
+          qualityStatus: "VERIFIED_STRICT",
+          verified: true,
+          subject,
+          classLevel: scope.classLevel,
+          chapter: chapter.chapter,
+          topic: scope.topics?.length ? { in: scope.topics } : undefined,
+          difficulty: diffBucket.difficulty,
+          source: sourceWhereForRequest(request),
+          id: state.exclude.size ? { notIn: [...state.exclude] } : undefined,
+        },
+        orderBy: [{ timesServed: "asc" }, { lastServedAt: "asc" }, { createdAt: "asc" }],
+        take: Math.min(4000, Math.max(diffBucket.count * 40, 200)),
+      });
+      const ordered = shuffle(pool.filter(isStrictlyServeableBankRow))
+        .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed);
+      selected.push(...takeFromCandidatePool(ordered, diffBucket.count, state));
+    }
+
+    if (request.difficulty === "MIXED" && selected.length - start < scopeBucket.count) {
+      const shortfall = scopeBucket.count - (selected.length - start);
+      const pool = await db.bankQuestion.findMany({
+        where: {
+          qualityStatus: "VERIFIED_STRICT",
+          verified: true,
+          subject,
+          classLevel: scope.classLevel,
+          chapter: chapter.chapter,
+          topic: scope.topics?.length ? { in: scope.topics } : undefined,
+          source: sourceWhereForRequest(request),
+          id: state.exclude.size ? { notIn: [...state.exclude] } : undefined,
+        },
+        orderBy: [{ timesServed: "asc" }, { lastServedAt: "asc" }, { createdAt: "asc" }],
+        take: Math.min(4000, Math.max(shortfall * 40, 200)),
+      });
+      const ordered = shuffle(pool.filter(isStrictlyServeableBankRow))
+        .sort((a, b) => bankQualityRank(a) - bankQualityRank(b) || a.timesServed - b.timesServed);
+      selected.push(...takeFromCandidatePool(ordered, shortfall, state));
+    }
+    const scopeSelected = selected.length - start;
+    audit?.quotas.push({
+      subject,
+      classLevel: scope.classLevel,
+      chapter: chapter.chapter,
+      requested: scopeBucket.count,
+      selected: scopeSelected,
+    });
+    if (scopeSelected < scopeBucket.count) {
+      pushWarning(audit, `${subject}/${chapter.chapter} is short by ${scopeBucket.count - scopeSelected} strict question(s).`);
+    }
+  }
+  return selected.slice(0, request.desiredCount);
+}
 
 export async function assembleQuestionsFromBank(request: BankAssemblyRequest): Promise<PracticeQuestion[]> {
   const selected: BankQuestion[] = [];
@@ -822,6 +902,18 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
       });
     }
     return serveable.map((row, index) => bankRowToPracticeQuestion(row, request.startIndex + index + 1));
+  }
+
+  if (request.scopes?.length) {
+    const scoped = await assembleScopedQuestions(request, selectionState, audit);
+    if (scoped.length) {
+      await db.bankQuestion.updateMany({
+        where: { id: { in: scoped.map((row) => row.id) } },
+        data: { timesServed: { increment: 1 }, lastServedAt: new Date() },
+      });
+    }
+    if (audit) audit.selected = scoped.length;
+    return scoped.map((row, index) => bankRowToPracticeQuestion(row, request.startIndex + index + 1));
   }
 
   if (shouldUseTrendAssembly(request)) {

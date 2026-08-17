@@ -11,36 +11,40 @@ datasource db {
 }
 
 model Subject {
-  id              String           @id @default(cuid())
-  slug            String           @unique // botany, zoology, physics, chemistry
-  name            String
-  emoji           String
-  color           String // hex color for UI
-  topics          Topic[]
-  dailyGoals      DailyGoal[]
-  testRecords     TestRecord[]
-  errorPatterns   ErrorPattern[]
-  tasks           Task[]
-  missionSessions MissionSession[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id               String            @id @default(cuid())
+  slug             String            @unique // botany, zoology, physics, chemistry
+  name             String
+  emoji            String
+  color            String // hex color for UI
+  topics           Topic[]
+  dailyGoals       DailyGoal[]
+  testRecords      TestRecord[]
+  errorPatterns    ErrorPattern[]
+  tasks            Task[]
+  missionSessions  MissionSession[]
+  studyActivities  StudyActivity[]
+  revisionSessions RevisionSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@map("subjects")
 }
 
 model Topic {
-  id              String     @id @default(cuid())
-  subjectId       String
-  subject         Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  name            String
-  chapter         String? // chapter name/number
-  chapterOrder    Int        @default(0)
-  classLevel      String? // "11" or "12"
-  topicOrder      Int        @default(0)
-  isCompleted     Boolean    @default(false)
-  completedAt     DateTime?
-  questionsSolved Int        @default(0)
-  revisions       Revision[]
+  id               String            @id @default(cuid())
+  subjectId        String
+  subject          Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  name             String
+  chapter          String? // chapter name/number
+  chapterOrder     Int               @default(0)
+  classLevel       String? // "11" or "12"
+  topicOrder       Int               @default(0)
+  isCompleted      Boolean           @default(false)
+  completedAt      DateTime?
+  questionsSolved  Int               @default(0)
+  revisions        Revision[]
+  studyActivities  StudyActivity[]
+  revisionSessions RevisionSession[]
 
   // Spaced Repetition System (SRS)
   nextReviewDate DateTime?
@@ -54,13 +58,88 @@ model Topic {
 }
 
 model Revision {
-  id        String   @id @default(cuid())
-  topicId   String
-  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  note      String?  @db.Text
-  revisedAt DateTime @default(now())
+  id                String           @id @default(cuid())
+  topicId           String
+  topic             Topic            @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  revisionSessionId String?
+  revisionSession   RevisionSession? @relation(fields: [revisionSessionId], references: [id], onDelete: SetNull)
+  note              String?          @db.Text
+  revisedAt         DateTime         @default(now())
 
+  @@index([revisionSessionId])
   @@map("revisions")
+}
+
+enum StudyActivityKind {
+  NEW_LEARNING
+  PRACTICE
+  REVISION
+  TEST_REVIEW
+}
+
+enum StudyCoverage {
+  PARTIAL
+  FULL
+}
+
+enum StudyActivitySource {
+  MANUAL
+  VOICE_ASSISTANT
+}
+
+model StudyActivity {
+  id                  String                   @id @default(cuid())
+  userId              String                   @default("misti")
+  date                DateTime                 @db.Date
+  subjectId           String
+  subject             Subject                  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topicId             String?
+  topic               Topic?                   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  chapter             String
+  kind                StudyActivityKind        @default(PRACTICE)
+  coverage            StudyCoverage            @default(PARTIAL)
+  hoursStudied        Float                    @default(0)
+  questionsDelta      Int                      @default(0)
+  intensityLevel      Int                      @default(0)
+  notes               String?                  @db.Text
+  weakConcepts        String?                  @db.Text
+  completionConfirmed Boolean                  @default(false)
+  source              StudyActivitySource      @default(MANUAL)
+  voiceSubmissionId   String?
+  voiceSubmission     VoiceDailyLogSubmission? @relation(fields: [voiceSubmissionId], references: [id], onDelete: SetNull)
+  undoneAt            DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@index([userId, date])
+  @@index([subjectId, chapter])
+  @@index([topicId, date])
+  @@index([voiceSubmissionId])
+  @@map("study_activities")
+}
+
+model RevisionSession {
+  id                String                   @id @default(cuid())
+  userId            String                   @default("misti")
+  subjectId         String
+  subject           Subject                  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topicId           String?
+  topic             Topic?                   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  chapter           String
+  coverage          StudyCoverage            @default(PARTIAL)
+  note              String?                  @db.Text
+  source            StudyActivitySource      @default(MANUAL)
+  voiceSubmissionId String?
+  voiceSubmission   VoiceDailyLogSubmission? @relation(fields: [voiceSubmissionId], references: [id], onDelete: SetNull)
+  revisedAt         DateTime                 @default(now())
+  undoneAt          DateTime?
+  revisions         Revision[]
+
+  @@index([userId, revisedAt])
+  @@index([subjectId, chapter])
+  @@index([topicId, revisedAt])
+  @@index([voiceSubmissionId])
+  @@map("revision_sessions")
 }
 
 model DailyGoal {
@@ -72,6 +151,7 @@ model DailyGoal {
   questionsSolved   Int      @default(0)
   disciplineScore   Int      @default(0)
   completionPercent Int      @default(0)
+  intensityLevel    Int      @default(0)
   notes             String?  @db.Text
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -403,6 +483,7 @@ enum TaskPriority {
 enum TaskSource {
   MANUAL
   AI
+  VOICE_ASSISTANT
 }
 
 enum TaskAgentTrigger {
@@ -442,34 +523,89 @@ enum MissionSessionStatus {
 }
 
 model Task {
-  id               String              @id @default(cuid())
-  title            String
-  description      String?             @db.Text
-  status           TaskStatus          @default(TODO)
-  priority         TaskPriority        @default(MEDIUM)
-  source           TaskSource          @default(MANUAL)
-  missionId        String?
-  mission          MissionSession?     @relation(fields: [missionId], references: [id], onDelete: SetNull)
-  subjectId        String?
-  subject          Subject?            @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  dueDate          DateTime?           @db.Date
-  plannedMinutes   Int?
-  actualMinutes    Int?
-  orderIndex       Int                 @default(0)
-  lastAgentSummary String?             @db.Text
-  aiAssistEnabled  Boolean             @default(true)
-  startedAt        DateTime?
-  completedAt      DateTime?
-  skippedAt        DateTime?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  agentRuns        TaskAgentRun[]
-  timelineEvents   TaskTimelineEvent[]
+  id                String                   @id @default(cuid())
+  title             String
+  description       String?                  @db.Text
+  status            TaskStatus               @default(TODO)
+  priority          TaskPriority             @default(MEDIUM)
+  source            TaskSource               @default(MANUAL)
+  voiceSubmissionId String?
+  voiceSubmission   VoiceDailyLogSubmission? @relation(fields: [voiceSubmissionId], references: [id], onDelete: SetNull)
+  missionId         String?
+  mission           MissionSession?          @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  subjectId         String?
+  subject           Subject?                 @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  dueDate           DateTime?                @db.Date
+  plannedMinutes    Int?
+  actualMinutes     Int?
+  orderIndex        Int                      @default(0)
+  lastAgentSummary  String?                  @db.Text
+  aiAssistEnabled   Boolean                  @default(true)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  skippedAt         DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  agentRuns         TaskAgentRun[]
+  timelineEvents    TaskTimelineEvent[]
 
   @@index([status, orderIndex])
   @@index([dueDate])
   @@index([missionId])
+  @@index([voiceSubmissionId])
   @@map("tasks")
+}
+
+model VoiceAssistantPreference {
+  userId            String   @id
+  nickname          String   @default("Bubu")
+  locale            String   @default("en-IN")
+  preferredVoice    String?
+  speechEnabled     Boolean  @default(true)
+  onboardingSeen    Boolean  @default(false)
+  onboardingVersion Int      @default(0)
+  interactionMode   String   @default("TAP")
+  affectionMode     String   @default("WARM")
+  discreetMode      Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("voice_assistant_preferences")
+}
+
+model AssistantAction {
+  id          String   @id @default(cuid())
+  requestId   String   @unique
+  userId      String
+  kind        String
+  utterance   String   @db.Text
+  payloadJson Json
+  resultJson  Json?
+  status      String   @default("COMPLETED")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  undoneAt    DateTime?
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@map("assistant_actions")
+}
+
+model VoiceDailyLogSubmission {
+  id                 String            @id @default(cuid())
+  requestId          String            @unique
+  userId             String
+  logDate            DateTime          @db.Date
+  payloadJson        Json
+  createdTaskIdsJson Json?
+  createdAt          DateTime          @default(now())
+  undoneAt           DateTime?
+  tasks              Task[]
+  studyActivities    StudyActivity[]
+  revisionSessions   RevisionSession[]
+
+  @@index([userId, logDate])
+  @@map("voice_daily_log_submissions")
 }
 
 model TaskAgentRun {
@@ -682,7 +818,7 @@ model PracticeReportArtifact {
 }
 
 model BankQuestion {
-  id                     String               @id @default(cuid())
+  id                     String                       @id @default(cuid())
   subject                String
   classLevel             String?
   chapter                String
@@ -690,51 +826,54 @@ model BankQuestion {
   source                 String
   sourceRef              String
   difficulty             String
-  question               String               @db.Text
+  question               String                       @db.Text
   optionsJson            Json
   correctIndex           Int
-  explanation            String               @db.Text
+  explanation            String                       @db.Text
   optionExplanationsJson Json?
-  verified               Boolean              @default(false)
-  qualityStatus          String               @default("UNVERIFIED") // UNVERIFIED | VERIFIED_STRICT | NEEDS_REVIEW | NEEDS_VISUAL_ASSET | REJECTED
+  verified               Boolean                      @default(false)
+  qualityStatus          String                       @default("UNVERIFIED") // UNVERIFIED | VERIFIED_STRICT | NEEDS_REVIEW | NEEDS_VISUAL_ASSET | REJECTED
   qualityScore           Float?
   verifiedAt             DateTime?
   rejectedAt             DateTime?
   verifierModel          String?
   verifierRuns           Json?
-  verificationMethod     String               @default("UNVERIFIED") @db.VarChar(48)
-  verificationVersion    String?              @db.VarChar(48)
-  rejectReason           String?              @db.Text
+  verificationMethod     String                       @default("UNVERIFIED") @db.VarChar(48)
+  verificationVersion    String?                      @db.VarChar(48)
+  rejectReason           String?                      @db.Text
   trendChapterId         String?
   questionForm           String?
   subtopic               String?
-  isDiagramBased         Boolean              @default(false)
-  isGraphBased           Boolean              @default(false)
+  isDiagramBased         Boolean                      @default(false)
+  isGraphBased           Boolean                      @default(false)
   duplicateClusterId     String?
   sourceQuality          Float?
   pyqSimilarityScore     Float?
   trendMetaJson          Json?
-  visualAssetUrl         String?              @db.VarChar(768)
-  visualAssetAlt         String?              @db.Text
-  visualAssetKind        String?              @db.VarChar(40)
+  visualAssetUrl         String?                      @db.VarChar(768)
+  visualAssetAlt         String?                      @db.Text
+  visualAssetKind        String?                      @db.VarChar(40)
   visualMetaJson         Json?
   visualAssetId          String?
-  visualAsset            QuestionVisualAsset? @relation(fields: [visualAssetId], references: [id], onDelete: SetNull)
+  visualAsset            QuestionVisualAsset?         @relation(fields: [visualAssetId], references: [id], onDelete: SetNull)
   bookmarks              QuestionBookmark[]
-  selectionKey           String?              @db.VarChar(64)
-  exam                   String?              @db.VarChar(40)
+  ncertPassageLinks      NcertPassageQuestionLink[]
+  ncertReaderAttempts    NcertQuestionAttempt[]
+  ingestionCandidates    QuestionIngestionCandidate[]
+  selectionKey           String?                      @db.VarChar(64)
+  exam                   String?                      @db.VarChar(40)
   examYear               Int?
-  paperCode              String?              @db.VarChar(80)
+  paperCode              String?                      @db.VarChar(80)
   paperQuestionNumber    Int?
   provenanceJson         Json?
-  contentHash            String               @unique @db.VarChar(64)
-  timesServed            Int                  @default(0)
-  timesCorrect           Int                  @default(0)
-  timesWrong             Int                  @default(0)
+  contentHash            String                       @unique @db.VarChar(64)
+  timesServed            Int                          @default(0)
+  timesCorrect           Int                          @default(0)
+  timesWrong             Int                          @default(0)
   lastServedAt           DateTime?
   importBatch            String?
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime                     @default(now())
+  updatedAt              DateTime                     @updatedAt
 
   @@index([subject, chapter, difficulty])
   @@index([subject, chapter, source])
@@ -750,6 +889,225 @@ model BankQuestion {
   @@index([qualityStatus, verified, subject, selectionKey], map: "bq_qv_ss_idx")
   @@index([qualityStatus, verified, examYear, paperCode, paperQuestionNumber], map: "bq_qv_pyq_idx")
   @@map("bank_questions")
+}
+
+model QuestionSourceArtifact {
+  id            String                   @id @default(cuid())
+  provider      String                   @db.VarChar(32) // NTA | PW | ALLEN | AAKASH | RESONANCE
+  artifactKind  String                   @db.VarChar(32) // ARCHIVE_PAGE | QUESTION_PAPER | ANSWER_KEY | SOLUTION
+  exam          String                   @default("NEET_UG") @db.VarChar(40)
+  examYear      Int?
+  paperCode     String?                  @db.VarChar(80)
+  sourcePageUrl String                   @db.VarChar(768)
+  assetUrl      String                   @unique @db.VarChar(768)
+  mimeType      String?                  @db.VarChar(120)
+  sha256        String?                  @db.VarChar(64)
+  byteSize      Int?
+  storagePath   String?                  @db.VarChar(768)
+  crawlStatus   String                   @default("DISCOVERED") @db.VarChar(32) // DISCOVERED | DOWNLOADED | FAILED
+  metadataJson  Json?
+  fetchedAt     DateTime?
+  evidences     QuestionSourceEvidence[]
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  @@index([provider, examYear, artifactKind], map: "qsa_provider_year_kind_idx")
+  @@index([sha256], map: "qsa_sha_idx")
+  @@map("question_source_artifacts")
+}
+
+model QuestionIngestionCandidate {
+  id                     String                   @id @default(cuid())
+  exam                   String                   @default("NEET_UG") @db.VarChar(40)
+  examYear               Int
+  paperCode              String                   @db.VarChar(80)
+  paperQuestionNumber    Int
+  subject                String?                  @db.VarChar(32)
+  classLevel             String?                  @db.VarChar(4)
+  chapter                String?
+  topic                  String?
+  question               String?                  @db.Text
+  optionsJson            Json?
+  correctIndicesJson     Json?
+  explanation            String?                  @db.Text
+  optionExplanationsJson Json?
+  normalizedHash         String?                  @db.VarChar(64)
+  extractionStatus       String                   @default("DISCOVERED") @db.VarChar(32) // DISCOVERED | EXTRACTED | NEEDS_VISUAL_REVIEW | REJECTED
+  verificationStatus     String                   @default("PENDING") @db.VarChar(40) // PENDING | OFFICIAL_KEY_VERIFIED | CROSS_SOURCE_VERIFIED | CONFLICT
+  verificationJson       Json?
+  reviewReasonsJson      Json?
+  matchedBankQuestionId  String?
+  matchedBankQuestion    BankQuestion?            @relation(fields: [matchedBankQuestionId], references: [id], onDelete: SetNull)
+  matchScore             Float?
+  promotionStatus        String                   @default("STAGED") @db.VarChar(32) // STAGED | PROMOTED | NEEDS_REVIEW | REJECTED
+  evidences              QuestionSourceEvidence[]
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  @@unique([exam, examYear, paperCode, paperQuestionNumber], map: "qic_exam_paper_question_uq")
+  @@index([verificationStatus, promotionStatus, examYear], map: "qic_verification_promotion_year_idx")
+  @@index([normalizedHash], map: "qic_hash_idx")
+  @@index([matchedBankQuestionId], map: "qic_bank_match_idx")
+  @@map("question_ingestion_candidates")
+}
+
+model QuestionSourceEvidence {
+  id                String                     @id @default(cuid())
+  candidateId       String
+  candidate         QuestionIngestionCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  artifactId        String
+  artifact          QuestionSourceArtifact     @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  pageNumber        Int?
+  bboxJson          Json?
+  cropPath          String?                    @db.VarChar(768)
+  cropSha256        String?                    @db.VarChar(64)
+  extractedJson     Json?
+  answerIndicesJson Json?
+  extractionMethod  String?                    @db.VarChar(80)
+  confidence        Float?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([candidateId, artifactId], map: "qse_candidate_artifact_uq")
+  @@index([artifactId, pageNumber], map: "qse_artifact_page_idx")
+  @@map("question_source_evidence")
+}
+
+model SyllabusVersion {
+  id           String         @id @default(cuid())
+  slug         String         @unique @db.VarChar(80)
+  exam         String         @default("NEET_UG") @db.VarChar(40)
+  examYear     Int
+  title        String
+  sourceUrl    String         @db.VarChar(768)
+  sourceSha256 String         @db.VarChar(64)
+  publishedAt  DateTime?      @db.Date
+  status       String         @default("VERIFIED_OFFICIAL") @db.VarChar(40)
+  isActive     Boolean        @default(false)
+  nodes        SyllabusNode[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([exam, examYear, isActive])
+  @@map("syllabus_versions")
+}
+
+model SyllabusNode {
+  id           String          @id @default(cuid())
+  versionId    String
+  version      SyllabusVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  parentId     String?
+  parent       SyllabusNode?   @relation("SyllabusTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     SyllabusNode[]  @relation("SyllabusTree")
+  kind         String          @db.VarChar(24) // UNIT | CHAPTER | TOPIC
+  subject      String          @db.VarChar(32)
+  classLevel   String?         @db.VarChar(4)
+  code         String?         @db.VarChar(32)
+  title        String
+  canonicalKey String          @db.VarChar(255)
+  aliasesJson  Json?
+  status       String          @default("ACTIVE") @db.VarChar(24) // ACTIVE | OUT_OF_SYLLABUS | NEEDS_REVIEW
+  sourcePage   Int?
+  position     Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([versionId, canonicalKey])
+  @@index([versionId, subject, classLevel, kind, position])
+  @@map("syllabus_nodes")
+}
+
+model NcertDocument {
+  id               String                 @id @default(cuid())
+  subject          String                 @db.VarChar(32)
+  classLevel       String                 @db.VarChar(4)
+  chapter          String
+  title            String
+  edition          String?                @db.VarChar(80)
+  language         String                 @default("en") @db.VarChar(12)
+  sourceUrl        String                 @db.VarChar(768)
+  sourceSha256     String                 @db.VarChar(64)
+  storagePath      String?                @db.VarChar(768)
+  fileData         Bytes?                 @db.LongBlob
+  pageCount        Int?
+  reviewStatus     String                 @default("VERIFIED_SOURCE") @db.VarChar(40)
+  passages         NcertPassage[]
+  readerProgress   NcertReaderProgress[]
+  questionAttempts NcertQuestionAttempt[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@unique([subject, classLevel, chapter, edition, language])
+  @@index([subject, classLevel, chapter])
+  @@map("ncert_documents")
+}
+
+model NcertPassage {
+  id             String                     @id @default(cuid())
+  documentId     String
+  document       NcertDocument              @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pageNumber     Int
+  text           String                     @db.Text
+  normalizedHash String                     @db.VarChar(64)
+  bboxJson       Json?
+  reviewStatus   String                     @default("NEEDS_REVIEW") @db.VarChar(32)
+  questionLinks  NcertPassageQuestionLink[]
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  @@unique([documentId, normalizedHash])
+  @@index([documentId, pageNumber])
+  @@map("ncert_passages")
+}
+
+model NcertPassageQuestionLink {
+  id             String       @id @default(cuid())
+  passageId      String
+  passage        NcertPassage @relation(fields: [passageId], references: [id], onDelete: Cascade)
+  bankQuestionId String
+  bankQuestion   BankQuestion @relation(fields: [bankQuestionId], references: [id], onDelete: Cascade)
+  linkType       String       @default("DERIVED_FROM") @db.VarChar(32)
+  confidence     Float
+  reviewStatus   String       @default("NEEDS_REVIEW") @db.VarChar(32)
+  reviewNote     String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([passageId, bankQuestionId])
+  @@index([bankQuestionId, reviewStatus])
+  @@map("ncert_passage_question_links")
+}
+
+model NcertReaderProgress {
+  id             String        @id @default(cuid())
+  userId         String        @default("misti") @db.VarChar(80)
+  documentId     String
+  document       NcertDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  currentPage    Int           @default(1)
+  completedPages Json?
+  lastReadAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([userId, documentId])
+  @@index([userId, lastReadAt])
+  @@map("ncert_reader_progress")
+}
+
+model NcertQuestionAttempt {
+  id             String        @id @default(cuid())
+  userId         String        @default("misti") @db.VarChar(80)
+  documentId     String
+  document       NcertDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  bankQuestionId String
+  bankQuestion   BankQuestion  @relation(fields: [bankQuestionId], references: [id], onDelete: Cascade)
+  selectedIndex  Int
+  correct        Boolean
+  createdAt      DateTime      @default(now())
+
+  @@index([userId, documentId, createdAt], map: "nqa_user_document_created_idx")
+  @@index([bankQuestionId, correct, createdAt], map: "nqa_question_correct_created_idx")
+  @@map("ncert_question_attempts")
 }
 
 model QuestionBookmark {

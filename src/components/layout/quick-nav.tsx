@@ -23,6 +23,8 @@ import {
   Sunrise,
   ClipboardCheck,
   Swords,
+  BookOpen,
+  Search,
 } from "lucide-react";
 import { clearAuth } from "@/lib/auth";
 import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
@@ -65,6 +67,8 @@ const SUBJECT_ITEMS: NavItem[] = [
 
 const LIBRARY_ITEMS: NavItem[] = [
   { href: "/pyq", icon: FolderOpen, label: "PYQ Library", accent: "#d4a853" },
+  { href: "/pyq/questions", icon: Search, label: "PYQ Explorer", accent: "#5b9cf5" },
+  { href: "/reader", icon: BookOpen, label: "NCERT Reader", accent: "#5cc87d" },
 ];
 
 const GROUPS = [

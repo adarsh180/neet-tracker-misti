@@ -42,19 +42,31 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "update_questions") {
+      const count = Math.max(0, Math.min(100000, Math.round(Number(data.count) || 0)));
       const updated = await db.topic.update({
         where: { id: data.topicId },
-        data: { questionsSolved: data.count },
+        data: { questionsSolved: count },
       });
       return NextResponse.json(updated);
     }
 
     if (action === "add_revision") {
-      const revision = await db.revision.create({
-        data: {
-          topicId: data.topicId,
-          note: data.note || null,
-        },
+      const topic = await db.topic.findUnique({ where: { id: data.topicId }, select: { id: true, subjectId: true, chapter: true, name: true } });
+      if (!topic) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const revision = await db.$transaction(async (transaction) => {
+        const session = await transaction.revisionSession.create({
+          data: {
+            subjectId: topic.subjectId,
+            topicId: topic.id,
+            chapter: topic.chapter ?? topic.name,
+            coverage: "FULL",
+            source: "MANUAL",
+            note: data.note || null,
+          },
+        });
+        return transaction.revision.create({
+          data: { topicId: topic.id, revisionSessionId: session.id, note: data.note || null },
+        });
       });
       return NextResponse.json(revision);
     }

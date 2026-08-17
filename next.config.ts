@@ -10,13 +10,15 @@ const nextConfig: NextConfig = {
     "/api/practice/*/report.pdf": [
       "./node_modules/@sparticuz/chromium/bin/**/*",
     ],
+    "/api/voice/audio/*": [
+      "./private-assets/voice/adarsh-v1/*.mp3",
+    ],
   },
   images: {
     remotePatterns: [],
   },
   // For Vercel deployment
   experimental: {
-    viewTransition: true,
     serverActions: {
       bodySizeLimit: "2mb",
     },
@@ -40,7 +42,9 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()",
+            // Voice navigation and Daily Goals use the microphone only from
+            // this first-party app. Cross-origin frames remain blocked.
+            value: "camera=(self), microphone=(self), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()",
           },
           {
             key: "X-Frame-Options",
@@ -49,6 +53,34 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
+          },
+        ],
+      },
+      {
+        // NCERT chapters are rendered by the app's same-origin PDF iframe.
+        // This narrow override keeps every other route non-embeddable.
+        source: "/api/reader/:id/document",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self'; base-uri 'self'; object-src 'self'; form-action 'self'",
+          },
+        ],
+      },
+      {
+        source: "/api/reader/:id/document/:filename",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self'; base-uri 'self'; object-src 'self'; form-action 'self'",
           },
         ],
       },

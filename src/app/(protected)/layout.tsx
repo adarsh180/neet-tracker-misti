@@ -6,6 +6,8 @@ import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
 import QuickNav from "@/components/layout/quick-nav";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import RouteTransition from "@/components/layout/route-transition";
+import GlobalSearch from "@/components/layout/global-search";
+import SiteVoiceAssistant from "@/components/voice-assistant/site-voice-assistant";
 
 const PREFETCH_ROUTES = [
   "/dashboard",
@@ -16,6 +18,8 @@ const PREFETCH_ROUTES = [
   "/mood",
   "/visual-lab",
   "/pyq",
+  "/pyq/questions",
+  "/reader",
   "/ai-insights",
   "/ai-insights/neet-guru",
   "/ai-insights/rank-predictor",
@@ -141,6 +145,8 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     <div style={{ minHeight: "100vh", position: "relative" }}>
       <RouteTransition className="protected-route-frame">{children}</RouteTransition>
       <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" partnerLabel="Adarsh's UPSC phone" />
+      <GlobalSearch />
+      <SiteVoiceAssistant />
       <QuickNav />
     </div>
   );

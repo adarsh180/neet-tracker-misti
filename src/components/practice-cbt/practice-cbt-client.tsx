@@ -29,6 +29,7 @@ import {
   Play,
   RotateCcw,
   Save,
+  Search,
   ShieldAlert,
   ShieldCheck,
   SquareCheck,
@@ -164,7 +165,7 @@ type TestFolder = {
 };
 
 type Phase = "list" | "bookmarks" | "setup" | "generating" | "preflight" | "exam" | "result";
-type SetupMode = "CHAPTER" | "TOPIC" | "UNIT" | "SECTIONAL" | "FULL_LENGTH" | "PYQ_YEAR";
+type SetupMode = "UNIT" | "SECTIONAL" | "FULL_LENGTH" | "PYQ_YEAR";
 
 const SUBJECTS: { slug: NeetSubjectSlug; label: string; short: string; accent: string }[] = [
   { slug: "physics", label: "Physics", short: "Phy", accent: "var(--physics)" },
@@ -183,9 +184,7 @@ const SOURCE_LABEL: Record<PracticeSource, string> = {
 };
 
 const MODE_LABEL: Record<string, string> = {
-  CHAPTER: "Chapterwise Test",
-  TOPIC: "Custom / Topic Test",
-  UNIT: "Unit Test",
+  UNIT: "Custom Test",
   SECTIONAL: "Sectional Test",
   FULL_LENGTH: "Full-Length Test",
   PYQ_YEAR: "NEET PYQ Year",
@@ -1008,13 +1007,24 @@ function PracticeList({
 }
 
 export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated: (test: PracticeTest) => void }) {
-  const initialYear = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("year") : null;
-  const [mode, setMode] = useState<SetupMode>(initialYear ? "PYQ_YEAR" : "FULL_LENGTH");
-  const [classLevel, setClassLevel] = useState<ClassLevel>("11");
-  const [subject, setSubject] = useState<NeetSubjectSlug>("physics");
-  const [selectedSubjects, setSelectedSubjects] = useState<NeetSubjectSlug[]>(["physics", "chemistry", "botany", "zoology"]);
-  const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
-  const [topic, setTopic] = useState("");
+  const initialParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const initialYear = initialParams.get("year");
+  const requestedMode = initialParams.get("mode");
+  const initialSubject = SUBJECT_SLUGS.includes(initialParams.get("subject") as NeetSubjectSlug) ? initialParams.get("subject") as NeetSubjectSlug : null;
+  const initialClass = initialParams.get("classLevel") === "11" || initialParams.get("classLevel") === "12" ? initialParams.get("classLevel") as ClassLevel : null;
+  const initialChapter = initialParams.get("chapter");
+  const initialScope = initialSubject && initialClass && initialChapter
+    ? CHAPTERS.find((entry) => entry.slug === initialSubject && entry.classLevel === initialClass && entry.chapter === initialChapter)
+    : null;
+  const [mode, setMode] = useState<SetupMode>(
+    initialYear ? "PYQ_YEAR" : initialScope || requestedMode === "custom" ? "UNIT" : requestedMode === "sectional" ? "SECTIONAL" : "FULL_LENGTH",
+  );
+  const [sectionalClass, setSectionalClass] = useState<ClassLevel>(initialClass ?? "11");
+  const [classLevels, setClassLevels] = useState<ClassLevel[]>(initialClass ? [initialClass] : ["11", "12"]);
+  const [selectedSubjects, setSelectedSubjects] = useState<NeetSubjectSlug[]>(initialSubject ? [initialSubject] : ["physics", "chemistry", "botany", "zoology"]);
+  const [selectedScopeKeys, setSelectedScopeKeys] = useState<string[]>(initialScope ? [`${initialScope.slug}:${initialScope.classLevel}:${initialScope.chapter}`] : []);
+  const [sourceKinds, setSourceKinds] = useState<Array<"PYQ" | "QUESTION_BANK">>(initialParams.get("source") === "pyq" ? ["PYQ"] : ["PYQ", "QUESTION_BANK"]);
+  const [chapterQuery, setChapterQuery] = useState("");
   const [pyqYear, setPyqYear] = useState(initialYear ?? "2025");
   const [questionCount, setQuestionCount] = useState(NEET_FULL_TEST_QUESTIONS);
   const [durationMinutes, setDurationMinutes] = useState(NEET_FULL_TEST_DURATION_MINUTES);
@@ -1023,13 +1033,18 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
   const [error, setError] = useState<string | null>(null);
   const [pyqAvailability, setPyqAvailability] = useState<PyqAvailability[] | null>(null);
 
-  const chapterOptions = useMemo(
-    () => CHAPTERS.filter((entry) => entry.slug === subject && (mode === "FULL_LENGTH" || entry.classLevel === classLevel)),
-    [classLevel, mode, subject],
-  );
   const unitChapterOptions = useMemo(
-    () => CHAPTERS.filter((entry) => entry.classLevel === classLevel && selectedSubjects.includes(entry.slug)),
-    [classLevel, selectedSubjects],
+    () => CHAPTERS.filter((entry) =>
+      classLevels.includes(entry.classLevel) &&
+      selectedSubjects.includes(entry.slug) &&
+      (!chapterQuery.trim() || `${entry.subject} ${entry.classLevel} ${entry.chapter} ${entry.aliases.join(" ")}`.toLowerCase().includes(chapterQuery.trim().toLowerCase())),
+    ),
+    [chapterQuery, classLevels, selectedSubjects],
+  );
+  const scopeKey = (entry: { slug: NeetSubjectSlug; classLevel: ClassLevel; chapter: string }) => `${entry.slug}:${entry.classLevel}:${entry.chapter}`;
+  const selectedScopes = useMemo(
+    () => CHAPTERS.filter((entry) => selectedScopeKeys.includes(scopeKey(entry))),
+    [selectedScopeKeys],
   );
 
   useEffect(() => {
@@ -1045,48 +1060,55 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
   }, []);
 
   useEffect(() => {
-    const isOfficialPaper = mode === "FULL_LENGTH" || mode === "PYQ_YEAR";
-    const defaultCount = isOfficialPaper || mode === "SECTIONAL" ? NEET_FULL_TEST_QUESTIONS : 50;
+    const isFixedPaper = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" || mode === "SECTIONAL";
+    const defaultCount = isFixedPaper ? NEET_FULL_TEST_QUESTIONS : 50;
     setQuestionCount(defaultCount);
-    setDurationMinutes(isOfficialPaper ? NEET_FULL_TEST_DURATION_MINUTES : Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, defaultCount));
-    setSelectedChapters([]);
-    setTopic("");
+    setDurationMinutes(isFixedPaper ? NEET_FULL_TEST_DURATION_MINUTES : Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, defaultCount));
   }, [mode]);
+
+  const toggleClass = (level: ClassLevel) => {
+    if (classLevels.includes(level)) {
+      const removed = new Set(CHAPTERS.filter((entry) => entry.classLevel === level).map(scopeKey));
+      setSelectedScopeKeys((current) => current.filter((key) => !removed.has(key)));
+    }
+    setClassLevels((current) => current.includes(level) ? current.filter((entry) => entry !== level) : [...current, level]);
+  };
 
   const toggleSubject = (slug: NeetSubjectSlug) => {
     if (selectedSubjects.includes(slug)) {
-      const removedChapters = new Set(CHAPTERS.filter((entry) => entry.slug === slug).map((entry) => entry.chapter));
-      setSelectedChapters((current) => current.filter((chapter) => !removedChapters.has(chapter)));
+      const removedChapters = new Set(CHAPTERS.filter((entry) => entry.slug === slug).map(scopeKey));
+      setSelectedScopeKeys((current) => current.filter((key) => !removedChapters.has(key)));
     }
     setSelectedSubjects((prev) => (prev.includes(slug) ? prev.filter((entry) => entry !== slug) : [...prev, slug]));
   };
 
-  const toggleChapter = (chapter: string) => {
-    setSelectedChapters((prev) => (prev.includes(chapter) ? prev.filter((entry) => entry !== chapter) : [...prev, chapter]));
+  const toggleChapter = (key: string) => {
+    setSelectedScopeKeys((prev) => (prev.includes(key) ? prev.filter((entry) => entry !== key) : [...prev, key]));
   };
 
   const canCreate =
     mode === "FULL_LENGTH" ||
+    (mode === "SECTIONAL" && Boolean(sectionalClass)) ||
     (mode === "PYQ_YEAR" && Boolean(pyqYear) && Boolean(pyqAvailability?.some((entry) => entry.complete && String(entry.year) === pyqYear))) ||
-    (mode === "SECTIONAL" && selectedSubjects.length > 0) ||
-    (mode === "UNIT" && selectedSubjects.length > 0 && selectedChapters.length > 0) ||
-    (mode === "CHAPTER" && subject && selectedChapters.length > 0) ||
-    (mode === "TOPIC" && subject && selectedChapters.length > 0 && topic.trim().length > 1);
-  const isOfficialPaper = mode === "FULL_LENGTH" || mode === "PYQ_YEAR";
+    (mode === "UNIT" && classLevels.length > 0 && selectedSubjects.length > 0 && selectedScopes.length > 0 && sourceKinds.length > 0);
+  const isFixedPaper = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" || mode === "SECTIONAL";
 
   const create = async () => {
     setCreating(true);
     setError(null);
     try {
-      const scopedSubjects = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" ? SUBJECT_SLUGS : mode === "CHAPTER" || mode === "TOPIC" ? [subject] : selectedSubjects;
+      const scopedSubjects = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" || mode === "SECTIONAL" ? SUBJECT_SLUGS : selectedSubjects;
       const body = {
         mode,
-        subject: mode === "CHAPTER" || mode === "TOPIC" ? subject : null,
+        subject: null,
         subjects: scopedSubjects,
-        classLevel: mode === "FULL_LENGTH" || mode === "PYQ_YEAR" ? null : classLevel,
-        chapter: selectedChapters[0] ?? null,
-        chapters: selectedChapters,
-        topic: mode === "TOPIC" ? topic.trim() : null,
+        classLevel: mode === "SECTIONAL" ? sectionalClass : null,
+        classLevels: mode === "UNIT" ? classLevels : mode === "SECTIONAL" ? [sectionalClass] : [],
+        chapter: selectedScopes[0]?.chapter ?? null,
+        chapters: selectedScopes.map((entry) => entry.chapter),
+        scopes: selectedScopes.map((entry) => ({ subject: entry.slug, classLevel: entry.classLevel, chapter: entry.chapter })),
+        sourceKinds: mode === "UNIT" ? sourceKinds : ["PYQ", "QUESTION_BANK"],
+        topic: null,
         pyqYear: mode === "PYQ_YEAR" ? pyqYear : null,
         questionCount,
         durationMinutes,
@@ -1119,21 +1141,39 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
         <div className="setup-panel">
           <label className="cbt-label">Test type</label>
           <div className="seg-grid">
-            {(["FULL_LENGTH", "SECTIONAL", "UNIT", "CHAPTER", "TOPIC", "PYQ_YEAR"] as SetupMode[]).map((entry) => (
+            {(["FULL_LENGTH", "SECTIONAL", "UNIT", "PYQ_YEAR"] as SetupMode[]).map((entry) => (
               <button key={entry} className={`seg-btn ${mode === entry ? "on" : ""}`} onClick={() => setMode(entry)}>{MODE_LABEL[entry]}</button>
             ))}
           </div>
 
-          {mode !== "FULL_LENGTH" && mode !== "PYQ_YEAR" && (
+          {mode === "SECTIONAL" && (
             <>
-              <label className="cbt-label">Class</label>
-              <div className="seg-row">
-                {(["11", "12"] as ClassLevel[]).map((entry) => <button key={entry} className={`seg-btn ${classLevel === entry ? "on" : ""}`} onClick={() => setClassLevel(entry)}>Class {entry}</button>)}
+              <label className="cbt-label">Complete sectional syllabus</label>
+              <div className="seg-grid">
+                {(["11", "12"] as ClassLevel[]).map((entry) => (
+                  <button key={entry} className={`seg-btn ${sectionalClass === entry ? "on" : ""}`} onClick={() => setSectionalClass(entry)}>
+                    Class {entry} PCB
+                  </button>
+                ))}
+              </div>
+              <div className="setup-summary">
+                <strong>Class {sectionalClass} complete syllabus</strong>
+                <span>Physics, Chemistry, Botany and Zoology · 45 questions each</span>
+                <span>180 questions · 180 minutes · all chapters from Class {sectionalClass}</span>
               </div>
             </>
           )}
 
-          {(mode === "UNIT" || mode === "SECTIONAL") && (
+          {mode === "UNIT" && (
+            <>
+              <label className="cbt-label">Classes <span className="setup-note">Choose one or both</span></label>
+              <div className="seg-row">
+                {(["11", "12"] as ClassLevel[]).map((entry) => <button key={entry} className={`seg-btn ${classLevels.includes(entry) ? "on" : ""}`} onClick={() => toggleClass(entry)}>Class {entry}</button>)}
+              </div>
+            </>
+          )}
+
+          {mode === "UNIT" && (
             <>
               <label className="cbt-label">Subjects</label>
               <div className="subject-grid">
@@ -1148,42 +1188,25 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
 
           {mode === "UNIT" && (
             <>
-              <label className="cbt-label">Chapters from selected subjects</label>
+              <label className="cbt-label">Chapters across every selected class and subject</label>
+              <label className="cbt-input" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Search size={15} />
+                <input value={chapterQuery} onChange={(event) => setChapterQuery(event.target.value)} placeholder="Search chapters" style={{ border: 0, outline: 0, background: "transparent", color: "inherit", width: "100%", font: "inherit" }} />
+              </label>
               <div className="chapter-list">
                 {unitChapterOptions.map((entry) => (
-                  <button key={`${entry.slug}-${entry.chapter}`} className={`chapter-btn ${selectedChapters.includes(entry.chapter) ? "on" : ""}`} onClick={() => toggleChapter(entry.chapter)}>
-                    <SquareCheck size={14} /> {entry.subject} · {entry.chapter}
+                  <button key={scopeKey(entry)} className={`chapter-btn ${selectedScopeKeys.includes(scopeKey(entry)) ? "on" : ""}`} onClick={() => toggleChapter(scopeKey(entry))}>
+                    <SquareCheck size={14} /> Class {entry.classLevel} · {entry.subject} · {entry.chapter}
                   </button>
                 ))}
               </div>
-            </>
-          )}
-
-          {(mode === "CHAPTER" || mode === "TOPIC") && (
-            <>
-              <label className="cbt-label">Subject</label>
-              <div className="subject-grid">
-                {SUBJECTS.map((entry) => (
-                  <button key={entry.slug} className={`subject-btn ${subject === entry.slug ? "on" : ""}`} onClick={() => { setSubject(entry.slug); setSelectedChapters([]); }} style={{ "--accent": entry.accent } as React.CSSProperties}>
-                    <span>{entry.short}</span>{entry.label}
-                  </button>
+              <label className="cbt-label">Question sources</label>
+              <div className="seg-row">
+                {([['PYQ', 'Verified NEET PYQs'], ['QUESTION_BANK', 'Question bank']] as const).map(([value, label]) => (
+                  <button key={value} className={`seg-btn ${sourceKinds.includes(value) ? "on" : ""}`} onClick={() => setSourceKinds((current) => current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value])}>{label}</button>
                 ))}
               </div>
-              <label className="cbt-label">Chapter selection</label>
-              <div className="chapter-list">
-                {chapterOptions.map((entry) => (
-                  <button key={entry.chapter} className={`chapter-btn ${selectedChapters.includes(entry.chapter) ? "on" : ""}`} onClick={() => toggleChapter(entry.chapter)}>
-                    <SquareCheck size={14} /> {entry.chapter}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {mode === "TOPIC" && (
-            <>
-              <label className="cbt-label">Topic filter</label>
-              <input className="cbt-input" value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="Exact topic name from notes or DB" />
+              <p className="setup-note">{selectedScopes.length} chapter{selectedScopes.length === 1 ? "" : "s"} selected across {classLevels.length} class{classLevels.length === 1 ? "" : "es"}. Every selection remains independently editable.</p>
             </>
           )}
 
@@ -1200,12 +1223,12 @@ export function TestSetup({ onBack, onCreated }: { onBack: () => void; onCreated
 
         <div className="setup-panel">
           <label className="cbt-label">Question count: {questionCount}</label>
-          <input className="cbt-range" type="range" min={10} max={NEET_FULL_TEST_QUESTIONS} step={5} value={questionCount} disabled={isOfficialPaper} onChange={(event) => { const next = Number(event.target.value); setQuestionCount(next); setDurationMinutes(Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, next)); }} />
+          <input className="cbt-range" type="range" min={10} max={NEET_FULL_TEST_QUESTIONS} step={5} value={questionCount} disabled={isFixedPaper} onChange={(event) => { const next = Number(event.target.value); setQuestionCount(next); setDurationMinutes(Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, next)); }} />
           <div className="range-row"><span>10</span><span>50</span><span>100</span><span>180</span></div>
 
           <label className="cbt-label">Duration: {durationMinutes} min</label>
-          <input className="cbt-range" type="range" min={15} max={NEET_MAX_PRACTICE_DURATION_MINUTES} step={5} value={durationMinutes} disabled={isOfficialPaper} onChange={(event) => setDurationMinutes(Number(event.target.value))} />
-          <p className="setup-note"><TimerReset size={14} /> Full-length and PYQ papers follow the 180-question, 180-minute NEET policy. Timer pauses only in deliberate pause mode.</p>
+          <input className="cbt-range" type="range" min={15} max={NEET_MAX_PRACTICE_DURATION_MINUTES} step={5} value={durationMinutes} disabled={isFixedPaper} onChange={(event) => setDurationMinutes(Number(event.target.value))} />
+          <p className="setup-note"><TimerReset size={14} /> Full-length, sectional and PYQ papers follow the 180-question, 180-minute NEET policy. Timer pauses only in deliberate pause mode.</p>
 
           <label className="cbt-label">Difficulty</label>
           <div className="seg-grid four">

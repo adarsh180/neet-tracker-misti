@@ -18,6 +18,13 @@ import {
   type PracticeMode,
   type PracticeSubjectSlug,
 } from "@/lib/practice-engine";
+import {
+  SECTIONAL_PCB_SUBJECTS,
+  normalizeClassLevels,
+  normalizePracticeScopes,
+  normalizeSectionalClass,
+  normalizeSourceKinds,
+} from "@/lib/practice-scope";
 import { getPrivateSession } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
@@ -49,11 +56,12 @@ export async function POST(request: NextRequest) {
   if (!mode) return NextResponse.json({ error: "Valid mode is required" }, { status: 400 });
 
   const subject = PRACTICE_SUBJECTS.includes(body.subject) ? (body.subject as PracticeSubjectSlug) : null;
-  const subjects = Array.isArray(body.subjects)
+  const requestedSubjects = Array.isArray(body.subjects)
     ? body.subjects.filter((entry: unknown): entry is PracticeSubjectSlug => PRACTICE_SUBJECTS.includes(entry as PracticeSubjectSlug))
     : subject
       ? [subject]
       : [];
+  const subjects = mode === "SECTIONAL" ? [...SECTIONAL_PCB_SUBJECTS] : requestedSubjects;
   if ((mode === "SUBJECT" || mode === "CHAPTER" || mode === "TOPIC") && !subject) {
     return NextResponse.json({ error: "Subject is required for this mode" }, { status: 400 });
   }
@@ -68,7 +76,6 @@ export async function POST(request: NextRequest) {
       ? [chapter]
       : [];
   if (mode === "CHAPTER" && chapters.length === 0) return NextResponse.json({ error: "Chapter is required" }, { status: 400 });
-  if (mode === "UNIT" && chapters.length === 0) return NextResponse.json({ error: "Select at least one chapter for a unit test" }, { status: 400 });
 
   const topic = typeof body.topic === "string" && body.topic.trim() ? body.topic.trim().slice(0, 160) : null;
   if (mode === "TOPIC" && !topic) return NextResponse.json({ error: "Topic is required" }, { status: 400 });
@@ -76,7 +83,9 @@ export async function POST(request: NextRequest) {
   const pyqYear = typeof body.pyqYear === "string" && /^\d{4}$/.test(body.pyqYear) ? body.pyqYear : null;
   if (mode === "PYQ_YEAR" && !pyqYear) return NextResponse.json({ error: "PYQ year is required" }, { status: 400 });
 
-  const questionCount = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" ? NEET_FULL_TEST_QUESTIONS : Number(body.questionCount);
+  const questionCount = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" || mode === "SECTIONAL"
+    ? NEET_FULL_TEST_QUESTIONS
+    : Number(body.questionCount);
   if (!Number.isFinite(questionCount) || questionCount < PRACTICE_MIN_QUESTIONS || questionCount > PRACTICE_MAX_QUESTIONS) {
     return NextResponse.json(
       { error: `Question count must be between ${PRACTICE_MIN_QUESTIONS} and ${PRACTICE_MAX_QUESTIONS}` },
@@ -86,11 +95,23 @@ export async function POST(request: NextRequest) {
 
   const difficulty = DIFFICULTIES.has(body.difficulty) ? body.difficulty : "MIXED";
   const aiFreshPercent = normalizeAiFreshPercent(body.aiFreshPercent);
-  const classLevel = body.classLevel === "11" || body.classLevel === "12" ? body.classLevel : null;
-  if ((mode === "UNIT" || mode === "SECTIONAL") && !classLevel) {
-    return NextResponse.json({ error: "Class level is required for this mode" }, { status: 400 });
+  const requestedClassLevel = body.classLevel === "11" || body.classLevel === "12" ? body.classLevel : null;
+  const requestedClassLevels = normalizeClassLevels(body.classLevels, requestedClassLevel);
+  const sectionalClass = mode === "SECTIONAL" ? normalizeSectionalClass(requestedClassLevel, requestedClassLevels) : null;
+  if (mode === "SECTIONAL" && !sectionalClass) {
+    return NextResponse.json({ error: "Choose either the complete Class 11 PCB or Class 12 PCB sectional syllabus" }, { status: 400 });
   }
-  const durationMinutes = mode === "FULL_LENGTH" || mode === "PYQ_YEAR"
+  const classLevel = sectionalClass ?? requestedClassLevel;
+  const classLevels = sectionalClass ? [sectionalClass] : requestedClassLevels;
+  const scopes = normalizePracticeScopes(body.scopes);
+  if (mode === "UNIT" && scopes.length === 0) {
+    return NextResponse.json({ error: "Select at least one chapter for the custom test" }, { status: 400 });
+  }
+  const sourceKinds = normalizeSourceKinds(body.sourceKinds);
+  if (mode === "UNIT" && sourceKinds.length === 0) {
+    return NextResponse.json({ error: "Select PYQs, question-bank questions, or both" }, { status: 400 });
+  }
+  const durationMinutes = mode === "FULL_LENGTH" || mode === "PYQ_YEAR" || mode === "SECTIONAL"
     ? NEET_FULL_TEST_DURATION_MINUTES
     : Number.isFinite(Number(body.durationMinutes))
       ? Math.max(1, Math.min(NEET_MAX_PRACTICE_DURATION_MINUTES, Math.round(Number(body.durationMinutes))))
@@ -101,8 +122,11 @@ export async function POST(request: NextRequest) {
     subject,
     subjects,
     classLevel,
+    classLevels,
     chapter,
     chapters,
+    scopes,
+    sourceKinds,
     topic,
     pyqYear,
     questionCount,
