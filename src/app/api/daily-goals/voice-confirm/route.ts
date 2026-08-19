@@ -19,6 +19,7 @@ type ActivityDraft = {
   completionConfirmed?: boolean;
 };
 type TodoDraft = { title: string; description?: string | null; subjectId?: string | null; plannedMinutes?: number | null };
+type StudySuggestion = TodoDraft & { id: string; kind: "REVISION" | "TEST"; reason: string; dueDate: string };
 
 const ACTIVITY_KINDS = new Set<StudyActivityKindValue>(["NEW_LEARNING", "PRACTICE", "REVISION", "TEST_REVIEW"]);
 const COVERAGES = new Set<StudyCoverageValue>(["PARTIAL", "FULL"]);
@@ -36,6 +37,51 @@ function safeText(value: unknown, maximum = 4000) {
 function canonicalChapter(value: string, chapters: string[]) {
   const normalized = value.trim().toLocaleLowerCase("en-IN");
   return chapters.find((chapter) => chapter.toLocaleLowerCase("en-IN") === normalized) ?? null;
+}
+
+function buildStudySuggestions(activities: ActivityDraft[], logDate: Date, existingTodos: TodoDraft[]): StudySuggestion[] {
+  const existingTitles = new Set(existingTodos.map((todo) => todo.title.toLowerCase()));
+  const suggestions: StudySuggestion[] = [];
+  const revisionCandidate = activities.find((activity) => activity.weakConcepts)
+    ?? activities.find((activity) => activity.kind === "NEW_LEARNING")
+    ?? activities.find((activity) => activity.completionConfirmed)
+    ?? activities[0];
+  if (revisionCandidate) {
+    const due = new Date(logDate);
+    due.setUTCDate(due.getUTCDate() + (revisionCandidate.kind === "NEW_LEARNING" ? 2 : 1));
+    const label = revisionCandidate.chapter;
+    const title = `Revise ${label}`;
+    if (!existingTitles.has(title.toLowerCase())) suggestions.push({
+      id: `revision:${revisionCandidate.subjectId}:${label}`,
+      kind: "REVISION",
+      title,
+      description: revisionCandidate.weakConcepts
+        ? `Focus on: ${revisionCandidate.weakConcepts}. Suggested after today’s voice log.`
+        : "Short spaced revision suggested from today’s confirmed study activity.",
+      subjectId: revisionCandidate.subjectId,
+      plannedMinutes: 25,
+      dueDate: due.toISOString().slice(0, 10),
+      reason: revisionCandidate.weakConcepts ? `You marked ${revisionCandidate.weakConcepts} as a weak area.` : "A short spaced review will protect today’s learning.",
+    });
+  }
+  const testCandidate = activities.find((activity) => activity.completionConfirmed)
+    ?? activities.find((activity) => activity.questionsDelta >= 40);
+  if (testCandidate) {
+    const due = new Date(logDate);
+    due.setUTCDate(due.getUTCDate() + 1);
+    const title = `Take a 20-question ${testCandidate.chapter} test`;
+    if (!existingTitles.has(title.toLowerCase())) suggestions.push({
+      id: `test:${testCandidate.subjectId}:${testCandidate.chapter}`,
+      kind: "TEST",
+      title,
+      description: "Use Practice Arena to verify retention after today’s work.",
+      subjectId: testCandidate.subjectId,
+      plannedMinutes: 30,
+      dueDate: due.toISOString().slice(0, 10),
+      reason: testCandidate.completionConfirmed ? "You marked this area completed; a short test can verify it." : `You solved ${testCandidate.questionsDelta} questions here today.`,
+    });
+  }
+  return suggestions.slice(0, 2);
 }
 
 export async function POST(request: NextRequest) {
@@ -116,6 +162,11 @@ export async function POST(request: NextRequest) {
   const logDate = new Date(`${dateText}T00:00:00.000Z`);
   const dueDate = new Date(logDate);
   dueDate.setUTCDate(dueDate.getUTCDate() + 1);
+  const existingPendingTodos = await db.task.findMany({
+    where: { status: { in: ["TODO", "IN_PROGRESS"] } },
+    select: { title: true },
+    take: 100,
+  });
 
   try {
     const result = await db.$transaction(async (transaction) => {
@@ -198,7 +249,8 @@ export async function POST(request: NextRequest) {
       await transaction.voiceDailyLogSubmission.update({ where: { id: submission.id }, data: { createdTaskIdsJson: createdTaskIds } });
       return { submissionId: submission.id, taskIds: createdTaskIds, activityIds, revisionSessionIds };
     }, { timeout: 30_000 });
-    return NextResponse.json({ saved: true, ...result, todoHref: "/todo", undoHref: `/api/daily-goals/voice-confirm/${result.submissionId}/undo` });
+    const suggestions = buildStudySuggestions(activities, logDate, [...todos, ...existingPendingTodos]);
+    return NextResponse.json({ saved: true, ...result, suggestions, todoHref: "/todo", undoHref: `/api/daily-goals/voice-confirm/${result.submissionId}/undo` });
   } catch (error) {
     const duplicate = await db.voiceDailyLogSubmission.findUnique({ where: { requestId } });
     if (duplicate) return NextResponse.json({ saved: true, duplicate: true, submissionId: duplicate.id, taskIds: duplicate.createdTaskIdsJson ?? [] });

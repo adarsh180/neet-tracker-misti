@@ -1,4 +1,4 @@
-import { normalizeVoiceText } from "@/lib/voice-assistant";
+import { normalizeVoiceText, parseCompactStudyAnswer, parseSpokenNumber } from "@/lib/voice-assistant";
 
 export type StudyActivityKindValue = "NEW_LEARNING" | "PRACTICE" | "REVISION" | "TEST_REVIEW";
 export type StudyCoverageValue = "PARTIAL" | "FULL";
@@ -19,6 +19,17 @@ export type StudyMatch = {
   classLevel: string | null;
   confidence: number;
   alternatives: Array<{ topicId: string; topicName: string; chapter: string }>;
+};
+
+export type StudyAllocationMatch = StudyMatch & {
+  questions: number | null;
+};
+
+export type StudyAllocationResult = {
+  matches: StudyAllocationMatch[];
+  totalQuestions: number | null;
+  needsChapter: boolean;
+  needsAllocation: boolean;
 };
 
 const FILLER = new Set([
@@ -86,6 +97,73 @@ export function resolveStudyMatch(query: string, topics: StudyTopicDirectoryItem
     confidence: Math.max(0, Math.min(1, Number(best.score.toFixed(2)))),
     alternatives,
   };
+}
+
+function questionsBeforeMention(text: string, start: number, end: number) {
+  const nearby = text.slice(start, end).trim();
+  const numeric = nearby.match(/(\d+)\s*(?:questions?|qs?)?\s*(?:from|in|of|on)?\s*$/);
+  if (numeric) return Math.max(0, Math.min(5000, Number(numeric[1])));
+  const withUnit = nearby.match(/((?:[a-z-]+\s+){0,5}[a-z-]+)\s*(?:questions?|qs?)\s*(?:from|in|of|on)?\s*$/);
+  const spoken = withUnit ? parseSpokenNumber(withUnit[1]) : null;
+  return spoken === null ? null : Math.max(0, Math.min(5000, Math.round(spoken)));
+}
+
+/** Resolves one or several explicitly named chapters/topics and preserves per-entity question counts. */
+export function resolveStudyAllocations(query: string, topics: StudyTopicDirectoryItem[]): StudyAllocationResult {
+  const text = searchable(query);
+  const totalQuestions = parseCompactStudyAnswer(query).questions;
+  if (!text || !topics.length) return { matches: [], totalQuestions, needsChapter: (totalQuestions ?? 0) > 0, needsAllocation: false };
+
+  const topicMentions = topics
+    .map((topic) => ({ topic, key: searchable(topic.name), index: text.lastIndexOf(searchable(topic.name)) }))
+    .filter((entry) => entry.key.length >= 3 && entry.index >= 0);
+  const topicChapterKeys = new Set(topicMentions.map((entry) => `${entry.topic.chapter ?? entry.topic.name}`));
+  const chapterMentions = [...new Map(topics.map((topic) => [topic.chapter ?? topic.name, topic])).entries()]
+    .map(([chapter, topic]) => ({ topic, chapter, key: searchable(chapter), index: text.lastIndexOf(searchable(chapter)) }))
+    .filter((entry) => entry.key.length >= 3 && entry.index >= 0 && !topicChapterKeys.has(entry.chapter));
+  const mentions = [
+    ...topicMentions.map((entry) => ({ ...entry, chapter: entry.topic.chapter ?? entry.topic.name, topicId: entry.topic.id, topicName: entry.topic.name })),
+    ...chapterMentions.map((entry) => ({ ...entry, topicId: null, topicName: null })),
+  ].sort((left, right) => left.index - right.index || right.key.length - left.key.length);
+
+  const deduped = mentions.filter((mention, index) => !mentions.slice(0, index).some((previous) =>
+    previous.topicId === mention.topicId && previous.chapter === mention.chapter,
+  ));
+  if (!deduped.length) {
+    const fallback = resolveStudyMatch(query, topics);
+    if (!fallback || fallback.confidence < 0.72) {
+      return { matches: [], totalQuestions, needsChapter: (totalQuestions ?? 0) > 0, needsAllocation: false };
+    }
+    return {
+      matches: [{ ...fallback, questions: totalQuestions }],
+      totalQuestions,
+      needsChapter: false,
+      needsAllocation: false,
+    };
+  }
+
+  let previousEnd = 0;
+  const matches: StudyAllocationMatch[] = deduped.map((mention) => {
+    const questions = questionsBeforeMention(text, previousEnd, mention.index);
+    previousEnd = mention.index + mention.key.length;
+    return {
+      topicId: mention.topicId,
+      topicName: mention.topicName,
+      chapter: mention.chapter,
+      classLevel: mention.topic.classLevel,
+      confidence: 1,
+      alternatives: [],
+      questions,
+    };
+  });
+  if (matches.length === 1 && matches[0].questions === null) matches[0].questions = totalQuestions;
+  if (matches.length > 1 && totalQuestions !== null) {
+    const known = matches.reduce((sum, match) => sum + (match.questions ?? 0), 0);
+    const missing = matches.filter((match) => match.questions === null);
+    if (missing.length === 1 && totalQuestions >= known) missing[0].questions = totalQuestions - known;
+  }
+  const needsAllocation = matches.length > 1 && matches.some((match) => match.questions === null) && (totalQuestions ?? 0) > 0;
+  return { matches, totalQuestions, needsChapter: false, needsAllocation };
 }
 
 export function inferStudyKind(value: string): StudyActivityKindValue {

@@ -110,6 +110,18 @@ test("parses confirmation-gated Todo and progress commands", () => {
   }
 });
 
+test("keeps memory questions read-only and evidence-backed", () => {
+  assert.deepEqual(parseSiteAssistantIntent("Hey Bubu what did I study today"), { kind: "MEMORY_QUERY", query: "RECENT_STUDY" });
+  assert.deepEqual(parseSiteAssistantIntent("what should I revise now"), { kind: "MEMORY_QUERY", query: "REVISION" });
+  assert.deepEqual(parseSiteAssistantIntent("recommend a test for me"), { kind: "MEMORY_QUERY", query: "TEST" });
+  assert.deepEqual(parseSiteAssistantIntent("what should I study next"), { kind: "MEMORY_QUERY", query: "NEXT" });
+});
+
+test("recognizes contextual page help without inventing an action", () => {
+  assert.deepEqual(parseSiteAssistantIntent("Hey mentor, what can you do here?"), { kind: "PAGE_HELP" });
+  assert.deepEqual(parseSiteAssistantIntent("help me on this page"), { kind: "PAGE_HELP" });
+});
+
 test("understands local assistant controls without a network request", () => {
   assert.equal(parseAssistantClientControl("Hey Shona go back"), "BACK");
   assert.equal(parseAssistantClientControl("could you please close the assistant"), "CLOSE");

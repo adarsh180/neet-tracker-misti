@@ -253,7 +253,7 @@ export default function SiteVoiceAssistant() {
     await new Promise((resolve) => window.setTimeout(resolve, 180));
     setState("ACTING"); setMessage("I’m checking the exact page and protecting your existing progress.");
     try {
-      const response = await fetch("/api/assistant/command", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: assistantRequestId(), utterance: cleaned, assistantTone: activeToneRef.current }) });
+      const response = await fetch("/api/assistant/command", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: assistantRequestId(), utterance: cleaned, assistantTone: activeToneRef.current, currentPath: pathname }) });
       const payload = await response.json() as AssistantResult;
       setResult(payload);
       if (!response.ok || payload.state === "ERROR") { setState("ERROR"); setMessage(payload.reply || payload.error || "I could not complete that safely."); speak("Nothing uncertain was changed. Please try once more.", voiceClip("error", activeToneRef.current), resumeVoice); return; }
@@ -276,7 +276,7 @@ export default function SiteVoiceAssistant() {
       if (payload.href) navigationTimerRef.current = window.setTimeout(() => performNavigation(payload.href as string), payload.canUndo ? 2600 : 900);
       void loadContext();
     } catch { setState("ERROR"); setMessage("The connection paused before anything uncertain was changed. Please try again."); }
-  }, [close, loadContext, pendingActionId, performNavigation, preference, resumeVoice, router, speak, stopMeter]);
+  }, [close, loadContext, pathname, pendingActionId, performNavigation, preference, resumeVoice, router, speak, stopMeter]);
   useEffect(() => { submitRef.current = (next) => void submitCommand(next); }, [submitCommand]);
 
   useEffect(() => {

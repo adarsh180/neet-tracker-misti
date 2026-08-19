@@ -28,6 +28,8 @@ export type AssistantPersona = {
 export type SiteAssistantIntent =
   | { kind: "CREATE_TOPIC"; topicName: string; chapterName: string; subjectHint: string | null; classLevel: "11" | "12" | null }
   | { kind: "CREATE_CHAPTER"; chapterName: string; subjectHint: string | null; classLevel: "11" | "12" | null; firstTopicName: string | null }
+  | { kind: "PAGE_HELP" }
+  | { kind: "MEMORY_QUERY"; query: "RECENT_STUDY" | "REVISION" | "TEST" | "NEXT" }
   | { kind: "CREATE_TASK"; title: string; subjectHint: string | null; due: "TODAY" | "TOMORROW" | null; plannedMinutes: number | null }
   | { kind: "UPDATE_STUDY"; query: string; subjectHint: string | null; questionsDelta: number; hoursStudied: number; intensityLevel: number; addRevision: boolean; markCompleted: boolean; coverage: "FULL" | "PARTIAL"; activityKind: "NEW_LEARNING" | "PRACTICE" | "REVISION" | "TEST_REVIEW" }
   | { kind: "NAVIGATE"; href: string; label: string }
@@ -129,6 +131,10 @@ export function parseSiteAssistantIntent(value: string): SiteAssistantIntent {
   const utterance = stripAssistantAddress(value);
   if (!utterance) return { kind: "UNKNOWN", reason: "I did not hear a command." };
 
+  if (/\b(?:what is this page|what can you do here|what can i do here|help me (?:on|with) this page|explain this page)\b/i.test(utterance)) {
+    return { kind: "PAGE_HELP" };
+  }
+
   const taskMatch = utterance.match(/^(?:(?:create|add|make)(?:\s+(?:a|the|new))?\s+(?:todo|to do|task)(?:\s+(?:for|to))?|remind\s+me\s+to)\s+(.+)$/i);
   if (taskMatch) {
     const rawTitle = cleanEntityLabel(taskMatch[1]);
@@ -141,6 +147,19 @@ export function parseSiteAssistantIntent(value: string): SiteAssistantIntent {
       .replace(/\s+/g, " ")
       .trim();
     if (title) return { kind: "CREATE_TASK", title, subjectHint, due, plannedMinutes: hours && hours > 0 ? Math.round(hours * 60) : null };
+  }
+
+  if (/\b(?:what|which|where)\b.*\b(?:did i study|have i studied|studied today|studied yesterday|study history)\b|\bremember what i studied\b/i.test(utterance)) {
+    return { kind: "MEMORY_QUERY", query: "RECENT_STUDY" };
+  }
+  if (/\b(?:what|which).*(?:revise|revision)|\b(?:suggest|recommend|plan)\s+(?:a\s+)?revision\b/i.test(utterance)) {
+    return { kind: "MEMORY_QUERY", query: "REVISION" };
+  }
+  if (/\b(?:what|which).*(?:test|mock)|\b(?:suggest|recommend)\s+(?:a\s+)?(?:test|mock)\b/i.test(utterance)) {
+    return { kind: "MEMORY_QUERY", query: "TEST" };
+  }
+  if (/\bwhat\s+should\s+i\s+(?:study|do)\s*(?:next|now|today)?\b|\b(?:suggest|recommend)\s+(?:my\s+)?next\s+(?:study|task)\b/i.test(utterance)) {
+    return { kind: "MEMORY_QUERY", query: "NEXT" };
   }
 
   const compactStudy = parseCompactStudyAnswer(utterance);
@@ -239,7 +258,7 @@ export function chooseAssistantTranscript(candidates: AssistantTranscriptCandida
     .map((candidate, index) => {
       const control = parseAssistantClientControl(candidate.transcript);
       const intent = parseSiteAssistantIntent(candidate.transcript);
-      const actionable = intent.kind === "NAVIGATE" || intent.kind === "CREATE_TOPIC" || intent.kind === "CREATE_CHAPTER" || intent.kind === "CREATE_TASK" || intent.kind === "UPDATE_STUDY";
+      const actionable = intent.kind === "NAVIGATE" || intent.kind === "CREATE_TOPIC" || intent.kind === "CREATE_CHAPTER" || intent.kind === "CREATE_TASK" || intent.kind === "UPDATE_STUDY" || intent.kind === "MEMORY_QUERY" || intent.kind === "PAGE_HELP";
       const intentScore = control ? 5 : actionable ? 4 : intent.kind === "SEARCH" ? 3 : 0;
       return { candidate, index, score: intentScore + Math.max(0, Math.min(1, candidate.confidence)) };
     })

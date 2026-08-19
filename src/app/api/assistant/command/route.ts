@@ -38,6 +38,32 @@ function responseWithStatus(body: Record<string, unknown>, status = 200) {
   return NextResponse.json(body, { status });
 }
 
+function readableDate(value: Date) {
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(value);
+}
+
+function helpForPath(pathname: string) {
+  const pages = [
+    { prefix: "/daily-goals", label: "Daily Goals", help: "I can start the two-minute voice log, capture subject totals, ask for missing chapters, split questions across topics, review the result, and prepare tomorrow’s Todo." },
+    { prefix: "/subjects/", label: "this subject workspace", help: "I can open a chapter or topic, record confirmed questions, revisions and completion, or create a missing chapter or topic after checking duplicates." },
+    { prefix: "/practice", label: "Practice Arena", help: "I can open sectional, custom or full-length test builders and suggest a test from your saved study memory." },
+    { prefix: "/pyq", label: "the PYQ workspace", help: "I can open the PYQ library or explorer and find syllabus chapters by voice." },
+    { prefix: "/reader", label: "the NCERT Reader", help: "I can open the reader or find a known subject, chapter or topic without changing your progress." },
+    { prefix: "/tests", label: "Tests", help: "I can open test history, analytics or the Error Log, and suggest a test from your recent study." },
+    { prefix: "/todo", label: "Todo Deck", help: "I can create a task after confirmation, open Mission Planner or Task Copilot, and tell you the next saved priority." },
+    { prefix: "/planner", label: "Day Planner", help: "I can open your tasks, Daily Goals or a study workspace and tell you the next saved priority." },
+    { prefix: "/ai-insights/rank-predictor", label: "Rank Predictor", help: "I can bring you back here by natural questions such as where to see your predicted rank." },
+    { prefix: "/ai-insights/cycle-planner", label: "Cycle Planner", help: "I can reopen this planner from any protected page using natural voice navigation." },
+    { prefix: "/ai-insights/neet-guru", label: "NEET-GURU", help: "I can reopen NEET-GURU from anywhere; its own study conversation remains separate from safe site actions." },
+    { prefix: "/ai-insights", label: "AI Insights", help: "I can open NEET-GURU, Rank Predictor or Cycle Planner by name." },
+    { prefix: "/visual-lab", label: "Visual Lab", help: "I can open this lab from anywhere and navigate to a subject or chapter you want to visualize." },
+    { prefix: "/reviews", label: "Review Cards", help: "I can bring you here and suggest a due revision from saved review dates and weak concepts." },
+    { prefix: "/mood", label: "Mood Tracker", help: "I can reopen this tracker from any protected page; mood entries still require your explicit input." },
+    { prefix: "/dashboard", label: "Dashboard", help: "I can navigate anywhere, open the focus timer, tell you what you studied, suggest the next revision or test, and perform confirmed study and Todo updates." },
+  ];
+  return pages.find((page) => pathname.startsWith(page.prefix)) ?? pages.at(-1)!;
+}
+
 async function getDirectory() {
   return db.subject.findMany({
     select: {
@@ -62,6 +88,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const utterance = typeof body.utterance === "string" ? body.utterance.trim().slice(0, 500) : "";
     const requestId = typeof body.requestId === "string" ? body.requestId.trim().slice(0, 100) : "";
+    const currentPath = typeof body.currentPath === "string" && body.currentPath.startsWith("/") ? body.currentPath.slice(0, 200) : "/dashboard";
     if (!utterance || requestId.length < 8) return responseWithStatus({ error: "utterance and a valid requestId are required" }, 400);
 
     const previous = await db.assistantAction.findUnique({ where: { requestId } });
@@ -93,7 +120,106 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (intent.kind === "PAGE_HELP") {
+      const page = helpForPath(currentPath);
+      return responseWithStatus({ kind: intent.kind, reply: `${vocative}, on ${page.label}: ${page.help}`, state: "DONE" });
+    }
+
     const directory = await getDirectory();
+    if (intent.kind === "MEMORY_QUERY") {
+      if (intent.query === "RECENT_STUDY") {
+        const recent = await db.studyActivity.findMany({
+          where: { userId: session.userId, undoneAt: null },
+          include: { subject: { select: { name: true, slug: true } }, topic: { select: { name: true } } },
+          orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+          take: 4,
+        });
+        if (!recent.length) return responseWithStatus({ kind: intent.kind, reply: `${vocative}, I do not have a saved study activity yet. Daily Goals is the best place to record today.`, href: "/daily-goals?voice=1", label: "Daily Goals", state: "DONE" });
+        const summary = recent.map((activity) => {
+          const target = activity.topic?.name ?? activity.chapter;
+          const work = [activity.hoursStudied ? `${activity.hoursStudied} hours` : null, activity.questionsDelta ? `${activity.questionsDelta} questions` : null].filter(Boolean).join(" and ");
+          return `${target} in ${activity.subject.name}${work ? ` — ${work}` : ""} on ${readableDate(activity.date)}`;
+        }).join("; ");
+        const first = recent[0];
+        return responseWithStatus({
+          kind: intent.kind,
+          reply: `${vocative}, your recent study memory says: ${summary}.`,
+          href: topicHref(first.subject.slug, first.chapter, first.topic?.name),
+          label: first.topic?.name ?? first.chapter,
+          state: "DONE",
+        });
+      }
+
+      if (intent.query === "REVISION") {
+        const due = await db.topic.findFirst({
+          where: { nextReviewDate: { lte: new Date() } },
+          include: { subject: { select: { name: true, slug: true } } },
+          orderBy: [{ nextReviewDate: "asc" }, { updatedAt: "asc" }],
+        });
+        const recentWeak = due ? null : await db.studyActivity.findFirst({
+          where: { userId: session.userId, undoneAt: null, weakConcepts: { not: null } },
+          include: { subject: { select: { name: true, slug: true } }, topic: { select: { name: true } } },
+          orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        });
+        if (due) return responseWithStatus({
+          kind: intent.kind,
+          reply: `${vocative}, ${due.name} in ${due.subject.name} is due for revision${due.nextReviewDate ? ` since ${readableDate(due.nextReviewDate)}` : ""}. I recommend revising it first.`,
+          href: topicHref(due.subject.slug, due.chapter ?? due.name, due.name),
+          label: due.name,
+          state: "DONE",
+        });
+        if (recentWeak) return responseWithStatus({
+          kind: intent.kind,
+          reply: `${vocative}, your latest saved weak area is ${recentWeak.topic?.name ?? recentWeak.chapter} in ${recentWeak.subject.name}. I recommend revising that next.`,
+          href: topicHref(recentWeak.subject.slug, recentWeak.chapter, recentWeak.topic?.name),
+          label: recentWeak.topic?.name ?? recentWeak.chapter,
+          state: "DONE",
+        });
+        return responseWithStatus({ kind: intent.kind, reply: `${vocative}, no overdue revision or saved weak concept is available yet. I’ll open Review Cards so you can choose safely.`, href: "/reviews", label: "Review Cards", state: "DONE" });
+      }
+
+      if (intent.query === "TEST") {
+        const latest = await db.studyActivity.findFirst({
+          where: { userId: session.userId, undoneAt: null },
+          include: { subject: { select: { name: true, slug: true } }, topic: { select: { name: true } } },
+          orderBy: [{ date: "desc" }, { questionsDelta: "desc" }, { createdAt: "desc" }],
+        });
+        if (!latest) return responseWithStatus({ kind: intent.kind, reply: `${vocative}, I do not have enough saved study context to choose a chapter test without guessing. I’ll open the Custom Test builder.`, href: "/practice?mode=custom", label: "Custom Test", state: "DONE" });
+        const params = new URLSearchParams({ mode: "custom", subject: latest.subject.slug, chapter: latest.chapter });
+        return responseWithStatus({
+          kind: intent.kind,
+          reply: `${vocative}, based on your latest saved work, a short ${latest.chapter} test in ${latest.subject.name} is the safest next check.`,
+          href: `/practice?${params.toString()}`,
+          label: `${latest.chapter} test`,
+          state: "DONE",
+        });
+      }
+
+      const nextTask = await db.task.findFirst({
+        where: { status: { in: ["TODO", "IN_PROGRESS"] } },
+        include: { subject: { select: { name: true } } },
+        orderBy: [{ dueDate: "asc" }, { priority: "desc" }, { orderIndex: "asc" }, { createdAt: "asc" }],
+      });
+      if (nextTask) return responseWithStatus({
+        kind: intent.kind,
+        reply: `${vocative}, your next saved priority is “${nextTask.title}”${nextTask.subject ? ` for ${nextTask.subject.name}` : ""}.`,
+        href: "/todo",
+        label: nextTask.title,
+        state: "DONE",
+      });
+      const leastComplete = directory
+        .map((subject) => ({ subject, completed: subject.topics.filter((topic) => topic.isCompleted).length, total: subject.topics.length }))
+        .filter((entry) => entry.total > 0)
+        .sort((a, b) => a.completed / a.total - b.completed / b.total)[0];
+      return responseWithStatus({
+        kind: intent.kind,
+        reply: leastComplete ? `${vocative}, you have no pending Todo. ${leastComplete.subject.name} currently has the lowest syllabus completion, so that is the most evidence-based next choice.` : `${vocative}, you have no pending Todo or tracked syllabus progress yet. I’ll open the planner.`,
+        href: leastComplete ? `/subjects/${leastComplete.subject.slug}` : "/planner",
+        label: leastComplete?.subject.name ?? "Day Planner",
+        state: "DONE",
+      });
+    }
+
     if (intent.kind === "CREATE_TASK") {
       const subject = intent.subjectHint ? directory.find((entry) => entry.slug === intent.subjectHint) ?? null : null;
       const actionId = randomUUID();

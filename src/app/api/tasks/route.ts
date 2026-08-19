@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
       dueDate,
       plannedMinutes,
       aiAssistEnabled = true,
+      source,
     } = body as {
       title?: string;
       description?: string;
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
       dueDate?: string | null;
       plannedMinutes?: number | null;
       aiAssistEnabled?: boolean;
+      source?: "MANUAL" | "VOICE_ASSISTANT";
     };
 
     if (!title?.trim()) {
@@ -74,12 +76,13 @@ export async function POST(req: NextRequest) {
         dueDate: startOfLocalDay(dueDate),
         plannedMinutes: plannedMinutes ?? null,
         aiAssistEnabled,
+        source: source === "VOICE_ASSISTANT" ? "VOICE_ASSISTANT" : "MANUAL",
         orderIndex: (lastTask?.orderIndex ?? -1) + 1,
         timelineEvents: {
           create: {
             type: "CREATED",
-            label: "Task created",
-            detail: "Added to the task board",
+            label: source === "VOICE_ASSISTANT" ? "Added from Bubu’s suggestion" : "Task created",
+            detail: source === "VOICE_ASSISTANT" ? "Approved after the Daily Goals review" : "Added to the task board",
           },
         },
       },

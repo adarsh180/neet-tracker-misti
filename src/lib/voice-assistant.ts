@@ -13,6 +13,7 @@ export const VOICE_ROUTES: VoiceRouteDefinition[] = [
   { aliases: ["daily goals", "daily goal", "study log", "daily log", "log my day", "log today's study", "today's study log"], href: "/daily-goals", label: "Daily Goals" },
   { aliases: ["todo", "to do", "todo deck", "tasks", "task board", "task list", "tomorrow's tasks", "my tasks"], href: "/todo", label: "Todo Deck" },
   { aliases: ["practice", "practice arena", "question bank", "q bank", "practice questions"], href: "/practice", label: "Practice Arena" },
+  { aliases: ["practice folders", "test folders", "saved test folders", "practice test folders"], href: "/practice", label: "Practice Arena" },
   { aliases: ["error log", "mistake log", "mistakes", "wrong answers", "incorrect answers"], href: "/tests/error-log", label: "Error Log" },
   { aliases: ["tests", "test history", "test records", "mock tests", "mock history", "test analytics", "test analysis"], href: "/tests", label: "Tests" },
   { aliases: ["pyq explorer", "pyq questions", "question explorer", "previous year question explorer"], href: "/pyq/questions", label: "PYQ Explorer" },

@@ -31,10 +31,40 @@ test("resolves direct navigation and leaves chapter names searchable", () => {
   assert.deepEqual(resolveVoiceRoute("show me my mistake log"), { href: "/tests/error-log", label: "Error Log" });
   assert.deepEqual(resolveVoiceRoute("open P Y Q explorer"), { href: "/pyq/questions", label: "PYQ Explorer" });
   assert.deepEqual(resolveVoiceRoute("start a class twelve sectional test"), { href: "/practice?mode=sectional&classLevel=12", label: "Class 12 Sectional Test" });
+  assert.deepEqual(resolveVoiceRoute("open practice folders"), { href: "/practice", label: "Practice Arena" });
   assert.equal(resolveVoiceRoute("open molecular basis of inheritance"), null);
   assert.equal(extractSearchPhrase("open molecular basis of inheritance chapter"), "molecular basis of inheritance");
   assert.deepEqual(resolveVoiceRoute("where can I see my rank predictor"), { href: "/ai-insights/rank-predictor", label: "Rank Predictor" });
   assert.deepEqual(resolveVoiceRoute("open full syllabus mock"), { href: "/practice?mode=full", label: "Full-Length Test" });
+});
+
+test("covers every top-level protected product workspace", () => {
+  const commands = new Map([
+    ["dashboard", "/dashboard"],
+    ["day planner", "/planner"],
+    ["todo deck", "/todo"],
+    ["daily goals", "/daily-goals"],
+    ["tests", "/tests"],
+    ["error log", "/tests/error-log"],
+    ["practice arena", "/practice"],
+    ["pyq library", "/pyq"],
+    ["pyq explorer", "/pyq/questions"],
+    ["ncert reader", "/reader"],
+    ["review cards", "/reviews"],
+    ["mood tracker", "/mood"],
+    ["visual lab", "/visual-lab"],
+    ["ai insights", "/ai-insights"],
+    ["neet guru", "/ai-insights/neet-guru"],
+    ["rank predictor", "/ai-insights/rank-predictor"],
+    ["cycle planner", "/ai-insights/cycle-planner"],
+    ["physics", "/subjects/physics"],
+    ["chemistry", "/subjects/chemistry"],
+    ["botany", "/subjects/botany"],
+    ["zoology", "/subjects/zoology"],
+  ]);
+  for (const [command, expectedHref] of commands) {
+    assert.equal(resolveVoiceRoute(`open ${command}`)?.href, expectedHref, command);
+  }
 });
 
 test("parses a complete subject update without filling omitted values", () => {
