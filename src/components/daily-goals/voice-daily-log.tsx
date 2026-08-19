@@ -7,10 +7,10 @@ import { createPortal } from "react-dom";
 import { getMicrophonePermissionState, listenOnce, requestMicrophonePermission, speakPrompt, stopSpeaking, supportsVoiceRecognition, type MicrophonePermissionState } from "@/lib/browser-voice";
 import type { PrivateVoiceClipId } from "@/lib/private-voice";
 import { VOICE_ONBOARDING_VERSION } from "@/lib/private-voice";
-import { inferCoverage, inferStudyKind, resolveStudyMatch, type StudyActivityKindValue, type StudyCoverageValue, type StudyTopicDirectoryItem } from "@/lib/study-activity";
+import { resolveStudyMatch, type StudyActivityKindValue, type StudyCoverageValue, type StudyTopicDirectoryItem } from "@/lib/study-activity";
 import { detectVoiceDevice, type VoiceDeviceProfile } from "@/lib/voice-device";
-import { SITE_ASSISTANT_PREFERENCE_EVENT } from "@/lib/site-assistant";
-import { isAffirmative, isNegative, isSkipUtterance, parseIntensity, parseSpokenNumber, parseStudyHours, parseTomorrowTasks, type TomorrowTaskDraft } from "@/lib/voice-assistant";
+import { SITE_ASSISTANT_PREFERENCE_EVENT, SITE_ASSISTANT_WAKE_PAUSE_EVENT } from "@/lib/site-assistant";
+import { isAffirmative, isNegative, isSkipUtterance, parseCompactStudyAnswer, parseSpokenNumber, parseTomorrowTasks, type TomorrowTaskDraft } from "@/lib/voice-assistant";
 
 type Subject = { id: string; name: string; slug: string; color: string; emoji: string };
 type SubjectDraft = {
@@ -44,7 +44,7 @@ type Preference = {
   discreetMode: boolean;
 };
 type WizardStep =
-  | { kind: "study" | "coverage" | "hours" | "questions" | "intensity" | "subjectCompletion" | "weakness"; subject: Subject }
+  | { kind: "studySummary"; subject: Subject }
   | { kind: "discipline" | "completion" | "tomorrow" | "review" };
 
 const DEFAULT_PREFERENCE: Preference = {
@@ -54,7 +54,7 @@ const DEFAULT_PREFERENCE: Preference = {
   speechEnabled: true,
   onboardingSeen: false,
   onboardingVersion: 0,
-  interactionMode: "TAP",
+  interactionMode: "WAKE",
   affectionMode: "WARM",
   discreetMode: false,
 };
@@ -62,13 +62,7 @@ const DEFAULT_PREFERENCE: Preference = {
 const DEFAULT_DEVICE_PROFILE: VoiceDeviceProfile = detectVoiceDevice("");
 
 function promptFor(step: WizardStep, nickname: string) {
-  if (step.kind === "study") return `${nickname}, what did you study in ${step.subject.name} today? Name the chapter or topic and say whether it was new learning, practice, or revision. You can say skip.`;
-  if (step.kind === "coverage") return "Was that the full chapter end to end, or only a partial section?";
-  if (step.kind === "hours") return `How much time did you give to ${step.subject.name} for this work?`;
-  if (step.kind === "questions") return `How many ${step.subject.name} questions did you solve?`;
-  if (step.kind === "intensity") return `What was the ${step.subject.name} intensity from one to five?`;
-  if (step.kind === "subjectCompletion") return "Did you complete this selected topic or the full chapter today? Say yes only if it is genuinely finished.";
-  if (step.kind === "weakness") return "Any weak concept or mistake to remember? Say skip if there was none.";
+  if (step.kind === "studySummary") return `${nickname}, tell me your complete ${step.subject.name} update in one calm answer: chapter or topic, new learning, practice or revision, full or partial, time, questions, intensity from one to five, whether it is completed, and any weak concept. Say no weak concept if there was none, or skip ${step.subject.name}.`;
   if (step.kind === "discipline") return "What was your overall discipline score out of one hundred?";
   if (step.kind === "completion") return "What percentage of today's plan did you complete?";
   if (step.kind === "tomorrow") return "Last question. What are you going to study tomorrow? Say skip if you do not want any Todo tasks.";
@@ -77,10 +71,8 @@ function promptFor(step: WizardStep, nickname: string) {
 
 function clipForStep(step: WizardStep, nickname: "Bubu" | "Shona"): PrivateVoiceClipId {
   const nick = nickname.toLowerCase();
-  if (step.kind === "study") return `study-${step.subject.slug}-${nick}` as PrivateVoiceClipId;
-  if (step.kind === "hours" || step.kind === "questions" || step.kind === "intensity") return `${step.kind}-${step.subject.slug}` as PrivateVoiceClipId;
-  if (step.kind === "coverage" || step.kind === "weakness" || step.kind === "discipline" || step.kind === "tomorrow") return step.kind;
-  if (step.kind === "subjectCompletion") return "subject-completion";
+  if (step.kind === "studySummary") return `study-${step.subject.slug}-${nick}` as PrivateVoiceClipId;
+  if (step.kind === "discipline" || step.kind === "tomorrow") return step.kind;
   if (step.kind === "completion") return "plan-completion";
   return `review-${nick}` as PrivateVoiceClipId;
 }
@@ -125,6 +117,8 @@ export default function VoiceDailyLog({
   onApplyToManual: (values: Record<string, { hours: string; questions: string; intensity: string; notes: string }>, meta: { disciplineScore: string; completionPercent: string }) => void;
 }) {
   const recognitionRef = useRef<{ abort(): void } | null>(null);
+  const startListeningRef = useRef<() => void>(() => {});
+  const autoOpenedRef = useRef(false);
   const [preference, setPreference] = useState<Preference>(DEFAULT_PREFERENCE);
   const [preferenceReady, setPreferenceReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -151,15 +145,7 @@ export default function VoiceDailyLog({
   const [deviceProfile, setDeviceProfile] = useState<VoiceDeviceProfile>(DEFAULT_DEVICE_PROFILE);
 
   const steps = useMemo<WizardStep[]>(() => [
-    ...subjects.flatMap((subject) => [
-      { kind: "study" as const, subject },
-      { kind: "coverage" as const, subject },
-      { kind: "hours" as const, subject },
-      { kind: "questions" as const, subject },
-      { kind: "intensity" as const, subject },
-      { kind: "subjectCompletion" as const, subject },
-      { kind: "weakness" as const, subject },
-    ]),
+    ...subjects.map((subject) => ({ kind: "studySummary" as const, subject })),
     { kind: "discipline" },
     { kind: "completion" },
     { kind: "tomorrow" },
@@ -184,14 +170,28 @@ export default function VoiceDailyLog({
 
   useEffect(() => {
     if (!wizardOpen || !step || !preference.speechEnabled) return;
-    speakPrompt(prompt, { ...preference, enabled: true, clipId: clipForStep(step, preference.nickname) });
+    speakPrompt(prompt, {
+      ...preference,
+      enabled: true,
+      clipId: clipForStep(step, preference.nickname),
+      onEnded: () => {
+        if (microphonePermission === "granted") window.setTimeout(() => startListeningRef.current(), 180);
+      },
+    });
     return stopSpeaking;
-  }, [preference, prompt, step, wizardOpen]);
+  }, [microphonePermission, preference, prompt, step, wizardOpen]);
 
   useEffect(() => () => {
     recognitionRef.current?.abort();
     stopSpeaking();
   }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(SITE_ASSISTANT_WAKE_PAUSE_EVENT, { detail: { paused: wizardOpen } }));
+    return () => {
+      if (wizardOpen) window.dispatchEvent(new CustomEvent(SITE_ASSISTANT_WAKE_PAUSE_EVENT, { detail: { paused: false } }));
+    };
+  }, [wizardOpen]);
 
   const resetDraft = useCallback(() => {
     setDraft(Object.fromEntries(subjects.map((subject) => {
@@ -211,7 +211,7 @@ export default function VoiceDailyLog({
     setLastSubmissionId(null);
   }, [initialCompletion, initialDiscipline, initialValues, subjects]);
 
-  const openWizard = async () => {
+  const openWizard = useCallback(async () => {
     resetDraft();
     setWizardOpen(true);
     setContextLoading(true);
@@ -225,7 +225,17 @@ export default function VoiceDailyLog({
     } finally {
       setContextLoading(false);
     }
-  };
+  }, [resetDraft]);
+
+  useEffect(() => {
+    if (autoOpenedRef.current || !preferenceReady || !subjects.length || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("voice") !== "1") return;
+    autoOpenedRef.current = true;
+    params.delete("voice");
+    window.history.replaceState(null, "", `${window.location.pathname}${params.size ? `?${params}` : ""}${window.location.hash}`);
+    void openWizard();
+  }, [openWizard, preferenceReady, subjects.length]);
 
   const advance = useCallback((amount = 1) => {
     setTypedAnswer("");
@@ -321,14 +331,25 @@ export default function VoiceDailyLog({
       else setError("Please say yes to save, or edit the review on screen.");
       return;
     }
-    if (step.kind === "study") {
+    if (step.kind === "studySummary") {
       if (isSkipUtterance(answer)) {
         setDraft((current) => ({ ...current, [step.subject.id]: { ...(current[step.subject.id] ?? createSubjectDraft()), active: false } }));
-        advance(7);
+        advance();
         return;
       }
       const match = resolveStudyMatch(answer, topicDirectory[step.subject.id] ?? []);
       if (!match) return setError(`I could not safely match that to an existing ${step.subject.name} chapter. Try its chapter or topic name; I will never create one silently.`);
+      const summary = parseCompactStudyAnswer(answer);
+      const missing = [
+        summary.kind ? null : "new learning, practice or revision",
+        summary.coverage ? null : "full or partial coverage",
+        summary.hours === null ? "time studied" : null,
+        summary.questions === null ? "questions solved" : null,
+        summary.intensity === null ? "intensity from one to five" : null,
+        summary.completionConfirmed === null ? "whether it is completed" : null,
+        summary.weaknessAnswered ? null : "a weak concept or ‘no weak concept’",
+      ].filter((item): item is string => Boolean(item));
+      if (missing.length) return setError(`I caught the chapter, but still need: ${missing.join(", ")}. Please repeat the complete ${step.subject.name} update at your normal pace.`);
       const matchedTopic = match.topicId ? (topicDirectory[step.subject.id] ?? []).find((topic) => topic.id === match.topicId) : null;
       setDraft((current) => ({
         ...current,
@@ -340,58 +361,18 @@ export default function VoiceDailyLog({
           topicName: match.topicName,
           chapter: match.chapter,
           classLevel: match.classLevel,
-          kind: inferStudyKind(answer),
-          coverage: inferCoverage(answer),
+          kind: summary.kind ?? "PRACTICE",
+          coverage: summary.coverage ?? "PARTIAL",
+          hours: (current[step.subject.id]?.hours ?? (Number(initialValues[step.subject.id]?.hours) || 0)) + (summary.hours ?? 0),
+          hoursDelta: summary.hours ?? 0,
+          questions: (current[step.subject.id]?.questions ?? (Number(initialValues[step.subject.id]?.questions) || 0)) + (summary.questions ?? 0),
+          questionsDelta: summary.questions ?? 0,
+          intensity: summary.intensity ?? 0,
+          completionConfirmed: summary.completionConfirmed ?? false,
+          weakConcepts: summary.weakConcepts,
           previousTopicQuestions: matchedTopic?.questionsSolved ?? 0,
         },
       }));
-      advance();
-      return;
-    }
-    if (step.kind === "coverage") {
-      const coverage = inferCoverage(answer);
-      if (coverage === "PARTIAL" && !/\b(?:partial|part|section|some|half|incomplete|not full)\b/i.test(answer)) {
-        return setError("Please say full chapter or partial section so I record revision and completion accurately.");
-      }
-      setDraft((current) => ({ ...current, [step.subject.id]: { ...(current[step.subject.id] ?? createSubjectDraft()), coverage } }));
-      advance();
-      return;
-    }
-    if (step.kind === "hours") {
-      if (isSkipUtterance(answer)) {
-        setDraft((current) => ({ ...current, [step.subject.id]: { ...(current[step.subject.id] ?? createSubjectDraft()), hoursDelta: 0 } }));
-        advance();
-        return;
-      }
-      const value = parseStudyHours(answer);
-      if (value === null) return setError("I could not identify the study time. Try “two hours”, “ninety minutes”, or “skip”.");
-      setDraft((current) => { const previous = current[step.subject.id] ?? createSubjectDraft(); return { ...current, [step.subject.id]: { ...previous, hours: previous.hours + value, hoursDelta: value } }; });
-      advance();
-      return;
-    }
-    if (step.kind === "questions") {
-      const value = isSkipUtterance(answer) ? 0 : parseSpokenNumber(answer);
-      if (value === null) return setError("Please say the number of questions, such as “sixty”, or say skip.");
-      setDraft((current) => { const previous = current[step.subject.id] ?? createSubjectDraft(); const delta = Math.max(0, Math.round(value)); return { ...current, [step.subject.id]: { ...previous, questions: previous.questions + delta, questionsDelta: delta } }; });
-      advance();
-      return;
-    }
-    if (step.kind === "intensity") {
-      const value = parseIntensity(answer);
-      if (value === null) return setError("Please rate the intensity from one to five, or say low, moderate, high, or intense.");
-      setDraft((current) => ({ ...current, [step.subject.id]: { ...(current[step.subject.id] ?? createSubjectDraft()), intensity: value } }));
-      advance();
-      return;
-    }
-    if (step.kind === "subjectCompletion") {
-      if (!isAffirmative(answer) && !isNegative(answer) && !isSkipUtterance(answer)) return setError("Please say yes if it is fully completed, or no if work remains.");
-      const completed = isAffirmative(answer);
-      setDraft((current) => ({ ...current, [step.subject.id]: { ...(current[step.subject.id] ?? createSubjectDraft()), completionConfirmed: completed } }));
-      advance();
-      return;
-    }
-    if (step.kind === "weakness") {
-      setDraft((current) => ({ ...current, [step.subject.id]: { ...(current[step.subject.id] ?? createSubjectDraft()), weakConcepts: isSkipUtterance(answer) ? "" : answer } }));
       advance();
       return;
     }
@@ -408,7 +389,7 @@ export default function VoiceDailyLog({
       setTodos(parseTomorrowTasks(answer, subjects));
       advance();
     }
-  }, [advance, saveReviewedLog, step, subjects, topicDirectory]);
+  }, [advance, initialValues, saveReviewedLog, step, subjects, topicDirectory]);
 
   const enableMicrophone = useCallback(async () => {
     setPermissionBusy(true);
@@ -421,7 +402,7 @@ export default function VoiceDailyLog({
     return result.granted;
   }, []);
 
-  const startListening = async () => {
+  const startListening = useCallback(async () => {
     if (listening) {
       recognitionRef.current?.abort();
       setListening(false);
@@ -440,7 +421,11 @@ export default function VoiceDailyLog({
       onError: setError,
       onEnd: () => setListening(false),
     });
-  };
+  }, [acceptAnswer, enableMicrophone, listening, microphonePermission, preference.locale]);
+
+  useEffect(() => {
+    startListeningRef.current = () => { void startListening(); };
+  }, [startListening]);
 
   const finishOnboarding = async () => {
     let microphoneReady = microphonePermission === "granted";
@@ -506,8 +491,8 @@ export default function VoiceDailyLog({
           {error && <p className="voice-error" role="alert">{error}</p>}
           <div className="review-actions"><button className="listen-mini" onClick={() => void startListening()}>{listening ? <MicOff /> : <Mic />} {listening ? "Listening…" : "Say yes to save"}</button><button className="manual-edit" onClick={applyToManual}><PencilLine /> Continue in manual form</button><button className="save-reviewed" onClick={() => void saveReviewedLog()} disabled={saving}>{saving ? <Loader2 className="spin" /> : <CheckCircle2 />} Save reviewed log</button></div>
         </div> : <div className="question-stage">
-          <div className="prompt-bubble"><Sparkles /><div><span>{"subject" in step ? step.subject.name : "Daily review"}</span><h2>{contextLoading && step.kind === "study" ? "Loading her exact chapter directory…" : prompt}</h2></div></div>
-          <div className={`mic-zone ${listening ? "listening" : ""}`}><button onClick={() => void startListening()} disabled={contextLoading && step.kind === "study"} aria-label={listening ? "Stop listening" : "Answer with voice"}>{listening ? <MicOff /> : <Mic />}</button><strong>{listening ? "Listening…" : supportsVoiceRecognition() ? "Tap and speak" : "Voice unavailable—type below"}</strong><small>{interim || heard || "Your answer remains editable until final review."}</small></div>
+          <div className="prompt-bubble"><Sparkles /><div><span>{"subject" in step ? step.subject.name : "Daily review"}</span><h2>{contextLoading && step.kind === "studySummary" ? "Loading her exact chapter directory…" : prompt}</h2></div></div>
+          <div className={`mic-zone ${listening ? "listening" : ""}`}><button onClick={() => void startListening()} disabled={contextLoading && step.kind === "studySummary"} aria-label={listening ? "Stop listening" : "Answer with voice"}>{listening ? <MicOff /> : <Mic />}</button><strong>{listening ? "Listening…" : supportsVoiceRecognition() ? "Speak naturally — no need to rush" : "Voice unavailable—type below"}</strong><small>{interim || heard || "I wait for your natural pause. Every required value is checked before moving on."}</small></div>
           <div className="typed-answer"><input value={typedAnswer} onChange={(event) => setTypedAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") acceptAnswer(typedAnswer); }} placeholder="Or type your answer here…" /><button onClick={() => acceptAnswer(typedAnswer)}><ArrowRight /></button></div>
           {error && <p className="voice-error" role="alert">{error}</p>}
           <button className="repeat-prompt" onClick={() => speakPrompt(prompt, { ...preference, enabled: preference.speechEnabled, clipId: clipForStep(step, preference.nickname) })}><Volume2 /> Repeat question</button>

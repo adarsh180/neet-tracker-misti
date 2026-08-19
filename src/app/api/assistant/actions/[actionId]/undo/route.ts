@@ -19,12 +19,12 @@ export async function POST(
   const action = await db.assistantAction.findUnique({ where: { id: actionId } });
   if (!action || action.userId !== session.userId) return NextResponse.json({ error: "Action not found" }, { status: 404 });
   if (action.status === "UNDONE") return NextResponse.json({ success: true, alreadyUndone: true });
-  if (action.kind !== "CREATE_TOPIC" || action.status !== "COMPLETED") {
+  if (!["CREATE_TOPIC", "CREATE_CHAPTER"].includes(action.kind) || action.status !== "COMPLETED") {
     return NextResponse.json({ error: "This action cannot be undone" }, { status: 409 });
   }
 
   const result = action.resultJson as { topicId?: string; created?: boolean } | null;
-  if (!result?.created || !result.topicId) return NextResponse.json({ error: "No created topic to undo" }, { status: 409 });
+  if (!result?.created || !result.topicId) return NextResponse.json({ error: "No untouched created item to undo" }, { status: 409 });
   const topic = await db.topic.findUnique({
     where: { id: result.topicId },
     select: {

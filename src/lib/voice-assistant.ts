@@ -1,25 +1,72 @@
 export type VoiceRouteIntent = { href: string; label: string };
 
-const DIRECT_ROUTES: Array<{ aliases: string[]; href: string; label: string }> = [
-  { aliases: ["dashboard", "home"], href: "/dashboard", label: "Dashboard" },
-  { aliases: ["daily goals", "daily goal", "study log", "log my day"], href: "/daily-goals", label: "Daily Goals" },
-  { aliases: ["todo", "to do", "todo deck", "tasks", "task board"], href: "/todo", label: "Todo Deck" },
-  { aliases: ["sectional test", "class 11 sectional test", "class 12 sectional test"], href: "/practice?mode=sectional", label: "Sectional Test" },
-  { aliases: ["custom test", "build custom test"], href: "/practice?mode=custom", label: "Custom Test" },
-  { aliases: ["practice", "practice arena"], href: "/practice", label: "Practice Arena" },
-  { aliases: ["tests", "test history"], href: "/tests", label: "Tests" },
-  { aliases: ["ncert", "ncert reader", "reader", "books"], href: "/reader", label: "NCERT Reader" },
-  { aliases: ["pyq", "pyq library", "previous year questions"], href: "/pyq", label: "PYQ Library" },
-  { aliases: ["pyq explorer", "question explorer"], href: "/pyq/questions", label: "PYQ Explorer" },
-  { aliases: ["physics"], href: "/subjects/physics", label: "Physics" },
-  { aliases: ["chemistry"], href: "/subjects/chemistry", label: "Chemistry" },
-  { aliases: ["botany"], href: "/subjects/botany", label: "Botany" },
-  { aliases: ["zoology"], href: "/subjects/zoology", label: "Zoology" },
-  { aliases: ["mood", "mood tracker"], href: "/mood", label: "Mood Tracker" },
-  { aliases: ["review cards", "reviews"], href: "/reviews", label: "Review Cards" },
-  { aliases: ["visual lab"], href: "/visual-lab", label: "Visual Lab" },
-  { aliases: ["planner", "day planner"], href: "/planner", label: "Day Planner" },
+type VoiceRouteDefinition = VoiceRouteIntent & { aliases: string[] };
+
+export const VOICE_ROUTES: VoiceRouteDefinition[] = [
+  { aliases: ["class 11 sectional test", "class eleven sectional test", "11th sectional test"], href: "/practice?mode=sectional&classLevel=11", label: "Class 11 Sectional Test" },
+  { aliases: ["class 12 sectional test", "class twelve sectional test", "12th sectional test"], href: "/practice?mode=sectional&classLevel=12", label: "Class 12 Sectional Test" },
+  { aliases: ["sectional test", "section test", "pcb sectional"], href: "/practice?mode=sectional", label: "Sectional Test" },
+  { aliases: ["custom test", "custom paper", "build custom test", "create a test", "make a test"], href: "/practice?mode=custom", label: "Custom Test" },
+  { aliases: ["full length test", "full syllabus test", "full syllabus mock", "neet mock", "complete neet mock", "180 question test"], href: "/practice?mode=full", label: "Full-Length Test" },
+  { aliases: ["dashboard", "home", "home screen", "main page", "study studio"], href: "/dashboard", label: "Dashboard" },
+  { aliases: ["daily goals voice mode", "voice daily log", "record my daily goals", "fill my daily goals", "log today's study by voice"], href: "/daily-goals?voice=1", label: "Daily Goals Voice Log" },
+  { aliases: ["daily goals", "daily goal", "study log", "daily log", "log my day", "log today's study", "today's study log"], href: "/daily-goals", label: "Daily Goals" },
+  { aliases: ["todo", "to do", "todo deck", "tasks", "task board", "task list", "tomorrow's tasks", "my tasks"], href: "/todo", label: "Todo Deck" },
+  { aliases: ["practice", "practice arena", "question bank", "q bank", "practice questions"], href: "/practice", label: "Practice Arena" },
+  { aliases: ["error log", "mistake log", "mistakes", "wrong answers", "incorrect answers"], href: "/tests/error-log", label: "Error Log" },
+  { aliases: ["tests", "test history", "test records", "mock tests", "mock history", "test analytics", "test analysis"], href: "/tests", label: "Tests" },
+  { aliases: ["pyq explorer", "pyq questions", "question explorer", "previous year question explorer"], href: "/pyq/questions", label: "PYQ Explorer" },
+  { aliases: ["pyq", "pyq library", "previous year questions", "past year questions", "previous papers"], href: "/pyq", label: "PYQ Library" },
+  { aliases: ["ncert", "ncert reader", "ncert books", "reader", "book reader", "textbooks"], href: "/reader", label: "NCERT Reader" },
+  { aliases: ["neet guru", "neet mentor", "doubt solver", "ask mentor", "study mentor"], href: "/ai-insights/neet-guru", label: "NEET-GURU" },
+  { aliases: ["rank predictor", "predict my rank", "rank prediction"], href: "/ai-insights/rank-predictor", label: "Rank Predictor" },
+  { aliases: ["cycle planner", "period planner", "cycle planning"], href: "/ai-insights/cycle-planner", label: "Cycle Planner" },
+  { aliases: ["ai insights", "insights", "smart insights", "performance insights"], href: "/ai-insights", label: "AI Insights" },
+  { aliases: ["mission planner", "missions", "study missions", "mission board"], href: "/todo?focus=mission", label: "Mission Planner" },
+  { aliases: ["task copilot", "todo copilot", "task assistant", "todo assistant"], href: "/todo?focus=copilot", label: "Task Copilot" },
+  { aliases: ["physics", "physics subject", "physics workspace"], href: "/subjects/physics", label: "Physics" },
+  { aliases: ["chemistry", "chemistry subject", "chemistry workspace", "chem"], href: "/subjects/chemistry", label: "Chemistry" },
+  { aliases: ["botany", "botany subject", "plant biology"], href: "/subjects/botany", label: "Botany" },
+  { aliases: ["zoology", "zoology subject", "animal biology"], href: "/subjects/zoology", label: "Zoology" },
+  { aliases: ["mood", "mood tracker", "wellness check", "mood check"], href: "/mood", label: "Mood Tracker" },
+  { aliases: ["review cards", "reviews", "revision cards", "flash cards", "flashcards"], href: "/reviews", label: "Review Cards" },
+  { aliases: ["visual lab", "concept visualizer", "visual learning"], href: "/visual-lab", label: "Visual Lab" },
+  { aliases: ["planner", "day planner", "study planner", "daily planner", "schedule", "study schedule", "today's plan", "today plan"], href: "/planner", label: "Day Planner" },
+  { aliases: ["focus timer", "study timer", "timer", "focus session"], href: "/dashboard#focus-timer", label: "Focus Timer" },
 ];
+
+const ROUTE_FILLERS = /\b(?:the|a|an|my|our|your|please|kindly|for me|right now|now|page|screen|section|workspace|area|tab|portal)\b/g;
+
+function normalizeRoutePhrase(value: string) {
+  return normalizeVoiceText(value)
+    .replace(/\bp\s*y\s*q(?:s)?\b/g, "pyq")
+    .replace(/\bn\s*c\s*e\s*r\s*t\b/g, "ncert")
+    .replace(/\bq\s*bank\b/g, "question bank")
+    .replace(/\bto[\s-]?do\b/g, "todo")
+    .replace(/\beleventh\b/g, "class 11")
+    .replace(/\btwelfth\b/g, "class 12")
+    .replace(ROUTE_FILLERS, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function routeTokens(value: string) {
+  return new Set(normalizeRoutePhrase(value).split(" ").filter((token) => token.length > 1));
+}
+
+function routeScore(query: string, alias: string) {
+  const left = normalizeRoutePhrase(query);
+  const right = normalizeRoutePhrase(alias);
+  if (!left || !right) return 0;
+  if (left === right) return 1;
+  if (left.includes(right) || right.includes(left)) return Math.min(0.97, 0.86 + Math.min(left.length, right.length) / Math.max(left.length, right.length) * 0.1);
+  const leftTokens = routeTokens(left);
+  const rightTokens = routeTokens(right);
+  const overlap = [...leftTokens].filter((token) => rightTokens.has(token)).length;
+  const precision = overlap / Math.max(1, leftTokens.size);
+  const recall = overlap / Math.max(1, rightTokens.size);
+  return precision && recall ? (2 * precision * recall) / (precision + recall) : 0;
+}
 
 const SKIP_PHRASES = [
   "skip", "not studied", "did not study", "didn't study", "nothing", "none", "zero today",
@@ -126,21 +173,103 @@ export function parseIntensity(value: string): number | null {
 }
 
 export function resolveVoiceRoute(value: string): VoiceRouteIntent | null {
-  const text = extractSearchPhrase(value);
-  const exact = DIRECT_ROUTES.find((route) => route.aliases.some((alias) => text === alias));
+  const text = normalizeRoutePhrase(extractSearchPhrase(value));
+  const exact = VOICE_ROUTES.find((route) => route.aliases.some((alias) => text === normalizeRoutePhrase(alias)));
   if (exact) return { href: exact.href, label: exact.label };
-  const contained = DIRECT_ROUTES
-    .flatMap((route) => route.aliases.map((alias) => ({ route, alias })))
-    .filter(({ alias }) => text.includes(alias))
-    .sort((a, b) => b.alias.length - a.alias.length)[0];
-  return contained ? { href: contained.route.href, label: contained.route.label } : null;
+  const ranked = VOICE_ROUTES
+    .flatMap((route) => route.aliases.map((alias) => ({ route, alias, score: routeScore(text, alias) })))
+    .sort((left, right) => right.score - left.score || right.alias.length - left.alias.length);
+  const best = ranked[0];
+  if (!best || best.score < 0.78) return null;
+  const runnerUp = ranked.find((entry) => entry.route.href !== best.route.href);
+  if (runnerUp && runnerUp.score >= 0.74 && best.score - runnerUp.score < 0.08) return null;
+  return { href: best.route.href, label: best.route.label };
 }
 
 export function extractSearchPhrase(value: string) {
-  return normalizeVoiceText(value)
-    .replace(/^(?:please\s+)?(?:open|go to|take me to|show me|show|find|search for|search)\s+/, "")
-    .replace(/\s+(?:page|section|chapter)$/, "")
+  let text = normalizeVoiceText(value);
+  let previous = "";
+  while (text !== previous) {
+    previous = text;
+    text = text
+      .replace(/^(?:please|kindly)\s+/, "")
+      .replace(/^(?:can|could|would|will)\s+you\s+/, "")
+      .replace(/^i\s+(?:want|need|would like)\s+(?:you\s+)?to\s+/, "")
+      .replace(/^let(?:'s| us)\s+/, "");
+  }
+  return text
+    .replace(/^where\s+(?:can|could|do|would)\s+i\s+(?:see|find|check|view|use)\s+/, "")
+    .replace(/^how\s+(?:can|do)\s+i\s+(?:open|find|see|check|view|use)\s+/, "")
+    .replace(/^where\s+is\s+/, "")
+    .replace(/^(?:open(?: up)?|go to|head to|take me to|show me|show|bring up|switch to|navigate to|visit|launch|start|find|search for|search)\s+/, "")
+    .replace(/\s+(?:for me\s*)?(?:please\s*)?(?:now\s*)?$/, "")
+    .replace(/\s+(?:page|screen|section|workspace|chapter)$/, "")
     .trim();
+}
+
+export type CompactStudyAnswer = {
+  hours: number | null;
+  questions: number | null;
+  intensity: number | null;
+  coverage: "FULL" | "PARTIAL" | null;
+  kind: "NEW_LEARNING" | "PRACTICE" | "REVISION" | "TEST_REVIEW" | null;
+  completionConfirmed: boolean | null;
+  weaknessAnswered: boolean;
+  weakConcepts: string;
+};
+
+function spokenValueBefore(value: string, unit: RegExp) {
+  const match = unit.exec(value);
+  if (!match || match.index < 1) return null;
+  const prefix = value.slice(0, match.index).trim();
+  const numeric = prefix.match(/(\d+(?:\.\d+)?)\s*$/);
+  if (numeric) return Number(numeric[1]);
+  const nearby = prefix.split(/\b(?:for|about|around|nearly|solved|did|answered|attempted|completed)\b/).at(-1)?.trim().split(/\s+/).slice(-6).join(" ") ?? "";
+  return parseSpokenNumber(nearby);
+}
+
+/** Parses a single, naturally paced subject summary without inventing omitted fields. */
+export function parseCompactStudyAnswer(value: string): CompactStudyAnswer {
+  const text = normalizeVoiceText(value);
+  const hourUnit = /\b(?:hours?|hrs?|minutes?|mins?)\b/g;
+  const questionUnit = /\b(?:questions?|qs?)\b/g;
+  const timeValue = spokenValueBefore(text, hourUnit);
+  const timeUnit = text.match(/\b(?:hours?|hrs?|minutes?|mins?)\b/)?.[0] ?? "";
+  const hours = timeValue === null ? null : /minute|min/.test(timeUnit) ? Math.round((timeValue / 60) * 4) / 4 : Math.round(timeValue * 4) / 4;
+  const questionValue = spokenValueBefore(text, questionUnit);
+  const intensityTail = text.match(/\bintensity(?:\s+(?:was|is|level|of|at))?\s+([^,.]+?)(?=\s+(?:and|with|weak|no\s+weak|completed|finished|full|partial)\b|$)/)?.[1];
+  const intensity = intensityTail ? parseIntensity(intensityTail) : null;
+  const coverage = /\b(?:full|fully|whole|entire|end to end)\b/.test(text)
+    ? "FULL"
+    : /\b(?:partial|partly|some|section|half|not full)\b/.test(text)
+      ? "PARTIAL"
+      : null;
+  const kind = /\b(?:revised|revision|revising|revise)\b/.test(text)
+    ? "REVISION"
+    : /\b(?:test review|mock review|mistake review|error review)\b/.test(text)
+      ? "TEST_REVIEW"
+      : /\b(?:new learning|new chapter|first time|learned|lecture)\b/.test(text)
+        ? "NEW_LEARNING"
+        : /\b(?:practice|practiced|practise|questions|solved)\b/.test(text)
+          ? "PRACTICE"
+          : null;
+  const completionConfirmed = /\b(?:not completed|not complete|did not complete|didn't complete|unfinished|incomplete|still left)\b/.test(text)
+    ? false
+    : /\b(?:completed|complete|finished|done)\b/.test(text)
+      ? true
+      : null;
+  const noWeakness = /\b(?:no|none|nothing)(?:\s+(?:weak|difficult|mistake|problem))/.test(text) || /\bno weak concepts?\b/.test(text);
+  const weaknessMatch = text.match(/\b(?:weak(?:\s+concept)?|difficulty|mistake)(?:\s+(?:was|is|in|with))?\s+(.+?)(?=\s+(?:and\s+)?(?:completed|not completed|full|partial|intensity)\b|$)/);
+  return {
+    hours: hours === null ? null : Math.max(0, Math.min(24, hours)),
+    questions: questionValue === null ? null : Math.max(0, Math.min(5000, Math.round(questionValue))),
+    intensity,
+    coverage,
+    kind,
+    completionConfirmed,
+    weaknessAnswered: noWeakness || Boolean(weaknessMatch),
+    weakConcepts: noWeakness ? "" : weaknessMatch?.[1]?.trim() ?? "",
+  };
 }
 
 export type TomorrowTaskDraft = {

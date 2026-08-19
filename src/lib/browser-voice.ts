@@ -3,7 +3,7 @@
 import type { PrivateVoiceClipId } from "@/lib/private-voice";
 
 type RecognitionAlternative = { transcript: string; confidence: number };
-type RecognitionResult = { isFinal: boolean; 0: RecognitionAlternative; length: number };
+type RecognitionResult = { isFinal: boolean; [index: number]: RecognitionAlternative; length: number };
 type RecognitionEvent = Event & { results: ArrayLike<RecognitionResult>; resultIndex: number };
 type RecognitionErrorEvent = Event & { error: string; message?: string };
 
@@ -36,6 +36,51 @@ const privateVoiceUrls = new Map<PrivateVoiceClipId, string>();
 const privateVoiceLoads = new Map<PrivateVoiceClipId, Promise<string | null>>();
 
 export type AudioLevelCallback = (level: number) => void;
+
+export type WakeInvocation = {
+  transcript: string;
+  phrase: string;
+  remainingCommand: string;
+};
+
+const WAKE_NAME_VARIANTS: Record<string, string[]> = {
+  bubu: ["bubu", "boo boo", "babu", "buboo", "bu bu"],
+  betu: ["betu", "betoo", "beta", "bay two"],
+  shona: ["shona", "sona", "show na", "shonna"],
+  hubby: ["hubby", "hubi", "hubbie"],
+  kuchupuchu: ["kuchupuchu", "kuchu puchu", "kuchu", "kuchu kuchu"],
+  "raja beta": ["raja beta", "raja betu", "raja baita"],
+  coach: ["coach"],
+  mentor: ["mentor"],
+  buddy: ["buddy", "buddie"],
+};
+
+function normalizedWakeText(value: string) {
+  return value.toLowerCase().normalize("NFKC").replace(/[^a-z0-9\s'-]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Matches common Indian-English recognition variants without accepting a wake name in the middle of unrelated speech. */
+export function findWakeInvocation(transcript: string, phrases: string[]): WakeInvocation | null {
+  const normalized = normalizedWakeText(transcript).replace(/^(?:um|uh|okay|ok)\s+/, "");
+  if (!normalized) return null;
+  for (const configuredPhrase of phrases) {
+    const configured = normalizedWakeText(configuredPhrase);
+    const configuredName = configured.replace(/^(?:hey|hi|hello)\s+/, "");
+    const variants = WAKE_NAME_VARIANTS[configuredName] ?? [configuredName];
+    for (const variant of variants) {
+      for (const prefix of ["hey", "hi", "hello"]) {
+        const invocation = `${prefix} ${variant}`;
+        if (normalized !== invocation && !normalized.startsWith(`${invocation} `)) continue;
+        return {
+          transcript,
+          phrase: configuredPhrase,
+          remainingCommand: normalized.slice(invocation.length).replace(/^[\s,:'!-]+/, "").trim(),
+        };
+      }
+    }
+  }
+  return null;
+}
 
 export function preloadPrivateVoiceClip(clipId: PrivateVoiceClipId) {
   if (typeof window === "undefined") return Promise.resolve(null);
@@ -176,7 +221,7 @@ export async function requestMicrophonePermission(): Promise<MicrophonePermissio
 export function listenOnce(options: {
   locale?: string;
   onInterim?: (text: string) => void;
-  onResult: (text: string, confidence: number) => void;
+  onResult: (text: string, confidence: number, alternatives: RecognitionAlternative[]) => void;
   onError: (message: string) => void;
   onEnd?: () => void;
 }) {
@@ -199,7 +244,10 @@ export function listenOnce(options: {
       const transcript = result[0]?.transcript?.trim() ?? "";
       if (result.isFinal && transcript) {
         delivered = true;
-        options.onResult(transcript, result[0]?.confidence ?? 0);
+        const alternatives = Array.from({ length: result.length }, (_, alternativeIndex) => result[alternativeIndex])
+          .filter((alternative): alternative is RecognitionAlternative => Boolean(alternative?.transcript?.trim()))
+          .map((alternative) => ({ transcript: alternative.transcript.trim(), confidence: alternative.confidence ?? 0 }));
+        options.onResult(transcript, result[0]?.confidence ?? 0, alternatives);
       } else {
         interim += transcript;
       }
@@ -242,68 +290,101 @@ export function listenForWakePhrase(options: {
   let active = true;
   let recognition: RecognitionInstance | null = null;
   let restartTimer: number | null = null;
-  const phrases = options.phrases.map((phrase) => phrase.toLowerCase());
+  let watchdogTimer: number | null = null;
+  let restartDelay = 300;
+  let waking = false;
 
   const stop = () => {
     active = false;
     if (restartTimer !== null) window.clearTimeout(restartTimer);
+    if (watchdogTimer !== null) window.clearInterval(watchdogTimer);
     recognition?.abort();
+    recognition = null;
     options.onStatus?.(false);
+  };
+  const scheduleRestart = (delay = restartDelay) => {
+    if (!active || restartTimer !== null || document.visibilityState !== "visible") return;
+    restartTimer = window.setTimeout(() => {
+      restartTimer = null;
+      start();
+    }, delay);
   };
   const start = () => {
     if (!active || recognition || document.visibilityState !== "visible") return;
     recognition = new Recognition();
     recognition.lang = options.locale ?? "en-IN";
-    recognition.continuous = true;
+    // Short self-rearming sessions are materially more reliable than continuous mode on iPadOS and Android Chromium.
+    recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 5;
     recognition.onresult = (event) => {
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const transcript = event.results[index][0]?.transcript?.trim() ?? "";
-        const lower = transcript.toLowerCase();
-        const phrase = phrases.find((candidate) => lower.includes(candidate));
-        if (!phrase) continue;
-        const phraseIndex = lower.indexOf(phrase);
-        const remainingCommand = transcript.slice(phraseIndex + phrase.length).replace(/^[,\s:-]+/, "").trim();
-        active = false;
+        const result = event.results[index];
+        const alternatives = Array.from({ length: result.length }, (_, alternativeIndex) => result[alternativeIndex]?.transcript?.trim() ?? "").filter(Boolean);
+        const invocation = alternatives.map((candidate) => findWakeInvocation(candidate, options.phrases)).find(Boolean);
+        if (!invocation || waking) continue;
+        waking = true;
         recognition?.abort();
+        recognition = null;
         options.onStatus?.(false);
-        options.onWake(transcript, remainingCommand);
+        options.onWake(invocation.transcript, invocation.remainingCommand);
+        window.setTimeout(() => {
+          waking = false;
+          scheduleRestart(250);
+        }, 1400);
         break;
       }
     };
     recognition.onerror = (event) => {
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      if (event.error === "not-allowed") {
         active = false;
         options.onError?.("Wake listening needs microphone permission. Allow it in this site's browser settings, then arm wake words again.");
+      } else if (event.error === "service-not-allowed") {
+        active = false;
+        options.onError?.("This browser has disabled its speech-recognition service. Microphone permission alone is not enough; use Chrome or Safari with speech recognition enabled.");
+      } else if (event.error === "network") {
+        restartDelay = Math.min(4000, restartDelay * 2);
       } else if (event.error !== "no-speech" && event.error !== "aborted") {
-        options.onError?.("Wake listening paused. Tap the assistant microphone to continue.");
+        restartDelay = Math.min(2500, restartDelay + 400);
       }
     };
     recognition.onend = () => {
       recognition = null;
       if (!active) return;
-      restartTimer = window.setTimeout(start, 350);
+      options.onStatus?.(false);
+      scheduleRestart(waking ? 1500 : restartDelay);
     };
     try {
       recognition.start();
+      restartDelay = 300;
       options.onStatus?.(true);
     } catch {
-      active = false;
       options.onStatus?.(false);
-      options.onError?.("Wake listening could not start. Tap the assistant microphone instead.");
+      recognition = null;
+      restartDelay = Math.min(2500, restartDelay + 400);
+      scheduleRestart(restartDelay);
     }
   };
   const onVisibility = () => {
     if (!active) return;
-    if (document.visibilityState === "visible") start();
+    if (document.visibilityState === "visible") scheduleRestart(100);
     else recognition?.abort();
   };
+  const onResume = () => scheduleRestart(100);
   document.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("focus", onResume);
+  window.addEventListener("pageshow", onResume);
+  window.addEventListener("online", onResume);
+  watchdogTimer = window.setInterval(() => {
+    if (active && !recognition && !waking) scheduleRestart(100);
+  }, 5000);
   start();
   return {
     abort() {
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onResume);
+      window.removeEventListener("pageshow", onResume);
+      window.removeEventListener("online", onResume);
       stop();
     },
   };
@@ -326,43 +407,13 @@ export function getPreferredVoice(preferredName?: string | null, locale = "en-IN
     ?? null;
 }
 
-export function speakPrompt(text: string, options?: { preferredVoice?: string | null; locale?: string; enabled?: boolean; clipId?: PrivateVoiceClipId | null; onLevel?: AudioLevelCallback; onEnded?: () => void; allowBrowserFallback?: boolean }) {
+export function speakPrompt(_text: string, options?: { preferredVoice?: string | null; locale?: string; enabled?: boolean; clipId?: PrivateVoiceClipId | null; onLevel?: AudioLevelCallback; onEnded?: () => void }) {
   if (typeof window === "undefined" || options?.enabled === false) return null;
   activeAudioMeterCleanup?.();
   activeAudioMeterCleanup = null;
   activePromptAudio?.pause();
   activePromptAudio = null;
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-  const speakWithBrowser = () => {
-    if (!("speechSynthesis" in window)) return null;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = options?.locale ?? "en-IN";
-    utterance.rate = 1;
-    utterance.pitch = 1.02;
-    const voice = getPreferredVoice(options?.preferredVoice, utterance.lang);
-    if (voice) utterance.voice = voice;
-    if (options?.onLevel) {
-      const started = performance.now();
-      let frame = 0;
-      const animate = () => {
-        const elapsed = (performance.now() - started) / 1000;
-        options.onLevel?.(0.18 + Math.abs(Math.sin(elapsed * 7.1)) * 0.2 + Math.abs(Math.sin(elapsed * 13.7)) * 0.08);
-        frame = window.requestAnimationFrame(animate);
-      };
-      frame = window.requestAnimationFrame(animate);
-      activeAudioMeterCleanup = () => {
-        window.cancelAnimationFrame(frame);
-        options.onLevel?.(0);
-      };
-    }
-    utterance.onend = () => {
-      activeAudioMeterCleanup?.();
-      activeAudioMeterCleanup = null;
-      options?.onEnded?.();
-    };
-    window.speechSynthesis.speak(utterance);
-    return utterance;
-  };
   if (options?.clipId) {
     const audio = new Audio(privateVoiceUrls.get(options.clipId) ?? `/api/voice/audio/${encodeURIComponent(options.clipId)}`);
     audio.preload = "auto";
@@ -378,8 +429,7 @@ export function speakPrompt(text: string, options?: { preferredVoice?: string | 
       if (activePromptAudio === audio) activePromptAudio = null;
       activeAudioMeterCleanup?.();
       activeAudioMeterCleanup = null;
-      if (options.allowBrowserFallback === true) speakWithBrowser();
-      else options.onEnded?.();
+      options.onEnded?.();
     });
     if (options?.onLevel) {
       try {
@@ -402,7 +452,10 @@ export function speakPrompt(text: string, options?: { preferredVoice?: string | 
     }
     return audio;
   }
-  return speakWithBrowser();
+  // Clone-only policy: if no authenticated clone clip is available, the exact
+  // response remains visible and the assistant never substitutes a device voice.
+  options?.onEnded?.();
+  return null;
 }
 
 export function stopSpeaking() {

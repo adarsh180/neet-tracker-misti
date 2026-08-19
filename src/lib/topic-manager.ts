@@ -12,17 +12,39 @@ function normalizeText(value?: string | null) {
   return cleaned ? cleaned.replace(/\s+/g, " ") : null;
 }
 
-function normalizeForComparison(value?: string | null) {
+export function normalizeForTopicComparison(value?: string | null) {
   return (
     normalizeText(value)
       ?.normalize("NFKD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
+      .replace(/[’']s\b/g, "")
       .replace(/&/g, " and ")
       .replace(/[^a-z0-9]+/g, " ")
       .replace(/\s+/g, " ")
       .trim() ?? ""
   );
+}
+
+const TOPIC_ALIAS_KEYS: Record<string, string> = {
+  nlm: "newton law motion",
+  wep: "work energy power",
+  ktg: "kinetic theory gas",
+  goc: "general organic chemistry",
+};
+
+function topicSemanticKey(value?: string | null) {
+  const normalized = normalizeForTopicComparison(value)
+    .replace(/\bnewtons\b/g, "newton")
+    .replace(/\blaws\b/g, "law")
+    .replace(/\bof\b/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.length > 4 && word.endsWith("s") && word !== "physics" ? word.slice(0, -1) : word)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return TOPIC_ALIAS_KEYS[normalized] ?? normalized;
 }
 
 function levenshteinDistance(a: string, b: string) {
@@ -83,9 +105,9 @@ async function resolveChapterName(subjectId: string, chapter: string | null) {
     return chapter;
   }
 
-  const normalizedTarget = normalizeForComparison(chapter);
+  const normalizedTarget = normalizeForTopicComparison(chapter);
   const exactMatch = chapters.find(
-    (item) => normalizeForComparison(item.chapter) === normalizedTarget
+    (item) => normalizeForTopicComparison(item.chapter) === normalizedTarget
   );
 
   if (exactMatch?.chapter) {
@@ -98,7 +120,7 @@ async function resolveChapterName(subjectId: string, chapter: string | null) {
     const existingChapter = item.chapter ? normalizeText(item.chapter) : null;
     if (!existingChapter) continue;
 
-    const existingNormalized = normalizeForComparison(existingChapter);
+    const existingNormalized = normalizeForTopicComparison(existingChapter);
     const score = calculateSimilarity(normalizedTarget, existingNormalized);
 
     if (!bestMatch || score > bestMatch.score) {
@@ -146,11 +168,36 @@ async function findExistingTopic(
     },
   });
 
-  const normalizedName = normalizeForComparison(name);
-  return (
-    topics.find((topic) => normalizeForComparison(topic.name) === normalizedName) ??
-    null
-  );
+  return findLikelyDuplicateTopic(name, topics);
+}
+
+export function findLikelyDuplicateTopic<T extends { name: string }>(
+  requestedName: string,
+  topics: T[],
+): T | null {
+  const requested = topicSemanticKey(requestedName);
+  if (!requested) return null;
+
+  let best: { topic: T; score: number } | null = null;
+  for (const topic of topics) {
+    const existing = topicSemanticKey(topic.name);
+    if (!existing) continue;
+    if (existing === requested) return topic;
+
+    const requestedInitials = requested.split(" ").map((word) => word[0]).join("");
+    const existingInitials = existing.split(" ").map((word) => word[0]).join("");
+    if (
+      (requested.length <= 5 && requested === existingInitials) ||
+      (existing.length <= 5 && existing === requestedInitials)
+    ) return topic;
+
+    const score = calculateSimilarity(requested, existing);
+    if (!best || score > best.score) best = { topic, score };
+  }
+
+  if (!best) return null;
+  const threshold = Math.min(requested.length, topicSemanticKey(best.topic.name).length) >= 10 ? 0.88 : 0.94;
+  return best.score >= threshold ? best.topic : null;
 }
 
 async function getNextChapterOrder(subjectId: string) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ASSISTANT_WAKE_NAMES, detectAssistantPersona, findAssistantEntity, parseSiteAssistantIntent, stripAssistantAddress } from "../src/lib/site-assistant";
+import { ASSISTANT_WAKE_NAMES, chooseAssistantTranscript, detectAssistantPersona, findAssistantEntity, parseAssistantClientControl, parseSiteAssistantIntent, stripAssistantAddress } from "../src/lib/site-assistant";
 
 test("parses addressed topic creation without treating the wake phrase as content", () => {
   assert.equal(stripAssistantAddress("Hey Bubu, please open physics"), "open physics");
@@ -9,12 +9,31 @@ test("parses addressed topic creation without treating the wake phrase as conten
     topicName: "Torque",
     chapterName: "Rotational Motion",
     subjectHint: null,
+    classLevel: null,
   });
   assert.deepEqual(parseSiteAssistantIntent("please add hybridisation under Chemical Bonding in chemistry"), {
     kind: "CREATE_TOPIC",
     topicName: "hybridisation",
     chapterName: "Chemical Bonding",
     subjectHint: "chemistry",
+    classLevel: null,
+  });
+});
+
+test("parses safe custom chapter creation with explicit subject, class, and first topic", () => {
+  assert.deepEqual(parseSiteAssistantIntent("Hey Bubu create chapter Experimental Mechanics in physics class 11 with topic Lab Measurements"), {
+    kind: "CREATE_CHAPTER",
+    chapterName: "Experimental Mechanics",
+    subjectHint: "physics",
+    classLevel: "11",
+    firstTopicName: "Lab Measurements",
+  });
+  assert.deepEqual(parseSiteAssistantIntent("add chapter Plant Experiments for botany standard twelve"), {
+    kind: "CREATE_CHAPTER",
+    chapterName: "Plant Experiments",
+    subjectHint: "botany",
+    classLevel: "12",
+    firstTopicName: null,
   });
 });
 
@@ -46,6 +65,66 @@ test("keeps navigation read-only and sends chapter requests through search", () 
     kind: "SEARCH",
     query: "molecular basis of inheritance",
   });
+  assert.deepEqual(parseSiteAssistantIntent("Hey Bubu, could you please take me to the Physics page for me"), {
+    kind: "NAVIGATE",
+    href: "/subjects/physics",
+    label: "Physics",
+  });
+  assert.deepEqual(parseSiteAssistantIntent("I want to open my task list now"), {
+    kind: "NAVIGATE",
+    href: "/todo",
+    label: "Todo Deck",
+  });
+  assert.deepEqual(parseSiteAssistantIntent("rank predictor"), {
+    kind: "NAVIGATE",
+    href: "/ai-insights/rank-predictor",
+    label: "Rank Predictor",
+  });
+  assert.deepEqual(parseSiteAssistantIntent("Hey mentor where can I see my rank predictor"), {
+    kind: "NAVIGATE",
+    href: "/ai-insights/rank-predictor",
+    label: "Rank Predictor",
+  });
+  assert.deepEqual(parseSiteAssistantIntent("where can I use the task copilot"), {
+    kind: "NAVIGATE",
+    href: "/todo?focus=copilot",
+    label: "Task Copilot",
+  });
+});
+
+test("parses confirmation-gated Todo and progress commands", () => {
+  assert.deepEqual(parseSiteAssistantIntent("Hey Bubu add a task revise electrostatics tomorrow for two hours"), {
+    kind: "CREATE_TASK",
+    title: "revise electrostatics",
+    subjectHint: null,
+    due: "TOMORROW",
+    plannedMinutes: 120,
+  });
+  const progress = parseSiteAssistantIntent("Hey mentor mark Newton laws of motion complete and add 80 questions");
+  assert.equal(progress.kind, "UPDATE_STUDY");
+  if (progress.kind === "UPDATE_STUDY") {
+    assert.match(progress.query, /newton laws motion/i);
+    assert.equal(progress.questionsDelta, 80);
+    assert.equal(progress.markCompleted, true);
+    assert.equal(progress.coverage, "FULL");
+  }
+});
+
+test("understands local assistant controls without a network request", () => {
+  assert.equal(parseAssistantClientControl("Hey Shona go back"), "BACK");
+  assert.equal(parseAssistantClientControl("could you please close the assistant"), "CLOSE");
+  assert.equal(parseAssistantClientControl("stop talking"), "MUTE");
+  assert.equal(parseAssistantClientControl("speak again"), "UNMUTE");
+  assert.equal(parseAssistantClientControl("refresh this page"), "REFRESH");
+  assert.equal(parseAssistantClientControl("open chemistry"), null);
+});
+
+test("prefers a lower-confidence recognition alternative that maps to a real command", () => {
+  assert.deepEqual(chooseAssistantTranscript([
+    { transcript: "open fiscal page", confidence: 0.92 },
+    { transcript: "open physics page", confidence: 0.78 },
+    { transcript: "open physicist cage", confidence: 0.64 },
+  ]), { transcript: "open physics page", confidence: 0.78 });
 });
 
 test("matches small transcription variations but reports true ambiguity", () => {

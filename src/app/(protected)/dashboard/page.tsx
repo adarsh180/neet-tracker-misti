@@ -529,7 +529,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="panel panel-timer">
+        <div className="panel panel-timer" id="focus-timer">
           <div className="section-head">
             <div>
               <span className="eyebrow">Focus block</span>
