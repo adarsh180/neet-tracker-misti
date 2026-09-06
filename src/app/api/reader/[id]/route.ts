@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { getPrivateSession } from "@/lib/server-auth";
+import { reviewedReaderLink } from "@/lib/reader-quality";
+import { isStrictlyServeableBankRow } from "@/lib/question-bank";
 
 export const dynamic = "force-dynamic";
 
@@ -21,27 +23,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       pageCount: true,
       readerProgress: { where: { userId: session.userId }, take: 1, select: { currentPage: true } },
       passages: {
-        where: { reviewStatus: "VERIFIED" },
+        where: { reviewStatus: "VERIFIED", questionLinks: { some: reviewedReaderLink } },
         select: {
           id: true,
           pageNumber: true,
           text: true,
           bboxJson: true,
           questionLinks: {
-            where: { reviewStatus: "VERIFIED" },
+            where: reviewedReaderLink,
             select: {
-              bankQuestion: {
-                select: {
-                  id: true,
-                  subject: true,
-                  chapter: true,
-                  topic: true,
-                  sourceRef: true,
-                  examYear: true,
-                  question: true,
-                  optionsJson: true,
-                },
-              },
+              bankQuestion: true,
             },
           },
         },
@@ -66,7 +57,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       pageNumber: passage.pageNumber,
       text: passage.text,
       bbox: passage.bboxJson,
-      questions: passage.questionLinks.map(({ bankQuestion }) => ({
+      questions: passage.questionLinks.filter(({ bankQuestion }) => isStrictlyServeableBankRow(bankQuestion)).map(({ bankQuestion }) => ({
         id: bankQuestion.id,
         subject: bankQuestion.subject,
         chapter: bankQuestion.chapter,
@@ -75,7 +66,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         examYear: bankQuestion.examYear,
         question: bankQuestion.question,
         options: bankQuestion.optionsJson,
+        visualAssetUrl: bankQuestion.visualAssetUrl,
+        visualAssetAlt: bankQuestion.visualAssetAlt,
       })),
-    })),
+    })).filter(passage => passage.questions.length > 0),
   });
 }

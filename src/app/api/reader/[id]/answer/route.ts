@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { getPrivateSession } from "@/lib/server-auth";
+import { reviewedReaderLink } from "@/lib/reader-quality";
+import { isStrictlyServeableBankRow } from "@/lib/question-bank";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getPrivateSession();
@@ -9,19 +11,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const questionId = typeof body.questionId === "string" ? body.questionId : "";
-  const selectedIndex = Number(body.selectedIndex);
+  const selectedIndex = body.selectedIndex;
   if (!questionId || !Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex > 3) {
     return NextResponse.json({ error: "A valid question and option are required" }, { status: 400 });
   }
   const link = await db.ncertPassageQuestionLink.findFirst({
     where: {
       bankQuestionId: questionId,
-      reviewStatus: "VERIFIED",
-      passage: { documentId: id, reviewStatus: "VERIFIED" },
+      ...reviewedReaderLink,
+      passage: { documentId: id, reviewStatus: "VERIFIED", document: { reviewStatus: "VERIFIED_SOURCE" } },
     },
     include: { bankQuestion: true },
   });
-  if (!link) return NextResponse.json({ error: "Verified linked question not found" }, { status: 404 });
+  if (!link || !isStrictlyServeableBankRow(link.bankQuestion)) return NextResponse.json({ error: "Reviewed linked question not available" }, { status: 404 });
   const question = link.bankQuestion;
   const correct = selectedIndex === question.correctIndex;
   await db.ncertQuestionAttempt.create({
@@ -35,11 +37,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
   const optionExplanations = Array.isArray(question.optionExplanationsJson)
     ? question.optionExplanationsJson.map(String)
-    : question.optionsJson instanceof Array
-      ? question.optionsJson.map((_, index) => index === question.correctIndex
-        ? `Correct. ${question.explanation}`
-        : "This option is not supported by the verified solution and linked NCERT passage.")
-      : [];
+    : [];
   return NextResponse.json({
     correct,
     correctIndex: question.correctIndex,

@@ -1,4 +1,6 @@
 "use client";
+import MarkdownBlock from "@/components/studio/markdown-block";
+import { SITE_ASSISTANT_WAKE_PAUSE_EVENT } from "@/lib/site-assistant";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -38,11 +40,11 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import rehypeKatex from "rehype-katex";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import "katex/dist/katex.min.css";
+
+
+
+
+
 import { useRouter } from "next/navigation";
 
 import SmoothLink from "@/components/layout/smooth-link";
@@ -57,7 +59,7 @@ import {
   NEET_FULL_TEST_QUESTIONS,
   NEET_MAX_PRACTICE_DURATION_MINUTES,
 } from "@/lib/neet-exam-policy";
-import { normalizeQuestionMarkdown } from "@/lib/question-markdown";
+
 import { exitExamFullscreen, isExamFullscreenActive, requestExamFullscreen } from "@/lib/exam-fullscreen";
 
 type PracticeSource = "NEET_PYQ" | "JEE_PYQ" | "INSTITUTE" | "PLATFORM" | "NCERT" | "AI";
@@ -288,23 +290,6 @@ function AnimatedCount({ value }: { value: number }) {
   return <>{display}</>;
 }
 
-function MarkdownBlock({ text }: { text: string }) {
-  return (
-    <div className="cbt-md">
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-        {normalizeQuestionMarkdown(text)}
-      </ReactMarkdown>
-      <style jsx>{`
-        .cbt-md :global(p) { margin: 0 0 8px; }
-        .cbt-md :global(p:last-child) { margin-bottom: 0; }
-        .cbt-md :global(.katex) { font-size: 1.03em; white-space: nowrap; }
-        .cbt-md :global(table) { border-collapse: collapse; margin: 10px 0; width: max-content; max-width: 100%; }
-        .cbt-md :global(td), .cbt-md :global(th) { border: 1px solid var(--glass-border-mid); padding: 6px 10px; font-size: 13px; }
-        .cbt-md :global(img) { display: block; max-width: min(100%, 760px); max-height: 440px; object-fit: contain; margin: 14px auto; border-radius: 8px; border: 1px solid var(--glass-border); background: #fff; }
-      `}</style>
-    </div>
-  );
-}
 
 export function useFullscreenExamMode(containerRef: React.RefObject<HTMLElement | null>) {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -344,22 +329,30 @@ export function useAttemptAutosave({
   const payloadRef = useRef(payload);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
   useEffect(() => {
     payloadRef.current = payload;
   }, [payload]);
 
   const saveNow = useCallback(async (action = "autosave") => {
-    if (!enabled) return;
+    if (!enabled || inFlight.current) return;
+    inFlight.current = true;
     setSaving(true);
     try {
-      await fetch(`/api/practice/${testId}`, {
+      const response = await fetch(`/api/practice/${testId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action, ...payloadRef.current() }),
       });
+      if (!response.ok || response.status === 202) throw new Error("Responses are not synced yet. Keep this test open; saving will retry automatically.");
+      setSaveError(null);
       setSavedAt(new Date());
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Responses could not be synced. Retrying…");
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   }, [enabled, testId]);
@@ -370,7 +363,7 @@ export function useAttemptAutosave({
     return () => window.clearInterval(timer);
   }, [enabled, saveNow]);
 
-  return { saving, savedAt, saveNow };
+  return { saving, savedAt, saveNow, saveError };
 }
 
 export function useCBTSecurityGuard({
@@ -1316,7 +1309,11 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
   // quick-nav fab, theme toggle) while the arena is mounted.
   useEffect(() => {
     document.body.classList.add("cbt-exam-active");
-    return () => document.body.classList.remove("cbt-exam-active");
+    window.dispatchEvent(new CustomEvent(SITE_ASSISTANT_WAKE_PAUSE_EVENT, { detail: { paused: true } }));
+    return () => {
+      document.body.classList.remove("cbt-exam-active");
+      window.dispatchEvent(new CustomEvent(SITE_ASSISTANT_WAKE_PAUSE_EVENT, { detail: { paused: false } }));
+    };
   }, []);
 
   const currentQuestion = questions[currentIndex];
@@ -1330,7 +1327,7 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
     totalActiveSeconds,
     totalPausedSeconds,
   }), [answers, currentIndex, pauseLogs, questionStatuses, questions, remainingSeconds, securityEvents, totalActiveSeconds, totalPausedSeconds]);
-  const { saving, savedAt, saveNow } = useAttemptAutosave({ testId: test.id, enabled: attemptStatus === "RUNNING" || attemptStatus === "PAUSED", payload });
+  const { saving, savedAt, saveNow, saveError } = useAttemptAutosave({ testId: test.id, enabled: !submitting && (attemptStatus === "RUNNING" || attemptStatus === "PAUSED"), payload });
 
   const markVisited = useCallback((index: number) => {
     const question = questions[index];
@@ -1421,26 +1418,34 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "start", ...payload() }),
-    }).then((res) => res.json()).then((json) => {
+    }).then(async (res) => {
+      if (!res.ok || res.status === 202) throw new Error("Could not start your test. Check your connection and reload to retry; your attempt is preserved.");
+      return res.json();
+    }).then((json) => {
       if (json.test) {
         setAttemptStatus("RUNNING");
         setRemainingSeconds(json.test.remainingSeconds ?? remainingSeconds);
       }
-    }).catch(() => setAttemptStatus("RUNNING"));
+    }).catch((error: Error) => setSubmitError(error.message));
   }, [attemptStatus, enterFullscreen, payload, remainingSeconds, test.id]);
 
+  const clockSnapshot = useRef({remainingSeconds, totalActiveSeconds});
+  const timedSubmit = useRef(submitAttempt);
+  useEffect(() => { clockSnapshot.current = {remainingSeconds, totalActiveSeconds}; timedSubmit.current = submitAttempt; }, [remainingSeconds, totalActiveSeconds, submitAttempt]);
   useEffect(() => {
     if (attemptStatus !== "RUNNING") return;
-    const timer = window.setInterval(() => {
-      setRemainingSeconds((value) => {
-        const next = Math.max(0, value - 1);
-        if (next === 0) void submitAttempt("TIME_UP", "TIME_UP");
-        return next;
-      });
-      setTotalActiveSeconds((value) => value + 1);
-    }, 1000);
+    const startedAt = Date.now();
+    const initial = clockSnapshot.current;
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const next = Math.max(0, initial.remainingSeconds - elapsed);
+      setRemainingSeconds(next);
+      setTotalActiveSeconds(initial.totalActiveSeconds + Math.min(elapsed, initial.remainingSeconds));
+      if (next === 0) void timedSubmit.current("TIME_UP", "TIME_UP");
+    };
+    const timer = window.setInterval(tick, 250);
     return () => window.clearInterval(timer);
-  }, [attemptStatus, submitAttempt]);
+  }, [attemptStatus]);
 
   useEffect(() => {
     if (attemptStatus !== "PAUSED") return;
@@ -1450,10 +1455,11 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
 
   const chooseOption = (optionIndex: number) => {
     if (!currentQuestion || attemptStatus !== "RUNNING") return;
-    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: prev[currentQuestion.id] === optionIndex ? null : optionIndex }));
+    const nextAnswer = answers[currentQuestion.id] === optionIndex ? null : optionIndex;
+    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: nextAnswer }));
     setQuestionStatuses((prev) => {
       const marked = prev[currentQuestion.id] === "MARKED_FOR_REVIEW" || prev[currentQuestion.id] === "ANSWERED_MARKED_FOR_REVIEW";
-      return { ...prev, [currentQuestion.id]: marked ? "ANSWERED_MARKED_FOR_REVIEW" : "ANSWERED" };
+      return { ...prev, [currentQuestion.id]: nextAnswer === null ? (marked ? "MARKED_FOR_REVIEW" : "NOT_ANSWERED") : (marked ? "ANSWERED_MARKED_FOR_REVIEW" : "ANSWERED") };
     });
   };
 
@@ -1534,6 +1540,7 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
 
   return (
     <div ref={arenaRef} className="arena-shell">
+      {saveError && <div role="status" className="studio-error">{saveError}</div>}
       <video ref={cameraVideoRef} className="proctor-camera-feed" autoPlay playsInline muted aria-hidden="true" />
       <CBTTopBar
         remainingSeconds={remainingSeconds}

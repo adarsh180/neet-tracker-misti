@@ -20,12 +20,20 @@ function contentHash(question, options) {
 }
 
 const verifiedMatches = payload.matches.filter((entry) =>
+  entry.humanReview?.status === "APPROVED" &&
+  typeof entry.humanReview.reviewer === "string" && entry.humanReview.reviewer.trim().length > 0 &&
+  Number.isFinite(Date.parse(entry.humanReview.reviewedAt)) &&
+  entry.humanReview.exactPassageConfirmed === true &&
+  entry.humanReview.currentSyllabusConfirmed === true &&
+  entry.humanReview.questionAndOptionsConfirmed === true &&
+  entry.humanReview.answerAndExplanationsConfirmed === true &&
+  Array.isArray(entry.evidences) && entry.evidences.length > 0 &&
   entry.match?.reviewStatus === "VERIFIED_AUTO" &&
   entry.match.score >= 0.58 &&
   entry.match.margin >= 0.08 &&
   entry.match.sharedKeywords >= 5,
 );
-const report = { considered: verifiedMatches.length, importedQuestions: 0, importedPassages: 0, importedLinks: 0, skipped: 0 };
+const report = { pendingHumanReview: payload.matches.length - verifiedMatches.length, considered: verifiedMatches.length, importedQuestions: 0, importedPassages: 0, importedLinks: 0, skipped: 0 };
 
 try {
   for (const entry of verifiedMatches) {
@@ -50,7 +58,7 @@ try {
     }
     const options = Array.isArray(entry.options) ? entry.options.map(String) : [];
     const optionExplanations = Array.isArray(entry.optionExplanations) ? entry.optionExplanations.map(String) : [];
-    if (options.length !== 4 || optionExplanations.length !== 4 || !Number.isInteger(entry.correctIndex)) {
+    if (options.length !== 4 || optionExplanations.length !== 4 || !Number.isInteger(entry.correctIndex) || entry.correctIndex < 0 || entry.correctIndex > 3) {
       report.skipped += 1;
       continue;
     }
@@ -74,9 +82,9 @@ try {
         qualityStatus: "VERIFIED_STRICT",
         qualityScore: entry.match.score,
         verifiedAt: new Date(),
-        verifierModel: "DETERMINISTIC_SOURCE_PIPELINE",
+        verifierModel: "HUMAN_REVIEW",
         verificationMethod: "OFFICIAL_KEY_LICENSED_SOLUTION_NCERT_LINK",
-        verificationVersion: "ncert-pyq-link-v1",
+        verificationVersion: "ncert-pyq-link-v2-reviewed",
         exam: entry.exam,
         examYear: entry.examYear,
         paperCode: entry.paperCode,
@@ -86,6 +94,7 @@ try {
           sourceEvidence: entry.evidences,
           solutionCandidateId: candidate.id,
           ncertLink: entry.match,
+          humanReview: entry.humanReview,
           difficultyStatus: "UNRATED",
         },
         contentHash: contentHash(entry.question, options),
@@ -134,12 +143,12 @@ try {
         linkType: "DERIVED_FROM",
         confidence: entry.match.score,
         reviewStatus: "VERIFIED",
-        reviewNote: `${entry.match.method}; margin=${entry.match.margin}; shared=${entry.match.sharedKeywords}`,
+        reviewNote: `HUMAN_REVIEWED:${entry.humanReview.reviewer}; at=${entry.humanReview.reviewedAt}; method=${entry.match.method}`,
       },
       update: {
         confidence: entry.match.score,
         reviewStatus: "VERIFIED",
-        reviewNote: `${entry.match.method}; margin=${entry.match.margin}; shared=${entry.match.sharedKeywords}`,
+        reviewNote: `HUMAN_REVIEWED:${entry.humanReview.reviewer}; at=${entry.humanReview.reviewedAt}; method=${entry.match.method}`,
       },
     });
     report.importedLinks += 1;

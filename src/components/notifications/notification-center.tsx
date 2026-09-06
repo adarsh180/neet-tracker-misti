@@ -539,13 +539,13 @@ export function NotificationCenter({
 
         .notify-dock {
           position: fixed;
-          top: calc(18px + env(safe-area-inset-top));
-          right: 22px;
-          z-index: 9998;
+          top: calc(16px + env(safe-area-inset-top));
+          right: 24px;
+          z-index: 840;
         }
 
         .notify-dock-offset {
-          top: calc(70px + env(safe-area-inset-top));
+          top: calc(16px + env(safe-area-inset-top));
         }
 
         .notify-button,
@@ -569,9 +569,9 @@ export function NotificationCenter({
 
         .notify-button {
           position: relative;
-          width: 52px;
-          height: 52px;
-          border-radius: 999px;
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
           display: grid;
           place-items: center;
           background:
@@ -1162,17 +1162,17 @@ export function NotificationCenter({
 
         @media (max-width: 560px) {
           .notify-dock {
-            top: calc(12px + env(safe-area-inset-top));
-            right: 12px;
+            top: calc(16px + env(safe-area-inset-top));
+            right: 16px;
           }
 
           .notify-dock-offset {
-            top: calc(66px + env(safe-area-inset-top));
+            top: calc(16px + env(safe-area-inset-top));
           }
 
           .notify-button {
-            width: 48px;
-            height: 48px;
+            width: 38px;
+            height: 38px;
           }
 
           .notify-panel {

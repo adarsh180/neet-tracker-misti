@@ -1,11 +1,12 @@
 "use client";
 
-import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Brain, Calendar, CheckCircle2, Clock3, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { TaskPriority, TaskStatus } from "@prisma/client";
+import styles from "./todo.module.css";
 
 type SubjectLite = { id: string; name: string; slug: string; color: string; emoji: string };
 type TimelineLite = { id: string; label: string; detail: string | null; createdAt: string };
@@ -61,7 +62,7 @@ function fullDate(value: string | null) {
 
 function parseSections(content: string) {
   const normalized = (content || "").replace(/\r\n/g, "\n").trim();
-  if (!normalized) return [{ title: "Response", body: "No response yet." }];
+  if (!normalized) return [];
   const matches = [...normalized.matchAll(/^##\s+(.+)$/gm)];
   if (!matches.length) return [{ title: "Response", body: normalized }];
 
@@ -74,11 +75,14 @@ function parseSections(content: string) {
 }
 
 export default function TodoPage() {
+  const reducedMotion = useReducedMotion();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [subjects, setSubjects] = useState<SubjectLite[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [taskBusy, setTaskBusy] = useState(false);
+  const mutationRef = useRef(false);
   const [aiInput, setAiInput] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiSummary, setAiSummary] = useState("");
@@ -172,6 +176,7 @@ export default function TodoPage() {
   }
 
   async function clearAiHistory() {
+    if (!window.confirm("Clear assistant history? Your tasks will stay on the board.")) return;
     setAiBusy(true);
     setError("");
     try {
@@ -189,7 +194,9 @@ export default function TodoPage() {
   }
 
   async function createTask() {
-    if (!form.title.trim()) return;
+    if (!form.title.trim() || mutationRef.current) return;
+    if (form.plannedMinutes && (!Number.isInteger(Number(form.plannedMinutes)) || Number(form.plannedMinutes) < 1)) { setError("Planned minutes must be a positive whole number."); return; }
+    mutationRef.current = true;
     setCreating(true);
     setError("");
     try {
@@ -208,7 +215,8 @@ export default function TodoPage() {
       });
       if (!res.ok) throw new Error("Could not create the task.");
       const created = await res.json();
-      startTransition(() => {
+      if (res.status === 202) setAiSummary("Task queued on this device. It will appear on the board after it syncs.");
+      else startTransition(() => {
         setTasks((current) => [created, ...current]);
         setSelectedTaskId(created.id);
       });
@@ -226,24 +234,14 @@ export default function TodoPage() {
       setError(err instanceof Error ? err.message : "Could not create the task.");
     } finally {
       setCreating(false);
+      mutationRef.current = false;
     }
   }
 
   async function transitionTask(task: TaskItem, status: TaskStatus) {
-    const previous = tasks;
-    setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, status } : item)));
-    const res = await fetch(`/api/tasks/${task.id}/transition`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+    return mutateTask(task, `/api/tasks/${task.id}/transition`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }),
     });
-    if (!res.ok) {
-      setTasks(previous);
-      setError("Task update failed.");
-      return;
-    }
-    const updated = await res.json();
-    setTasks((current) => current.map((item) => (item.id === task.id ? updated : item)));
   }
 
   async function runTaskAgent(task: TaskItem, action: (typeof AGENT_ACTIONS)[number]["key"]) {
@@ -254,14 +252,15 @@ export default function TodoPage() {
       FINISH: "DONE",
       SKIP: "SKIPPED",
     };
-    if (statusMap[action]) await transitionTask(task, statusMap[action]!);
     try {
+      if (statusMap[action] && !(await transitionTask(task, statusMap[action]!))) return;
       const res = await fetch(`/api/tasks/${task.id}/agent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trigger: action }),
       });
       if (!res.ok) throw new Error("Copilot launch failed.");
+      if (res.status === 202) { setAiSummary("Assistant request queued. Reconnect to finish it."); return; }
       const payload = await res.json();
       setAgentResponse(payload.response);
       setAgentModel(payload.model ?? "");
@@ -274,39 +273,48 @@ export default function TodoPage() {
   }
 
   async function toggleAiReady(task: TaskItem) {
-    const res = await fetch(`/api/tasks/${task.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ aiAssistEnabled: !task.aiAssistEnabled }),
+    await mutateTask(task, `/api/tasks/${task.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ aiAssistEnabled: !task.aiAssistEnabled }),
     });
-    if (!res.ok) return;
-    const updated = await res.json();
-    setTasks((current) => current.map((item) => (item.id === task.id ? updated : item)));
   }
 
   async function removeTask(task: TaskItem) {
-    const fallback = tasks.find((item) => item.id !== task.id)?.id ?? null;
-    setTasks((current) => current.filter((item) => item.id !== task.id));
-    if (selectedTaskId === task.id) setSelectedTaskId(fallback);
-    const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-    if (!res.ok) setError("Could not delete that task.");
+    if (!window.confirm(`Delete “${task.title}”? This cannot be undone.`)) return;
+    await mutateTask(task, `/api/tasks/${task.id}`, { method: "DELETE" });
   }
 
   async function removeAiReason(task: TaskItem) {
-    const cleanedDescription = task.description?.split("\n\nWhy this exists:")[0]?.trim() || null;
-    setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, description: cleanedDescription } : item)));
+    await mutateTask(task, `/api/tasks/${task.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ removeAiReason: true }),
+    });
+  }
+
+  async function mutateTask(task: TaskItem, url: string, init: RequestInit): Promise<boolean> {
+    if (mutationRef.current) return false;
+    mutationRef.current = true;
+    setTaskBusy(true);
+    setError("");
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ removeAiReason: true }),
-      });
-      if (!res.ok) throw new Error("Could not remove AI reason.");
-      const updated = await res.json();
-      setTasks((current) => current.map((item) => (item.id === task.id ? updated : item)));
+      const res = await fetch(url, init);
+      if (!res.ok) throw new Error("Your task could not be updated. The saved version is still on the board.");
+      if (res.status === 202) {
+        setAiSummary("Change queued on this device, not saved to the server yet. The board will refresh after syncing.");
+        return false;
+      }
+      if (init.method === "DELETE") {
+        setTasks((current) => current.filter((item) => item.id !== task.id));
+        setSelectedTaskId((current) => current === task.id ? null : current);
+      } else {
+        const updated = await res.json() as TaskItem;
+        setTasks((current) => current.map((item) => item.id === task.id ? updated : item));
+      }
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not remove AI reason.");
-      await loadData();
+      setError(err instanceof Error ? err.message : "Could not update the task.");
+      return false;
+    } finally {
+      mutationRef.current = false;
+      setTaskBusy(false);
     }
   }
 
@@ -315,37 +323,35 @@ export default function TodoPage() {
   }
 
   return (
-    <div className="todo-page">
-      {error && <div className="todo-error">{error}</div>}
+    <div className={`todo-page ${styles.board}`} data-studio-native>
+      {error && <div className="todo-error" role="alert">{error}</div>}
 
+      <header className="studio-heading">
+        <div><span className="studio-eyebrow">One step at a time</span><h1>Make space for progress.</h1><p>Your manual tasks and voice plans, together in one place.</p></div>
+        <button className="btn btn-primary" onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="new-task-panel"><Plus size={16} /> Add a task</button>
+      </header>
       <section className="top-shell">
-        <div className="hero glass-card">
-          <div className="eyebrow"><Sparkles size={13} /> Todo Copilot</div>
-          <h1>One prompt. Full control.</h1>
-          <p>Ask AI to add a chapter, add a topic, or build a topic-wise todo list. Manual tasks still live in the same board.</p>
+        <details className="hero glass-card">
+          <summary><Sparkles size={16} /> Plan with a request <span>Optional assistant</span></summary>
           <textarea
             className="input hero-input"
-            rows={4}
+            rows={3}
+            aria-label="Task planning request"
             value={aiInput}
             onChange={(e) => setAiInput(e.target.value)}
-            placeholder="Examples: add electrochemistry chapter to chemistry, add a topic redox titration in chemistry class 12, create a chapter-wise todo list for weak physics"
+            placeholder="For example: plan a revision session for electrochemistry tomorrow."
           />
           <div className="hero-actions">
-            <button className="btn btn-primary" onClick={runUnifiedAi} disabled={aiBusy}>
+            <button className="btn btn-primary" onClick={runUnifiedAi} disabled={aiBusy || !aiInput.trim()}>
               {aiBusy ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />}
-              Run AI
-            </button>
-            <button className="btn btn-glass" onClick={() => setPanelOpen((open) => !open)}>
-              <Plus size={16} />
-              Manual Task
+              Send request
             </button>
             <button className="btn btn-glass" onClick={clearAiHistory} disabled={aiBusy}>
               Clear AI History
             </button>
             <button className="btn btn-glass" onClick={() => void loadData()}>Refresh</button>
           </div>
-          {aiSummary && <div className="ai-summary"><CheckCircle2 size={14} /> {aiSummary}</div>}
-        </div>
+        </details>
 
         <div className="stats-rail glass-card">
           {[
@@ -362,19 +368,21 @@ export default function TodoPage() {
         </div>
       </section>
 
+      {aiSummary && <div className="ai-summary" role="status"><CheckCircle2 size={14} /> {aiSummary}</div>}
       <AnimatePresence initial={false}>
         {panelOpen && (
           <motion.section
-            initial={{ opacity: 0, y: 10 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={reducedMotion ? { opacity: 1 } : { opacity: 0, y: -10 }}
             className="glass-card manual-panel"
+            id="new-task-panel"
           >
             <div className="manual-head">
               <div>
                 <div className="eyebrow">Manual Add</div>
                 <h2>Quick task</h2>
-                <p>Build a clean manual task without cramped fields or overflow.</p>
+                <p>A clear next step is enough. Add details only if they help.</p>
               </div>
             </div>
 
@@ -402,7 +410,7 @@ export default function TodoPage() {
               </label>
               <label className="manual-field">
                 <span>Planned minutes</span>
-                <input className="input" type="number" placeholder="90" value={form.plannedMinutes} onChange={(e) => setForm((c) => ({ ...c, plannedMinutes: e.target.value }))} />
+                <input className="input" type="number" min="1" step="1" placeholder="90" value={form.plannedMinutes} onChange={(e) => setForm((c) => ({ ...c, plannedMinutes: e.target.value }))} />
               </label>
               <label className="manual-field manual-field-wide">
                 <span>Task note</span>
@@ -415,7 +423,7 @@ export default function TodoPage() {
                 <input type="checkbox" checked={form.aiAssistEnabled} onChange={(e) => setForm((c) => ({ ...c, aiAssistEnabled: e.target.checked }))} />
                 <span>AI ready</span>
               </label>
-              <button className="btn btn-primary" onClick={createTask} disabled={creating}>
+              <button className="btn btn-primary" onClick={createTask} disabled={creating || !form.title.trim()}>
                 {creating ? <Loader2 size={16} className="spin" /> : <Plus size={16} />}
                 Save Task
               </button>
@@ -425,7 +433,7 @@ export default function TodoPage() {
       </AnimatePresence>
 
       <section className="workspace">
-        <div className="board-grid">
+        <div className="board-grid" id="task-board" tabIndex={-1} aria-label="Task board">
           {COLUMNS.map((status) => (
             <section key={status} className="glass-card column">
               <div className="column-head">
@@ -438,7 +446,16 @@ export default function TodoPage() {
                   <button
                     key={task.id}
                     className={`task-card ${selectedTaskId === task.id ? "active" : ""}`}
-                    onClick={() => setSelectedTaskId(task.id)}
+                    aria-pressed={selectedTaskId === task.id}
+                    aria-controls="task-detail"
+                    onClick={() => {
+                      setSelectedTaskId(task.id); setAgentResponse(""); setAgentModel("");
+                      if (window.matchMedia("(max-width: 1000px)").matches) window.requestAnimationFrame(() => {
+                        const detail = document.getElementById("task-detail");
+                        detail?.focus({ preventScroll: true });
+                        detail?.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth", block: "start" });
+                      });
+                    }}
                   >
                     <div className="task-head">
                       <span className="badge badge-glass">{PRIORITY_LABELS[task.priority]}</span>
@@ -449,7 +466,7 @@ export default function TodoPage() {
                     {task.description && <p>{task.description}</p>}
                     <div className="task-meta">
                       {task.subject && <span style={{ color: task.subject.color }}>{task.subject.name}</span>}
-                      <span><Clock3 size={12} /> {task.plannedMinutes ?? 0}m</span>
+                      {task.plannedMinutes != null && <span><Clock3 size={12} /> {task.plannedMinutes}m</span>}
                       <span><Calendar size={12} /> {shortDate(task.dueDate)}</span>
                     </div>
                   </button>
@@ -460,27 +477,33 @@ export default function TodoPage() {
           ))}
         </div>
 
-        <aside className="side-panel">
+        <aside className="side-panel" id="task-detail" tabIndex={-1} aria-label="Selected task details">
           {selectedTask ? (
             <>
               <section className="glass-card detail-card">
+                <button className="btn back-to-board" onClick={() => {
+                  const board = document.getElementById("task-board");
+                  board?.focus({ preventScroll: true });
+                  board?.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth", block: "start" });
+                }}>Back to tasks</button>
                 <div className="detail-head">
                   <div>
                     <div className="eyebrow"><Brain size={13} /> Task</div>
                     <h2>{selectedTask.title}</h2>
                   </div>
-                  <button className={`chip ${selectedTask.aiAssistEnabled ? "on" : ""}`} onClick={() => toggleAiReady(selectedTask)}>
+                  <button className={`chip ${selectedTask.aiAssistEnabled ? "on" : ""}`} disabled={taskBusy || !!agentBusy} onClick={() => toggleAiReady(selectedTask)}>
                     <Sparkles size={12} />
                     {selectedTask.aiAssistEnabled ? "AI ready" : "AI asleep"}
                   </button>
                 </div>
 
+                {selectedTask.description && <p className="task-description">{selectedTask.description}</p>}
                 <div className="chip-row">
                   {AGENT_ACTIONS.map((action) => (
                     <button
                       key={action.key}
                       className="chip"
-                      disabled={!selectedTask.aiAssistEnabled || !!agentBusy}
+                      disabled={!selectedTask.aiAssistEnabled || !!agentBusy || taskBusy}
                       onClick={() => runTaskAgent(selectedTask, action.key)}
                     >
                       {agentBusy?.taskId === selectedTask.id && agentBusy.action === action.key ? <Loader2 size={14} className="spin" /> : <ArrowRight size={14} />}
@@ -491,7 +514,7 @@ export default function TodoPage() {
 
                 <div className="chip-row">
                   {COLUMNS.map((status) => (
-                    <button key={status} className={`chip ${selectedTask.status === status ? "on" : ""}`} onClick={() => transitionTask(selectedTask, status)}>
+                    <button key={status} className={`chip ${selectedTask.status === status ? "on" : ""}`} disabled={taskBusy || !!agentBusy} aria-pressed={selectedTask.status === status} onClick={() => transitionTask(selectedTask, status)}>
                       {STATUS_LABELS[status]}
                     </button>
                   ))}
@@ -499,20 +522,20 @@ export default function TodoPage() {
 
                 <div className="hero-actions">
                   {selectedTaskHasReason && (
-                    <button className="btn btn-glass" onClick={() => removeAiReason(selectedTask)}>
+                    <button className="btn btn-glass" disabled={taskBusy || !!agentBusy} onClick={() => removeAiReason(selectedTask)}>
                       Remove AI Reason
                     </button>
                   )}
-                  <button className="btn btn-ghost delete-btn" onClick={() => removeTask(selectedTask)}>
+                  <button className="btn btn-ghost delete-btn" disabled={taskBusy || !!agentBusy} onClick={() => removeTask(selectedTask)}>
                     <Trash2 size={14} />
                     Delete
                   </button>
                 </div>
               </section>
 
-              <section className="glass-card detail-card">
+              {sections.length > 0 && <section className="glass-card detail-card">
                 <div className="detail-head">
-                  <h3>AI Response</h3>
+                  <h3>Assistant notes</h3>
                   <span className="mini">{agentModel}</span>
                 </div>
 
@@ -526,10 +549,10 @@ export default function TodoPage() {
                     </div>
                   ))}
                 </div>
-              </section>
+              </section>}
 
-              <section className="glass-card detail-card">
-                <h3>Timeline</h3>
+              <details className="glass-card detail-card">
+                <summary>Task history</summary>
                 <div className="timeline-stack">
                   {selectedTask.timelineEvents.map((event) => (
                     <div key={event.id} className="timeline-item">
@@ -543,7 +566,7 @@ export default function TodoPage() {
                   ))}
                   {selectedTask.timelineEvents.length === 0 && <div className="empty">No recent events</div>}
                 </div>
-              </section>
+              </details>
             </>
           ) : (
             <section className="glass-card detail-card empty">Select a task.</section>
@@ -551,329 +574,7 @@ export default function TodoPage() {
         </aside>
       </section>
 
-      <style jsx>{`
-        .todo-page {
-          min-height: 100vh;
-          padding: 28px;
-          display: grid;
-          gap: 18px;
-          background:
-            radial-gradient(circle at top left, rgba(251,191,36,.08), transparent 24%),
-            radial-gradient(circle at top right, rgba(59,130,246,.09), transparent 24%),
-            linear-gradient(180deg, #07080d 0%, #040509 100%);
-        }
-        .glass-card {
-          background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-          border: 1px solid rgba(255,255,255,.08);
-          border-radius: 28px;
-          box-shadow: 0 24px 80px rgba(0,0,0,.32);
-          backdrop-filter: blur(22px);
-        }
-        .top-shell, .workspace { display: grid; gap: 18px; }
-        .top-shell { grid-template-columns: minmax(0, 1.45fr) 300px; }
-        .hero, .stats-rail, .manual-panel, .column, .detail-card { padding: 22px; }
-        .todo-page,
-        .glass-card,
-        .manual-panel,
-        .manual-grid,
-        .manual-field,
-        .task-card,
-        .task-card strong,
-        .task-card p,
-        .markdown-card,
-        .markdown-body,
-        .timeline-item {
-          min-width: 0;
-        }
-        .eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: .14em;
-          text-transform: uppercase;
-          color: var(--text-muted);
-        }
-        h1, h2, h3 { margin: 10px 0 8px; letter-spacing: -.03em; }
-        h1 { font-size: clamp(34px, 5vw, 58px); max-width: 540px; }
-        p, .mini, .task-card p, .task-meta, .stat-row span { color: var(--text-secondary); }
-        .hero-input {
-          min-height: 110px;
-          margin-top: 14px;
-          border-radius: 22px;
-          background: rgba(6,8,14,.76);
-        }
-        .hero-actions, .manual-actions, .chip-row, .task-stack, .markdown-stack, .timeline-stack { display: flex; gap: 10px; flex-wrap: wrap; }
-        .hero-actions, .manual-actions, .chip-row { margin-top: 14px; }
-        .ai-summary {
-          margin-top: 12px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 14px;
-          border-radius: 999px;
-          background: rgba(52,211,153,.08);
-          border: 1px solid rgba(52,211,153,.18);
-          color: #b7f7d8;
-        }
-        .stats-rail { display: grid; gap: 12px; align-content: start; }
-        .stat-row {
-          padding: 16px 18px;
-          border-radius: 20px;
-          border: 1px solid rgba(255,255,255,.07);
-          background: rgba(255,255,255,.03);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .stat-row strong { font-size: 28px; line-height: 1; }
-        .manual-panel { display: grid; gap: 16px; }
-        .manual-head p {
-          max-width: 560px;
-          line-height: 1.7;
-          color: var(--text-secondary);
-        }
-        .manual-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 14px;
-          align-items: start;
-        }
-        .manual-field {
-          display: grid;
-          gap: 8px;
-        }
-        .manual-field span {
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: .12em;
-          text-transform: uppercase;
-          color: var(--text-muted);
-        }
-        .manual-field-wide {
-          grid-column: 1 / -1;
-        }
-        .manual-textarea {
-          min-height: 120px;
-          max-width: 100%;
-        }
-        .toggle-row { display: inline-flex; align-items: center; gap: 10px; color: var(--text-secondary); }
-        .workspace { grid-template-columns: minmax(0, 1.45fr) 420px; align-items: start; }
-        .board-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
-        }
-        .column { min-height: 600px; }
-        .column-head, .task-head, .detail-head {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: flex-start;
-        }
-        .column-head span {
-          color: var(--text-muted);
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: .1em;
-          font-weight: 700;
-        }
-        .task-stack, .markdown-stack, .timeline-stack { flex-direction: column; }
-        .task-card {
-          width: 100%;
-          text-align: left;
-          padding: 16px;
-          border-radius: 20px;
-          border: 1px solid rgba(255,255,255,.07);
-          background: rgba(255,255,255,.03);
-          transition: .2s ease;
-        }
-        .task-card:hover, .task-card.active, .chip:hover {
-          transform: translateY(-1px);
-          background: rgba(255,255,255,.06);
-        }
-        .task-card.active, .chip.on {
-          border-color: rgba(251,191,36,.22);
-          background: rgba(251,191,36,.11);
-        }
-        .task-card strong { display: block; font-size: 16px; }
-        .task-card strong,
-        .task-card p,
-        .markdown-body {
-          overflow-wrap: anywhere;
-          word-break: break-word;
-        }
-        .task-card p { margin: 10px 0 0; font-size: 13px; line-height: 1.65; }
-        .task-meta {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-top: 12px;
-          font-size: 12px;
-        }
-        .task-meta span { display: inline-flex; gap: 5px; align-items: center; }
-        .side-panel { display: grid; gap: 16px; }
-        .detail-card { display: grid; gap: 14px; }
-        .chip {
-          border: 1px solid rgba(255,255,255,.09);
-          background: rgba(255,255,255,.04);
-          color: var(--text-primary);
-          border-radius: 16px;
-          padding: 10px 12px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-          transition: .2s ease;
-        }
-        .markdown-card {
-          border-radius: 20px;
-          overflow: hidden;
-          border: 1px solid rgba(255,255,255,.07);
-          background: rgba(255,255,255,.03);
-        }
-        .markdown-head {
-          padding: 12px 14px;
-          background: linear-gradient(90deg, rgba(251,191,36,.12), rgba(255,255,255,.02));
-          border-bottom: 1px solid rgba(255,255,255,.06);
-          color: #ffe7a8;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: .12em;
-          text-transform: uppercase;
-        }
-        .markdown-body { padding: 14px; color: rgba(245,238,230,.88); line-height: 1.8; }
-        .markdown-body :global(p) { margin: 0 0 12px; }
-        .markdown-body :global(ul) { margin: 0; padding-left: 20px; }
-        .markdown-body :global(li),
-        .markdown-body :global(code) {
-          overflow-wrap: anywhere;
-          word-break: break-word;
-        }
-        .timeline-item {
-          display: grid;
-          grid-template-columns: 12px 1fr;
-          gap: 12px;
-        }
-        .dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 999px;
-          background: var(--gold);
-          box-shadow: 0 0 12px var(--gold-glow);
-          margin-top: 7px;
-        }
-        .timeline-label { font-weight: 700; }
-        .delete-btn { width: fit-content; }
-        .empty {
-          min-height: 72px;
-          display: grid;
-          place-items: center;
-          color: var(--text-muted);
-          text-align: center;
-        }
-        .todo-error {
-          padding: 14px 16px;
-          border-radius: 18px;
-          color: #ffb4bf;
-          background: rgba(239,68,68,.08);
-          border: 1px solid rgba(239,68,68,.18);
-        }
-        .spin { animation: spin .8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 1320px) {
-          .workspace { grid-template-columns: 1fr; }
-          .board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        @media (max-width: 1100px) {
-          .top-shell, .manual-grid { grid-template-columns: 1fr; }
-          .manual-field-wide { grid-column: auto; }
-        }
-        @media (max-width: 760px) {
-          .todo-page { padding: 18px 14px 60px; }
-          .board-grid { grid-template-columns: 1fr; }
-        }
 
-        /* ===========================
-           LIGHT MODE OVERRIDES
-           =========================== */
-        :global(html[data-theme="light"]) .todo-page {
-          background:
-            radial-gradient(circle at top left, rgba(184, 130, 52, 0.07), transparent 24%),
-            radial-gradient(circle at top right, rgba(60, 120, 210, 0.07), transparent 24%),
-            linear-gradient(180deg, #fbf5ec 0%, #f7eedc 100%);
-          color: hsl(32, 28%, 12%);
-        }
-
-        :global(html[data-theme="light"]) .glass-card {
-          background: rgba(255, 255, 255, 0.86);
-          border-color: rgba(70, 45, 24, 0.10);
-          box-shadow: 0 18px 52px rgba(70, 45, 24, 0.10);
-        }
-
-        :global(html[data-theme="light"]) .hero-input {
-          background: rgba(255, 255, 255, 0.80);
-        }
-
-        :global(html[data-theme="light"]) .ai-summary {
-          background: rgba(52, 211, 153, 0.07);
-          border-color: rgba(52, 211, 153, 0.16);
-          color: hsl(148, 48%, 34%);
-        }
-
-        :global(html[data-theme="light"]) .stat-row {
-          border-color: rgba(70, 45, 24, 0.08);
-          background: rgba(255, 255, 255, 0.58);
-        }
-
-        :global(html[data-theme="light"]) .task-card {
-          border-color: rgba(70, 45, 24, 0.08);
-          background: rgba(255, 255, 255, 0.60);
-        }
-
-        :global(html[data-theme="light"]) .task-card:hover,
-        :global(html[data-theme="light"]) .task-card.active {
-          background: rgba(255, 255, 255, 0.88);
-          transform: translateY(-1px);
-        }
-
-        :global(html[data-theme="light"]) .task-card.active,
-        :global(html[data-theme="light"]) .chip.on {
-          border-color: rgba(184, 130, 52, 0.22);
-          background: rgba(184, 130, 52, 0.08);
-        }
-
-        :global(html[data-theme="light"]) .chip {
-          border-color: rgba(70, 45, 24, 0.09);
-          background: rgba(255, 255, 255, 0.56);
-        }
-
-        :global(html[data-theme="light"]) .chip:hover {
-          background: rgba(255, 255, 255, 0.84);
-        }
-
-        :global(html[data-theme="light"]) .markdown-card {
-          border-color: rgba(70, 45, 24, 0.08);
-          background: rgba(255, 255, 255, 0.56);
-        }
-
-        :global(html[data-theme="light"]) .markdown-head {
-          background: linear-gradient(90deg, rgba(184, 130, 52, 0.10), rgba(255, 255, 255, 0.04));
-          border-bottom-color: rgba(70, 45, 24, 0.08);
-          color: hsl(38, 70%, 36%);
-        }
-
-        :global(html[data-theme="light"]) .markdown-body {
-          color: hsla(31, 22%, 22%, 0.86);
-        }
-
-        :global(html[data-theme="light"]) .todo-error {
-          color: hsl(0, 62%, 44%);
-          background: rgba(200, 50, 50, 0.06);
-          border-color: rgba(200, 50, 50, 0.16);
-        }
-      `}</style>
     </div>
   );
 }

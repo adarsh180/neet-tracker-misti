@@ -1,4 +1,4 @@
-const CACHE_NAME = "neet-tracker-pwa-v8";
+const CACHE_NAME = "neet-tracker-pwa-v9";
 const IS_LOCAL = self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
 const OFFLINE_URL = "/offline";
 const APP_SHELL_ASSETS = [
@@ -28,7 +28,9 @@ self.addEventListener("install", (event) => {
           ),
         ),
       )
-      .then(() => self.skipWaiting()),
+      // An existing session may contain an unsaved log or an active test.
+      // Updates wait for an explicit request; first installation can activate.
+      .then(() => self.registration.active ? undefined : self.skipWaiting()),
   );
 });
 
@@ -40,7 +42,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("neet-tracker-pwa-") && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });

@@ -7,6 +7,7 @@ import { getPrivateSession } from "@/lib/server-auth";
 import { CHAPTERS, canonicalizeChapter, normalizeKey } from "@/data/syllabus/neet-chapters";
 import { resolveStudyMatch } from "@/lib/study-activity";
 import { findLikelyDuplicateTopic } from "@/lib/topic-manager";
+import { requestedStudyDate } from "@/lib/study-date";
 import {
   findAssistantEntity,
   detectAssistantPersona,
@@ -56,7 +57,6 @@ function helpForPath(pathname: string) {
     { prefix: "/ai-insights/cycle-planner", label: "Cycle Planner", help: "I can reopen this planner from any protected page using natural voice navigation." },
     { prefix: "/ai-insights/neet-guru", label: "NEET-GURU", help: "I can reopen NEET-GURU from anywhere; its own study conversation remains separate from safe site actions." },
     { prefix: "/ai-insights", label: "AI Insights", help: "I can open NEET-GURU, Rank Predictor or Cycle Planner by name." },
-    { prefix: "/visual-lab", label: "Visual Lab", help: "I can open this lab from anywhere and navigate to a subject or chapter you want to visualize." },
     { prefix: "/reviews", label: "Review Cards", help: "I can bring you here and suggest a due revision from saved review dates and weak concepts." },
     { prefix: "/mood", label: "Mood Tracker", help: "I can reopen this tracker from any protected page; mood entries still require your explicit input." },
     { prefix: "/dashboard", label: "Dashboard", help: "I can navigate anywhere, open the focus timer, tell you what you studied, suggest the next revision or test, and perform confirmed study and Todo updates." },
@@ -128,13 +128,14 @@ export async function POST(request: NextRequest) {
     const directory = await getDirectory();
     if (intent.kind === "MEMORY_QUERY") {
       if (intent.query === "RECENT_STUDY") {
+        const dateKey = requestedStudyDate(utterance);
         const recent = await db.studyActivity.findMany({
-          where: { userId: session.userId, undoneAt: null },
+          where: { userId: session.userId, undoneAt: null, ...(dateKey ? { date: new Date(`${dateKey}T00:00:00.000Z`) } : {}) },
           include: { subject: { select: { name: true, slug: true } }, topic: { select: { name: true } } },
           orderBy: [{ date: "desc" }, { createdAt: "desc" }],
           take: 4,
         });
-        if (!recent.length) return responseWithStatus({ kind: intent.kind, reply: `${vocative}, I do not have a saved study activity yet. Daily Goals is the best place to record today.`, href: "/daily-goals?voice=1", label: "Daily Goals", state: "DONE" });
+        if (!recent.length) return responseWithStatus({ kind: intent.kind, reply: `${vocative}, I do not have a saved chapter-level study activity${dateKey ? ` for ${dateKey}` : " yet"}. Subject-only totals may still be in Daily Goals.`, href: "/daily-goals", label: "Daily Goals", state: "DONE" });
         const summary = recent.map((activity) => {
           const target = activity.topic?.name ?? activity.chapter;
           const work = [activity.hoursStudied ? `${activity.hoursStudied} hours` : null, activity.questionsDelta ? `${activity.questionsDelta} questions` : null].filter(Boolean).join(" and ");

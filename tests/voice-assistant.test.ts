@@ -22,6 +22,9 @@ test("parses spoken study values and common skip phrases", () => {
   assert.equal(isSkipUtterance("I did not study this subject"), true);
   assert.equal(isSkipUtterance("nahi padha"), true);
   assert.equal(isAffirmative("yes save it"), true);
+  assert.equal(isSkipUtterance("I studied physics for two hours, solved 80 questions, weak concepts none"), false);
+  assert.equal(isSkipUtterance("I studied physics but skip weak concepts"), false);
+  assert.equal(isSkipUtterance("skip this subject"), true);
 });
 
 test("resolves direct navigation and leaves chapter names searchable", () => {
@@ -52,7 +55,6 @@ test("covers every top-level protected product workspace", () => {
     ["ncert reader", "/reader"],
     ["review cards", "/reviews"],
     ["mood tracker", "/mood"],
-    ["visual lab", "/visual-lab"],
     ["ai insights", "/ai-insights"],
     ["neet guru", "/ai-insights/neet-guru"],
     ["rank predictor", "/ai-insights/rank-predictor"],

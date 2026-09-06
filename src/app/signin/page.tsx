@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
+import styles from "./signin.module.css";
 import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
 
 export default function SignInPage() {
@@ -15,8 +16,6 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    router.prefetch("/dashboard");
-
     let cancelled = false;
     async function checkSession() {
       if (!getStoredAuth()) return;
@@ -27,11 +26,11 @@ export default function SignInPage() {
         if (res.ok) {
           setAuth();
           router.replace("/dashboard");
-        } else {
+        } else if (res.status === 401 || res.status === 403) {
           clearAuth();
         }
       } catch {
-        if (!cancelled) clearAuth();
+        if (!cancelled) setError("Connection unavailable. Your existing session has not been cleared.");
       }
     }
 
@@ -54,8 +53,9 @@ export default function SignInPage() {
 
       if (res.ok) {
         setAuth();
-        router.prefetch("/dashboard");
-        router.replace("/dashboard");
+        // Cross the authentication boundary with a fresh request. A prefetched
+        // signed-out dashboard redirect can otherwise survive a successful login.
+        window.location.replace("/dashboard");
       } else {
         const payload = await res.json().catch(() => ({}));
         if (res.status === 429) {
@@ -74,7 +74,7 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="signin-page">
+    <div className={`signin-page ${styles.entry}`}>
       {/* Ambient */}
       <div className="signin-orb signin-orb-1" />
       <div className="signin-orb signin-orb-2" />
@@ -82,18 +82,18 @@ export default function SignInPage() {
       {/* Card */}
       <div className="signin-wrap animate-scale-in">
         {/* Logo mark */}
-        <div className="signin-logo animate-pulse-glow">
+        <div className="signin-logo">
           <NeetLogoMark size={30} />
         </div>
 
         <div className="signin-brand">
-          <h1 className="signin-title gradient-text">NEET DOCTOR</h1>
+          <div className="signin-title">NEET DOCTOR</div>
           <div className="signin-shloka devanagari">सरस्वत्यै नमः</div>
         </div>
 
         <div className="signin-greeting">
-          <h2 className="signin-greeting-title">Welcome back, Misti</h2>
-          <p className="signin-greeting-sub">Your AIIMS Delhi journey continues here</p>
+          <h1 className="signin-greeting-title">Welcome back,<br/>Misti.</h1>
+          <p className="signin-greeting-sub">A fresh page, right where you left off.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="signin-form">
@@ -130,7 +130,7 @@ export default function SignInPage() {
                 value={password} onChange={(e) => setPassword(e.target.value)} required
                 style={{ paddingRight: 48 }}
               />
-              <button type="button" className="signin-eye" onClick={() => setShowPw(!showPw)} tabIndex={-1}>
+              <button type="button" className="signin-eye" onClick={() => setShowPw(!showPw)} aria-label={showPw ? "Hide password" : "Show password"}>
                 {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -138,8 +138,8 @@ export default function SignInPage() {
 
           {/* Error */}
           {error && (
-            <div className="signin-error animate-fade-in">
-              <span>⚠</span> {error}
+            <div className="signin-error animate-fade-in" role="alert">
+              <AlertCircle size={17}/> {error}
             </div>
           )}
 
@@ -150,7 +150,7 @@ export default function SignInPage() {
                 <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
               </span>
             ) : (
-              <>Enter NEET DOCTOR <ArrowRight size={18} /></>
+              <>Open your studio <ArrowRight size={18} /></>
             )}
           </button>
         </form>

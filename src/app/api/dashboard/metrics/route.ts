@@ -1,3 +1,4 @@
+import { indiaDateKey } from "@/lib/study-date";
 import { NextResponse } from "next/server";
 import { requirePrivateApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
@@ -77,6 +78,8 @@ export async function GET() {
       take: 20,
     });
 
+    const totalTests = await db.testRecord.count();
+
     const subjectStats = subjects.map((sub) => {
       const totalTopics = sub.topics.length;
       const completedTopics = sub.topics.filter((t) => t.isCompleted).length;
@@ -121,19 +124,20 @@ export async function GET() {
     const allDates = [...new Set(allGoals.map((g) => g.date.toISOString().split("T")[0]))].sort().reverse();
     let streak = 0;
     for (let i = 0; i < allDates.length; i++) {
-      const expected = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const expected = indiaDateKey(new Date(Date.now() - i * 86_400_000));
       if (allDates[i] === expected) streak++;
       else break;
     }
 
     // Pulse: Study hours per day for the last 14 days
     const pulse: number[] = [];
+    const pulseDays: Array<{ date: string; hours: number | null }> = [];
     for (let i = 13; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const hours = allGoals
-        .filter((g) => g.date.toISOString().split("T")[0] === d)
-        .reduce((sum, g) => sum + g.hoursStudied, 0);
+      const d = new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(Date.now() - i * 86_400_000));
+      const logs = allGoals.filter((g) => g.date.toISOString().split("T")[0] === d);
+      const hours = logs.reduce((sum, g) => sum + g.hoursStudied, 0);
       pulse.push(hours);
+      pulseDays.push({ date: d, hours: logs.length ? hours : null });
     }
 
     const totalTopicsAll = subjectStats.reduce((s, sub) => s + sub.totalTopics, 0);
@@ -176,7 +180,8 @@ export async function GET() {
       totalQuestions,
       streak,
       pulse,
-      testCount: testRecords.length,
+      pulseDays,
+      testCount: totalTests,
       avgTestScore,
       activeDays14,
       recentHours7,

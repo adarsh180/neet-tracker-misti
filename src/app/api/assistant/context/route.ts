@@ -10,6 +10,8 @@ export async function GET() {
   if (unauthorized) return unauthorized;
   const session = await getPrivateSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const today = new Date(`${todayKey}T00:00:00.000Z`);
 
   const [subjects, tasks, tests, actions, goalDates, testStats] = await Promise.all([
     db.subject.findMany({
@@ -22,6 +24,7 @@ export async function GET() {
       orderBy: { name: "asc" },
     }),
     db.task.findMany({
+      where: { OR: [{ dueDate: { gte: today } }, { status: { notIn: ["DONE", "SKIPPED"] } }] },
       select: {
         id: true,
         title: true,
@@ -32,7 +35,7 @@ export async function GET() {
         subject: { select: { name: true, color: true } },
       },
       orderBy: [{ dueDate: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
-      take: 30,
+      take: 200,
     }),
     db.testRecord.findMany({
       select: { id: true, testName: true, percentage: true, takenAt: true, testType: true },
@@ -73,13 +76,14 @@ export async function GET() {
   const totalTopics = subjectProgress.reduce((sum, subject) => sum + subject.total, 0);
   const completedTopics = subjectProgress.reduce((sum, subject) => sum + subject.completed, 0);
   const pending = tasks.filter((task) => task.status !== "DONE" && task.status !== "SKIPPED");
-  const plannedTests = pending.filter((task) => /test|mock|pyq|sectional/i.test(task.title));
+  const todayTasks = tasks.filter(task => task.dueDate && task.dueDate.toISOString().slice(0,10) === todayKey);
+  const plannedTests = pending.filter((task) => task.dueDate && task.dueDate >= today && /test|mock|pyq|sectional/i.test(task.title));
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
-    todayPlan: pending.slice(0, 4),
-    completedTaskCount: tasks.filter((task) => task.status === "DONE").length,
-    visibleTaskCount: tasks.length,
+    todayPlan: todayTasks.filter(task => task.status !== "DONE" && task.status !== "SKIPPED").slice(0, 4),
+    completedTaskCount: todayTasks.filter((task) => task.status === "DONE").length,
+    visibleTaskCount: todayTasks.length,
     progress: {
       completedTopics,
       totalTopics,

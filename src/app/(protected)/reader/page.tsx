@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowRight, BookOpen, FileText, Highlighter, Loader2, Search } from "lucide-react";
+import { ArrowRight, BookOpen, Highlighter, Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import SmoothLink from "@/components/layout/smooth-link";
+import SubjectMark from "@/components/studio/subject-mark";
+import styles from "./library.module.css";
 
 type ReaderDocument = { id: string; subject: string; classLevel: string; chapter: string; title: string; edition: string | null; pageCount: number | null; highlightCount: number; progress: { currentPage: number } | null };
 
@@ -12,12 +14,16 @@ export default function ReaderLibraryPage() {
   const [classLevel, setClassLevel] = useState<"ALL" | "11" | "12">("ALL");
   const [subject, setSubject] = useState("ALL");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/reader", { cache: "no-store" })
-      .then(async (response) => response.ok ? response.json() : Promise.reject())
+    const controller = new AbortController();
+    fetch("/api/reader", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => response.ok ? response.json() : Promise.reject(new Error("Your library could not be loaded. Please retry.")))
       .then((payload) => setDocuments(Array.isArray(payload.documents) ? payload.documents : []))
-      .finally(() => setLoading(false));
+      .catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "Could not load the library."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, []);
 
   const visible = useMemo(() => documents.filter((document) =>
@@ -27,22 +33,23 @@ export default function ReaderLibraryPage() {
   ), [classLevel, documents, query, subject]);
 
   return (
-    <main className="reader-library">
+    <main className={`reader-library ${styles.library}`}>
       <header>
         <span className="eyebrow"><BookOpen size={14} /> NCERT Reader</span>
         <h1>Your NCERT, chapter by chapter</h1>
-        <p>Read the verified source PDF naturally. Exam-linked sentences open interactive historical questions without leaving the chapter.</p>
+        <p>A familiar page. A little more understanding. Read a chapter and explore its reviewed exam connections.</p>
       </header>
       <section className="reader-toolbar">
-        <label><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a chapter" /></label>
+        <label><Search size={16} /><input aria-label="Search NCERT chapters" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a chapter" /></label>
         <div>{(["ALL", "11", "12"] as const).map((value) => <button key={value} className={classLevel === value ? "active" : ""} onClick={() => setClassLevel(value)}>{value === "ALL" ? "Both classes" : `Class ${value}`}</button>)}</div>
-        <select value={subject} onChange={(event) => setSubject(event.target.value)}><option value="ALL">All subjects</option>{["Physics", "Chemistry", "Botany", "Zoology"].map((value) => <option key={value}>{value}</option>)}</select>
+        <select aria-label="Filter by subject" value={subject} onChange={(event) => setSubject(event.target.value)}><option value="ALL">All subjects</option>{["Physics", "Chemistry", "Botany", "Zoology"].map((value) => <option key={value}>{value}</option>)}</select>
       </section>
+      {error && <div className="studio-error" role="alert">{error}<button className="studio-action" onClick={()=>window.location.reload()}>Retry</button></div>}
       {loading ? <div className="reader-empty"><Loader2 className="spin" /> Loading verified NCERT library...</div> : visible.length ? (
         <section className="reader-grid">
           {visible.map((document) => (
             <article key={document.id}>
-              <div className="document-icon"><FileText size={22} /></div>
+              <div className="document-icon"><SubjectMark subject={document.subject.toLowerCase()}/></div>
               <span>Class {document.classLevel} · {document.subject}</span>
               <h2>{document.title}</h2>
               <p>{document.pageCount ? `${document.pageCount} pages` : "PDF"} · {document.highlightCount} verified exam highlight{document.highlightCount === 1 ? "" : "s"}</p>
@@ -57,4 +64,3 @@ export default function ReaderLibraryPage() {
     </main>
   );
 }
-

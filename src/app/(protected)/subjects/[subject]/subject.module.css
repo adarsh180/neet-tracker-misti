@@ -1,0 +1,33 @@
+/* Root scoping takes precedence over legacy styled-jsx during the component migration. */
+.workbench.workbench {background:var(--bg-primary);min-height:100dvh}
+.workbench.workbench :global(.content-shell){max-width:1440px;padding:32px 36px 60px;margin:auto}
+.workbench.workbench :global(.hero){min-height:0;border:0!important;border-bottom:1px solid var(--glass-border)!important;border-radius:0;padding:20px 0 28px;background:transparent!important;box-shadow:none;overflow:visible}
+.workbench.workbench :global(.hero-ambient){display:none}
+.workbench.workbench :global(.hero-title){font-size:clamp(38px,5vw,62px);font-weight:500;letter-spacing:-.035em}
+.workbench.workbench :global(.hero-icon){background:transparent!important;box-shadow:none!important;border:0;border-radius:12px}
+.workbench.workbench :global(.hero-subtitle){font-size:14px;line-height:1.7;color:var(--text-secondary)}
+.workbench.workbench :global(.hero-right){gap:12px;min-width:180px}
+.workbench.workbench :global(.hero-score-card){background:transparent;border:0;box-shadow:none;padding:0}
+.coverageLabel{font-size:13px;color:var(--text-secondary)}
+.workbench.workbench :global(.stats-grid){gap:0;border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;margin:22px 0}
+.workbench.workbench :global(.stat-card){border:0;border-right:1px solid var(--glass-border);border-radius:0;background:var(--bg-secondary);box-shadow:none;padding:20px}
+.workbench.workbench :global(.stat-value){font-size:30px;line-height:1.2;margin-top:12px}
+.workbench.workbench :global(.stat-label),.workbench.workbench :global(.stat-unit){font-size:13px}
+.workbench.workbench :global(.toolbar){position:relative;top:auto;padding:16px;background:var(--bg-secondary);border-radius:16px;box-shadow:none}
+.workbench.workbench :global(.input-search){font-size:16px;min-height:44px}
+.workbench.workbench :global(.filter-tab){min-height:42px;font-size:13px}
+.workbench.workbench :global(.reorder-note){font-size:12px}
+.workbench.workbench :global(.chapter-stack){gap:12px;margin-top:18px}
+.workbench.workbench :global(.chapter-card){border-radius:16px;background:var(--bg-secondary);box-shadow:none;overflow:hidden}
+.workbench.workbench :global(.chapter-title){font-size:19px;font-weight:600;letter-spacing:-.02em}
+.workbench.workbench :global(.topic-name){font-size:15px;line-height:1.5}
+.workbench.workbench :global(.topic-row){min-height:70px}
+.workbench.workbench :global(.section-head h2){font-size:20px}
+.workbench.workbench :global(.section-head p){font-size:13px}
+.workbench.workbench :global(.insight-label){font-size:13px}
+.workbench.workbench :global(.insight-value),.workbench.workbench :global(.insight-badge){font-size:12px}
+.analytics{border:1px solid var(--glass-border);border-radius:16px;background:var(--bg-secondary);padding:20px;margin-top:28px}
+.analytics>summary{display:flex;gap:10px;align-items:center;cursor:pointer;font-size:16px;list-style:none;font-weight:600}
+.analytics>summary>span{font-weight:400;color:var(--text-secondary);font-size:13px;margin-left:auto}
+.analytics :global(.insights-grid){margin:20px 0 0;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){.workbench.workbench :global(.content-shell){padding:20px 18px 40px}.workbench.workbench :global(.hero){gap:20px}.workbench.workbench :global(.hero-right){min-width:0}.workbench.workbench :global(.stat-card){padding:16px}.workbench.workbench :global(.hero-title-row){gap:10px}.analytics>summary>span{display:none}.analytics :global(.insights-grid){grid-template-columns:1fr}.workbench.workbench :global(.stat-value){font-size:26px}}

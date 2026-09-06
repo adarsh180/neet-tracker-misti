@@ -31,6 +31,30 @@ test("allocates questions across several explicitly named topics", () => {
     ["anatomy", 25],
   ]);
   assert.equal(result.needsAllocation, false);
+  assert.equal(result.totalQuestions, 45);
+});
+
+test("a shared total requires a split, never an invented zero", () => {
+  const result = resolveStudyAllocations("45 questions from Morphology and Anatomy", topics);
+  assert.equal(result.totalQuestions, 45);
+  assert.equal(result.needsAllocation, true);
+  assert.deepEqual(result.matches.map(match => match.questions), [null, null]);
+});
+
+test("understands a short spoken question split without repeating the unit", () => {
+  for (const text of ["20 from Morphology and 25 from Anatomy", "twenty from Morphology and twenty five from Anatomy"]) {
+    const result = resolveStudyAllocations(text, topics);
+    assert.deepEqual(result.matches.map(match => match.questions), [20, 25]);
+    assert.equal(result.totalQuestions, 45);
+    assert.equal(result.needsAllocation, false);
+  }
+});
+
+test("counts after chapter names remain attached to those chapters", () => {
+  const result = resolveStudyAllocations("Morphology 20 questions and Anatomy 25 questions", topics);
+  assert.equal(result.totalQuestions, 45);
+  assert.equal(result.needsAllocation, false);
+  assert.deepEqual(result.matches.map(match => match.questions), [20, 25]);
 });
 
 test("uses the clarified split when a follow-up repeats the same topics", () => {

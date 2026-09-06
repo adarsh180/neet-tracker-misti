@@ -14,7 +14,7 @@ import styles from "./site-voice-assistant.module.css";
 
 type AssistantState = "READY" | "LISTENING" | "UNDERSTANDING" | "ACTING" | "SPEAKING" | "DONE" | "ERROR";
 type AssistantChoice = { label: string; href?: string; utterance?: string };
-type AssistantResult = { actionId?: string; reply?: string; href?: string; label?: string; canUndo?: boolean; confirmationRequired?: boolean; state?: "DONE" | "NEEDS_CONFIRMATION" | "ERROR"; choices?: AssistantChoice[]; error?: string };
+type AssistantResult = { kind?: string; actionId?: string; reply?: string; href?: string; label?: string; canUndo?: boolean; confirmationRequired?: boolean; state?: "DONE" | "NEEDS_CONFIRMATION" | "ERROR"; choices?: AssistantChoice[]; error?: string };
 type Preference = { nickname: "Bubu" | "Shona"; speechEnabled: boolean; interactionMode: "TAP" | "WAKE"; discreetMode: boolean };
 type AssistantTone = "WARM" | "MENTOR" | "BUDDY";
 type VoiceMoment = "ready" | "working" | "done" | "clarify" | "error";
@@ -34,9 +34,9 @@ type AgentContext = {
 const DEFAULT_PREFERENCE: Preference = { nickname: "Bubu", speechEnabled: true, interactionMode: "WAKE", discreetMode: false };
 const QUICK_COMMANDS = [
   { icon: Target, title: "Start focus session", detail: "25 min · Physics", command: "open focus timer", accent: "var(--accent-rose)" },
-  { icon: BookOpen, title: "Summarize chapter", detail: "NCERT / PYQ", command: "open NCERT reader", accent: "var(--accent-green)" },
-  { icon: BarChart3, title: "Analyze last mock", detail: "Find weak areas", command: "open tests analytics", accent: "var(--accent-blue)" },
-  { icon: CalendarDays, title: "Plan tomorrow", detail: "Optimized schedule", command: "open daily goals voice mode", accent: "var(--accent-gold)" },
+  { icon: BookOpen, title: "Read a chapter", detail: "NCERT / PYQ", command: "open NCERT reader", accent: "var(--accent-green)" },
+  { icon: BarChart3, title: "Review tests", detail: "Scores and mistakes", command: "open tests analytics", accent: "var(--accent-blue)" },
+  { icon: CalendarDays, title: "Plan tomorrow", detail: "Voice daily log", command: "open daily goals voice mode", accent: "var(--accent-gold)" },
 ] as const;
 const NAV_RAIL = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -105,6 +105,9 @@ export default function SiteVoiceAssistant() {
   const [context, setContext] = useState<AgentContext | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
   const [omni, setOmni] = useState("");
+  const [audioError, setAudioError] = useState("");
+  const openRef = useRef(false);
+  const sessionGeneration = useRef(0);
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => {
@@ -119,8 +122,9 @@ export default function SiteVoiceAssistant() {
   }, []);
   const speak = useCallback((text: string, clipId: PrivateVoiceClipId, onEnded?: () => void) => {
     setLastVoiceClip(clipId);
+    setAudioError("");
     if (!preference.speechEnabled) { onEnded?.(); return; }
-    speakPrompt(text, { locale: "en-IN", enabled: true, clipId, onLevel: (level) => { audioLevelRef.current = level; }, onEnded });
+    speakPrompt(text, { locale: "en-IN", enabled: true, clipId, onError: setAudioError, onLevel: (level) => { audioLevelRef.current = level; }, onEnded });
   }, [preference.speechEnabled]);
   const beginVoiceWelcome = useCallback((tone: AssistantTone = "WARM") => {
     recognitionRef.current?.abort(); recognitionRef.current = null; stopMeter(); stopSpeaking();
@@ -135,10 +139,12 @@ export default function SiteVoiceAssistant() {
       window.dispatchEvent(new CustomEvent(`${SITE_ASSISTANT_OPEN_EVENT}:listen`));
     };
     speak(reply, voiceClip("ready", tone), listenNext);
-    stateTimerRef.current = window.setTimeout(listenNext, 4300);
+
   }, [preference.nickname, speak, stopMeter]);
   useEffect(() => { welcomeRef.current = beginVoiceWelcome; }, [beginVoiceWelcome]);
   const close = useCallback(() => {
+    openRef.current = false;
+    sessionGeneration.current += 1;
     recognitionRef.current?.abort(); recognitionRef.current = null; stopMeter(); stopSpeaking();
     if (navigationTimerRef.current !== null) window.clearTimeout(navigationTimerRef.current);
     if (navigationFallbackRef.current !== null) window.clearTimeout(navigationFallbackRef.current);
@@ -176,6 +182,7 @@ export default function SiteVoiceAssistant() {
   const submitCommand = useCallback(async (utterance: string) => {
     const cleaned = utterance.trim();
     if (!cleaned) return;
+    const generation = ++sessionGeneration.current;
     recognitionRef.current?.abort(); recognitionRef.current = null; stopMeter();
     if (navigationTimerRef.current !== null) window.clearTimeout(navigationTimerRef.current);
     if (stateTimerRef.current !== null) window.clearTimeout(stateTimerRef.current);
@@ -198,14 +205,13 @@ export default function SiteVoiceAssistant() {
           body: JSON.stringify({ decision }),
         });
         const confirmed = await confirmationResponse.json() as AssistantResult;
+        if (sessionGeneration.current !== generation) return;
         if (!confirmationResponse.ok || confirmed.state === "ERROR") throw new Error(confirmed.error || "The confirmation could not be completed.");
         setPendingActionId(null);
         setResult(confirmed);
         const reply = confirmed.reply || (decision === "CONFIRM" ? "Done." : "Cancelled. Nothing was changed.");
         setState("SPEAKING"); setMessage(reply);
-        speak(reply, voiceClip("done", activeToneRef.current), confirmed.href ? undefined : resumeVoice);
-        if (confirmed.href) navigationTimerRef.current = window.setTimeout(() => performNavigation(confirmed.href as string), 950);
-        else stateTimerRef.current = window.setTimeout(() => { setState("DONE"); resumeVoice(); }, 1800);
+        speak(reply, voiceClip("done", activeToneRef.current), () => { if (confirmed.href) performNavigation(confirmed.href); else { setState("DONE"); resumeVoice(); } });
         void loadContext();
       } catch (reason) {
         setState("ERROR"); setMessage(reason instanceof Error ? reason.message : "The confirmation could not be completed."); speak("Nothing uncertain was changed.", voiceClip("error", activeToneRef.current), resumeVoice);
@@ -219,23 +225,22 @@ export default function SiteVoiceAssistant() {
       stopSpeaking();
       setPreference((current) => ({ ...current, speechEnabled: false }));
       void fetch("/api/voice/preferences", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...preference, speechEnabled: false }) }).catch(() => {});
-      setState("DONE"); setMessage("Muted. I will keep listening and respond visually.");
+      setState("DONE"); setMessage("Muted. I will keep listening and respond visually."); resumeVoice();
       return;
     }
     if (clientControl === "UNMUTE") {
       setPreference((current) => ({ ...current, speechEnabled: true }));
       void fetch("/api/voice/preferences", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...preference, speechEnabled: true }) }).catch(() => {});
-      setState("DONE"); setMessage("Voice replies are on again.");
+      setState("DONE"); setMessage("Voice replies are on again."); resumeVoice();
       return;
     }
     if (clientControl === "BACK" || clientControl === "REFRESH") {
       const reply = clientControl === "BACK" ? "Going back." : "Refreshing this page.";
-      setState("SPEAKING"); setMessage(reply); speak(reply, voiceClip("done", activeToneRef.current));
-      navigationTimerRef.current = window.setTimeout(() => {
+      setState("SPEAKING"); setMessage(reply); speak(reply, voiceClip("done", activeToneRef.current), () => {
         close();
         if (clientControl === "BACK") router.back();
         else router.refresh();
-      }, 700);
+      });
       return;
     }
 
@@ -244,8 +249,7 @@ export default function SiteVoiceAssistant() {
       const reply = `Opening ${localIntent.label}.`;
       router.prefetch(localIntent.href.split(/[?#]/, 1)[0]);
       setResult({ href: localIntent.href, label: localIntent.label, reply, state: "DONE" });
-      setState("SPEAKING"); setMessage(reply); speak(reply, voiceClip("done", activeToneRef.current));
-      navigationTimerRef.current = window.setTimeout(() => performNavigation(localIntent.href), 850);
+      setState("SPEAKING"); setMessage(reply); speak(reply, voiceClip("done", activeToneRef.current), () => performNavigation(localIntent.href));
       return;
     }
 
@@ -255,6 +259,7 @@ export default function SiteVoiceAssistant() {
     try {
       const response = await fetch("/api/assistant/command", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: assistantRequestId(), utterance: cleaned, assistantTone: activeToneRef.current, currentPath: pathname }) });
       const payload = await response.json() as AssistantResult;
+      if (sessionGeneration.current !== generation) return;
       setResult(payload);
       if (!response.ok || payload.state === "ERROR") { setState("ERROR"); setMessage(payload.reply || payload.error || "I could not complete that safely."); speak("Nothing uncertain was changed. Please try once more.", voiceClip("error", activeToneRef.current), resumeVoice); return; }
       if (payload.state === "NEEDS_CONFIRMATION") {
@@ -269,11 +274,10 @@ export default function SiteVoiceAssistant() {
         if (continued) return;
         continued = true;
         setState("DONE");
-        if (!payload.href && modeRef.current === "VOICE") window.dispatchEvent(new CustomEvent(`${SITE_ASSISTANT_OPEN_EVENT}:listen`));
+        if (payload.href && payload.kind !== "MEMORY_QUERY" && payload.kind !== "PAGE_HELP") performNavigation(payload.href);
+        else resumeVoice();
       };
       setState("SPEAKING"); setMessage(reply); speak(reply, voiceClip("done", activeToneRef.current), finishReply);
-      stateTimerRef.current = window.setTimeout(finishReply, 4200);
-      if (payload.href) navigationTimerRef.current = window.setTimeout(() => performNavigation(payload.href as string), payload.canUndo ? 2600 : 900);
       void loadContext();
     } catch { setState("ERROR"); setMessage("The connection paused before anything uncertain was changed. Please try again."); }
   }, [close, loadContext, pathname, pendingActionId, performNavigation, preference, resumeVoice, router, speak, stopMeter]);
@@ -283,6 +287,7 @@ export default function SiteVoiceAssistant() {
     const onOpen = (event: Event) => {
       const detail = (event as CustomEvent<{ command?: string; wakeName?: string; tone?: AssistantTone; message?: string }>).detail;
       const tone = detail?.tone ?? "WARM";
+      openRef.current = true;
       setOpen(true); activeToneRef.current = tone; setWakeLabel(detail?.wakeName ? `Hey ${detail.wakeName}` : ""); setResult(null);
       if (detail?.command) submitRef.current(detail.command);
       else welcomeRef.current(tone);
@@ -329,24 +334,29 @@ export default function SiteVoiceAssistant() {
         void getMicrophonePermissionState().then(setMicPermission);
       }
     }, onWake: (transcript, remainingCommand) => {
+      openRef.current = true;
       setOpen(true); const persona = detectAssistantPersona(transcript, preference.nickname); const tone = toneFromWake(persona.wakeName, persona.mode); activeToneRef.current = tone;
       setWakeLabel(persona.wakeName ? `Hey ${persona.wakeName.replace(/\b\w/g, (letter) => letter.toUpperCase())}` : "");
       const reply = persona.mode === "MENTOR" ? `${persona.acknowledgement}. What shall we focus on?` : `${persona.acknowledgement}. What would you like me to take care of?`;
       setMessage(reply);
-      if (remainingCommand) submitRef.current(remainingCommand); else { setState("SPEAKING"); let continued = false; const listenNext = () => { if (continued) return; continued = true; window.dispatchEvent(new CustomEvent(`${SITE_ASSISTANT_OPEN_EVENT}:listen`)); }; speak(reply, voiceClip("ready", tone), listenNext); window.setTimeout(listenNext, 4300); }
+      if (remainingCommand) submitRef.current(remainingCommand); else { setState("SPEAKING"); let continued = false; const listenNext = () => { if (continued) return; continued = true; window.dispatchEvent(new CustomEvent(`${SITE_ASSISTANT_OPEN_EVENT}:listen`)); }; speak(reply, voiceClip("ready", tone), listenNext); }
     } });
     return () => controller?.abort();
   }, [open, preference.nickname, speak, wakeArmed, wakeRestartToken, wakeSuppressed]);
 
   const startListening = useCallback(async () => {
     if (state === "LISTENING") { recognitionRef.current?.abort(); recognitionRef.current = null; stopMeter(); setState("READY"); return; }
+    if (!openRef.current || modeRef.current !== "VOICE") return;
     stopSpeaking(); setPermissionHelp("");
-    const permission = await requestMicrophonePermission(); setMicPermission(permission.state);
+    const permission = await requestMicrophonePermission();
+    if (!openRef.current) return;
+    setMicPermission(permission.state);
     if (!permission.granted) { const device = detectVoiceDevice(navigator.userAgent, navigator.maxTouchPoints); setState("ERROR"); setMessage(permission.message); setPermissionHelp(device.permissionHelp); return; }
     localStorage.setItem("neet_mic_granted", "true");
     if (!supportsVoiceRecognition()) { setState("ERROR"); setMessage("This browser accepted the microphone but does not expose website speech recognition. Text mode remains available."); return; }
     setState("LISTENING"); setMessage("I’m listening — speak naturally."); setInterim("");
     try { meterCleanupRef.current = await startMicrophoneLevelMeter((level) => { audioLevelRef.current = level; }); } catch { /* Recognition can still proceed. */ }
+    if (!openRef.current) { stopMeter(); return; }
     recognitionRef.current = listenOnce({ locale: "en-IN", onInterim: setInterim, onError: (error) => { stopMeter(); setState("ERROR"); setMessage(error); }, onEnd: () => { recognitionRef.current = null; stopMeter(); setState((current) => current === "LISTENING" ? "READY" : current); }, onResult: (transcript, confidence, alternatives) => {
       const selected = chooseAssistantTranscript(alternatives.length ? alternatives : [{ transcript, confidence }]);
       void submitCommand(selected?.transcript ?? transcript);
@@ -360,7 +370,7 @@ export default function SiteVoiceAssistant() {
   }, [preference]);
   const enableHandsFree = useCallback(async () => {
     const permission = await requestMicrophonePermission(); setMicPermission(permission.state);
-    if (!permission.granted || !supportsVoiceRecognition()) { setOpen(true); setState("ERROR"); setMessage(permission.granted ? "Wake listening is unavailable in this browser, but tap-to-speak and Text mode still work." : permission.message); if (!permission.granted) setPermissionHelp(detectVoiceDevice(navigator.userAgent, navigator.maxTouchPoints).permissionHelp); return; }
+    if (!permission.granted || !supportsVoiceRecognition()) { openRef.current = true; setOpen(true); setState("ERROR"); setMessage(permission.granted ? "Wake listening is unavailable in this browser, but tap-to-speak and Text mode still work." : permission.message); if (!permission.granted) setPermissionHelp(detectVoiceDevice(navigator.userAgent, navigator.maxTouchPoints).permissionHelp); return; }
     localStorage.setItem("neet_mic_granted", "true"); await persistWakeMode("WAKE"); setWakeArmed(true); setMessage("Hands-free wake is active on every NEET Tracker page while this browser tab stays visible.");
   }, [persistWakeMode]);
   const toggleWake = useCallback(async () => { if (!wakeArmed) return enableHandsFree(); setWakeArmed(false); setWakeActive(false); await persistWakeMode("TAP"); }, [enableHandsFree, persistWakeMode, wakeArmed]);
@@ -378,8 +388,10 @@ export default function SiteVoiceAssistant() {
   ], [state]);
 
   if (!open) {
-    const needsActivation = preferenceLoaded && preference.interactionMode === "WAKE" && !wakeArmed;
-    return <>{needsActivation ? <button className={styles.permissionNudge} onClick={() => void enableHandsFree()}><Mic size={15} /><span><strong>{micPermission === "denied" ? "Fix microphone access" : "Enable “Hey Bubu”"}</strong><small>{micPermission === "denied" ? "Allow Microphone in this site’s settings" : "One tap for microphone access"}</small></span></button> : null}<span className={`${styles.wakeSentinel} ${wakeActive ? styles.wakeSentinelActive : ""}`} aria-hidden="true" /></>;
+    // The chat has a fixed composer; the header microphone and assistant's
+    // wake-word control remain available without a reminder covering typing.
+    const needsActivation = preferenceLoaded && preference.interactionMode === "WAKE" && !wakeArmed && pathname !== "/ai-insights/neet-guru";
+    return <>{needsActivation ? <button data-studio-chrome className={styles.permissionNudge} onClick={() => void enableHandsFree()}><Mic size={15} /><span><strong>{micPermission === "denied" ? "Fix microphone access" : "Enable “Hey Bubu”"}</strong><small>{micPermission === "denied" ? "Allow Microphone in this site’s settings" : "One tap for microphone access"}</small></span></button> : null}<span className={`${styles.wakeSentinel} ${wakeActive ? styles.wakeSentinelActive : ""}`} aria-hidden="true" /></>;
   }
 
   const activeConversation = !["READY", "DONE", "ERROR"].includes(state);
@@ -467,9 +479,10 @@ export default function SiteVoiceAssistant() {
               ))}
             </div> : null}
 
+            {mode === "VOICE" && (audioError || state === "ERROR" || pendingActionId || result?.state === "NEEDS_CONFIRMATION") ? <div className={styles.permissionHelp} role="status"><ShieldCheck/><span>{audioError || message}</span></div> : null}
             {permissionHelp ? <div className={styles.permissionHelp}><ShieldCheck /><span>{permissionHelp}</span></div> : null}
 
-            {mode === "TEXT" && result?.choices?.length ? <div className={styles.choices}>
+            {result?.choices?.length ? <div className={styles.choices}>
               {result.choices.map((choice) => choice.utterance
                 ? <button key={choice.label} onClick={() => void submitCommand(choice.utterance as string)}>{choice.label}<ArrowRight /></button>
                 : <a key={choice.label} href={choice.href}>{choice.label}<ExternalLink /></a>)}
@@ -543,7 +556,7 @@ export default function SiteVoiceAssistant() {
               </section>
 
               <section className={styles.card}>
-                <div className={styles.cardTitle}><h3>Weak subjects</h3><a href="/dashboard">Review all <ArrowRight /></a></div>
+                <div className={styles.cardTitle}><h3>Less-covered subjects</h3><a href="/dashboard">Review all <ArrowRight /></a></div>
                 {context?.weakSubjects.map((subject) => (
                   <a className={styles.weakRow} key={subject.slug} href={`/subjects/${subject.slug}`}>
                     <span>{subject.name}<i><b style={{ width: `${subject.percentage}%`, background: subject.color }} /></i></span>

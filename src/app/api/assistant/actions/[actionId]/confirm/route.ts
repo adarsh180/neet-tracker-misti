@@ -77,24 +77,33 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
   if (!session) return NextResponse.json({ error: "Private session required" }, { status: 401 });
   const { actionId } = await context.params;
   const body = await request.json().catch(() => ({}));
-  const decision = body.decision === "CANCEL" ? "CANCEL" : "CONFIRM";
+  if (body.decision !== "CANCEL" && body.decision !== "CONFIRM") return NextResponse.json({ error: "An explicit CONFIRM or CANCEL decision is required" }, { status: 400 });
+  const decision = body.decision;
   const action = await db.assistantAction.findUnique({ where: { id: actionId } });
   if (!action || action.userId !== session.userId) return NextResponse.json({ error: "Pending action not found" }, { status: 404 });
-  if (action.status === "COMPLETED" || action.status === "CANCELLED") return NextResponse.json(action.resultJson ?? { state: "DONE" });
+  if (["COMPLETED", "CANCELLED", "NOOP"].includes(action.status)) return NextResponse.json(action.resultJson ?? { state: "DONE" });
   if (action.status !== "PENDING") return NextResponse.json({ error: "This action is no longer awaiting confirmation" }, { status: 409 });
 
   if (decision === "CANCEL") {
     const result = { actionId, kind: action.kind, state: "DONE", reply: "Cancelled. Nothing was changed.", cancelled: true };
-    await db.assistantAction.update({ where: { id: action.id }, data: { status: "CANCELLED", resultJson: json(result) } });
+    const cancelled = await db.assistantAction.updateMany({ where: { id: action.id, status: "PENDING" }, data: { status: "CANCELLED", resultJson: json(result) } });
+    if (!cancelled.count) return NextResponse.json({ error: "This action has already been handled" }, { status: 409 });
     return NextResponse.json(result);
   }
 
   const payload = action.payloadJson as unknown as TaskPayload | StudyPayload | TopicPayload | ChapterPayload;
   try {
+    return await db.$transaction(async (transaction) => {
+    // Claim and all effects share one transaction: retries cannot apply progress twice.
+    const claimed = await transaction.assistantAction.updateMany({ where: { id: action.id, userId: session.userId, status: "PENDING" }, data: { status: "EXECUTING" } });
+    if (!claimed.count) {
+      const current = await transaction.assistantAction.findUnique({ where: { id: action.id } });
+      return NextResponse.json(current?.resultJson ?? { error: "This action has already been handled" }, { status: current?.resultJson ? 200 : 409 });
+    }
     if (payload.kind === "CREATE_TASK") {
       const dueDate = payload.due === "TODAY" ? localDate() : payload.due === "TOMORROW" ? localDate(1) : null;
-      const lastTask = await db.task.findFirst({ orderBy: { orderIndex: "desc" }, select: { orderIndex: true } });
-      const task = await db.task.create({
+      const lastTask = await transaction.task.findFirst({ orderBy: { orderIndex: "desc" }, select: { orderIndex: true } });
+      const task = await transaction.task.create({
         data: {
           title: payload.title,
           subjectId: payload.subjectId,
@@ -107,12 +116,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
         },
       });
       const result = { actionId, kind: payload.kind, state: "DONE", reply: `Done. “${payload.title}” is now in Todo.`, href: "/todo", label: payload.title, taskId: task.id };
-      await db.assistantAction.update({ where: { id: action.id }, data: { status: "COMPLETED", resultJson: json(result) } });
+      await transaction.assistantAction.update({ where: { id: action.id }, data: { status: "COMPLETED", resultJson: json(result) } });
       return NextResponse.json(result);
     }
 
     if (payload.kind === "CREATE_TOPIC") {
-      const result = await db.$transaction(async (transaction) => {
+      const result = await (async () => {
         const existingTopics = await transaction.topic.findMany({
           where: { subjectId: payload.subjectId, chapter: payload.chapter },
           orderBy: { topicOrder: "asc" },
@@ -161,12 +170,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
         };
         await transaction.assistantAction.update({ where: { id: action.id }, data: { status: "COMPLETED", resultJson: json(response) } });
         return response;
-      });
+      })();
       return NextResponse.json(result);
     }
 
     if (payload.kind === "CREATE_CHAPTER") {
-      const result = await db.$transaction(async (transaction) => {
+      const result = await (async () => {
         const chapterRows = await transaction.topic.findMany({
           where: { subjectId: payload.subjectId, chapter: { not: null } },
           select: { chapter: true },
@@ -218,11 +227,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
         };
         await transaction.assistantAction.update({ where: { id: action.id }, data: { status: "COMPLETED", resultJson: json(response) } });
         return response;
-      });
+      })();
       return NextResponse.json(result);
     }
 
-    const result = await db.$transaction(async (transaction) => {
+    const result = await (async () => {
       const date = localDate();
       const chapterTopics = await transaction.topic.findMany({ where: { subjectId: payload.subjectId, chapter: payload.chapter }, select: { id: true } });
       const affectedTopicIds = payload.topicId ? [payload.topicId] : chapterTopics.map((topic) => topic.id);
@@ -271,8 +280,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
       const response = { actionId, kind: payload.kind, state: "DONE", reply: `Done. ${payload.topicName ?? payload.chapter} now includes the confirmed progress.`, href, label: payload.topicName ?? payload.chapter, activityId: activity.id, revisionSessionId };
       await transaction.assistantAction.update({ where: { id: action.id }, data: { status: "COMPLETED", resultJson: json(response) } });
       return response;
-    });
+    })();
     return NextResponse.json(result);
+    });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "The confirmed action could not be completed", state: "ERROR" }, { status: 500 });
   }

@@ -8,6 +8,8 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import RouteTransition from "@/components/layout/route-transition";
 import GlobalSearch from "@/components/layout/global-search";
 import SiteVoiceAssistant from "@/components/voice-assistant/site-voice-assistant";
+import Link from "next/link";
+import { Orbit } from "lucide-react";
 
 const PREFETCH_ROUTES = [
   "/dashboard",
@@ -16,7 +18,7 @@ const PREFETCH_ROUTES = [
   "/tests",
   "/tests/error-log",
   "/mood",
-  "/visual-lab",
+  "/practice",
   "/pyq",
   "/pyq/questions",
   "/reader",
@@ -33,6 +35,7 @@ const PREFETCH_ROUTES = [
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,11 +50,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         const res = await fetch("/api/auth/session", { cache: "no-store" });
         if (cancelled) return;
 
-        if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
           clearAuth();
           router.replace("/signin");
           return;
         }
+        if (!res.ok) throw new Error("Session check unavailable");
 
         setAuth();
         PREFETCH_ROUTES.forEach((route) => {
@@ -60,8 +64,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         setReady(true);
       } catch {
         if (!cancelled) {
-          clearAuth();
-          router.replace("/signin");
+          setConnectionError(true);
         }
       }
     }
@@ -74,6 +77,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   if (!ready) {
+    if (connectionError) return <main className="studio-page"><div className="studio-error" role="alert"><p>We couldn’t reconnect. Your saved session and pending study logs are still on this device.</p><button className="studio-action" onClick={() => window.location.reload()}>Try again</button></div></main>;
     return (
       <div className="protected-boot">
         <div className="protected-boot-card">
@@ -142,8 +146,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div style={{ minHeight: "100vh", position: "relative" }}>
-      <RouteTransition className="protected-route-frame">{children}</RouteTransition>
+    <div className="studio-shell">
+      <a className="studio-skip" href="#studio-content">Skip to content</a>
+      <header className="studio-header"><Link className="studio-brand" href="/dashboard" aria-label="NEET Doctor home"><Orbit size={30} strokeWidth={1.3} /><span>NEET Doctor<small>MISTI’S STUDY STUDIO</small></span></Link></header>
+      <div id="studio-content" tabIndex={-1}><RouteTransition className="protected-route-frame">{children}</RouteTransition></div>
       <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" partnerLabel="Adarsh's UPSC phone" />
       <GlobalSearch />
       <SiteVoiceAssistant />

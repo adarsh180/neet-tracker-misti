@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
 
   const previous = await db.voiceDailyLogSubmission.findUnique({ where: { requestId } });
   if (previous) {
+    if (previous.userId !== session.userId) return NextResponse.json({ error: "Request ID belongs to another session" }, { status: 409 });
     return NextResponse.json({ saved: true, duplicate: true, submissionId: previous.id, taskIds: Array.isArray(previous.createdTaskIdsJson) ? previous.createdTaskIdsJson : [] });
   }
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     intensityLevel: Math.round(finiteNumber(entry.intensityLevel, 0, 5)),
     notes: safeText(entry.notes),
   }));
-  if (!entries.length || entries.some((entry) => !subjectIds.has(entry.subjectId))) {
+  if (!entries.length || new Set(entries.map(entry => entry.subjectId)).size !== entries.length || entries.some((entry) => !subjectIds.has(entry.subjectId))) {
     return NextResponse.json({ error: "The voice log contains an unknown subject" }, { status: 400 });
   }
 
@@ -181,6 +182,21 @@ export async function POST(request: NextRequest) {
         transaction.dailyGoal.findMany({ where: { subjectId: { in: entries.map((entry) => entry.subjectId) }, date: logDate } }),
         affectedTopicIds.length ? transaction.topic.findMany({ where: { id: { in: affectedTopicIds } }, select: { id: true, questionsSolved: true, isCompleted: true, completedAt: true } }) : [],
       ]);
+      if (Array.isArray(body.expectedEntries)) {
+        for (const expected of body.expectedEntries) {
+          const existing = beforeGoals.find(goal => goal.subjectId === expected.subjectId);
+          if ((existing?.hoursStudied ?? 0) !== expected.hoursStudied || (existing?.questionsSolved ?? 0) !== expected.questionsSolved) {
+            throw new Error("Today’s log changed while you were reviewing. Reopen the voice log to use the latest saved values.");
+          }
+        }
+      }
+      for (const entry of entries) {
+        const previous = beforeGoals.find(goal => goal.subjectId === entry.subjectId);
+        const allocated = activities.filter(activity => activity.subjectId === entry.subjectId).reduce((sum, activity) => sum + activity.questionsDelta, 0);
+        if (allocated > Math.max(0, entry.questionsSolved - (previous?.questionsSolved ?? 0))) {
+          throw new Error("Chapter question increments exceed the new questions in the daily log. Please review the split.");
+        }
+      }
       const submission = await transaction.voiceDailyLogSubmission.create({
         data: {
           requestId,
@@ -253,7 +269,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ saved: true, ...result, suggestions, todoHref: "/todo", undoHref: `/api/daily-goals/voice-confirm/${result.submissionId}/undo` });
   } catch (error) {
     const duplicate = await db.voiceDailyLogSubmission.findUnique({ where: { requestId } });
-    if (duplicate) return NextResponse.json({ saved: true, duplicate: true, submissionId: duplicate.id, taskIds: duplicate.createdTaskIdsJson ?? [] });
+    if (duplicate && duplicate.userId === session.userId) return NextResponse.json({ saved: true, duplicate: true, submissionId: duplicate.id, taskIds: duplicate.createdTaskIdsJson ?? [] });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to save the reviewed voice log" }, { status: 500 });
   }
 }

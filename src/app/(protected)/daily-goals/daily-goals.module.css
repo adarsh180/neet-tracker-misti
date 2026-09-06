@@ -1,0 +1,29 @@
+/* Root scoping takes precedence over legacy styled-jsx during the component migration. */
+.journal.journal{background:var(--bg-primary)}
+.journal.journal :global(.content-wrapper){max-width:1440px;padding:32px 36px 70px;margin:auto}
+.journal.journal :global(.ambient-orb),.journal.journal :global(.ambient-grid){display:none}
+.journal.journal :global(.title){color:var(--text-primary);background:none;-webkit-text-fill-color:currentColor;font-size:clamp(32px,4vw,52px);letter-spacing:-.035em;font-weight:500}
+.journal.journal :global(.subtitle){font-size:15px;line-height:1.6;color:var(--text-secondary)}
+.journal.journal :global(.eyebrow-copy){font-size:12px;letter-spacing:.12em}
+.journal.journal :global(.hero-band){border-radius:16px;box-shadow:none;background:var(--bg-secondary);padding:22px 26px;margin:24px 0}
+.journal.journal :global(.hero-title){font-size:24px;letter-spacing:-.02em}
+.journal.journal :global(.hero-desc){font-size:14px;max-width:580px}
+.journal.journal :global(.hero-mini-row){gap:8px}
+.journal.journal :global(.hero-pulse-card){background:transparent;border:0;box-shadow:none;padding:10px 20px;border-left:1px solid var(--glass-border);min-width:220px}
+.journal.journal :global(.hero-pulse-value){font-size:36px}
+.journal.journal :global(.hero-pulse-meta){font-size:12px}
+.journal.journal :global(.metric-card){border-radius:14px;padding:18px 20px;box-shadow:none;background:var(--bg-secondary)}
+.journal.journal :global(.metric-icon-wrap){background:none;box-shadow:none;width:36px;height:36px}
+.journal.journal :global(.metric-val){font-size:28px}
+.journal.journal :global(.metric-label){font-size:13px}
+.journal.journal :global(.glass-panel){background:var(--bg-secondary);box-shadow:none;border:1px solid var(--glass-border);border-radius:18px;padding:24px}
+.journal.journal :global(.panel-header h3){font-size:21px;letter-spacing:-.02em}
+.journal.journal :global(.panel-desc){font-size:14px;line-height:1.6;color:var(--text-secondary)}
+.journal.journal :global(.main-grid){margin-top:24px;align-items:start}
+.journal.journal :global(.chart-panel){margin-top:28px}
+.journal.journal :global(.chart-container){min-width:0;height:auto;overflow:visible}
+.journal.journal :global(.metric-tab),.journal.journal :global(.range-tab){font-size:13px;min-height:40px}
+.journal.journal :global(.insight-label),.journal.journal :global(.insight-meta){font-size:12px}
+.journal.journal :global(input),.journal.journal :global(select),.journal.journal :global(textarea){font-size:16px}
+.journal.journal :global(.summary-pill-label){font-size:12px}
+@media(max-width:760px){.journal.journal :global(.content-wrapper){padding:22px 18px 50px}.journal.journal :global(.hero-band){padding:18px}.journal.journal :global(.hero-pulse-card){display:none}.journal.journal :global(.glass-panel){padding:18px}.journal.journal :global(.eyebrow-copy){display:none}.journal.journal :global(.metric-card){padding:14px}.journal.journal :global(.chart-layout){grid-template-columns:1fr}}

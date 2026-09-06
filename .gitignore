@@ -53,3 +53,10 @@ codex-working-notes.md
 /next-dev-*.log
 __pycache__/
 *.pyc
+
+# Generated from the locked pdfjs-dist package at install time
+/public/vendor/pdfjs/
+
+# Private voice assets and local visual QA never belong in the public repository
+/private-assets/
+/output/

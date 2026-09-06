@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   BarChart3,
   BrainCircuit,
-  CheckCircle2,
   CircleDot,
   FileSpreadsheet,
   History,
@@ -364,16 +363,6 @@ export default function ErrorLogTrackerPage() {
     }
   }, []);
 
-  const fetchGlobalAnalysis = useCallback(async () => {
-    const res = await fetch("/api/error-logs/analysis", { cache: "no-store" });
-    if (res.ok) setGlobalAnalysis(await res.json());
-  }, []);
-
-  const fetchSubjectTopics = useCallback(async () => {
-    const res = await fetch("/api/subjects", { cache: "no-store" });
-    if (res.ok) setSubjectTopicRecords((await res.json()) as SubjectTopicRecord[]);
-  }, []);
-
   const fetchSelected = useCallback(async (id: string) => {
     const res = await fetch(`/api/error-logs/${id}`, { cache: "no-store" });
     if (res.ok) {
@@ -390,33 +379,33 @@ export default function ErrorLogTrackerPage() {
   }, [questionDraft.id]);
 
   useEffect(() => {
-    Promise.all([fetchLogs(), fetchGlobalAnalysis(), fetchSubjectTopics()]).finally(() => setLoading(false));
-  }, [fetchLogs, fetchGlobalAnalysis, fetchSubjectTopics]);
+    const controller = new AbortController();
+    const read = async (url: string) => {
+      const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error("Some of your mistake notebook could not be loaded. Please retry.");
+      return response.json();
+    };
+    Promise.all([read("/api/error-logs"), read("/api/error-logs/analysis"), read("/api/subjects")])
+      .then(([logs, analysis, subjects]) => {
+        setLogs(logs); setSelectedId(current => current || logs[0]?.id || null);
+        setGlobalAnalysis(analysis); setSubjectTopicRecords(subjects);
+      }).catch(error => { if (!controller.signal.aborted) setError(error.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
-    if (selectedId) fetchSelected(selectedId);
-    else setSnapshot(null);
-  }, [selectedId, fetchSelected]);
-
-  const trendData = useMemo(
-    () =>
-      [...logs]
-        .sort((a, b) => new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime())
-        .map((log) => {
-          const wrong = log.questions.filter((q) => q.outcome === "WRONG").length;
-          const skipped = log.questions.filter((q) => q.attemptStatus === "SKIPPED").length;
-          const correct = log.questions.filter((q) => q.outcome === "CORRECT").length;
-          return {
-            name: log.testName,
-            date: format(new Date(log.takenAt), "d MMM"),
-            wrong,
-            skipped,
-            correct,
-            risk: wrong + skipped,
-          };
-        }),
-    [logs]
-  );
+    if (!selectedId) return;
+    const controller = new AbortController();
+    fetch(`/api/error-logs/${selectedId}`, { cache: "no-store", signal: controller.signal })
+      .then(async response => { if (!response.ok) throw new Error("Could not load this test’s mistakes."); return response.json() as Promise<Snapshot>; })
+      .then(data => {
+        setSnapshot(data);
+        setQuestionDraft(toDraftQuestion(data.questions.find(question => !question.questionSummary && question.outcome === "UNMARKED") ?? data.questions[0]));
+        setGridQuestions(data.questions.map(toDraftQuestion));
+      }).catch(error => { if (!controller.signal.aborted) setError(error.message); });
+    return () => controller.abort();
+  }, [selectedId]);
 
   const reasonChartData = useMemo(() => {
     const data = snapshot?.analytics.reasonTags.length
@@ -991,7 +980,7 @@ export default function ErrorLogTrackerPage() {
                       <XAxis type="number" dataKey="x" name="Seconds" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
                       <YAxis type="number" dataKey="y" name="Difficulty" domain={[0, 4]} tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => v === 1 ? 'EASY' : v === 2 ? 'MEDIUM' : v === 3 ? 'HARD' : ''} />
                       <ZAxis type="number" range={[40, 40]} />
-                      <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} formatter={(v: any, n: any, p: any) => [`${v}s`, `Difficulty: ${p.payload.difficulty} | Outcome: ${p.payload.outcome}`]} />
+                      <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 14, color: "var(--text-primary)" }} formatter={(value, name) => [name === "Seconds" ? `${value}s` : value, name]} />
                       <Scatter data={timeChartData}>
                         {timeChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} fillOpacity={0.8} />

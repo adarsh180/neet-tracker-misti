@@ -499,6 +499,23 @@ function pushWarning(audit: BankAssemblyAudit | undefined, warning: string) {
   audit.warnings.push(warning);
 }
 
+/** The chooser and assembler share the same runtime quality gate and deduplication. */
+export async function getServeableOfficialPapers(examYear?: number) {
+  const rows = await db.bankQuestion.findMany({
+    where: { exam:"NEET_UG", examYear:examYear ?? {not:null}, source:"NEET_PYQ", qualityStatus:"VERIFIED_STRICT", verified:true, verificationMethod:"OFFICIAL_PAPER_KEY_VERIFIED", paperCode:{not:null}, paperQuestionNumber:{not:null} },
+    orderBy:[{examYear:"desc"},{paperCode:"asc"},{paperQuestionNumber:"asc"}],
+  });
+  const papers = new Map<string,{year:number;paperCode:string;rows:BankQuestion[];numbers:Set<number>;hashes:Set<string>}>();
+  for (const row of rows) {
+    if (!row.examYear || !row.paperCode || !row.paperQuestionNumber || !isStrictlyServeableBankRow(row)) continue;
+    const key = `${row.examYear}:${row.paperCode}`;
+    const paper = papers.get(key) ?? {year:row.examYear,paperCode:row.paperCode,rows:[],numbers:new Set<number>(),hashes:new Set<string>()};
+    if (paper.numbers.has(row.paperQuestionNumber) || paper.hashes.has(row.contentHash)) continue;
+    paper.rows.push(row); paper.numbers.add(row.paperQuestionNumber); paper.hashes.add(row.contentHash); papers.set(key,paper);
+  }
+  return [...papers.values()].sort((a,b)=>b.rows.length-a.rows.length || a.paperCode.localeCompare(b.paperCode));
+}
+
 function sourceWhereForRequest(request: { mode: BankAssemblyRequest["mode"]; sourceKinds?: PracticeSourceKind[] | null }) {
   if (request.mode === "PYQ_YEAR") return "NEET_PYQ";
   const kinds = request.sourceKinds ?? [];
@@ -857,42 +874,13 @@ export async function assembleQuestionsFromBank(request: BankAssemblyRequest): P
       pushWarning(audit, "A valid PYQ exam year is required.");
       return [];
     }
-    const paperCounts = await db.bankQuestion.groupBy({
-      by: ["paperCode"],
-      where: {
-        exam: "NEET_UG",
-        examYear,
-        source: "NEET_PYQ",
-        qualityStatus: "VERIFIED_STRICT",
-        verified: true,
-        verificationMethod: "OFFICIAL_PAPER_KEY_VERIFIED",
-        paperCode: { not: null },
-        paperQuestionNumber: { not: null },
-      },
-      _count: { _all: true },
-    });
-    const paper = paperCounts
-      .filter((entry): entry is typeof entry & { paperCode: string } => Boolean(entry.paperCode))
-      .sort((a, b) => b._count._all - a._count._all || a.paperCode.localeCompare(b.paperCode))[0];
-    if (!paper || paper._count._all < request.desiredCount) {
-      pushWarning(audit, `No authenticated ${examYear} paper contains all ${request.desiredCount} required questions.`);
+    const papers = await getServeableOfficialPapers(examYear);
+    const paper = papers.map(entry => ({...entry, rows:entry.rows.filter(row=>!exclude.has(row.id))})).find(entry=>entry.rows.length>=request.desiredCount);
+    if (!paper) {
+      pushWarning(audit, `No authenticated ${examYear} paper contains all ${request.desiredCount} serveable questions.`);
       return [];
     }
-    const rows = await db.bankQuestion.findMany({
-      where: {
-        exam: "NEET_UG",
-        examYear,
-        paperCode: paper.paperCode,
-        source: "NEET_PYQ",
-        qualityStatus: "VERIFIED_STRICT",
-        verified: true,
-        verificationMethod: "OFFICIAL_PAPER_KEY_VERIFIED",
-        id: exclude.size ? { notIn: [...exclude] } : undefined,
-      },
-      orderBy: { paperQuestionNumber: "asc" },
-      take: request.desiredCount,
-    });
-    const serveable = rows.filter(isStrictlyServeableBankRow);
+    const serveable = paper.rows.slice(0,request.desiredCount);
     audit?.quotas.push({ subject: `Official paper ${paper.paperCode}`, requested: request.desiredCount, selected: serveable.length });
     if (audit) audit.selected = serveable.length;
     if (serveable.length) {

@@ -30,6 +30,7 @@ export const config = {
     "/planner/:path*",
     "/practice/:path*",
     "/pyq/:path*",
+    "/reader/:path*",
     "/reviews/:path*",
     "/subjects/:path*",
     "/tests/:path*",

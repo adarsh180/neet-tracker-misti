@@ -31,6 +31,7 @@ export type MicrophonePermissionResult = {
 };
 
 let activePromptAudio: HTMLAudioElement | null = null;
+let activePromptCleanup: (() => void) | null = null;
 let activeAudioMeterCleanup: (() => void) | null = null;
 const privateVoiceUrls = new Map<PrivateVoiceClipId, string>();
 const privateVoiceLoads = new Map<PrivateVoiceClipId, Promise<string | null>>();
@@ -237,7 +238,9 @@ export function listenOnce(options: {
   recognition.interimResults = true;
   recognition.maxAlternatives = 3;
   let delivered = false;
+  let cancelled = false;
   recognition.onresult = (event) => {
+    if (cancelled || delivered) return;
     let interim = "";
     for (let index = event.resultIndex; index < event.results.length; index += 1) {
       const result = event.results[index];
@@ -255,6 +258,7 @@ export function listenOnce(options: {
     if (interim) options.onInterim?.(interim);
   };
   recognition.onerror = (event) => {
+    if (cancelled || event.error === "aborted") return;
     const friendly = event.error === "not-allowed"
       ? "Microphone permission was blocked. Allow microphone access or use the text box."
       : event.error === "no-speech"
@@ -267,11 +271,13 @@ export function listenOnce(options: {
     options.onError(friendly);
   };
   recognition.onend = () => {
+    if (cancelled) return;
     if (!delivered) options.onInterim?.("");
     options.onEnd?.();
   };
-  recognition.start();
-  return recognition;
+  try { recognition.start(); }
+  catch { options.onError("Speech recognition could not start. Please retry."); options.onEnd?.(); return null; }
+  return { abort() { cancelled = true; recognition.abort(); } };
 }
 
 export function listenForWakePhrase(options: {
@@ -407,8 +413,10 @@ export function getPreferredVoice(preferredName?: string | null, locale = "en-IN
     ?? null;
 }
 
-export function speakPrompt(_text: string, options?: { preferredVoice?: string | null; locale?: string; enabled?: boolean; clipId?: PrivateVoiceClipId | null; onLevel?: AudioLevelCallback; onEnded?: () => void }) {
+export function speakPrompt(_text: string, options?: { preferredVoice?: string | null; locale?: string; enabled?: boolean; clipId?: PrivateVoiceClipId | null; onLevel?: AudioLevelCallback; onEnded?: () => void; onError?: (message: string) => void }) {
   if (typeof window === "undefined" || options?.enabled === false) return null;
+  activePromptCleanup?.();
+  activePromptCleanup = null;
   activeAudioMeterCleanup?.();
   activeAudioMeterCleanup = null;
   activePromptAudio?.pause();
@@ -419,18 +427,27 @@ export function speakPrompt(_text: string, options?: { preferredVoice?: string |
     audio.preload = "auto";
     audio.playbackRate = 1;
     activePromptAudio = audio;
-    audio.addEventListener("ended", () => {
-      if (activePromptAudio === audio) activePromptAudio = null;
+    let settled = false;
+    const finish = (failed = false) => {
+      if (settled || activePromptAudio !== audio) return;
+      settled = true;
+      activePromptCleanup?.();
+      activePromptCleanup = null;
+      activePromptAudio = null;
+      audio.pause();
       activeAudioMeterCleanup?.();
       activeAudioMeterCleanup = null;
+      options.onLevel?.(0);
+      if (failed) options.onError?.("Your private voice clip could not play. The response is available on screen; no other voice was substituted.");
       options?.onEnded?.();
-    }, { once: true });
-    void audio.play().catch(() => {
-      if (activePromptAudio === audio) activePromptAudio = null;
-      activeAudioMeterCleanup?.();
-      activeAudioMeterCleanup = null;
-      options.onEnded?.();
-    });
+    };
+    const onEnded = () => finish();
+    const onError = () => finish(true);
+    const watchdog = window.setTimeout(onError, 30000);
+    audio.addEventListener("ended", onEnded, { once: true });
+    audio.addEventListener("error", onError, { once: true });
+    activePromptCleanup = () => { window.clearTimeout(watchdog); audio.removeEventListener("ended", onEnded); audio.removeEventListener("error", onError); };
+    void audio.play().catch(onError);
     if (options?.onLevel) {
       try {
         const AudioContextConstructor = window.AudioContext
@@ -459,6 +476,8 @@ export function speakPrompt(_text: string, options?: { preferredVoice?: string |
 }
 
 export function stopSpeaking() {
+  activePromptCleanup?.();
+  activePromptCleanup = null;
   activeAudioMeterCleanup?.();
   activeAudioMeterCleanup = null;
   activePromptAudio?.pause();

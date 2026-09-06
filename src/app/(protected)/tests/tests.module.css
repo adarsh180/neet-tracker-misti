@@ -1,0 +1,22 @@
+/* Root scoping takes precedence over legacy styled-jsx during the component migration. */
+.journal.journal:global(.tests-page){background:var(--bg-void);color:var(--text-primary);min-height:calc(100dvh - 160px)}
+.journal.journal :global(.tests-shell){max-width:1440px;margin:0 auto;padding:36px 40px 48px}
+.journal.journal :global(.tests-header){align-items:flex-end;margin-bottom:30px;gap:24px}
+.journal.journal :global(.tests-badge){padding:0;border:0;background:none;box-shadow:none;font-size:11px;letter-spacing:.14em;color:var(--gold)}
+.journal.journal :global(.tests-title){font-family:var(--font-display),Georgia,serif;font-size:clamp(32px,3.4vw,48px);letter-spacing:-1.1px;font-weight:500;background:none;color:var(--text-primary);-webkit-text-fill-color:currentColor;margin:12px 0}
+.journal.journal :global(.tests-subtitle){font-size:15px;color:var(--text-secondary);line-height:1.65}
+.journal.journal :global(.tests-stat-card),.journal.journal :global(.tests-chart-card),.journal.journal :global(.tests-form-card){background:var(--bg-surface);border:1px solid var(--glass-border);box-shadow:none;border-radius:18px;padding:24px}
+.journal.journal :global(.tests-stat-card::before),.journal.journal :global(.tests-chart-card::before),.journal.journal :global(.tests-form-card::before){display:none}
+.journal.journal :global(.tests-stat-value){font-size:34px;font-weight:600;letter-spacing:-1px}
+.journal.journal :global(.stat-label),.journal.journal :global(.stat-sub),.journal.journal :global(.tests-section-subtitle){font-size:12px;line-height:1.6;color:var(--text-secondary)}
+.journal.journal :global(.tests-stat-icon){box-shadow:none;border-radius:11px}
+.journal.journal :global(.tests-section-title){font-size:19px;font-weight:600;letter-spacing:-.3px}
+.journal.journal :global(.test-form-lbl){font-size:12px;color:var(--text-secondary)}
+.journal.journal :global(.input){min-height:44px;font-size:16px;background:var(--bg-base);color:var(--text-primary);border-color:var(--glass-border);border-radius:10px}
+.journal.journal :global(.tests-mini-stat){display:none}
+.journal.journal :global(.tests-charts-grid){gap:20px}
+.missingScores{min-height:270px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:24px;gap:12px;color:var(--gold)}
+.missingScores h3{font:500 25px var(--font-display),Georgia,serif;color:var(--text-primary);margin:0}
+.missingScores p{font-size:14px;line-height:1.7;color:var(--text-secondary);margin:0 0 8px;max-width:390px}
+@media(max-width:900px){.journal.journal :global(.tests-shell){padding:28px 24px}.journal.journal :global(.tests-header){align-items:flex-start;flex-direction:column}.journal.journal :global(.tests-header-actions){justify-content:flex-start}.journal.journal :global(.tests-stats-grid){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.journal.journal :global(.tests-shell){padding:24px 16px}.journal.journal :global(.tests-stat-card),.journal.journal :global(.tests-chart-card),.journal.journal :global(.tests-form-card){padding:18px}.journal.journal :global(.tests-stats-grid){gap:10px}.journal.journal :global(.tests-stat-value){font-size:29px}.journal.journal :global(.tests-header-actions){width:100%;flex-wrap:wrap}.journal.journal :global(.tests-form-grid){grid-template-columns:1fr}}

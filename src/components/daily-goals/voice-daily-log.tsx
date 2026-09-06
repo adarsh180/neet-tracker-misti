@@ -138,6 +138,7 @@ export default function VoiceDailyLog({
   const recognitionRef = useRef<{ abort(): void } | null>(null);
   const startListeningRef = useRef<() => void>(() => {});
   const autoOpenedRef = useRef(false);
+  const submissionRequestRef = useRef<string | null>(null);
   const [preference, setPreference] = useState<Preference>(DEFAULT_PREFERENCE);
   const [preferenceReady, setPreferenceReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -219,6 +220,7 @@ export default function VoiceDailyLog({
   }, [wizardOpen]);
 
   const resetDraft = useCallback(() => {
+    submissionRequestRef.current = null;
     setDraft(Object.fromEntries(subjects.map((subject) => {
       const initial = initialValues[subject.id];
       return [subject.id, createSubjectDraft(initial)];
@@ -274,18 +276,62 @@ export default function VoiceDailyLog({
     setStepIndex((current) => Math.min(current + amount, steps.length - 1));
   }, [steps.length]);
 
+  const editReviewedSubject = (subjectId: string, field: "hours" | "questions" | "intensity", amount: number) => {
+    if (saving || submissionRequestRef.current) return;
+    setDraft(current => {
+      const value = current[subjectId] ?? createSubjectDraft();
+      const next = { ...value, [field]: amount };
+      if (field === "hours") next.hoursDelta = Math.max(0, amount - (Number(initialValues[subjectId]?.hours) || 0));
+      if (field === "questions") {
+        next.questionsDelta = Math.max(0, amount - (Number(initialValues[subjectId]?.questions) || 0));
+        if (next.allocations.length === 1) next.allocations = [{ ...next.allocations[0], questionsDelta: next.questionsDelta }];
+      }
+      next.active = next.hoursDelta > 0 || next.questionsDelta > 0 || next.allocations.length > 0;
+      return { ...current, [subjectId]: next };
+    });
+  };
+
+  const editReviewedAllocation = (subjectId: string, allocationIndex: number, amount: number) => {
+    if (saving || submissionRequestRef.current) return;
+    setDraft(current => {
+      const value = current[subjectId];
+      if (!value) return current;
+      const allocations = value.allocations.map((allocation, index) => index === allocationIndex ? { ...allocation, questionsDelta: amount } : allocation);
+      const questionsDelta = allocations.reduce((sum, allocation) => sum + allocation.questionsDelta, 0);
+      return { ...current, [subjectId]: { ...value, allocations, questionsDelta, questions: (Number(initialValues[subjectId]?.questions) || 0) + questionsDelta } };
+    });
+  };
+
   const saveReviewedLog = useCallback(async () => {
     if (saving) return;
     setSaving(true);
     setError("");
     try {
-      const requestId = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      for (const subject of subjects) {
+        const value = draft[subject.id] ?? createSubjectDraft();
+        if (!Number.isFinite(value.hours) || value.hours < 0 || value.hours > 24 ||
+            !Number.isInteger(value.questions) || value.questions < 0 || value.questions > 5000 ||
+            !Number.isInteger(value.intensity) || value.intensity < 0 || value.intensity > 5) throw new Error(`Please check the hours, question count and intensity for ${subject.name}.`);
+        if (value.allocations.length) {
+          const allocated = value.allocations.reduce((sum, allocation) => sum + allocation.questionsDelta, 0);
+          if (value.allocations.some(allocation => !Number.isInteger(allocation.questionsDelta) || allocation.questionsDelta < 0) ||
+              allocated !== value.questions - (Number(initialValues[subject.id]?.questions) || 0))
+            throw new Error(`Please adjust the chapter question counts for ${subject.name} to match today’s reviewed total.`);
+          if (value.hours < (Number(initialValues[subject.id]?.hours) || 0)) throw new Error("Use the manual form to correct previously saved hours. Voice study updates add new activity.");
+        }
+      }
+      const requestId = submissionRequestRef.current ??= crypto.randomUUID();
       const response = await fetch("/api/daily-goals/voice-confirm", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           requestId,
           date: selectedDate,
+          expectedEntries: subjects.map(subject => ({
+            subjectId: subject.id,
+            hoursStudied: Number(initialValues[subject.id]?.hours) || 0,
+            questionsSolved: Number(initialValues[subject.id]?.questions) || 0,
+          })),
           disciplineScore: discipline,
           completionPercent: completion,
           entries: subjects.map((subject) => {
@@ -307,7 +353,7 @@ export default function VoiceDailyLog({
               chapter: allocation.chapter,
               kind: value.kind,
               coverage: value.coverage,
-              hoursStudied: index === 0 ? value.hoursDelta : 0,
+              hoursStudied: value.allocations.length === 1 && index === 0 ? value.hoursDelta : 0,
               questionsDelta: allocation.questionsDelta,
               intensityLevel: value.intensity,
               notes: value.studyText,
@@ -320,6 +366,7 @@ export default function VoiceDailyLog({
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Unable to save the reviewed voice log");
+      if (response.status === 202 || payload.offlineQueued) throw new Error("Your review is queued on this device, but is not saved to the database yet. Reconnect, then retry this same review.");
       setLastSubmissionId(typeof payload.submissionId === "string" ? payload.submissionId : null);
       setSuggestions(Array.isArray(payload.suggestions) ? payload.suggestions : []);
       setSaved(true);
@@ -330,7 +377,7 @@ export default function VoiceDailyLog({
     } finally {
       setSaving(false);
     }
-  }, [completion, discipline, draft, onSaved, preference, saving, selectedDate, subjects, todos]);
+  }, [completion, discipline, draft, initialValues, onSaved, preference, saving, selectedDate, subjects, todos]);
 
   const addSuggestionToTodo = useCallback(async (suggestion: StudySuggestion) => {
     if (addingSuggestion || addedSuggestions.includes(suggestion.id)) return;
@@ -391,27 +438,34 @@ export default function VoiceDailyLog({
       return;
     }
     if (step.kind === "studySummary") {
-      if (isSkipUtterance(answer)) {
+      const skippingDetail = Boolean(pendingStudyAnswers[step.subject.id]) && isSkipUtterance(answer);
+      if (isSkipUtterance(answer) && !skippingDetail) {
         setDraft((current) => ({ ...current, [step.subject.id]: { ...(current[step.subject.id] ?? createSubjectDraft()), active: false } }));
         advance();
         return;
       }
-      const accumulated = [pendingStudyAnswers[step.subject.id], answer].filter(Boolean).join(". ");
+      const accumulated = [pendingStudyAnswers[step.subject.id], skippingDetail ? "" : answer].filter(Boolean).join(". ");
       const summary = parseCompactStudyAnswer(accumulated);
       const allocationResult = resolveStudyAllocations(accumulated, topicDirectory[step.subject.id] ?? []);
-      if (allocationResult.needsChapter) {
+      if (allocationResult.needsChapter && !skippingDetail) {
         setPendingStudyAnswers((current) => ({ ...current, [step.subject.id]: accumulated }));
         setFollowUpPrompt(`I recorded ${allocationResult.totalQuestions ?? summary.questions ?? 0} ${step.subject.name} questions. Which chapter or topic were they from? You can name one, or split them across several, for example “20 from Morphology and 25 from Anatomy.”`);
         setError("");
         return;
       }
-      if (allocationResult.needsAllocation) {
+      if (allocationResult.needsAllocation && !skippingDetail) {
         setPendingStudyAnswers((current) => ({ ...current, [step.subject.id]: accumulated }));
         setFollowUpPrompt(`I found ${allocationResult.matches.map((match) => match.topicName ?? match.chapter).join(" and ")}. Tell me how many questions belong to each one.`);
         setError("");
         return;
       }
-      const allocations = allocationResult.matches.map((match) => {
+      const missingDetails = [summary.hours === null ? "hours studied" : null, summary.questions === null && allocationResult.totalQuestions === null ? "questions solved" : null, summary.intensity === null ? "intensity from 1 to 5" : null].filter(Boolean);
+      if (!skippingDetail && missingDetails.length) {
+        setPendingStudyAnswers(current => ({...current,[step.subject.id]:accumulated}));
+        setFollowUpPrompt(`I have the rest, ${preference.nickname}. What were your ${missingDetails.join(", ")}? You can answer together, or say skip for these remaining details.`);
+        return;
+      }
+      const allocations = (allocationResult.needsAllocation ? [] : allocationResult.matches).map((match) => {
         const matchedTopic = match.topicId ? (topicDirectory[step.subject.id] ?? []).find((topic) => topic.id === match.topicId) : null;
         return {
           topicId: match.topicId,
@@ -425,7 +479,7 @@ export default function VoiceDailyLog({
       const allocatedQuestions = allocations.reduce((sum, allocation) => sum + allocation.questionsDelta, 0);
       const questionsDelta = allocations.length > 1 ? allocatedQuestions : allocationResult.totalQuestions ?? allocatedQuestions;
       const hoursDelta = summary.hours ?? 0;
-      if (!allocations.length && questionsDelta > 0) {
+      if (!allocations.length && questionsDelta > 0 && !skippingDetail) {
         setPendingStudyAnswers((current) => ({ ...current, [step.subject.id]: accumulated }));
         setFollowUpPrompt(`Which ${step.subject.name} chapter or topic should receive these ${questionsDelta} questions?`);
         return;
@@ -475,7 +529,7 @@ export default function VoiceDailyLog({
       setTodos(parseTomorrowTasks(answer, subjects));
       advance();
     }
-  }, [advance, initialValues, pendingStudyAnswers, saveReviewedLog, step, subjects, topicDirectory]);
+  }, [advance, initialValues, pendingStudyAnswers, preference.nickname, saveReviewedLog, step, subjects, topicDirectory]);
 
   const enableMicrophone = useCallback(async () => {
     setPermissionBusy(true);
@@ -571,7 +625,7 @@ export default function VoiceDailyLog({
       <div className="wizard-body">
         {saved ? <div className="save-success"><CheckCircle2 /><h2>Everything is safely recorded.</h2><p>Your daily totals, confirmed chapter progress and revisions are saved together. {todos.length ? `${todos.length} approved task${todos.length === 1 ? "" : "s"} ${todos.length === 1 ? "is" : "are"} now in Todo for tomorrow.` : "No Todo tasks were requested."}</p>{suggestions.length > 0 && <section className="post-log-suggestions" aria-label="Bubu's next-step suggestions"><span><Sparkles size={14} /> Before you go</span><h3>I found {suggestions.length === 1 ? "one useful next step" : "two useful next steps"} from today&apos;s confirmed log.</h3>{suggestions.map((suggestion) => <article key={suggestion.id}><div><strong>{suggestion.title}</strong><small>{suggestion.reason}</small></div><button onClick={() => void addSuggestionToTodo(suggestion)} disabled={addingSuggestion === suggestion.id || addedSuggestions.includes(suggestion.id)}>{addedSuggestions.includes(suggestion.id) ? <><Check size={14} /> Added</> : addingSuggestion === suggestion.id ? <Loader2 className="spin" /> : <><ListTodo size={14} /> Add to Todo</>}</button></article>)}</section>}{error && <p className="voice-error" role="alert">{error}</p>}<div><a href="/todo"><ListTodo size={16} /> Open Todo deck</a>{lastSubmissionId && <button onClick={() => void undoLastSave()} disabled={saving}><RotateCcw size={15} /> Undo update</button>}<button onClick={() => setWizardOpen(false)}>Done</button></div></div> : step.kind === "review" ? <div className="review-stage">
           <div className="prompt-bubble"><Sparkles /><div><span>Final check</span><h2>{prompt}</h2></div></div>
-          <div className="review-subjects">{subjects.map((subject) => { const value = draft[subject.id] ?? createSubjectDraft(); return <div key={subject.id} className={value.active ? "active-study" : "skipped-study"} style={{ "--subject": subject.color } as React.CSSProperties}><div className="review-subject-head"><strong>{subject.emoji} {subject.name}</strong>{value.active ? <><span>{value.allocations.length ? value.allocations.map((allocation) => allocation.topicName ?? allocation.chapter).join(" · ") : "Subject totals only"}</span><small>{value.kind.replaceAll("_", " ").toLowerCase()} · {value.coverage.toLowerCase()}</small>{value.allocations.map((allocation) => <small key={`${allocation.topicId}-${allocation.chapter}`}>{allocation.topicName ?? allocation.chapter}: +{allocation.questionsDelta} questions{allocation.topicId ? ` (${allocation.previousTopicQuestions} → ${allocation.previousTopicQuestions + allocation.questionsDelta})` : ""}</small>)}{value.completionConfirmed && <em><Check size={11} /> Confirmed completion will be marked</em>}{value.weakConcepts && <small>Watch: {value.weakConcepts}</small>}</> : <small>No new activity — existing daily values stay unchanged</small>}</div><label>Today hours<input type="number" step="0.25" min="0" max="24" value={value.hours} onChange={(event) => setDraft((current) => ({ ...current, [subject.id]: { ...value, hours: Number(event.target.value) } }))} /></label><label>Today questions<input type="number" min="0" value={value.questions} onChange={(event) => setDraft((current) => ({ ...current, [subject.id]: { ...value, questions: Number(event.target.value) } }))} /></label><label>Intensity<input type="number" min="0" max="5" value={value.intensity} onChange={(event) => setDraft((current) => ({ ...current, [subject.id]: { ...value, intensity: Number(event.target.value) } }))} /></label></div>; })}</div>
+          <div className="review-subjects">{subjects.map((subject) => { const value = draft[subject.id] ?? createSubjectDraft(); return <div key={subject.id} className={value.active ? "active-study" : "skipped-study"} style={{ "--subject": subject.color } as React.CSSProperties}><div className="review-subject-head"><strong>{subject.emoji} {subject.name}</strong>{value.active ? <><span>{value.allocations.length ? value.allocations.map((allocation) => allocation.topicName ?? allocation.chapter).join(" · ") : "Subject totals only"}</span><small>{value.kind.replaceAll("_", " ").toLowerCase()} · {value.coverage.toLowerCase()}</small>{value.allocations.map((allocation, allocationIndex) => <small key={`${allocation.topicId}-${allocation.chapter}`}>{allocation.topicName ?? allocation.chapter}: <input aria-label={`New questions for ${allocation.topicName ?? allocation.chapter}`} type="number" min="0" max="5000" value={allocation.questionsDelta} disabled={saving || Boolean(submissionRequestRef.current)} onChange={event => editReviewedAllocation(subject.id, allocationIndex, Number(event.target.value))}/> questions{allocation.topicId ? ` (${allocation.previousTopicQuestions} → ${allocation.previousTopicQuestions + allocation.questionsDelta})` : ""}</small>)}{value.completionConfirmed && <em><Check size={11} /> Confirmed completion will be marked</em>}{value.weakConcepts && <small>Watch: {value.weakConcepts}</small>}</> : <small>No new activity — existing daily values stay unchanged</small>}</div><label>Today hours<input type="number" step="0.25" min="0" max="24" value={value.hours} disabled={saving || Boolean(submissionRequestRef.current)} onChange={(event) => editReviewedSubject(subject.id, "hours", Number(event.target.value))} /></label><label>Today questions<input type="number" min="0" value={value.questions} disabled={saving || Boolean(submissionRequestRef.current)} onChange={(event) => editReviewedSubject(subject.id, "questions", Number(event.target.value))} /></label><label>Intensity<input type="number" min="0" max="5" value={value.intensity} disabled={saving || Boolean(submissionRequestRef.current)} onChange={(event) => editReviewedSubject(subject.id, "intensity", Number(event.target.value))} /></label></div>; })}</div>
           <div className="review-meta"><label>Discipline / 100<input type="number" min="0" max="100" value={discipline} onChange={(event) => setDiscipline(Number(event.target.value))} /></label><label>Completion %<input type="number" min="0" max="100" value={completion} onChange={(event) => setCompletion(Number(event.target.value))} /></label></div>
           <div className="todo-review"><div><span><ListTodo size={15} /> Tomorrow · Todo deck</span><small>{tomorrowText || "No spoken plan"}</small></div>{todos.length ? todos.map((todo, index) => <div className="todo-draft" key={`${todo.subjectId}-${index}`}><input value={todo.title} onChange={(event) => setTodos((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, title: event.target.value } : entry))} /><label><input type="number" min="5" value={todo.plannedMinutes ?? ""} placeholder="min" onChange={(event) => setTodos((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, plannedMinutes: Number(event.target.value) || null } : entry))} /> min</label><button onClick={() => setTodos((current) => current.filter((_, entryIndex) => entryIndex !== index))} aria-label="Remove Todo task"><Trash2 /></button></div>) : <p>No Todo tasks will be created. That is completely fine.</p>}</div>
           {error && <p className="voice-error" role="alert">{error}</p>}

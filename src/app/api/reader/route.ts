@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { getPrivateSession } from "@/lib/server-auth";
+import { reviewedReaderLink } from "@/lib/reader-quality";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
       title: true,
       edition: true,
       pageCount: true,
-      _count: { select: { passages: true } },
+      _count: { select: { passages: { where: { reviewStatus: "VERIFIED", questionLinks: { some: reviewedReaderLink } } } } },
       readerProgress: { where: { userId: session.userId }, take: 1, select: { currentPage: true } },
     },
     orderBy: [{ classLevel: "asc" }, { subject: "asc" }, { chapter: "asc" }],
@@ -51,9 +52,10 @@ export async function PATCH(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   const documentId = typeof body.documentId === "string" ? body.documentId : "";
-  const currentPage = Math.max(1, Math.round(Number(body.currentPage) || 1));
+  const currentPage = body.currentPage;
+  if (!Number.isInteger(currentPage) || currentPage < 1 || currentPage > 5000) return NextResponse.json({ error: "A valid page number is required" }, { status: 400 });
   if (!documentId) return NextResponse.json({ error: "documentId is required" }, { status: 400 });
-  const document = await db.ncertDocument.findUnique({ where: { id: documentId }, select: { id: true, pageCount: true } });
+  const document = await db.ncertDocument.findFirst({ where: { id: documentId, reviewStatus: "VERIFIED_SOURCE" }, select: { id: true, pageCount: true } });
   if (!document) return NextResponse.json({ error: "Document not found" }, { status: 404 });
   const page = Math.min(document.pageCount ?? currentPage, currentPage);
   const progress = await db.ncertReaderProgress.upsert({

@@ -17,7 +17,6 @@ const NAV_MAIN = [
   { href: "/daily-goals", icon: Target,           label: "Daily Goals" },
   { href: "/tests",       icon: BarChart2,        label: "Tests" },
   { href: "/practice",    icon: Swords,           label: "Practice Arena" },
-  { href: "/visual-lab",  icon: Atom,             label: "Visual Lab" },
   { href: "/ai-insights", icon: Sparkles,         label: "AI Insights" },
   { href: "/reviews",     icon: ClipboardCheck,   label: "Review Cards" },
   { href: "/mood",        icon: SmilePlus,        label: "Mood Tracker" },

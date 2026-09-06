@@ -33,6 +33,9 @@ import {
   ScrollText,
 } from "lucide-react";
 import SmoothLink from "@/components/layout/smooth-link";
+import SubjectMark from "@/components/studio/subject-mark";
+import MetricNote from "@/components/studio/metric-note";
+import styles from "./subject.module.css";
 
 interface Revision {
   id: string;
@@ -119,13 +122,6 @@ const SUBJECT_META: Record<string, { gradient: string; dimBg: string; glow: stri
   },
 };
 
-function getEmoji(pct: number) {
-  if (pct >= 90) return "🏆";
-  if (pct >= 70) return "🔥";
-  if (pct >= 50) return "⭐";
-  if (pct >= 30) return "📈";
-  return "🌱";
-}
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
@@ -133,7 +129,7 @@ function clamp(n: number, min: number, max: number) {
 
 function buildTrendBars(values: number[]) {
   const max = Math.max(...values, 1);
-  return values.map((v) => clamp((v / max) * 100, 6, 100));
+  return values.map((v) => clamp((v / max) * 100, 0, 100));
 }
 
 function prettyDate(iso: string) {
@@ -269,6 +265,7 @@ export default function SubjectPage() {
 
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saveError, setSaveError] = useState("");
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
   const [showAddTopic, setShowAddTopic] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -289,15 +286,15 @@ export default function SubjectPage() {
   const topicInputRef = useRef<HTMLInputElement>(null);
   const reorderSaveTimeoutRef = useRef<number | null>(null);
 
-  const fetchSubject = useCallback(async () => {
-    setLoading(true);
+  const fetchSubject = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch("/api/subjects");
       if (res.ok) {
         const all: Subject[] = await res.json();
         const found = all.find((s) => s.slug === slug);
         setSubject(found || null);
-        if (found) {
+        if (found && !silent) {
           const searchParams = new URLSearchParams(window.location.search);
           const requestedChapter = searchParams.get("chapter")?.trim();
           const requestedTopic = searchParams.get("topic")?.trim();
@@ -307,7 +304,9 @@ export default function SubjectPage() {
           setExpandedChapters(new Set(chs));
           if (requestedTopic) setSearchQuery(requestedTopic);
         }
-      }
+      } else throw new Error("Your subject could not be loaded. Please retry.");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not load subject");
     } finally {
       setLoading(false);
     }
@@ -325,103 +324,45 @@ export default function SubjectPage() {
     };
   }, []);
 
+  const mutateTopic = async (body: Record<string, unknown>) => {
+    setSaveError("");
+    try {
+      const response = await fetch("/api/topics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || response.status === 202) throw new Error(result.error ?? "The change is not saved yet. Check your connection and retry.");
+      await fetchSubject(true);
+      return true;
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Nothing was changed. Please retry.");
+      return false;
+    }
+  };
+
   const toggleTopic = async (topicId: string) => {
-    setToggling((prev) => new Set([...prev, topicId]));
-    setSubject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        topics: prev.topics.map((t) =>
-          t.id === topicId
-            ? { ...t, isCompleted: !t.isCompleted, completedAt: !t.isCompleted ? new Date().toISOString() : null }
-            : t
-        ),
-      };
-    });
-
-    await fetch("/api/topics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "toggle_complete", topicId }),
-    });
-
-    setToggling((prev) => {
-      const next = new Set(prev);
-      next.delete(topicId);
-      return next;
-    });
-
-    fetchSubject();
+    if (toggling.has(topicId)) return;
+    setToggling(prev => new Set([...prev, topicId]));
+    try { await mutateTopic({ action: "toggle_complete", topicId }); }
+    finally { setToggling(prev => { const next = new Set(prev); next.delete(topicId); return next; }); }
   };
-
   const addRevision = async (topicId: string) => {
-    await fetch("/api/topics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "add_revision", topicId }),
-    });
-
-    setSubject((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        topics: prev.topics.map((t) =>
-          t.id === topicId
-            ? { ...t, revisions: [...t.revisions, { id: Date.now().toString(), revisedAt: new Date().toISOString(), note: null }] }
-            : t
-        ),
-      };
-    });
+    await mutateTopic({ action: "add_revision", topicId });
   };
-
   const deleteTopic = async (topicId: string) => {
-    if (!confirm("Delete this topic permanently?")) return;
-    setSubject((prev) => {
-      if (!prev) return prev;
-      return { ...prev, topics: prev.topics.filter((t) => t.id !== topicId) };
-    });
-
-    await fetch("/api/topics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete_topic", topicId }),
-    });
+    if (confirm("Delete this topic and its tracking history? This cannot be undone.")) await mutateTopic({ action: "delete_topic", topicId });
   };
-
   const addTopic = async () => {
-    if (!newTopicName.trim() || !subject) return;
+    if (!newTopicName.trim() || !subject || saving) return;
     setSaving(true);
-    await fetch("/api/topics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "add_topic",
-        subjectId: subject.id,
-        name: newTopicName.trim(),
-        chapter: newTopicChapter.trim() || null,
-        classLevel: newTopicClass,
-      }),
-    });
-    setNewTopicName("");
-    setNewTopicChapter("");
-    setShowAddTopic(false);
-    setSaving(false);
-    fetchSubject();
+    try {
+      if (await mutateTopic({ action: "add_topic", subjectId: subject.id, name: newTopicName.trim(), chapter: newTopicChapter.trim() || null, classLevel: newTopicClass })) {
+        setNewTopicName(""); setNewTopicChapter(""); setShowAddTopic(false);
+      }
+    } finally { setSaving(false); }
   };
-
   const saveQuestions = async (topicId: string, count: string) => {
-    const n = parseInt(count) || 0;
-    setSubject((prev) => {
-      if (!prev) return prev;
-      return { ...prev, topics: prev.topics.map((t) => (t.id === topicId ? { ...t, questionsSolved: n } : t)) };
-    });
-    setEditingQs(null);
-
-    await fetch("/api/topics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "update_questions", topicId, count: n }),
-    });
+    const n = Number(count);
+    if (!Number.isInteger(n) || n < 0) { setSaveError("Enter a whole, non-negative question count."); return; }
+    if (await mutateTopic({ action: "update_questions", topicId, count: n })) setEditingQs(null);
   };
 
   const meta = SUBJECT_META[slug] || SUBJECT_META.botany;
@@ -621,63 +562,15 @@ export default function SubjectPage() {
   const revisionTrend = buildTrendBars(topRevisions.map((chapterEntry) => chapterEntry.revs));
 
   if (loading) {
-    return (
-      <div className="subject-page animate-fade-in">
-        <div className="page-bg">
-          <div className="page-orb page-orb-1" />
-          <div className="page-orb page-orb-2" />
-          <div className="page-grid" />
-        </div>
-        <div className="content-shell">
-          <div className="skeleton hero-skeleton" />
-          <div className="skeleton stat-skeleton" />
-          <div className="skeleton stat-skeleton" />
-          <div className="skeleton stat-skeleton" />
-          <div className="skeleton stat-skeleton" />
-          <div className="skeleton block-skeleton" />
-          <div className="skeleton block-skeleton" />
-          <div className="skeleton block-skeleton" />
-        </div>
-      </div>
-    );
+    return <main className="studio-page" aria-busy="true"><div className="studio-panel" style={{padding:40}}>Loading your chapter workspace…</div></main>;
   }
-
   if (!subject) {
-    return (
-      <div className="subject-page animate-fade-in">
-        <div className="page-bg">
-          <div className="page-orb page-orb-1" />
-          <div className="page-orb page-orb-2" />
-          <div className="page-grid" />
-        </div>
-        <div className="content-shell">
-          <div className="glass-card empty-state">
-            <div className="empty-icon">
-              <BookOpen size={30} />
-            </div>
-            <h2>Subject not found</h2>
-            <p>Ensure the database is seeded and try again.</p>
-            <SmoothLink href="/dashboard" className="btn btn-primary btn-sm" direction="back">
-              <ArrowLeft size={14} /> Back to Dashboard
-            </SmoothLink>
-          </div>
-        </div>
-      </div>
-    );
+    return <main className="studio-page"><div className="studio-error" role="alert">{saveError || "This subject could not be found."}<button className="studio-action" onClick={() => void fetchSubject()}>Retry</button></div><SmoothLink href="/dashboard">Back to dashboard</SmoothLink></main>;
   }
-
   return (
-    <div className="subject-page animate-fade-in">
-      <div className="page-bg">
-        <div className="page-orb page-orb-1" />
-        <div className="page-orb page-orb-2" />
-        <div className="page-orb page-orb-3" />
-        <div className="page-grid" />
-        <div className="page-noise" />
-        <div className="page-vignette" />
-      </div>
-
-      <main className="content-shell">
+      <div className={`subject-page ${styles.workbench}`}>
+        <main className="content-shell">
+        {saveError && <div className="studio-error" role="alert">{saveError}<button className="studio-action" onClick={() => void fetchSubject(true)}>Refresh</button></div>}
         <SmoothLink href="/dashboard" className="back-link" direction="back">
           <ArrowLeft size={14} /> Dashboard
         </SmoothLink>
@@ -699,7 +592,7 @@ export default function SubjectPage() {
             </div>
             <div className="hero-title-row">
               <div className="hero-icon" style={{ background: meta.gradient, boxShadow: `0 0 32px ${meta.glow}` }}>
-                <span className="hero-emoji">{subject.emoji}</span>
+                <SubjectMark subject={slug} size={30}/>
               </div>
               <div>
                 <h1 className="hero-title">{subject.name}</h1>
@@ -713,7 +606,7 @@ export default function SubjectPage() {
           <div className="hero-right">
             <div className="hero-score-card">
               <div className="hero-score">{pct}<span>%</span></div>
-              <div className="hero-score-emoji">{getEmoji(pct)}</div>
+              <span className={styles.coverageLabel}>coverage</span>
             </div>
 
             <div className="hero-mini-stats">
@@ -750,119 +643,6 @@ export default function SubjectPage() {
               <div className="stat-unit">{s.unit}</div>
             </div>
           ))}
-        </section>
-
-        <section className="insights-grid">
-          <div className="glass-card insight-card premium-card">
-            <div className="section-head">
-              <div>
-                <h2>Chapter Momentum</h2>
-                <p>Progress distribution across chapters</p>
-              </div>
-              <div className="section-icon">
-                <Activity size={16} />
-              </div>
-            </div>
-
-            <div className="insight-list custom-scroll">
-              {topMomentum.map((c) => (
-                <div key={c.chapter} className="insight-row group-hover">
-                  <span className="insight-label" title={c.chapter}>{c.chapter}</span>
-                  <div className="insight-track">
-                    <div className="insight-fill" style={{ width: `${clamp(c.percent, 3, 100)}%`, background: meta.gradient }} />
-                  </div>
-                  <span className="insight-value">{c.percent}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-card insight-card premium-card">
-            <div className="section-head">
-              <div>
-                <h2>Study Distribution</h2>
-                <p>Questions solved by chapter</p>
-              </div>
-              <div className="section-icon">
-                <BarChart3 size={16} />
-              </div>
-            </div>
-
-            <div className="insight-list custom-scroll">
-              {questionTrend.length === 0 ? (
-                <div className="chart-empty">No chapter data yet</div>
-              ) : (
-                topQuestions.map((c, i) => (
-                  <div key={c.chapter} className="insight-row group-hover">
-                    <span className="insight-label" title={c.chapter}>{c.chapter}</span>
-                    <div className="insight-track">
-                      <div className="insight-fill" style={{ width: `${questionTrend[i]}%`, background: meta.gradient }} />
-                    </div>
-                    <span className="insight-badge badge-gold">{c.qs} Qs</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="glass-card insight-card premium-card">
-            <div className="section-head">
-              <div>
-                <h2>Revision Flow</h2>
-                <p>Revision density by chapter</p>
-              </div>
-              <div className="section-icon">
-                <Wand2 size={16} />
-              </div>
-            </div>
-
-            <div className="insight-list custom-scroll">
-              {revisionTrend.length === 0 ? (
-                <div className="chart-empty">No revision activity yet</div>
-              ) : (
-                topRevisions.map((c, i) => (
-                  <div key={c.chapter} className="insight-row group-hover">
-                    <span className="insight-label" title={c.chapter}>{c.chapter}</span>
-                    <div className="insight-track">
-                      <div className="insight-fill" style={{ width: `${revisionTrend[i]}%`, background: "linear-gradient(135deg, #a78bfa, #fb7185)" }} />
-                    </div>
-                    <span className="insight-badge badge-lotus">{c.revs} Revs</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="glass-card insight-card premium-card">
-            <div className="section-head">
-              <div>
-                <h2>Focus Snapshot</h2>
-                <p>Study balance overview</p>
-              </div>
-              <div className="section-icon">
-                <Brain size={16} />
-              </div>
-            </div>
-
-            <div className="snapshot-grid">
-              <div className="snapshot-pill">
-                <Clock3 size={14} />
-                <span>{subject.topics.filter((t) => t.isCompleted).length} completed topics</span>
-              </div>
-              <div className="snapshot-pill">
-                <Layers3 size={14} />
-                <span>{chapterEntries.length} chapters</span>
-              </div>
-              <div className="snapshot-pill">
-                <ScrollText size={14} />
-                <span>{totalQs.toLocaleString()} questions logged</span>
-              </div>
-              <div className="snapshot-pill">
-                <TrendingUp size={14} />
-                <span>{pct}% syllabus progress</span>
-              </div>
-            </div>
-          </div>
         </section>
 
         <section className="toolbar glass-card premium-card">
@@ -1252,6 +1032,120 @@ export default function SubjectPage() {
             })
           )}
         </section>
+        <details className={styles.analytics}><summary><BarChart3 size={18}/> Chapter patterns <span>Explore your study distribution</span></summary><MetricNote>Bars compare logged questions and revision counts between chapters. A taller bar means more recorded practice, not higher mastery. Completion only reflects topics you marked complete.</MetricNote>        <section className="insights-grid">
+          <div className="glass-card insight-card premium-card">
+            <div className="section-head">
+              <div>
+                <h2>Chapter Momentum</h2>
+                <p>Progress distribution across chapters</p>
+              </div>
+              <div className="section-icon">
+                <Activity size={16} />
+              </div>
+            </div>
+
+            <div className="insight-list custom-scroll">
+              {topMomentum.map((c) => (
+                <div key={c.chapter} className="insight-row group-hover">
+                  <span className="insight-label" title={c.chapter}>{c.chapter}</span>
+                  <div className="insight-track">
+                    <div className="insight-fill" style={{ width: `${clamp(c.percent, 0, 100)}%`, background: meta.gradient }} />
+                  </div>
+                  <span className="insight-value">{c.percent}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-card insight-card premium-card">
+            <div className="section-head">
+              <div>
+                <h2>Study Distribution</h2>
+                <p>Questions solved by chapter</p>
+              </div>
+              <div className="section-icon">
+                <BarChart3 size={16} />
+              </div>
+            </div>
+
+            <div className="insight-list custom-scroll">
+              {questionTrend.length === 0 ? (
+                <div className="chart-empty">No chapter data yet</div>
+              ) : (
+                topQuestions.map((c, i) => (
+                  <div key={c.chapter} className="insight-row group-hover">
+                    <span className="insight-label" title={c.chapter}>{c.chapter}</span>
+                    <div className="insight-track">
+                      <div className="insight-fill" style={{ width: `${questionTrend[i]}%`, background: meta.gradient }} />
+                    </div>
+                    <span className="insight-badge badge-gold">{c.qs} Qs</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="glass-card insight-card premium-card">
+            <div className="section-head">
+              <div>
+                <h2>Revision Flow</h2>
+                <p>Revision density by chapter</p>
+              </div>
+              <div className="section-icon">
+                <Wand2 size={16} />
+              </div>
+            </div>
+
+            <div className="insight-list custom-scroll">
+              {revisionTrend.length === 0 ? (
+                <div className="chart-empty">No revision activity yet</div>
+              ) : (
+                topRevisions.map((c, i) => (
+                  <div key={c.chapter} className="insight-row group-hover">
+                    <span className="insight-label" title={c.chapter}>{c.chapter}</span>
+                    <div className="insight-track">
+                      <div className="insight-fill" style={{ width: `${revisionTrend[i]}%`, background: "linear-gradient(135deg, #a78bfa, #fb7185)" }} />
+                    </div>
+                    <span className="insight-badge badge-lotus">{c.revs} Revs</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="glass-card insight-card premium-card">
+            <div className="section-head">
+              <div>
+                <h2>Focus Snapshot</h2>
+                <p>Study balance overview</p>
+              </div>
+              <div className="section-icon">
+                <Brain size={16} />
+              </div>
+            </div>
+
+            <div className="snapshot-grid">
+              <div className="snapshot-pill">
+                <Clock3 size={14} />
+                <span>{subject.topics.filter((t) => t.isCompleted).length} completed topics</span>
+              </div>
+              <div className="snapshot-pill">
+                <Layers3 size={14} />
+                <span>{chapterEntries.length} chapters</span>
+              </div>
+              <div className="snapshot-pill">
+                <ScrollText size={14} />
+                <span>{totalQs.toLocaleString()} questions logged</span>
+              </div>
+              <div className="snapshot-pill">
+                <TrendingUp size={14} />
+                <span>{pct}% syllabus progress</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+</details>
       </main>
 
       <style jsx>{`

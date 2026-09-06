@@ -1,20 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine
-} from "recharts";
-import { TrendingUp, AlertTriangle, Target, Zap, ChevronLeft, RefreshCw } from "lucide-react";
+import { useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { ArrowLeft, ArrowUpRight, ChartNoAxesCombined, RefreshCw, Info } from "lucide-react";
 import SmoothLink from "@/components/layout/smooth-link";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
-
-interface SubjectBreakdown {
-  subject: string;
-  currentLevel: number;
-  targetLevel: number;
-  priority: "HIGH" | "MEDIUM" | "LOW";
-}
+import MetricNote from "@/components/studio/metric-note";
+import styles from "./rank.module.css";
 
 interface RankAnalysis {
   currentScore: number;
@@ -23,352 +16,110 @@ interface RankAnalysis {
   predictedRankMin: number;
   predictedRankMax: number;
   confidence: number;
-  aimsRishikeshGap: number;
-  aimsDelhiGap: number;
-  subjectBreakdown: SubjectBreakdown[];
+  subjectBreakdown: { subject: string; currentLevel: number; targetLevel: number; priority: "HIGH" | "MEDIUM" | "LOW" }[];
   bluffFlags: string[];
   weeklyPlan: string;
   overallAnalysis: string;
   strictMessage: string;
+  sourceNotes?: string[];
   model?: string;
+  historySaved?: boolean;
+  dataNotice?: string;
 }
 
-const PRIORITY_COLORS: Record<string, string> = {
-  HIGH: "#f87171", MEDIUM: "#fbbf24", LOW: "#4ade80",
-};
+const percent = (value: number) => Math.max(0, Math.min(100, value));
+const number = (value: number) => value.toLocaleString("en-IN");
 
 export default function RankPredictorPage() {
   const [analysis, setAnalysis] = useState<RankAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const pending = useRef(false);
+  const reducedMotion = useReducedMotion();
 
-  useEffect(() => {
-    setAnalysis(null);
-    setLoading(false);
-    setError("");
-  }, []);
-
-  const runPrediction = async () => {
+  async function runPrediction() {
+    if (pending.current) return;
+    pending.current = true;
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/ai/rank", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ intent: "manual-rank-prediction" }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setAnalysis(data);
-      } else {
-        const err = await res.json();
-        setError(err.error || "Prediction failed");
-      }
-    } catch (e) {
-      setError(String(e));
+      if (!res.ok) throw new Error("The estimate could not be prepared. Your existing records have not changed.");
+      const data = await res.json() as RankAnalysis;
+      if (![data.currentScore, data.predictedScoreMin, data.predictedScoreMax, data.predictedRankMin, data.predictedRankMax, data.confidence].every(Number.isFinite) ||
+          !Array.isArray(data.subjectBreakdown) || !data.subjectBreakdown.every(subject => typeof subject.subject === "string" && Number.isFinite(subject.currentLevel) && Number.isFinite(subject.targetLevel)) ||
+          !Array.isArray(data.bluffFlags)) throw new Error("The prediction was incomplete. Please try again.");
+      setAnalysis(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not prepare your estimate.");
     } finally {
+      pending.current = false;
       setLoading(false);
     }
-  };
+  }
 
-  const radarData = analysis?.subjectBreakdown.map((s) => ({
-    subject: s.subject,
-    Current: s.currentLevel,
-    Target: s.targetLevel,
-  })) || [];
-
-  const barData = analysis?.subjectBreakdown.map((s) => ({
-    name: s.subject.slice(0, 4),
-    current: s.currentLevel,
-    gap: s.targetLevel - s.currentLevel,
-    priority: s.priority,
-  })) || [];
+  const subjects = analysis?.subjectBreakdown.map(subject => ({
+    ...subject, currentLevel: percent(subject.currentLevel), targetLevel: percent(subject.targetLevel),
+  })) ?? [];
 
   return (
-    <div className="rank-page animate-fade-in">
-      <div className="dash-header" style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <SmoothLink href="/ai-insights" className="btn btn-ghost btn-sm" style={{ padding: "6px 10px" }} direction="back">
-            <ChevronLeft size={16} />
-          </SmoothLink>
-          <div>
-            <h1 className="dash-hero-title">Rank Predictor</h1>
-            <p className="text-secondary" style={{ fontSize: 14 }}>AI analyses all your data to predict your NEET rank and gap from AIIMS</p>
-          </div>
-        </div>
-        <button
-          className={`btn ${analysis ? "btn-glass" : "btn-primary"}`}
-          onClick={runPrediction}
-          disabled={loading}
-        >
-          {loading ? (
-            <><RefreshCw size={16} style={{ animation: "spin-slow 1s linear infinite" }} /> Analysing...</>
-          ) : (
-            <><TrendingUp size={16} /> {analysis ? "Re-run Analysis" : "Predict My Rank"}</>
-          )}
+    <div className={`studio-page ${styles.page}`} data-studio-native>
+      <SmoothLink href="/ai-insights" className={styles.back} direction="back"><ArrowLeft size={15} /> All insights</SmoothLink>
+      <header className="studio-heading">
+        <div><span className="studio-eyebrow">Perspective, not a promise</span><h1>Where your preparation points.</h1><p>Explore a rank estimate and the study signals behind it.</p></div>
+        <button className="studio-action primary" onClick={runPrediction} disabled={loading}>
+          <RefreshCw size={16} className={loading ? styles.spin : ""} aria-hidden="true" /> {loading ? "Preparing…" : analysis ? "Update estimate" : "Explore my estimate"}
         </button>
-      </div>
-
-      {error && (
-        <div className="glass-card" style={{ padding: 20, borderColor: "rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)", marginBottom: 20 }}>
-          <p style={{ color: "var(--danger)", fontSize: 14 }}>{error}</p>
+      </header>
+      <aside className={styles.caution}><Info size={18} aria-hidden="true" /><p>A rank range is a planning estimate, not a predicted result or admission guarantee. Paper difficulty and the candidate pool change each year.</p></aside>
+      {error && <div className="studio-error" role="alert">{error}</div>}
+      {loading && <div className={styles.loading} role="status"><ChartNoAxesCombined size={30} /><h2>Connecting the study signals…</h2><p>Reviewing your saved tests and preparation records.</p></div>}
+      {!analysis && !loading && <section className={styles.intro}>
+        <div className={styles.introMark} aria-hidden="true"><ChartNoAxesCombined size={88} strokeWidth={0.8} /></div>
+        <div><span className="studio-eyebrow">Start with what you know</span><h2>Your next step matters more than a number.</h2><p>Use the estimate to find where practice and revision may help. More representative test records make the underlying evidence more useful.</p><SmoothLink href="/tests" className="studio-action">Review your test journal <ArrowUpRight size={16} /></SmoothLink></div>
+      </section>}
+      {analysis && !loading && <div className={styles.results}>
+        {analysis.dataNotice && <div className="studio-error" role="alert">{analysis.dataNotice}</div>}
+        {analysis.historySaved === false && <p className={styles.caution} role="status">This estimate is visible here, but could not be saved to your history.</p>}
+        <section className={styles.metrics} aria-label="Estimated outcome">
+          <div><span>Estimated score range</span><strong>{number(analysis.predictedScoreMin)}–{number(analysis.predictedScoreMax)}</strong><small>out of 720</small></div>
+          <div><span>Estimated rank range</span><strong>{number(analysis.predictedRankMin)}–{number(analysis.predictedRankMax)}</strong><small>Lower rank numbers are better</small></div>
+          <div><span>Model evidence score</span><strong>{percent(analysis.confidence)}<em>/100</em></strong><small>Not a probability of accuracy</small></div>
+        </section>
+        <div className={styles.columns}>
+          <section className="studio-panel">
+            <div className="studio-panel-head"><h2>Where to focus</h2><span className={styles.caption}>Preparation signals · /100</span></div>
+            {subjects.length > 0 ? <>
+              <ResponsiveChart height={300}>{(width, height) => (
+                <BarChart width={width} height={height} data={subjects} layout="vertical" margin={{ left: 0, right: 20, bottom: 0 }}>
+                  <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
+                  <XAxis type="number" domain={[0,100]} tick={{ fill:"var(--chart-axis)", fontSize:11 }} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="subject" width={82} tick={{ fill:"var(--chart-axis)", fontSize:12 }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill:"var(--gold-dim)" }} contentStyle={{ background:"var(--chart-tooltip-bg)", border:"1px solid var(--glass-border-mid)", borderRadius:10, color:"var(--text-primary)" }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize:12 }} />
+                  <Bar dataKey="currentLevel" name="Current signal" fill="var(--gold)" radius={[0,4,4,0]} maxBarSize={14} isAnimationActive={!reducedMotion} animationDuration={450} />
+                  <Bar dataKey="targetLevel" name="Model target" fill="var(--chart-axis-muted)" fillOpacity={0.45} radius={[0,4,4,0]} maxBarSize={8} isAnimationActive={!reducedMotion} animationDuration={450} />
+                </BarChart>
+              )}</ResponsiveChart>
+              <MetricNote>These are heuristic preparation signals derived by the existing model, not subject marks or measured mastery. The target is a planning reference. The evidence score is also heuristic; it is not a statistically calibrated confidence level.</MetricNote>
+              <details className={styles.values}><summary>View exact values</summary><table><caption>Subject preparation signals</caption><thead><tr><th>Subject</th><th>Current</th><th>Target</th></tr></thead><tbody>{subjects.map(subject => <tr key={subject.subject}><th scope="row">{subject.subject}</th><td>{subject.currentLevel}</td><td>{subject.targetLevel}</td></tr>)}</tbody></table></details>
+            </> : <p className={styles.prose}>No subject breakdown was available for this estimate.</p>}
+          </section>
+          <aside className={styles.rail}>
+            <section className="studio-panel"><h2>A useful next step</h2><p className={styles.prose}>{analysis.weeklyPlan}</p><SmoothLink href="/todo" className="studio-action">Open Todo <ArrowUpRight size={16} /></SmoothLink></section>
+            <details className="studio-panel"><summary className={styles.summary}>Read the assessment</summary><p className={styles.prose}>{analysis.overallAnalysis}</p>{analysis.strictMessage && <p className={styles.prose}>{analysis.strictMessage}</p>}</details>
+            {analysis.bluffFlags.length > 0 && <details className="studio-panel"><summary className={styles.summary}>Records worth checking</summary><p className={styles.prose}>Missing or inconsistent entries can affect the estimate. These flags are prompts to review your records, not judgements about you.</p><ul className={styles.notes}>{analysis.bluffFlags.map((flag, index) => <li key={index}>{flag}</li>)}</ul></details>}
+          </aside>
         </div>
-      )}
-
-      {!analysis && !loading && (
-        <div className="glass-card" style={{ padding: 48, textAlign: "center" }}>
-          <div style={{ width: 72, height: 72, background: "var(--physics-dim)", border: "1px solid rgba(79,156,249,0.3)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-            <TrendingUp size={32} color="var(--physics)" />
-          </div>
-          <h2 style={{ font: "700 22px 'Playfair Display'", color: "var(--text-primary)", marginBottom: 8 }}>
-            Know Where You Stand
-          </h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: 15, maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 }}>
-            NEET-GURU will analyse your syllabus completion, test scores, study hours, and consistency to predict your expected NEET 2027 rank — with an honest gap analysis against AIIMS Delhi and AIIMS Rishikesh.
-          </p>
-          <button className="btn btn-primary btn-lg" onClick={runPrediction} disabled={loading}>
-            <Zap size={18} /> Run Rank Prediction
-          </button>
-        </div>
-      )}
-
-      {loading && (
-        <div className="glass-card" style={{ padding: 60, textAlign: "center" }}>
-          <div className="typing-indicator" style={{ justifyContent: "center" }}>
-            <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
-          </div>
-          <p style={{ color: "var(--text-secondary)", marginTop: 16, fontSize: 14 }}>
-            NEET-GURU is analysing all your data. This may take 15-30 seconds...
-          </p>
-        </div>
-      )}
-
-      {analysis && !loading && (
-        <div className="rank-results" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {/* Strict Message */}
-          <div className="glass-card" style={{ padding: 22, borderColor: "rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.04)" }}>
-            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <AlertTriangle size={18} color="var(--danger)" style={{ flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--danger)", marginBottom: 6 }}>NEET-GURU Assessment</div>
-                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>{analysis.strictMessage}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Rank Cards */}
-          <div className="rank-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-            <div className="glass-card" style={{ padding: 24, textAlign: "center" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Predicted Score</div>
-              <div style={{ fontSize: 36, fontWeight: 700, color: "var(--gold)" }}>
-                {analysis.predictedScoreMin}–{analysis.predictedScoreMax}
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>out of 720</div>
-            </div>
-            <div className="glass-card" style={{ padding: 24, textAlign: "center" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Predicted Rank</div>
-              <div style={{ fontSize: 32, fontWeight: 700, color: analysis.predictedRankMin < 500 ? "var(--success)" : "var(--rose-bright)" }}>
-                {analysis.predictedRankMin.toLocaleString()}–{analysis.predictedRankMax.toLocaleString()}
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>NEET 2027</div>
-            </div>
-            <div className="glass-card" style={{ padding: 24, textAlign: "center" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Confidence</div>
-              <div style={{ fontSize: 36, fontWeight: 700, color: analysis.confidence >= 70 ? "var(--botany)" : "var(--warning)" }}>
-                {analysis.confidence}%
-              </div>
-              <div className="progress-track" style={{ marginTop: 8 }}>
-                <div className="progress-fill" style={{ width: `${analysis.confidence}%`, background: "linear-gradient(90deg, var(--gold), var(--botany))" }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Gap Analysis */}
-          <div className="rank-gap-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div className="glass-card" style={{ padding: 20, borderColor: "rgba(155,109,176,0.2)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <Target size={16} color="var(--lotus-bright)" />
-                <span style={{ fontWeight: 700, color: "var(--lotus-bright)", fontSize: 14 }}>AIIMS Rishikesh Gap</span>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: analysis.aimsRishikeshGap <= 0 ? "var(--success)" : "var(--lotus-bright)" }}>
-                {analysis.aimsRishikeshGap <= 0 ? "✓ Achieved" : `${analysis.aimsRishikeshGap} marks`}
-              </div>
-              <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>AIIMS Rishikesh cutoff: ~660 marks</p>
-            </div>
-            <div className="glass-card" style={{ padding: 20, borderColor: "rgba(212,168,83,0.2)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <Target size={16} color="var(--gold)" />
-                <span style={{ fontWeight: 700, color: "var(--gold)", fontSize: 14 }}>AIIMS Delhi Gap</span>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: analysis.aimsDelhiGap <= 0 ? "var(--success)" : "var(--gold)" }}>
-                {analysis.aimsDelhiGap <= 0 ? "✓ Achieved!" : `${analysis.aimsDelhiGap} marks`}
-              </div>
-              <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>AIIMS Delhi cutoff: ~700+ marks</p>
-            </div>
-          </div>
-
-          {/* Charts */}
-          {radarData.length > 0 && (
-            <div className="rank-chart-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              <div className="glass-card" style={{ padding: 24 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>Subject vs Target (Radar)</h3>
-                <ResponsiveChart height={240}>
-                  {(w, h) => (
-                  <RadarChart width={w} height={h} data={radarData} outerRadius="72%">
-                    <defs>
-                      <radialGradient id="rankRadarCurrent" cx="50%" cy="50%" r="65%">
-                        <stop offset="0%" stopColor="#d4a853" stopOpacity={0.05} />
-                        <stop offset="100%" stopColor="#d4a853" stopOpacity={0.32} />
-                      </radialGradient>
-                    </defs>
-                    <PolarGrid stroke="var(--chart-grid)" strokeOpacity={0.5} />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 12, fontWeight: 600 }} />
-                    <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, color: "var(--text-primary)" }} labelStyle={{ color: "var(--text-primary)" }} />
-                    <Radar name="Target" dataKey="Target" stroke="var(--rose-bright)" strokeWidth={1.5} fill="var(--rose-bright)" fillOpacity={0.06} strokeDasharray="4 3" />
-                    <Radar name="Current" dataKey="Current" stroke="var(--gold)" strokeWidth={2.5} fill="url(#rankRadarCurrent)" fillOpacity={1} dot={{ fill: "var(--gold)", r: 3, strokeWidth: 0 }} isAnimationActive animationDuration={900} />
-                  </RadarChart>
-                  )}
-                </ResponsiveChart>
-              </div>
-              <div className="glass-card" style={{ padding: 24 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>Gap Analysis by Subject</h3>
-                <ResponsiveChart height={240}>
-                  {(w, h) => (
-                  <BarChart width={w} height={h} data={barData} barGap={4}>
-                    <defs>
-                      <linearGradient id="rankBarCurrent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#e6c068" />
-                        <stop offset="100%" stopColor="#d4a853" stopOpacity={0.55} />
-                      </linearGradient>
-                      <linearGradient id="rankBarGap" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f87171" stopOpacity={0.5} />
-                        <stop offset="100%" stopColor="#f87171" stopOpacity={0.12} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                    <Tooltip cursor={{ fill: "rgba(212,168,83,0.06)" }} contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, color: "var(--text-primary)" }} labelStyle={{ color: "var(--text-primary)" }} />
-                    <Bar dataKey="current" name="Current %" fill="url(#rankBarCurrent)" radius={[5, 5, 0, 0]} isAnimationActive animationDuration={900} />
-                    <Bar dataKey="gap" name="Gap to Target" fill="url(#rankBarGap)" radius={[5, 5, 0, 0]} isAnimationActive animationDuration={900} />
-                    <ReferenceLine y={90} stroke="color-mix(in srgb, var(--gold) 36%, transparent)" strokeDasharray="4 2" />
-                  </BarChart>
-                  )}
-                </ResponsiveChart>
-              </div>
-            </div>
-          )}
-
-          {/* Subject Priority */}
-          <div className="glass-card" style={{ padding: 24 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: "var(--text-primary)" }}>Subject Priority Analysis</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {analysis.subjectBreakdown.map((s) => (
-                <div key={s.subject} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ width: 80, fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{s.subject}</div>
-                  <div style={{ flex: 1 }}>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${s.currentLevel}%`, background: PRIORITY_COLORS[s.priority] }} />
-                    </div>
-                  </div>
-                  <div style={{ width: 40, textAlign: "right", fontSize: 14, fontWeight: 700, color: PRIORITY_COLORS[s.priority] }}>{s.currentLevel}%</div>
-                  <div className={`badge ${s.priority === "HIGH" ? "badge-danger" : s.priority === "MEDIUM" ? "badge-warning" : "badge-success"}`} style={{ width: 64, justifyContent: "center" }}>
-                    {s.priority}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bluff Flags */}
-          {analysis.bluffFlags.length > 0 && (
-            <div className="glass-card" style={{ padding: 20, borderColor: "rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.04)" }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--danger)", marginBottom: 10 }}>
-                ⚠ Inconsistencies Detected
-              </h3>
-              {analysis.bluffFlags.map((flag, i) => (
-                <p key={i} style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 6 }}>• {flag}</p>
-              ))}
-            </div>
-          )}
-
-          {/* Overall Analysis */}
-          <div className="glass-card" style={{ padding: 24 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "var(--text-primary)" }}>Detailed Analysis</h3>
-            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.75 }}>{analysis.overallAnalysis}</p>
-          </div>
-
-          {/* Weekly Plan */}
-          <div className="glass-card" style={{ padding: 24, borderColor: "rgba(212,168,83,0.2)" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "var(--gold)" }}>📅 This Week&apos;s Action Plan</h3>
-            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.75 }}>{analysis.weeklyPlan}</p>
-          </div>
-
-          {analysis.model && (
-            <p style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right" }}>Analysis by: {analysis.model}</p>
-          )}
-        </div>
-      )}
-
-      <style jsx>{`
-        .rank-page {
-          min-width: 0;
-          padding-bottom: 140px;
-        }
-
-        .rank-page :global(.recharts-default-tooltip) {
-          background: var(--chart-tooltip-bg) !important;
-          border-color: var(--chart-tooltip-border) !important;
-          color: var(--text-primary) !important;
-          box-shadow: var(--shadow-md);
-        }
-
-        @media (max-width: 980px) {
-          .rank-kpi-grid,
-          .rank-gap-grid,
-          .rank-chart-grid {
-            grid-template-columns: 1fr !important;
-          }
-
-          .rank-page :global(.glass-card) {
-            min-width: 0;
-          }
-        }
-
-        @media (max-width: 720px) {
-          .rank-page {
-            padding-bottom: 156px;
-          }
-
-          .rank-page :global(.dash-header) {
-            align-items: stretch;
-            gap: 16px;
-          }
-
-          .rank-page :global(.dash-header > div) {
-            align-items: flex-start !important;
-          }
-
-          .rank-page :global(.dash-hero-title) {
-            font-size: clamp(30px, 10vw, 42px);
-          }
-
-          .rank-results {
-            gap: 16px !important;
-          }
-
-          .rank-kpi-grid,
-          .rank-gap-grid,
-          .rank-chart-grid {
-            gap: 12px !important;
-          }
-
-          .rank-page :global(.recharts-wrapper) {
-            min-width: 0 !important;
-          }
-        }
-      `}</style>
+        <details className="studio-panel"><summary className={styles.summary}>Model notes and limitations</summary>
+          <p className={styles.prose}>This page uses the existing tracker prediction model. It does not establish official college cutoffs. Compare admission information using current official counselling data for the relevant year, category and quota.</p>
+          {analysis.sourceNotes && <ul className={styles.notes}>{analysis.sourceNotes.map((note, index) => <li key={index}>{note}</li>)}</ul>}
+          {analysis.model && <p className={styles.caption}>Method: {analysis.model === "deterministic-fallback" ? "Tracker planning rules" : analysis.model}</p>}
+        </details>
+      </div>}
     </div>
   );
 }

@@ -99,19 +99,10 @@ export function resolveStudyMatch(query: string, topics: StudyTopicDirectoryItem
   };
 }
 
-function questionsBeforeMention(text: string, start: number, end: number) {
-  const nearby = text.slice(start, end).trim();
-  const numeric = nearby.match(/(\d+)\s*(?:questions?|qs?)?\s*(?:from|in|of|on)?\s*$/);
-  if (numeric) return Math.max(0, Math.min(5000, Number(numeric[1])));
-  const withUnit = nearby.match(/((?:[a-z-]+\s+){0,5}[a-z-]+)\s*(?:questions?|qs?)\s*(?:from|in|of|on)?\s*$/);
-  const spoken = withUnit ? parseSpokenNumber(withUnit[1]) : null;
-  return spoken === null ? null : Math.max(0, Math.min(5000, Math.round(spoken)));
-}
-
 /** Resolves one or several explicitly named chapters/topics and preserves per-entity question counts. */
 export function resolveStudyAllocations(query: string, topics: StudyTopicDirectoryItem[]): StudyAllocationResult {
   const text = searchable(query);
-  const totalQuestions = parseCompactStudyAnswer(query).questions;
+  let totalQuestions = parseCompactStudyAnswer(query).questions;
   if (!text || !topics.length) return { matches: [], totalQuestions, needsChapter: (totalQuestions ?? 0) > 0, needsAllocation: false };
 
   const topicMentions = topics
@@ -142,10 +133,7 @@ export function resolveStudyAllocations(query: string, topics: StudyTopicDirecto
     };
   }
 
-  let previousEnd = 0;
   const matches: StudyAllocationMatch[] = deduped.map((mention) => {
-    const questions = questionsBeforeMention(text, previousEnd, mention.index);
-    previousEnd = mention.index + mention.key.length;
     return {
       topicId: mention.topicId,
       topicName: mention.topicName,
@@ -153,15 +141,28 @@ export function resolveStudyAllocations(query: string, topics: StudyTopicDirecto
       classLevel: mention.topic.classLevel,
       confidence: 1,
       alternatives: [],
-      questions,
+      questions: null,
     };
   });
-  if (matches.length === 1 && matches[0].questions === null) matches[0].questions = totalQuestions;
-  if (matches.length > 1 && totalQuestions !== null) {
-    const known = matches.reduce((sum, match) => sum + (match.questions ?? 0), 0);
-    const missing = matches.filter((match) => match.questions === null);
-    if (missing.length === 1 && totalQuestions >= known) missing[0].questions = totalQuestions - known;
+  const numberWords = "(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)";
+  const countPattern = new RegExp(`(?:\\d+|${numberWords}(?:[ -]+(?:and[ -]+)?${numberWords})*)\\s*(?:(?:questions?|qs?)\\b|(?=(?:from|in|on|of)\\b))`, "g");
+  const counts = [...text.matchAll(countPattern)];
+  for (const count of counts) {
+    const start = count.index!;
+    const end = start + count[0].length;
+    const before = deduped.findLastIndex(mention => mention.index + mention.key.length <= start);
+    const after = deduped.findIndex(mention => mention.index >= end);
+    const explicitlyForward = /^\s*(?:from|in|on|of)\b/.test(text.slice(end));
+    const index = explicitlyForward || before < 0 ? after : before;
+    // One total naming multiple chapters is not a per-chapter allocation.
+    if (index < 0 || (counts.length === 1 && matches.length > 1 && before < 0)) continue;
+    matches[index].questions = parseSpokenNumber(count[0]);
   }
+  if (matches.length === 1) matches[0].questions ??= totalQuestions;
+  if (matches.length > 1 && matches.every(match => match.questions !== null)) {
+    totalQuestions = matches.reduce((sum, match) => sum + (match.questions ?? 0), 0);
+  }
+  // Never invent a zero or an even split for an unspecified chapter.
   const needsAllocation = matches.length > 1 && matches.some((match) => match.questions === null) && (totalQuestions ?? 0) > 0;
   return { matches, totalQuestions, needsChapter: false, needsAllocation };
 }

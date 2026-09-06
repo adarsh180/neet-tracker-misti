@@ -6,3 +6,10 @@ node_modules
 *.log
 tmp
 .npm-cache
+output
+# Local research exports and agent state are not runtime assets.
+data
+.data
+.claude
+*.tsbuildinfo
+next-dev*.err

@@ -1,0 +1,58 @@
+/* Studio foundation: shared, semantic tokens and layout, not a second component library. */
+:root {
+  --bg-void:#0b0d10; --bg-deep:#101216; --bg-base:#111418; --bg-surface:#171b20;
+  --bg-elevated:#1d2228; --bg-raised:#242a31; --bg-hover:#2a3037;
+  --text-primary:#f2eee5; --text-secondary:#b9bab9; --text-muted:#909695; --text-disabled:#68706f;
+  --gold:#d7b779; --gold-bright:#ead2a4; --gold-dim:rgba(215,183,121,.1);
+  --glass-border:rgba(217,222,221,.11); --glass-border-mid:rgba(217,222,221,.18);
+  --chart-axis:#a2aaa9; --chart-axis-muted:#8c9695; --chart-grid:rgba(180,192,191,.1);
+  --chart-tooltip-bg:#20262c; --r-lg:18px; --r-xl:24px;
+  --studio-header:76px; --studio-content:1440px;
+  --studio-header-height:var(--studio-header);
+  --bg-primary:var(--bg-void); --bg-secondary:var(--bg-base);
+}
+:root[data-theme="light"] {
+  --bg-void:#f4f4f0; --bg-deep:#eeeFEb; --bg-base:#f8f8f4; --bg-surface:#fffefa;
+  --bg-elevated:#ffffff; --bg-raised:#eaece6; --bg-hover:#e6e9e2;
+  --text-primary:#202c2b; --text-secondary:#50605e; --text-muted:#65736f; --text-disabled:#8d9792;
+  --gold:#82602a; --gold-bright:#74501c; --gold-dim:rgba(130,96,42,.08);
+  --glass-border:rgba(43,64,57,.13); --glass-border-mid:rgba(43,64,57,.22);
+  --chart-axis:#52675e; --chart-axis-muted:#63716b; --chart-grid:rgba(43,64,57,.1);
+  --chart-tooltip-bg:#fffefa;
+}
+body { background:var(--bg-void); color:var(--text-primary); }
+button,input,select,textarea { font-family:var(--font-sans),sans-serif; }
+button,a,input,select,textarea,summary { -webkit-tap-highlight-color:transparent; }
+:focus-visible { outline:2px solid var(--gold); outline-offset:4px; }
+.studio-shell { min-height:100dvh; padding-top:calc(var(--studio-header) + env(safe-area-inset-top)); padding-bottom:92px; }
+.studio-header { position:fixed; inset:0 0 auto; height:calc(var(--studio-header) + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 28px 0; z-index:810; display:flex; align-items:center; border-bottom:1px solid var(--glass-border); background:color-mix(in srgb,var(--bg-void) 93%,transparent); backdrop-filter:blur(16px); }
+.studio-brand { display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text-primary);font:600 19px var(--font-display),serif;letter-spacing:-.5px; }
+.studio-brand svg { color:var(--gold); }
+.studio-brand small { display:block;font:500 10px var(--font-sans),sans-serif;letter-spacing:2px;color:var(--text-muted);margin-top:3px; }
+.studio-skip { position:fixed;top:-100px;left:20px;z-index:3000;background:var(--bg-surface);padding:12px;color:var(--text-primary); }
+.studio-skip:focus { top:12px; }
+.studio-page { width:min(var(--studio-content),100%);margin:0 auto;padding:36px 36px 50px; }
+.studio-heading { display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:28px; }
+.studio-heading h1 { font:500 clamp(30px,3.3vw,48px)/1.14 var(--font-display),serif;letter-spacing:-1.6px;margin:8px 0; }
+.studio-eyebrow { color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600; }
+.studio-heading p { font-size:14px;color:var(--text-secondary);margin:8px 0 0;max-width:600px;line-height:1.7; }
+.studio-action { display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 17px;border:1px solid var(--glass-border-mid);border-radius:10px;background:var(--bg-surface);color:var(--text-primary);font-size:14px;text-decoration:none;cursor:pointer;transition:background .18s,transform .18s; }
+.studio-action:hover { background:var(--bg-hover);transform:translateY(-1px); }
+.studio-action.primary { background:var(--gold);color:var(--bg-void);border-color:var(--gold);font-weight:650; }
+.studio-action:disabled { opacity:.45;cursor:not-allowed;transform:none; }
+.studio-panel { background:var(--bg-surface);border:1px solid var(--glass-border);border-radius:16px;padding:24px; }
+.studio-panel h2 { font:500 23px var(--font-display),serif;letter-spacing:-.5px;margin:0; }
+.studio-panel-head { display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px; }
+.studio-panel-head a { color:var(--gold);font-size:13px;text-decoration:none; }
+.studio-error { padding:16px;border:1px solid var(--danger);background:color-mix(in srgb,var(--danger) 7%,var(--bg-surface));border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:15px; }
+.subject-mark { color:var(--gold);display:inline-grid;place-items:center;width:48px;height:48px;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:14px;background:color-mix(in srgb,currentColor 6%,transparent); }
+.subject-mark[data-subject="physics"] { color:#8faed9; }.subject-mark[data-subject="chemistry"]{color:#b9a1d1}.subject-mark[data-subject="botany"]{color:#83b5a4}.subject-mark[data-subject="zoology"]{color:#d5ae8b}
+[data-theme="light"] .subject-mark[data-subject="physics"]{color:#3f6493}[data-theme="light"] .subject-mark[data-subject="chemistry"]{color:#7d5b9b}[data-theme="light"] .subject-mark[data-subject="botany"]{color:#377e64}[data-theme="light"] .subject-mark[data-subject="zoology"]{color:#95643b}
+.metric-note { margin-top:16px;border-top:1px solid var(--glass-border);padding-top:12px;color:var(--text-secondary);font-size:13px; }
+.metric-note summary { display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;min-height:28px; }
+.metric-note p { margin:10px 0 0;line-height:1.7;max-width:75ch; }
+.studio-shell .protected-route-frame { min-height:calc(100dvh - 170px); }
+body.cbt-exam-active [data-studio-chrome], body.cbt-exam-active .studio-header { display:none!important; }
+body.cbt-exam-active .studio-shell { padding-top:0;padding-bottom:0; }
+@media(max-width:760px){.studio-header{padding-left:16px;padding-right:16px}.studio-brand{font-size:0;gap:0}.studio-brand small{display:none}.studio-page{padding:24px 16px 32px}.studio-heading{align-items:start;flex-wrap:wrap;margin-bottom:20px}.studio-panel{padding:18px}.studio-heading h1{letter-spacing:-1px}.studio-shell{padding-bottom:94px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

@@ -1,17 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck, ClipboardCheck, History, LineChart as LineChartIcon,
+  ArrowRight, BadgeCheck, ChevronDown, History, LineChart as LineChartIcon,
   RefreshCw, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
 } from "lucide-react";
-import { Bar, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, LineChart, Line, Tooltip, XAxis, YAxis } from "recharts";
+import { useReducedMotion } from "framer-motion";
+import Link from "next/link";
+import MetricNote from "@/components/studio/metric-note";
+import styles from "./reviews.module.css";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
 import {
   computeReviewScore,
   computeReviewComparison,
   gradeForIndex,
-  indexForGrade,
   type ComparisonPoint,
   type ReviewComparison,
   type ReviewScoreInput,
@@ -63,10 +66,10 @@ type ReviewCardData = {
 type ScoreMeta = { index: number; grade: string; comparison: ReviewComparison };
 
 const VERDICT_META: Record<ReviewVerdict["verdict"], { label: string; color: string }> = {
-  HONEST: { label: "Honest", color: "var(--success)" },
-  MOSTLY_HONEST: { label: "Mostly honest", color: "var(--gold)" },
-  INCONSISTENT: { label: "Inconsistent", color: "hsl(28, 90%, 58%)" },
-  FAKING: { label: "Faked logs detected", color: "var(--danger)" },
+  HONEST: { label: "Records aligned", color: "var(--success)" },
+  MOSTLY_HONEST: { label: "Mostly aligned", color: "var(--gold)" },
+  INCONSISTENT: { label: "Some differences", color: "hsl(28, 90%, 58%)" },
+  FAKING: { label: "Needs a closer look", color: "var(--danger)" },
 };
 
 function formatRange(start: string, end: string) {
@@ -108,12 +111,12 @@ function cardScoreInput(card: ReviewCardData): ReviewScoreInput | null {
   };
 }
 
-function cardIndex(card: ReviewCardData): number {
+function cardIndex(card: ReviewCardData): number | null {
   const stored = card.review.metrics?.performanceIndex;
-  if (typeof stored === "number") return stored;
+  if (typeof stored === "number" && Number.isFinite(stored)) return stored;
   const input = cardScoreInput(card);
   if (input) return computeReviewScore(input).index;
-  return indexForGrade(card.review.grade);
+  return null;
 }
 
 // Per-card index, corrected grade, and period-over-period comparison, keyed by id.
@@ -124,12 +127,12 @@ function buildScoreMeta(cards: ReviewCardData[] | null): Map<string, ScoreMeta> 
   for (const period of ["WEEKLY", "MONTHLY"] as const) {
     // Oldest → newest so each card sees only the periods that preceded it.
     const chronological = cards
-      .filter((card) => card.period === period)
+      .filter((card) => card.period === period && cardIndex(card) !== null)
       .slice()
       .sort((a, b) => a.periodStart.localeCompare(b.periodStart));
 
     const points: ComparisonPoint[] = chronological.map((card) => ({
-      index: cardIndex(card),
+      index: cardIndex(card)!,
       hours: cardHours(card),
       questions: cardQuestions(card),
     }));
@@ -159,24 +162,32 @@ export default function ReviewsPage() {
   const [cards, setCards] = useState<ReviewCardData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const loadController = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    loadController.current?.abort();
+    const controller = new AbortController();
+    loadController.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 30000);
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/reviews", { cache: "no-store" });
+      const res = await fetch("/api/reviews", { cache: "no-store", signal: controller.signal });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to load reviews");
-      setCards(json.cards);
+      if (!Array.isArray(json.cards)) throw new Error("The review response was incomplete. Please retry.");
+      if (loadController.current === controller) setCards(json.cards);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not reach the review agent.");
+      if (loadController.current === controller) setError(controller.signal.aborted ? "The reviews took too long to load. Your existing cards are still here." : err instanceof Error ? err.message : "Could not load your reviews.");
     } finally {
-      setLoading(false);
+      window.clearTimeout(timeout);
+      if (loadController.current === controller) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
+    return () => { loadController.current?.abort(); loadController.current = null; };
   }, [load]);
 
   const replaceCard = (next: ReviewCardData) => {
@@ -187,221 +198,124 @@ export default function ReviewsPage() {
   // everything older automatically becomes history when a new one lands.
   const { current, history } = useMemo(() => {
     if (!cards) return { current: [], history: [] };
-    const latestWeekly = cards.find((card) => card.period === "WEEKLY");
-    const latestMonthly = cards.find((card) => card.period === "MONTHLY");
+    const ordered = [...cards].sort((a, b) => b.periodStart.localeCompare(a.periodStart));
+    const latestWeekly = ordered.find((card) => card.period === "WEEKLY");
+    const latestMonthly = ordered.find((card) => card.period === "MONTHLY");
     const currentIds = new Set([latestWeekly?.id, latestMonthly?.id].filter(Boolean));
     return {
-      current: cards.filter((card) => currentIds.has(card.id)),
-      history: cards.filter((card) => !currentIds.has(card.id)),
+      current: ordered.filter((card) => currentIds.has(card.id)),
+      history: ordered.filter((card) => !currentIds.has(card.id)),
     };
   }, [cards]);
 
   const scoreMeta = useMemo(() => buildScoreMeta(cards), [cards]);
 
   return (
-    <div className="rv-wrap">
-      <header className="rv-head">
-        <div className="rv-head-icon"><ClipboardCheck size={22} strokeWidth={1.8} /></div>
-        <div>
-          <h1 className="rv-title">Review Cards</h1>
-          <p className="rv-sub">Weekly & monthly report cards with a Truth Check — every answer is cross-examined against your logs</p>
+    <div className={`studio-page ${styles.page}`} data-studio-native>
+      <header className="studio-heading">
+        <div><span className="studio-eyebrow">Reflect · adjust · grow</span>
+          <h1>See how far you’ve come.</h1>
+          <p>Your weekly and monthly study reviews. Take the useful lesson into your next session.</p>
         </div>
-        <button className="rv-refresh" onClick={load} disabled={loading} aria-label="Refresh">
-          <RefreshCw size={15} className={loading ? "rv-spin" : ""} />
+        <button className="studio-action" onClick={load} disabled={loading} aria-label="Refresh reviews">
+          <RefreshCw size={16} className={loading ? "rv-spin" : ""} /> Refresh
         </button>
       </header>
+      {cards && <div className="rv-overview" aria-label="Review overview">
+        <div><strong>{cards.length}</strong><span>review periods</span></div>
+        <div><strong>{cards.filter(card => card.status === "AWAITING_ANSWERS").length}</strong><span>check-ins to finish</span></div>
+        <Link href="/daily-goals">Open your study log <ArrowRight size={17} /></Link>
+      </div>}
 
-      {loading && (
-        <div className="rv-state">
+      {loading && !cards && (
+        <div className="rv-state" role="status">
           <div className="rv-pulse" />
-          <p>Auditing your logs and preparing review cards…</p>
+          <p>Loading your review periods…</p>
         </div>
       )}
 
-      {!loading && error && (
-        <div className="rv-state rv-state--error">
+      {error && (
+        <div className="rv-state rv-state--error" role="alert">
           <p>{error}</p>
           <button className="rv-btn" onClick={load}>Retry</button>
         </div>
       )}
 
-      {!loading && !error && cards && cards.length === 0 && (
+      {cards && cards.length === 0 && (
         <div className="rv-state"><p>No review periods completed yet. The first card lands after a full Mon–Sun week.</p></div>
       )}
 
-      {!loading && !error && current.length > 0 && (
+      {current.length > 0 && (
         <>
-          <h2 className="rv-section">Current review</h2>
+          <h2 className="rv-section">Latest reflections</h2>
           {current.map((card) => (
             <ReviewCardView key={card.id} card={card} meta={scoreMeta.get(card.id)} onUpdated={replaceCard} defaultOpen={card.status === "AWAITING_ANSWERS"} />
           ))}
         </>
       )}
 
-      {!loading && !error && cards && cards.length >= 2 && <ProgressCharts cards={cards} scoreMeta={scoreMeta} />}
+      {cards && cards.length >= 2 && <ProgressCharts cards={cards} scoreMeta={scoreMeta} />}
 
-      {!loading && !error && history.length > 0 && (
+      {history.length > 0 && (
         <>
-          <h2 className="rv-section"><History size={15} /> History</h2>
+          <details className="rv-history"><summary><History size={16} /> Earlier reviews <span>{history.length}</span><ChevronDown size={16} /></summary>
           {history.map((card) => (
             <ReviewCardView key={card.id} card={card} meta={scoreMeta.get(card.id)} onUpdated={replaceCard} defaultOpen={false} />
           ))}
+          </details>
         </>
       )}
 
-      <style jsx>{`
-        .rv-wrap { max-width: 880px; margin: 0 auto; padding: 24px 20px 80px; display: flex; flex-direction: column; gap: 16px; }
-        .rv-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
-        .rv-head-icon {
-          width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-glow);
-        }
-        .rv-title { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text-primary); margin: 0; }
-        .rv-sub { font-size: 12.5px; color: var(--text-secondary); margin: 2px 0 0; }
-        .rv-refresh {
-          margin-left: auto; width: 36px; height: 36px; border-radius: 10px;
-          background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.08);
-          color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
-        :global(.rv-spin) { animation: rv-rot 1s linear infinite; }
-        @keyframes rv-rot { to { transform: rotate(360deg); } }
-        .rv-section {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
-          color: var(--text-muted); margin: 10px 0 -4px;
-        }
-        .rv-state {
-          text-align: center; padding: 48px 28px; border-radius: 18px;
-          background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.06);
-          color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 12px;
-          font-size: 13.5px;
-        }
-        .rv-state--error { border-color: hsla(0, 72%, 62%, 0.3); }
-        .rv-pulse {
-          width: 42px; height: 42px; border-radius: 50%;
-          border: 2px solid var(--gold-glow); border-top-color: var(--gold);
-          animation: rv-rot 0.9s linear infinite;
-        }
-        .rv-btn {
-          padding: 8px 20px; border-radius: 10px; border: 1px solid var(--gold-glow);
-          background: var(--gold-dim); color: var(--gold); cursor: pointer; font-weight: 600;
-        }
-      `}</style>
+
     </div>
   );
 }
 
 function ProgressCharts({ cards, scoreMeta }: { cards: ReviewCardData[]; scoreMeta: Map<string, ScoreMeta> }) {
   const [tab, setTab] = useState<"WEEKLY" | "MONTHLY">("WEEKLY");
-
-  const data = useMemo(
-    () =>
-      cards
-        .filter((card) => card.period === tab)
-        .slice()
-        .reverse()
-        .map((card) => {
-          const meta = scoreMeta.get(card.id);
-          return {
-            label: new Date(`${card.periodStart}T12:00:00+05:30`).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-              timeZone: "Asia/Kolkata",
-            }),
-            hours: cardHours(card),
-            questions: cardQuestions(card),
-            grade: meta?.grade ?? card.review.grade,
-            gradeScore: meta?.index ?? indexForGrade(card.review.grade),
-            integrity: card.verdict?.integrityScore ?? null,
-            verdict: card.verdict ? VERDICT_META[card.verdict.verdict].label : "Truth Check pending",
-          };
-        }),
-    [cards, tab, scoreMeta],
-  );
-
-  if (data.length < 2 && cards.filter((card) => card.period === (tab === "WEEKLY" ? "MONTHLY" : "WEEKLY")).length < 2) {
-    return (
-      <section className="pc">
-        <h2 className="pc-h"><LineChartIcon size={15} /> Progress</h2>
-        <p className="pc-empty">Graphs unlock once two {tab.toLowerCase()} reviews exist — every new card extends the curve.</p>
-        <style jsx>{`
-          .pc { padding: 18px 20px; border-radius: 18px; background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.06); }
-          .pc-h { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin: 0 0 8px; }
-          .pc-empty { font-size: 12.5px; color: var(--text-secondary); margin: 0; }
-        `}</style>
-      </section>
-    );
-  }
-
-  return (
-    <section className="pc">
-      <div className="pc-top">
-        <h2 className="pc-h"><LineChartIcon size={15} /> Progress</h2>
-        <div className="pc-tabs">
-          <button className={tab === "WEEKLY" ? "pc-tab pc-tab--on" : "pc-tab"} onClick={() => setTab("WEEKLY")}>Weekly</button>
-          <button className={tab === "MONTHLY" ? "pc-tab pc-tab--on" : "pc-tab"} onClick={() => setTab("MONTHLY")}>Monthly</button>
-        </div>
+  const [metric, setMetric] = useState<"hours" | "questions" | "index">("hours");
+  const reducedMotion = useReducedMotion();
+  const data = useMemo(() => cards.filter(card => card.period === tab).slice()
+    .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
+    .map(card => ({
+      id: card.id,
+      label: formatRange(card.periodStart, card.periodEnd),
+      tick: new Date(`${card.periodStart}T12:00:00+05:30`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }),
+      hours: cardHours(card), questions: cardQuestions(card), index: scoreMeta.get(card.id)?.index ?? null,
+    })), [cards, tab, scoreMeta]);
+  const label = { hours: "Study hours", questions: "Questions solved", index: "Study index" }[metric];
+  const axis = <><CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+    <XAxis dataKey="tick" tick={{ fontSize: 12, fill: "var(--chart-axis)" }} axisLine={false} tickLine={false} minTickGap={25} />
+    <YAxis domain={metric === "index" ? [0, 100] : [0, "auto"]} tick={{ fontSize: 12, fill: "var(--chart-axis)" }} allowDecimals={metric === "hours"} axisLine={false} tickLine={false} width={46} />
+    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--glass-border-mid)", borderRadius: 12, color: "var(--text-primary)" }}
+      labelFormatter={(_, entries) => entries?.[0]?.payload?.label ?? ""}
+      formatter={value => [metric === "hours" ? `${value} h` : metric === "index" ? `${value}/100` : String(value ?? "Not available"), label]} />
+  </>;
+  return <section className="pc" aria-label="Study progress comparison">
+    <div className="pc-top"><div><span className="studio-eyebrow">Your own trajectory</span><h2><LineChartIcon size={20} /> Progress over time</h2></div>
+      <div className="pc-tabs" aria-label="Review frequency">
+        {(["WEEKLY", "MONTHLY"] as const).map(period => <button key={period} aria-pressed={tab === period} onClick={() => setTab(period)}>{period === "WEEKLY" ? "Weekly" : "Monthly"}</button>)}
       </div>
-
-      {data.length < 2 ? (
-        <p className="pc-empty">Not enough {tab.toLowerCase()} cards yet — graphs appear from the second one.</p>
-      ) : (
-        <>
-          <ResponsiveChart height={260}>
-            {(width, height) => (
-              <ComposedChart width={width} height={height} data={data} margin={{ top: 8, right: 8, bottom: 0, left: -14 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="hours" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="score" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--bg-raised)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                  labelStyle={{ color: "var(--text-primary)", fontWeight: 700 }}
-                  formatter={(value, name, item) => {
-                    const payload = (item as { payload?: { grade?: string; questions?: number; verdict?: string } }).payload;
-                    if (name === "Study hours") return [`${value}h (grade ${payload?.grade}, ${payload?.questions} Qs)`, name];
-                    if (name === "Integrity") return [`${value}/100 (${payload?.verdict})`, name];
-                    if (name === "Grade") return [`${payload?.grade} · ${value}/100 index`, name];
-                    return [String(value ?? ""), name];
-                  }}
-                />
-                <Bar yAxisId="hours" dataKey="hours" name="Study hours" fill="var(--gold)" opacity={0.85} radius={[6, 6, 0, 0]} maxBarSize={42} />
-                <Line yAxisId="score" dataKey="gradeScore" name="Grade" stroke="var(--physics)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                <Line yAxisId="score" dataKey="integrity" name="Integrity" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-              </ComposedChart>
-            )}
-          </ResponsiveChart>
-          <div className="pc-legend">
-            <span><i style={{ background: "var(--gold)" }} /> Study hours</span>
-            <span><i style={{ background: "var(--physics)" }} /> Grade trend</span>
-            <span><i style={{ background: "var(--success)" }} /> Integrity (honesty) score</span>
-          </div>
-        </>
-      )}
-
-      <style jsx>{`
-        .pc { padding: 18px 20px; border-radius: 18px; background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.06); }
-        .pc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .pc-h { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin: 0; }
-        .pc-tabs { display: flex; gap: 6px; }
-        .pc-tab {
-          padding: 5px 14px; border-radius: 999px; font-size: 11.5px; font-weight: 700; cursor: pointer;
-          background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary);
-        }
-        .pc-tab--on { background: var(--gold-dim); border-color: var(--gold-glow); color: var(--gold); }
-        .pc-empty { font-size: 12.5px; color: var(--text-secondary); margin: 0; }
-        .pc-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
-        .pc-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary); }
-        .pc-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-      `}</style>
-    </section>
-  );
+    </div>
+    <div className="pc-metrics" aria-label="Comparison metric">
+      {(["hours", "questions", "index"] as const).map(key => <button key={key} aria-pressed={metric === key} onClick={() => setMetric(key)}>{{ hours: "Hours", questions: "Questions", index: "Study index" }[key]}</button>)}
+      <span>{label}{metric === "index" ? " · out of 100" : " · per period"}</span>
+    </div>
+    {data.length < 2 ? <p className="pc-empty">Two {tab.toLowerCase()} reviews are needed to show a comparison. Your first period stays in the table below.</p> :
+      <ResponsiveChart height={260}>{(width, height) => metric === "index" ?
+        <LineChart width={width} height={height} data={data} margin={{ top: 12, right: 16, bottom: 4, left: 0 }}>{axis}
+          <Line type="linear" dataKey="index" name={label} stroke="var(--physics)" strokeWidth={2.5} dot={{ r: 4 }} connectNulls={false} isAnimationActive={!reducedMotion} />
+        </LineChart> :
+        <BarChart width={width} height={height} data={data} margin={{ top: 12, right: 16, bottom: 4, left: 0 }}>{axis}
+          <Bar dataKey={metric} name={label} fill="var(--gold)" radius={[5, 5, 0, 0]} maxBarSize={44} isAnimationActive={!reducedMotion} />
+        </BarChart>}</ResponsiveChart>}
+    <MetricNote>Compare the same period length, one metric at a time. Hours and questions come from saved reviews, not live daily totals. The study index is the existing app formula, not a NEET score or a judgement of honesty. It uses fixed targets of 12 hours and 100 questions per day, activity, revision and test data, plus deductions for log flags and screen time. These are app settings, not personalised health or study recommendations. Older cards without the required metrics show a gap, not an invented score.</MetricNote>
+    <details className="pc-values"><summary>See exact values</summary>
+      <div className="pc-table"><table><caption>{tab === "WEEKLY" ? "Weekly" : "Monthly"} saved review totals</caption><thead><tr><th scope="col">Period</th><th scope="col">Hours</th><th scope="col">Questions</th><th scope="col">Index /100</th></tr></thead>
+        <tbody>{data.map(row => <tr key={row.id}><th scope="row">{row.label}</th><td>{row.hours}</td><td>{row.questions.toLocaleString("en-IN")}</td><td>{row.index ?? "—"}</td></tr>)}</tbody>
+      </table></div>
+    </details>
+  </section>;
 }
 
 function ReviewCardView({
@@ -418,15 +332,20 @@ function ReviewCardView({
   const [open, setOpen] = useState(defaultOpen);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const review = card.review;
   const grade = meta?.grade ?? review.grade;
   const periodNoun = PERIOD_NOUN[card.period];
   const comparison = meta?.comparison;
-  const allAnswered = card.questions.every((question) => answers[question.id] !== undefined);
+  const allAnswered = card.questions.length > 0 && card.questions.every((question) => answers[question.id] !== undefined);
 
   const submit = async () => {
+    if (submitLock.current || !allAnswered) return;
+    submitLock.current = true;
+    setSubmitNotice(null);
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -438,11 +357,14 @@ function ReviewCardView({
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Evaluation failed");
+      if (res.status === 202) { setSubmitNotice("Queued on this device, not yet reviewed. Your selections are still here."); return; }
+      if (!res.ok) throw new Error(json.error || "Could not save this check-in. Your selections are still here.");
+      if (json.card?.id !== card.id || json.card?.status !== "COMPLETED" || !json.card.review || !json.card.verdict || !Array.isArray(json.card.questions)) throw new Error("The saved review could not be confirmed. Your selections are still here.");
       onUpdated(json.card);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Evaluation failed");
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };
@@ -451,23 +373,24 @@ function ReviewCardView({
 
   return (
     <section className="rc">
-      <button className="rc-top" onClick={() => setOpen((value) => !value)}>
+      <button className="rc-top" aria-expanded={open} aria-controls={`review-${card.id}`} onClick={() => setOpen((value) => !value)}>
         <span className={`rc-period ${card.period === "MONTHLY" ? "rc-period--m" : ""}`}>
           {card.period === "WEEKLY" ? "Weekly" : "Monthly"}
         </span>
         <span className="rc-range">{formatRange(card.periodStart, card.periodEnd)}</span>
-        <span className="rc-grade">Grade {grade}{meta ? ` · ${meta.index}/100` : ""}</span>
+        <span className="rc-grade">{meta ? `Study index ${meta.index}/100` : `Legacy grade ${grade}`}</span>
         {card.status === "AWAITING_ANSWERS" ? (
-          <span className="rc-badge rc-badge--pending"><ShieldAlert size={13} /> Truth Check pending</span>
+          <span className="rc-badge rc-badge--pending"><ShieldAlert size={13} /> Check-in to finish</span>
         ) : verdictMeta ? (
           <span className="rc-badge" style={{ color: verdictMeta.color, borderColor: "currentColor" }}>
             <ShieldCheck size={13} /> {verdictMeta.label} · {card.verdict?.integrityScore}/100
           </span>
         ) : null}
+        <ChevronDown size={17} className="rc-chevron" />
       </button>
 
       {open && (
-        <div className="rc-body">
+        <div className="rc-body" id={`review-${card.id}`}>
           <h2 className="rc-title">{review.title}</h2>
           <p className="rc-summary">{review.summary}</p>
 
@@ -483,8 +406,8 @@ function ReviewCardView({
           )}
 
           {meta && comparison && (
-            <div className="rc-compare">
-              <span className="rc-compare-index">Performance <strong>{meta.index}/100</strong> ({grade})</span>
+            <details className="rc-comparison"><summary>Compare with your earlier {periodNoun}s</summary><div className="rc-compare">
+              <span className="rc-compare-index">Study index <strong>{meta.index}/100</strong> ({grade})</span>
               {comparison.vsPrevious && (
                 <>
                   <span className={comparison.vsPrevious.indexDelta >= 0 ? "rc-up" : "rc-down"}>
@@ -508,7 +431,7 @@ function ReviewCardView({
                 </span>
               )}
               {comparison.momentum !== "unknown" && <span>Momentum: {MOMENTUM_LABEL[comparison.momentum]}</span>}
-            </div>
+            </div></details>
           )}
 
           <div className="rc-grid">
@@ -517,7 +440,7 @@ function ReviewCardView({
               <ul>{review.wins.map((win, index) => <li key={index}>{win}</li>)}</ul>
             </div>
             <div className="rc-col">
-              <h4>Gaps</h4>
+              <h4>Room to grow</h4>
               <ul>{review.gaps.map((gap, index) => <li key={index}>{gap}</li>)}</ul>
             </div>
           </div>
@@ -540,7 +463,7 @@ function ReviewCardView({
 
           {review.integritySignals.length > 0 && (
             <div className="rc-signals">
-              <h4><ShieldAlert size={14} /> Log forensics flagged</h4>
+              <h4><ShieldAlert size={14} /> Records to double-check</h4>
               <ul>
                 {review.integritySignals.map((signal, index) => (
                   <li key={index} data-sev={signal.severity}>{signal.detail}</li>
@@ -551,19 +474,19 @@ function ReviewCardView({
 
           {review.focusForNextPeriod.length > 0 && (
             <div className="rc-focus">
-              <h4>Next period directives</h4>
+              <h4>Your next focus</h4>
               <ul>{review.focusForNextPeriod.map((item, index) => <li key={index}>{item}</li>)}</ul>
             </div>
           )}
 
           {card.status === "AWAITING_ANSWERS" && (
             <div className="rc-truth">
-              <h3><ShieldCheck size={16} /> Truth Check</h3>
+              <h3><ShieldCheck size={16} /> A quick reflection</h3>
               <p className="rc-truth-note">
-                Answer honestly. Every reply is cross-checked against what the tracker actually recorded.
+                Compare your recollection with saved records. Missing or different entries can need correction; they do not prove dishonesty.
               </p>
               {card.questions.map((question, qIndex) => (
-                <fieldset key={question.id} className="rc-q">
+                <fieldset key={question.id} className="rc-q" disabled={submitting}>
                   <legend>{qIndex + 1}. {question.question}</legend>
                   {question.options.map((option, index) => (
                     <label key={index} className={`rc-opt ${answers[question.id] === index ? "rc-opt--on" : ""}`}>
@@ -578,9 +501,10 @@ function ReviewCardView({
                   ))}
                 </fieldset>
               ))}
-              {submitError && <p className="rc-err">{submitError}</p>}
+              {submitError && <p className="rc-err" role="alert">{submitError}</p>}
+              {submitNotice && <p className="rc-truth-note" role="status">{submitNotice}</p>}
               <button className="rc-submit" disabled={!allAnswered || submitting} onClick={submit}>
-                {submitting ? "The agent is cross-examining your answers…" : allAnswered ? "Submit for judgment" : `Answer all ${card.questions.length} questions`}
+                {submitting ? "Saving your reflection…" : allAnswered ? "Save reflection" : `Answer all ${card.questions.length} questions`}
               </button>
             </div>
           )}
@@ -590,10 +514,11 @@ function ReviewCardView({
               <div className="rc-verdict-head" style={{ color: verdictMeta.color }}>
                 <BadgeCheck size={18} />
                 <strong>{verdictMeta.label}</strong>
-                <span className="rc-score">{card.verdict.integrityScore}/100 integrity</span>
+                <span className="rc-score">{card.verdict.integrityScore}/100 alignment</span>
               </div>
-              <p className="rc-verdict-msg">{card.verdict.message}</p>
-              {card.verdict.consequence && <p className="rc-verdict-con">{card.verdict.consequence}</p>}
+              <p className="rc-truth-note">Automated assessment of recorded entries, not a judgement of you. Incomplete logs can affect this result.</p>
+              <details className="rc-assessment"><summary>Read the saved assessment</summary><p className="rc-verdict-msg">{card.verdict.message}</p>
+              {card.verdict.consequence && <p className="rc-verdict-con">{card.verdict.consequence}</p>}</details>
               {card.verdict.perQuestion.some((entry) => entry.consistent === false) && (
                 <ul className="rc-verdict-list">
                   {card.verdict.perQuestion
@@ -614,110 +539,7 @@ function ReviewCardView({
         </div>
       )}
 
-      <style jsx>{`
-        .rc {
-          border-radius: 18px; background: var(--bg-surface);
-          border: 1px solid rgba(255,255,255,0.06); overflow: hidden;
-        }
-        .rc-top {
-          width: 100%; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-          padding: 16px 18px; background: none; border: none; cursor: pointer; text-align: left;
-        }
-        .rc-period {
-          font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
-          padding: 4px 10px; border-radius: 999px;
-          background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-glow);
-        }
-        .rc-period--m { background: hsla(270, 68%, 62%, 0.12); color: var(--chemistry); border-color: hsla(270, 68%, 62%, 0.3); }
-        .rc-range { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
-        .rc-grade { font-size: 12.5px; font-weight: 800; color: var(--gold-bright); }
-        .rc-badge {
-          margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
-          font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.14); color: var(--text-secondary);
-        }
-        .rc-badge--pending { color: hsl(28, 90%, 62%); border-color: hsla(28, 90%, 58%, 0.4); }
-        .rc-body { padding: 4px 18px 20px; display: flex; flex-direction: column; gap: 14px; }
-        .rc-title { font-size: 16px; color: var(--text-primary); margin: 0; }
-        .rc-summary { font-size: 13.5px; line-height: 1.65; color: var(--text-secondary); margin: 0; }
-        .rc-metrics { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 10px 14px; border-radius: 12px; background: var(--bg-elevated); }
-        .rc-metrics span { font-size: 12px; color: var(--text-secondary); }
-        .rc-metrics strong { color: var(--gold); font-size: 13px; }
-        .rc-compare {
-          display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
-          padding: 10px 14px; border-radius: 12px;
-          background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.06);
-        }
-        .rc-compare span { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-secondary); }
-        .rc-compare-index { font-weight: 600; color: var(--text-primary) !important; }
-        .rc-compare-index strong { color: var(--gold); font-size: 13px; }
-        .rc-compare-rank { color: var(--gold-bright) !important; font-weight: 700; }
-        .rc-compare :global(.rc-up) { color: var(--success); font-weight: 700; }
-        .rc-compare :global(.rc-down) { color: hsl(28, 90%, 60%); font-weight: 700; }
-        .rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .rc-col h4, .rc-signals h4, .rc-focus h4 {
-          font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
-          color: var(--text-muted); margin: 0 0 8px; display: flex; align-items: center; gap: 6px;
-        }
-        .rc-col ul, .rc-signals ul, .rc-focus ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 6px; }
-        .rc-col li, .rc-focus li { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
-        .rc-subjects { display: flex; flex-wrap: wrap; gap: 8px; }
-        .rc-subject {
-          flex: 1 1 180px; padding: 10px 12px; border-radius: 12px; background: var(--bg-elevated);
-          display: flex; flex-direction: column; gap: 2px;
-        }
-        .rc-subject strong { font-size: 12.5px; color: var(--text-primary); }
-        .rc-subject span { font-size: 12px; color: var(--gold); font-weight: 700; }
-        .rc-subject em { font-size: 11.5px; color: var(--text-secondary); font-style: normal; }
-        .rc-trend { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-secondary); margin: 0; }
-        .rc-signals {
-          padding: 12px 14px; border-radius: 12px;
-          background: hsla(0, 72%, 62%, 0.06); border: 1px solid hsla(0, 72%, 62%, 0.18);
-        }
-        .rc-signals h4 { color: var(--danger); }
-        .rc-signals li { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
-        .rc-signals li[data-sev="3"] { color: var(--danger); font-weight: 600; }
-        .rc-focus li { font-weight: 500; }
-        .rc-truth {
-          padding: 16px; border-radius: 14px;
-          background: var(--bg-elevated); border: 1px solid var(--gold-glow);
-        }
-        .rc-truth h3 {
-          display: flex; align-items: center; gap: 8px; margin: 0 0 4px;
-          font-size: 14.5px; color: var(--gold);
-        }
-        .rc-truth-note { font-size: 12px; color: var(--text-secondary); margin: 0 0 14px; }
-        .rc-q { border: none; padding: 0; margin: 0 0 16px; }
-        .rc-q legend { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; line-height: 1.5; }
-        .rc-opt {
-          display: flex; align-items: center; gap: 9px;
-          padding: 8px 12px; margin-bottom: 6px; border-radius: 10px; cursor: pointer;
-          font-size: 12.5px; color: var(--text-secondary);
-          background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.06);
-        }
-        .rc-opt--on { border-color: var(--gold); color: var(--text-primary); background: var(--gold-dim); }
-        .rc-opt input { accent-color: var(--gold); }
-        .rc-err { font-size: 12.5px; color: var(--danger); margin: 0 0 8px; }
-        .rc-submit {
-          width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--gold-glow);
-          background: var(--gold-dim); color: var(--gold); font-weight: 800; font-size: 13.5px; cursor: pointer;
-        }
-        .rc-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-        .rc-verdict { padding: 16px; border-radius: 14px; border: 1px solid; background: var(--bg-elevated); }
-        .rc-verdict-head { display: flex; align-items: center; gap: 8px; font-size: 14.5px; margin-bottom: 10px; }
-        .rc-score { margin-left: auto; font-size: 12px; font-weight: 800; }
-        .rc-verdict-msg { font-size: 13.5px; line-height: 1.7; color: var(--text-primary); margin: 0 0 8px; }
-        .rc-verdict-con { font-size: 12px; color: var(--text-secondary); font-style: italic; margin: 0 0 10px; }
-        .rc-verdict-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
-        .rc-verdict-list li {
-          padding: 10px 12px; border-radius: 10px;
-          background: hsla(0, 72%, 62%, 0.07); border: 1px solid hsla(0, 72%, 62%, 0.18);
-          display: flex; flex-direction: column; gap: 3px;
-        }
-        .rc-verdict-list strong { font-size: 12.5px; color: var(--text-primary); }
-        .rc-verdict-list span { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
-        @media (max-width: 560px) { .rc-grid { grid-template-columns: 1fr; } }
-      `}</style>
+
     </section>
   );
 }

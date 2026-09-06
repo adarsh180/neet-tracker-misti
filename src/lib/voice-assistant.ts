@@ -31,7 +31,6 @@ export const VOICE_ROUTES: VoiceRouteDefinition[] = [
   { aliases: ["zoology", "zoology subject", "animal biology"], href: "/subjects/zoology", label: "Zoology" },
   { aliases: ["mood", "mood tracker", "wellness check", "mood check"], href: "/mood", label: "Mood Tracker" },
   { aliases: ["review cards", "reviews", "revision cards", "flash cards", "flashcards"], href: "/reviews", label: "Review Cards" },
-  { aliases: ["visual lab", "concept visualizer", "visual learning"], href: "/visual-lab", label: "Visual Lab" },
   { aliases: ["planner", "day planner", "study planner", "daily planner", "schedule", "study schedule", "today's plan", "today plan"], href: "/planner", label: "Day Planner" },
   { aliases: ["focus timer", "study timer", "timer", "focus session"], href: "/dashboard#focus-timer", label: "Focus Timer" },
 ];
@@ -86,12 +85,16 @@ const TENS: Record<string, number> = {
 };
 
 export function normalizeVoiceText(value: string) {
-  return value.toLowerCase().normalize("NFKC").replace(/[’]/g, "'").replace(/[^a-z0-9.'\s-]+/g, " ").replace(/\s+/g, " ").trim();
+  return value.toLowerCase().normalize("NFKC").replace(/[’]/g, "'").replace(/[^\p{L}\p{M}\p{N}.'\s-]+/gu, " ").replace(/\s+/g, " ").trim();
 }
 
 export function isSkipUtterance(value: string) {
   const text = normalizeVoiceText(value);
-  return SKIP_PHRASES.some((phrase) => text === phrase || text.includes(phrase));
+  if (SKIP_PHRASES.includes(text)) return true;
+  // A skipped detail (e.g. “weak concepts none”) must not erase the whole subject.
+  return /^(?:i\s+)?(?:did not study|didn't study|have not studied|haven't studied|not studied)(?:\s+(?:this subject|today|physics|chemistry|botany|zoology))?[.!]?$/.test(text)
+    || /^(?:please\s+)?(?:skip|leave)(?:\s+(?:this|it|this part|this subject|physics|chemistry|botany|zoology))?[.!]?$/.test(text)
+    || /^(?:आज\s+)?(?:नहीं पढ़ा|नहीं पढ़ी|स्किप करो)[.!]?$/.test(text);
 }
 
 export function isAffirmative(value: string) {

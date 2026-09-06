@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, type ComponentType } from "react";
-import { format, subDays, eachDayOfInterval, isSameDay } from "date-fns";
-import { Save, TrendingUp, Brain, Zap, Heart, CalendarDays, Sparkles } from "lucide-react";
+import { useEffect, useState, type ComponentType } from "react";
+import styles from "./mood.module.css";
+import { indiaDateKey } from "@/lib/study-date";
+import { format, subDays, eachDayOfInterval } from "date-fns";
+import { Save, TrendingUp, Brain, Zap, Heart, CalendarDays, Sparkles, Sun, Smile, Meh, Cloud, CloudRain } from "lucide-react";
 
 interface MoodEntry {
   id: string;
@@ -14,12 +16,15 @@ interface MoodEntry {
   note: string | null;
 }
 
+type MoodForm = { mood: string; energy: number; focus: number; stress: number; note: string };
+const EMPTY_MOOD: MoodForm = { mood: "", energy: 6, focus: 6, stress: 4, note: "" };
+
 const MOODS = [
-  { key: "AMAZING", emoji: "🌟", label: "Amazing", color: "hsl(38,90%,62%)" },
-  { key: "GOOD", emoji: "😊", label: "Good", color: "hsl(142,65%,52%)" },
-  { key: "OKAY", emoji: "😐", label: "Okay", color: "hsl(200,60%,58%)" },
-  { key: "LOW", emoji: "😔", label: "Low", color: "hsl(38,60%,52%)" },
-  { key: "TERRIBLE", emoji: "😰", label: "Terrible", color: "hsl(0,64%,58%)" },
+  { key: "AMAZING", icon: Sun, label: "Amazing", color: "hsl(38,90%,62%)" },
+  { key: "GOOD", icon: Smile, label: "Good", color: "hsl(142,65%,52%)" },
+  { key: "OKAY", icon: Meh, label: "Okay", color: "hsl(200,60%,58%)" },
+  { key: "LOW", icon: Cloud, label: "Low", color: "hsl(38,60%,52%)" },
+  { key: "TERRIBLE", icon: CloudRain, label: "Terrible", color: "hsl(0,64%,58%)" },
 ];
 
 const MOOD_BG: Record<string, string> = {
@@ -68,6 +73,7 @@ function SliderInput({
       <div className="mood-slider-track">
         <div className="mood-slider-fill" style={{ width: `${value * 10}%`, background: color }} />
         <input
+          aria-label={label}
           type="range"
           min={1}
           max={10}
@@ -87,51 +93,48 @@ function SliderInput({
 
 export default function MoodPage() {
   const [entries, setEntries] = useState<MoodEntry[]>([]);
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [form, setForm] = useState({ mood: "", energy: 6, focus: 6, stress: 4, note: "" });
+  const [selectedDate, setSelectedDate] = useState(indiaDateKey());
+  const [drafts, setDrafts] = useState<Record<string, MoodForm>>({});
+  const found = entries.find(entry => indiaDateKey(entry.date) === selectedDate);
+  const form = drafts[selectedDate] ?? (found ? { ...found, note: found.note ?? "" } : EMPTY_MOOD);
+  const setForm = (update: (current: MoodForm) => MoodForm) => {
+    setDrafts(current => ({ ...current, [selectedDate]: update(current[selectedDate] ?? form) }));
+    setSaved(false);
+  };
+  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const fetchEntries = useCallback(async () => {
-    const res = await fetch("/api/mood?days=30");
-    if (res.ok) setEntries(await res.json());
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/mood?days=30", { signal: controller.signal })
+      .then(async response => { if (!response.ok) throw new Error("Could not load your mood entries."); return response.json() as Promise<MoodEntry[]>; })
+      .then(setEntries)
+      .catch(error => { if (!controller.signal.aborted) setError(error.message); });
+    return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
-
-  useEffect(() => {
-    const found = entries.find((e) => e.date.split("T")[0] === selectedDate);
-    if (found) {
-      setForm({
-        mood: found.mood,
-        energy: found.energy,
-        focus: found.focus,
-        stress: found.stress,
-        note: found.note || "",
-      });
-    } else {
-      setForm({ mood: "", energy: 6, focus: 6, stress: 4, note: "" });
-    }
-  }, [selectedDate, entries]);
-
   const handleSave = async () => {
-    if (!form.mood) return;
+    if (!form.mood || saving) return;
     setSaving(true);
-    await fetch("/api/mood", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: selectedDate, ...form }),
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    fetchEntries();
+    setError("");
+    const date = selectedDate;
+    try {
+      const response = await fetch("/api/mood", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, ...form }),
+      });
+      if (!response.ok || response.status === 202) throw new Error(response.status === 202 ? "Queued on this device. Your mood will sync when you reconnect." : "Your mood could not be saved. Your entry is still here; please retry.");
+      const entry = await response.json() as MoodEntry;
+      setEntries(current => [entry, ...current.filter(item => indiaDateKey(item.date) !== date)].sort((a,b) => b.date.localeCompare(a.date)));
+      setSaved(true);
+    } catch (error) { setError(error instanceof Error ? error.message : "Please try saving again."); }
+    finally { setSaving(false); }
   };
 
   const last30 = eachDayOfInterval({ start: subDays(new Date(), 29), end: new Date() });
-  const getEntry = (d: Date) => entries.find((e) => isSameDay(new Date(e.date), d));
+  const getEntry = (d: Date) => entries.find((e) => indiaDateKey(e.date) === format(d, "yyyy-MM-dd"));
   const getMoodObj = (key: string) => MOODS.find((m) => m.key === key);
 
   const recent = entries.slice(0, 7);
@@ -142,25 +145,18 @@ export default function MoodPage() {
   const currentMoodObj = getMoodObj(form.mood);
 
   return (
-    <div className="mood-page">
-      <div className="mood-bg">
-        <div className="mood-orb mood-orb-1" />
-        <div className="mood-orb mood-orb-2" />
-        <div className="mood-orb mood-orb-3" />
-        <div className="mood-grid" />
-        <div className="mood-vignette" />
-      </div>
-
+    <div className={`mood-page ${styles.wellbeing}`}>
       <div className="mood-shell animate-fade-in">
+        {error && <p className="studio-error" role="alert">{error}</p>}
         <div className="page-header mood-header">
           <div className="mood-heading">
             <div className="mood-badge">
               <Sparkles size={14} />
-              Daily emotional tracking
+              A MOMENT FOR YOURSELF
             </div>
-            <h1 className="page-title gradient-text mood-title">Mood Tracker</h1>
+            <h1 className="page-title gradient-text mood-title">Room for how you feel.</h1>
             <p className="page-subtitle mood-subtitle">
-              Track your daily emotional state and mental energy for study optimisation
+              Check in with yourself. There is no score to beat here.
             </p>
           </div>
 
@@ -241,7 +237,7 @@ export default function MoodPage() {
                     }
                     type="button"
                   >
-                    <span className="mood-btn-emoji">{m.emoji}</span>
+                    <span className="mood-btn-emoji"><m.icon size={26} strokeWidth={1.5}/></span>
                     <span className="mood-btn-label">{m.label}</span>
                   </button>
                 ))}
@@ -255,7 +251,7 @@ export default function MoodPage() {
                     border: `1px solid ${MOOD_BORDER[form.mood]}`,
                   }}
                 >
-                  <span className="mood-display-emoji">{currentMoodObj.emoji}</span>
+                  <span className="mood-display-emoji"><currentMoodObj.icon size={34} strokeWidth={1.5}/></span>
                   <div className="mood-display-copy">
                     <div className="mood-display-title" style={{ color: currentMoodObj.color }}>
                       {currentMoodObj.label}
@@ -300,8 +296,9 @@ export default function MoodPage() {
             </div>
 
             <div className="glass-card mood-card">
-              <h3 className="mood-card-title">Today's Note (optional)</h3>
+              <h3 className="mood-card-title">Today’s note (optional)</h3>
               <textarea
+                aria-label="Optional mood note"
                 className="input mood-note"
                 placeholder="How are you feeling today? What's on your mind?"
                 value={form.note}
@@ -337,6 +334,7 @@ export default function MoodPage() {
                       key={day.toISOString()}
                       className={`mood-cal-day ${isSelected ? "selected" : ""} ${entry ? "has-entry" : ""}`}
                       onClick={() => setSelectedDate(format(day, "yyyy-MM-dd"))}
+                      aria-label={`${format(day, "d MMM")}: ${moodObj?.label ?? "No entry"}`}
                       data-tip={`${format(day, "d MMM")}${entry ? ` · ${moodObj?.label}` : ""}`}
                       style={{
                         background: entry ? MOOD_BG[entry.mood] : "var(--glass-ultra)",
@@ -345,7 +343,7 @@ export default function MoodPage() {
                       type="button"
                     >
                       {moodObj ? (
-                        <span className="mood-cal-emoji">{moodObj.emoji}</span>
+                        <span className="mood-cal-emoji"><moodObj.icon size={18}/></span>
                       ) : (
                         <span className="mood-cal-date">{format(day, "d")}</span>
                       )}
@@ -363,7 +361,7 @@ export default function MoodPage() {
 
               <div className="mood-entry-list">
                 {entries.slice(0, 7).length === 0 ? (
-                  <p className="mood-empty">No mood entries yet. Log today's mood!</p>
+                  <p className="mood-empty">No mood entries yet. Record a day when you’re ready.</p>
                 ) : (
                   entries.slice(0, 7).map((entry) => {
                     const moodObj = getMoodObj(entry.mood);
@@ -376,17 +374,18 @@ export default function MoodPage() {
                           background: MOOD_BG[entry.mood],
                           border: `1px solid ${MOOD_BORDER[entry.mood]}`,
                         }}
-                        onClick={() => setSelectedDate(entry.date.split("T")[0])}
+                        onClick={() => setSelectedDate(indiaDateKey(entry.date))}
                         role="button"
+                        onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedDate(indiaDateKey(entry.date)); } }}
                         tabIndex={0}
                       >
-                        <span className="mood-entry-emoji">{moodObj?.emoji}</span>
+                        <span className="mood-entry-emoji">{moodObj && <moodObj.icon size={22}/>}</span>
                         <div className="mood-entry-copy">
                           <div className="mood-entry-label" style={{ color: moodObj?.color }}>
                             {moodObj?.label}
                           </div>
                           <div className="mood-entry-sub">
-                            {format(new Date(entry.date), "d MMM")} · ⚡{entry.energy} 🧠{entry.focus} 💢
+                            {format(new Date(entry.date), "d MMM")} · Energy {entry.energy} · Focus {entry.focus} · Stress
                             {entry.stress}
                           </div>
                         </div>

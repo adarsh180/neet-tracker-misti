@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Serif_Devanagari, Playfair_Display } from "next/font/google";
 import Script from "next/script";
-import LaunchSplash from "@/components/launch-splash";
 import PwaRegister from "@/components/pwa-register";
 import ThemeToggle from "@/components/theme-toggle";
 import "./globals.css";
+import "./studio.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -94,7 +94,6 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <LaunchSplash />
         <PwaRegister />
         {children}
         <ThemeToggle />

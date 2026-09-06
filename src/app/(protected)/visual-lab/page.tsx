@@ -1,5 +1,6 @@
-import VisualLabClient from "@/components/visual-lab/visual-lab-client";
+import { redirect } from "next/navigation";
 
-export default function VisualLabPage() {
-  return <VisualLabClient />;
+// Keep old bookmarks useful without keeping a separate Visual Lab workspace.
+export default function RetiredVisualLabPage() {
+  redirect("/reader");
 }

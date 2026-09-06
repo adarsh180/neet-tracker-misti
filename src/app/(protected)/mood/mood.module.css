@@ -1,0 +1,20 @@
+/* Root scoping takes precedence over legacy styled-jsx during the component migration. */
+.wellbeing.wellbeing:global(.mood-page){background:var(--bg-void);color:var(--text-primary);min-height:calc(100dvh - 160px)}
+.wellbeing.wellbeing :global(.mood-shell){max-width:1320px;padding:36px 40px 48px;margin:auto}
+.wellbeing.wellbeing :global(.mood-badge){padding:0;border:0;box-shadow:none;background:none;color:var(--gold);font-size:11px;letter-spacing:.12em}
+.wellbeing.wellbeing :global(.mood-title){font:500 clamp(32px,3.5vw,48px) var(--font-display),Georgia,serif;background:none;-webkit-text-fill-color:currentColor;color:var(--text-primary);letter-spacing:-1px;margin:14px 0}
+.wellbeing.wellbeing :global(.mood-subtitle){font-size:15px;color:var(--text-secondary);line-height:1.6}
+.wellbeing.wellbeing :global(.mood-card),.wellbeing.wellbeing :global(.mood-stat-card){background:var(--bg-surface);border:1px solid var(--glass-border);box-shadow:none;border-radius:18px;padding:24px}
+.wellbeing.wellbeing :global(.mood-card::before),.wellbeing.wellbeing :global(.mood-stat-card::before){display:none}
+.wellbeing.wellbeing :global(.mood-card-title){font-size:18px;letter-spacing:-.3px;font-weight:600}
+.wellbeing.wellbeing :global(.mood-btn){box-shadow:none;border-radius:12px;min-height:92px;background:var(--bg-base);border-color:var(--glass-border)}
+.wellbeing.wellbeing :global(.mood-btn-label),.wellbeing.wellbeing :global(.mood-slider-label),.wellbeing.wellbeing :global(.mood-side-tag){font-size:12px;color:var(--text-secondary)}
+.wellbeing.wellbeing :global(.mood-btn-emoji),.wellbeing.wellbeing :global(.mood-display-emoji),.wellbeing.wellbeing :global(.mood-cal-emoji){display:grid;place-items:center}
+.wellbeing.wellbeing :global(.input){font-size:16px;background:var(--bg-base);color:var(--text-primary);border-radius:10px;min-height:44px}
+.wellbeing.wellbeing :global(.mood-note){min-height:120px;line-height:1.7}
+.wellbeing.wellbeing :global(.mood-display){box-shadow:none}
+.wellbeing.wellbeing :global(.mood-entry-sub){font-size:12px;line-height:1.6;white-space:normal}
+.wellbeing.wellbeing :global(.mood-save){box-shadow:none;border-radius:12px;min-height:48px;font-size:14px}
+.wellbeing.wellbeing :global(.mood-cal-day){min-height:42px;box-shadow:none;border-radius:9px}
+@media(max-width:900px){.wellbeing.wellbeing :global(.mood-shell){padding:28px 24px}.wellbeing.wellbeing :global(.mood-header){align-items:flex-start;gap:20px;flex-wrap:wrap}}
+@media(max-width:600px){.wellbeing.wellbeing :global(.mood-shell){padding:24px 16px}.wellbeing.wellbeing :global(.mood-card),.wellbeing.wellbeing :global(.mood-stat-card){padding:18px}.wellbeing.wellbeing :global(.mood-btn){min-width:0;padding:10px 4px}.wellbeing.wellbeing :global(.mood-stats){gap:10px}}

@@ -673,6 +673,10 @@ function SemanticDivider() {
 }
 
 export function NeetGuruVisualExplainer({ visual }: { visual: NeetGuruVisualSchema }) {
+  return <VisualScene key={`${visual.title}:${visual.animation}:${JSON.stringify(visual.steps)}`} visual={visual} />;
+}
+
+function VisualScene({ visual }: { visual: NeetGuruVisualSchema }) {
   const theme = visual.theme === "generic" ? inferNeetTheme(visual) : (visual.theme ?? inferNeetTheme(visual));
   const view = visual.view ?? inferNeetView(visual);
   const animation = visual.animation && visual.animation !== "auto" ? visual.animation : inferNeetAnimation({ ...visual, theme, view });
@@ -688,13 +692,7 @@ export function NeetGuruVisualExplainer({ visual }: { visual: NeetGuruVisualSche
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const stepCount = steps.length;
-  const semanticNodes = visual.nodes ?? [];
-
-  useEffect(() => {
-    setActiveStep(0);
-    setSelectedNodeId(null);
-    setIsPlaying(true);
-  }, [visual.title, stepCount, animation]);
+  const semanticNodes = useMemo(() => visual.nodes ?? [], [visual.nodes]);
 
   useEffect(() => {
     if (!isPlaying || stepCount <= 1) return;

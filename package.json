@@ -65,7 +65,7 @@
     "bank:template-cluster": "node scripts/cluster-clean-bank-templates.mjs",
     "bank:visual-pilot": "node scripts/visual-attachment-pilot.mjs",
     "report:verify": "npx tsx scripts/verify-practice-report.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && node scripts/sync-pdf-assets.mjs"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -83,6 +83,7 @@
     "lucide-react": "^1.8.0",
     "mysql2": "^3.22.0",
     "next": "16.3.1",
+    "pdfjs-dist": "6.3.289",
     "prisma": "^6.19.3",
     "puppeteer-core": "^25.7.0",
     "react": "19.2.4",
@@ -107,6 +108,9 @@
     "typescript": "^5"
   },
   "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.0"
+    },
     "ip-address": "10.5.0",
     "nanoid": "3.3.18",
     "postcss": "8.5.26",

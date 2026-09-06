@@ -498,7 +498,7 @@ Include:
 1. Estimated NEET score range (out of 720)
 2. Predicted rank range
 3. Subject-wise strength/weakness analysis
-4. Comparison with AIIMS Delhi cutoff (~700+ score, rank ~50) and AIIMS Rishikesh (~660+, rank ~200-500)
+4. Discuss gaps to optional 660/700 study-score benchmarks only. These are not verified college cutoffs or admission thresholds. Do not claim admission has been achieved from a score estimate.
 5. Time remaining vs. preparation gap analysis  
 6. Specific weekly action plan to close the gap
 7. Bluff check: flag any inconsistencies between claimed progress and actual data

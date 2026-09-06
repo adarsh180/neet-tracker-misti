@@ -13,6 +13,7 @@ import {
   type PracticeSubmitMeta,
 } from "@/lib/practice-engine";
 import { getPrivateSession } from "@/lib/server-auth";
+import { validatePracticeSnapshot } from "@/lib/practice-snapshot";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -147,6 +148,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
   }
   if (test.status === "COMPLETED") return NextResponse.json({ error: "Already completed" }, { status: 400 });
+  if (test.status === "GENERATING") return NextResponse.json({ error: "The paper is not ready" }, { status: 409 });
+  const questions = sanitizePracticeTest(test).questions ?? [];
+  const snapshotError = validatePracticeSnapshot(body, questions.map(question => question.id), test.durationMinutes * 60);
+  if (snapshotError) return NextResponse.json({error:snapshotError}, {status:400});
 
   const common = {
     answersJson: body.answers && Array.isArray(body.answers) ? body.answers : undefined,
@@ -172,7 +177,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   if (!data) return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 
-  const updated = await db.practiceTest.update({ where: { id }, data });
+  const changed = await db.practiceTest.updateMany({ where: { id, userId:session.userId, updatedAt:test.updatedAt, status:{not:"COMPLETED"} }, data });
+  if (!changed.count) return NextResponse.json({error:"A newer update was received. Please retry."},{status:409});
+  const updated = await db.practiceTest.findUniqueOrThrow({where:{id}});
   return NextResponse.json({ test: sanitizePracticeTest(updated) });
 }
 

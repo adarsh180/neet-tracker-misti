@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, type CSSProperties } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   AreaChart,
@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
   ReferenceDot,
   RadarChart,
   Radar,
@@ -27,12 +26,11 @@ import {
   X,
   BarChart2,
   Sparkles,
-  ChevronDown,
-  CalendarDays,
-  ArrowUpRight,
   FileSpreadsheet,
 } from "lucide-react";
 import { format } from "date-fns";
+import styles from "./tests.module.css";
+import MetricNote from "@/components/studio/metric-note";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
 
 interface TestRecord {
@@ -172,29 +170,35 @@ export default function TestsPage() {
     notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    const [tR, sR, eR] = await Promise.all([fetch("/api/tests"), fetch("/api/subjects"), fetch("/api/error-logs")]);
-    if (tR.ok) setTests(await tR.json());
-    if (sR.ok) setSubjects(await sR.json());
-    if (eR.ok) setErrorLogs(await eR.json());
-    setLoading(false);
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
+    const responses = await Promise.all(["/api/tests", "/api/subjects", "/api/error-logs"].map(url => fetch(url, { signal })));
+    if (responses.some(response => !response.ok)) throw new Error("Your test journal could not be loaded. Please retry.");
+    return Promise.all(responses.map(response => response.json())) as Promise<[TestRecord[], SubjectMini[], ErrorLogOption[]]>;
   }, []);
 
   useEffect(() => {
-    fetchData();
+    const controller = new AbortController();
+    fetchData(controller.signal).then(([tests, subjects, logs]) => {
+      setTests(tests); setSubjects(subjects); setErrorLogs(logs);
+    }).catch(error => { if (!controller.signal.aborted) setError(error.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [fetchData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     setSaving(true);
-    await fetch("/api/tests", {
+    setError("");
+    try {
+    const response = await fetch("/api/tests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, subjectId: form.subjectId || null }),
     });
-    setSaving(false);
+    if (!response.ok || response.status === 202) throw new Error(response.status === 202 ? "Saved on this device and waiting to sync. Keep this form until it reconnects." : "Your test was not saved. Your form is preserved; please retry.");
     setShowForm(false);
     setForm({
       testName: "",
@@ -225,17 +229,23 @@ export default function TestsPage() {
       takenAt: format(new Date(), "yyyy-MM-dd"),
       notes: "",
     });
-    fetchData();
+    const [tests, subjects, logs] = await fetchData();
+    setTests(tests); setSubjects(subjects); setErrorLogs(logs);
+    } catch (error) { setError(error instanceof Error ? error.message : "Your test could not be saved."); }
+    finally { setSaving(false); }
   };
 
   const deleteTest = async (id: string) => {
     if (!confirm("Delete this test record?")) return;
-    setTests((p) => p.filter((t) => t.id !== id));
-    await fetch("/api/tests", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
+    try {
+      const response = await fetch("/api/tests", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!response.ok || response.status === 202) throw new Error("Deletion has not been confirmed by the server. Please retry when connected.");
+      setTests(current => current.filter(test => test.id !== id));
+    } catch (error) { setError(error instanceof Error ? error.message : "Could not delete this test."); }
   };
 
   const filtered = filterType === "ALL" ? tests : tests.filter((t) => t.testType === filterType);
@@ -252,7 +262,7 @@ export default function TestsPage() {
   }));
   // Subject mastery radar — averaged %, each NEET subject is out of 180.
   const SUBJECT_MAX = 180;
-  const SUBJECT_TARGET = 90; // AIIMS-grade target per subject
+
   const subjectRadarData = (
     [
       ["physicsScore", "Physics"],
@@ -261,14 +271,14 @@ export default function TestsPage() {
       ["zoologyScore", "Zoology"],
     ] as const
   ).map(([key, subject]) => {
-    const vals = tests.map((t) => t[key]).filter((v): v is number => v != null);
+    const vals = tests.filter(test => test.maxScore === 720).map((t) => t[key]).filter((v): v is number => v != null);
     const avgPct = vals.length
       ? (vals.reduce((s, v) => s + v, 0) / vals.length / SUBJECT_MAX) * 100
-      : 0;
-    return { subject, You: Math.round(Math.min(100, Math.max(0, avgPct))), Target: SUBJECT_TARGET };
+      : null;
+    return { subject, You: avgPct === null ? null : Math.round(Math.min(100, Math.max(0, avgPct))) };
   });
   const hasSubjectData = tests.some(
-    (t) => t.physicsScore != null || t.chemistryScore != null || t.botanyScore != null || t.zoologyScore != null,
+    (t) => t.maxScore === 720 && t.physicsScore != null && t.chemistryScore != null && t.botanyScore != null && t.zoologyScore != null,
   );
   const hasSingleTest = lineData.length === 1;
 
@@ -313,37 +323,30 @@ export default function TestsPage() {
 
   const STATS = [
     { label: "Total Tests", value: tests.length, unit: "taken", icon: BarChart2, color: "var(--gold)" },
-    { label: "Average", value: `${avgPct}%`, unit: "score", icon: TrendingUp, color: "var(--rose-bright)" },
-    { label: "Personal Best", value: `${bestPct.toFixed(1)}%`, unit: "highest", icon: Award, color: "var(--lotus-bright)" },
+    { label: "Average", value: tests.length ? `${avgPct}%` : "—", unit: "recorded score", icon: TrendingUp, color: "var(--rose-bright)" },
+    { label: "Personal Best", value: tests.length ? `${bestPct.toFixed(1)}%` : "—", unit: "highest", icon: Award, color: "var(--lotus-bright)" },
     {
-      label: "AIIMS Status",
-      value: avgPct >= 97 ? "Delhi ✓" : avgPct >= 91 ? "Risk. ≈ Gap" : "Below Cut.",
-      unit: avgPct >= 97 ? "On track" : "Gap remains",
+      label: "Latest attempt",
+      value: sorted.length ? `${sorted.at(-1)!.percentage.toFixed(1)}%` : "—",
+      unit: sorted.at(-1)?.testName ?? "Your next starting point",
       icon: Target,
-      color: avgPct >= 97 ? "var(--success)" : avgPct >= 91 ? "var(--warning)" : "var(--danger)",
+      color: "var(--physics)",
     },
   ];
 
   return (
-    <div className="tests-page animate-fade-in">
-      <div className="tests-bg">
-        <div className="tests-orb tests-orb-1" />
-        <div className="tests-orb tests-orb-2" />
-        <div className="tests-orb tests-orb-3" />
-        <div className="tests-grid" />
-        <div className="tests-vignette" />
-      </div>
-
+    <div className={`tests-page animate-fade-in ${styles.journal}`}>
+      {error && <p role="alert" className="studio-error">{error}</p>}
       <main className="tests-shell">
         <div className="page-header tests-header">
           <div className="tests-heading">
             <div className="tests-badge">
               <Sparkles size={14} />
-              Performance intelligence
+              YOUR PRACTICE, IN PERSPECTIVE
             </div>
-            <h1 className="page-title gradient-text tests-title">Test Performance</h1>
+            <h1 className="page-title gradient-text tests-title">Every test tells a story.</h1>
             <p className="page-subtitle tests-subtitle">
-              Track every mock, AITS &amp; sectional — with line &amp; scatter analysis against AIIMS cutoffs
+              Record the attempt. Notice the pattern. Choose what to revisit.
             </p>
           </div>
 
@@ -753,7 +756,7 @@ export default function TestsPage() {
                   </div>
                   <div>
                     <h3 className="tests-section-title">Score Progression</h3>
-                    <p className="tests-section-subtitle">Trend over time with AIIMS cutoffs</p>
+                    <p className="tests-section-subtitle">Your recorded score percentage, in attempt order</p>
                   </div>
                 </div>
                 {trendUp && <span className="badge badge-success tests-trend-chip">↑ Improving</span>}
@@ -787,24 +790,12 @@ export default function TestsPage() {
                     tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
-                    domain={[0, 100]}
+                    domain={[-25, 100]}
                     tickFormatter={(v: number) => `${v}%`}
                   />
                   <Tooltip content={<ChartTip />} />
-                  <ReferenceLine
-                    y={97}
-                    stroke="color-mix(in srgb, var(--gold) 48%, transparent)"
-                    strokeDasharray="6 3"
-                    label={{ value: "AIIMS Delhi 97%", fill: "var(--gold)", fontSize: 10 }}
-                  />
-                  <ReferenceLine
-                    y={91}
-                    stroke="color-mix(in srgb, var(--lotus-bright) 48%, transparent)"
-                    strokeDasharray="6 3"
-                    label={{ value: "AIIMS Rish. 91%", fill: "var(--lotus-bright)", fontSize: 10 }}
-                  />
                   <Area
-                    type="monotone"
+                    type="linear"
                     dataKey="percentage"
                     stroke="url(#lineGradient)"
                     strokeWidth={3}
@@ -812,10 +803,10 @@ export default function TestsPage() {
                     fill="url(#areaGradient)"
                     dot={{ fill: "#d4a853", r: 4, strokeWidth: 0 }}
                     activeDot={{ r: 8, fill: "#fff", stroke: "#d4a853", strokeWidth: 3 }}
-                    isAnimationActive={true}
+                    isAnimationActive={false}
                     animationDuration={1600}
                     animationEasing="ease-out"
-                    style={{ filter: "url(#glow)" }}
+
                   />
                   {hasSingleTest && (
                     <ReferenceDot
@@ -836,6 +827,7 @@ export default function TestsPage() {
                 </AreaChart>
                 )}
               </ResponsiveChart>
+              <MetricNote>Each point is a saved score divided by that test’s maximum marks. Different formats and difficulty levels are not directly comparable. This chart does not predict admission or rank.</MetricNote>
             </div>
 
             {tests.length >= 1 && (
@@ -846,8 +838,8 @@ export default function TestsPage() {
                       <Target size={15} />
                     </div>
                     <div>
-                      <h3 className="tests-section-title">Subject Mastery Radar</h3>
-                      <p className="tests-section-subtitle">Your strength per subject vs AIIMS target</p>
+                      <h3 className="tests-section-title">Your subject balance</h3>
+                      <p className="tests-section-subtitle">Recorded subject marks from 720-mark mocks</p>
                     </div>
                   </div>
                 </div>
@@ -861,7 +853,7 @@ export default function TestsPage() {
                   <>
                     <ResponsiveChart height={280}>
                       {(w, h) => (
-                        <RadarChart width={w} height={h} data={subjectRadarData} outerRadius="70%">
+                        <RadarChart accessibilityLayer width={w} height={h} data={subjectRadarData} outerRadius="70%">
                           <defs>
                             <radialGradient id="testRadarYou" cx="50%" cy="50%" r="65%">
                               <stop offset="0%" stopColor="#c2606e" stopOpacity={0.04} />
@@ -870,13 +862,12 @@ export default function TestsPage() {
                           </defs>
                           <PolarGrid stroke="var(--chart-grid)" strokeOpacity={0.55} />
                           <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--chart-axis)", fontSize: 12, fontWeight: 600 }} />
-                          <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                          <PolarRadiusAxis domain={[-25, 100]} tick={false} axisLine={false} />
                           <Tooltip
                             contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 12, color: "var(--text-primary)" }}
                             labelStyle={{ color: "var(--text-primary)" }}
                             formatter={(value) => `${value}%`}
                           />
-                          <Radar name="AIIMS Target" dataKey="Target" stroke="var(--gold)" strokeWidth={1.5} fill="var(--gold)" fillOpacity={0.05} strokeDasharray="4 3" isAnimationActive animationDuration={900} />
                           <Radar
                             name="You"
                             dataKey="You"
@@ -898,77 +889,11 @@ export default function TestsPage() {
                         <div className="tests-legend-dot" style={{ background: "var(--rose-bright)" }} />
                         <span>You</span>
                       </div>
-                      <div className="tests-legend-item">
-                        <div className="tests-legend-dot" style={{ background: "var(--gold)" }} />
-                        <span>AIIMS Target ({SUBJECT_TARGET}%)</span>
-                      </div>
+
                     </div>
                   </>
                 ) : (
-                  <>
-                    <ResponsiveChart height={280}>
-                      {(w, h) => (
-                        <AreaChart width={w} height={h} data={lineData} key={`wave-${lineData.length}`}>
-                          <defs>
-                            <linearGradient id="waveFill" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#c2606e" stopOpacity={0.5} />
-                              <stop offset="55%" stopColor="#a855f7" stopOpacity={0.18} />
-                              <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="waveStroke" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#c2606e" />
-                              <stop offset="100%" stopColor="#a855f7" />
-                            </linearGradient>
-                            <filter id="waveGlow" x="-20%" y="-20%" width="140%" height="140%">
-                              <feGaussianBlur stdDeviation="4" result="b" />
-                              <feComposite in="SourceGraphic" in2="b" operator="over" />
-                            </filter>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
-                          <XAxis dataKey="date" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fill: "var(--chart-axis)", fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
-                          <Tooltip content={<ChartTip />} />
-                          <ReferenceLine y={97} stroke="color-mix(in srgb, var(--gold) 46%, transparent)" strokeDasharray="6 3" label={{ value: "AIIMS Delhi 97%", fill: "var(--gold)", fontSize: 10 }} />
-                          <ReferenceLine y={91} stroke="color-mix(in srgb, var(--lotus-bright) 46%, transparent)" strokeDasharray="6 3" label={{ value: "AIIMS Rish. 91%", fill: "var(--lotus-bright)", fontSize: 10 }} />
-                          <Area
-                            type="natural"
-                            dataKey="percentage"
-                            stroke="url(#waveStroke)"
-                            strokeWidth={3}
-                            fill="url(#waveFill)"
-                            fillOpacity={1}
-                            dot={{ fill: "#c2606e", r: 4, strokeWidth: 0 }}
-                            activeDot={{ r: 8, fill: "#fff", stroke: "#c2606e", strokeWidth: 3 }}
-                            isAnimationActive
-                            animationDuration={1700}
-                            animationEasing="ease-out"
-                            style={{ filter: "url(#waveGlow)" }}
-                          />
-                          {hasSingleTest && (
-                            <ReferenceDot
-                              x={lineData[0].date}
-                              y={lineData[0].percentage}
-                              r={7}
-                              fill="#fff0f3"
-                              stroke="#c2606e"
-                              strokeWidth={3}
-                              label={{ value: `${lineData[0].percentage.toFixed(1)}%`, fill: "var(--rose-bright)", fontSize: 11, position: "top" }}
-                            />
-                          )}
-                        </AreaChart>
-                      )}
-                    </ResponsiveChart>
-                    <div className="tests-legend">
-                      <div className="tests-legend-item">
-                        <div className="tests-legend-dot" style={{ background: "var(--rose-bright)" }} />
-                        <span>Score wave</span>
-                      </div>
-                      <div className="tests-legend-item">
-                        <div className="tests-legend-dot" style={{ background: "var(--gold)" }} />
-                        <span>AIIMS cutoffs</span>
-                      </div>
-                    </div>
-                  </>
+                  <div className={styles.missingScores}><Target size={38} strokeWidth={1.25}/><h3>Make the next review clearer.</h3><p>Add all four subject scores to a 720-mark mock to see your balance here. Missing marks are not treated as zero.</p><button className="studio-action" onClick={() => setShowForm(true)}>Record subject scores</button></div>
                 )}
               </div>
             )}

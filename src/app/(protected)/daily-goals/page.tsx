@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useState, useCallback } from "react";
+import { type CSSProperties, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { format, addDays, subDays as dateFnsSubDays, differenceInCalendarDays } from "date-fns";
 import {
   Clock,
@@ -23,6 +23,12 @@ import {
   X,
 } from "lucide-react";
 import VoiceDailyLog from "@/components/daily-goals/voice-daily-log";
+import SubjectMark from "@/components/studio/subject-mark";
+import { acknowledgedDailyGoalIds, reconcileDailyGoalQueue } from "@/lib/daily-goal-receipt";
+import { AreaChart, Area, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
+import ResponsiveChart from "@/components/charts/ResponsiveChart";
+import MetricNote from "@/components/studio/metric-note";
+import styles from "./daily-goals.module.css";
 
 /* ---------- TYPES ---------- */
 interface DailyGoalEntry {
@@ -70,6 +76,7 @@ interface HeatCell {
 }
 
 interface ChartPoint {
+  recorded: boolean;
   date: string;
   displayDate: string;
   hours: number;
@@ -182,7 +189,7 @@ const STUDY_METRICS: Record<StudyMetricKey, { label: string; unit: string; accen
   questions: { label: "Questions", unit: "qs", accent: "var(--physics)", cap: 500 },
   discipline: { label: "Discipline", unit: "/100", accent: "var(--botany)", cap: 100 },
   completion: { label: "Completion", unit: "%", accent: "var(--rose-bright)", cap: 100 },
-  rhythm: { label: "7-day rhythm", unit: "score", accent: "var(--lotus-bright)", cap: 100 },
+  rhythm: { label: "Daily study index", unit: "score", accent: "var(--lotus-bright)", cap: 100 },
 };
 
 const DAILY_QUICK_PRESETS: DailyQuickPreset[] = [
@@ -294,6 +301,7 @@ function buildChartData(goals: DailyGoalEntry[], days = 30): ChartPoint[] {
       Math.min(100, (point.hours / 12) * 45 + (point.questions / 500) * 25 + discipline * 0.15 + completion * 0.15)
     );
     data.push({
+      recorded: Boolean(map[dateStr]),
       date: dateStr,
       displayDate: days > 60 ? format(targetDate, "MMM dd") : format(targetDate, "MMM dd"),
       hours: point.hours,
@@ -353,7 +361,7 @@ function buildScreenChartData(rows: ScreenTimeEntry[], range: RangeKey): ScreenC
 
   const days = RANGE_DAYS[range];
   const dailyRows = buildDailyScreenRows(rows, days);
-  const bucketSize = range === "month" ? 6 : 30;
+  const bucketSize = range === "month" ? 7 : 30;
   const formatter = range === "month"
     ? (start: ScreenChartPoint, _end: ScreenChartPoint, index: number) => `W${index + 1} · ${start.displayDate}`
     : (start: ScreenChartPoint) => format(new Date(start.date), "MMM");
@@ -496,7 +504,6 @@ export default function DailyGoalsPage() {
   const [savingScreen, setSavingScreen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [screenSaved, setScreenSaved] = useState(false);
-  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [hoveredHeat, setHoveredHeat] = useState<HeatCell | null>(null);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [pendingOffline, setPendingOffline] = useState(0);
@@ -506,21 +513,40 @@ export default function DailyGoalsPage() {
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState("");
+  const [saveNotice, setSaveNotice] = useState("");
+  const [loadedDate, setLoadedDate] = useState<string | null>(null);
+  const fetchController = useRef<AbortController | null>(null);
+  const saveInFlight = useRef(false);
+  const syncInFlight = useRef(false);
+  const formReady = loadedDate === selectedDate;
 
   const fetchData = useCallback(async (silent = false) => {
+    if (silent && fetchController.current) return;
+    fetchController.current?.abort();
+    const controller = new AbortController();
+    fetchController.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
     if (!silent) setLoading(true);
     try {
       const [subjectsData, goalsData, screenData] = await Promise.all([
-        fetch("/api/subjects")
+        fetch("/api/subjects", { signal: controller.signal })
           .then(async (response) => (response.ok ? ((await response.json()) as Subject[]) : null))
           .catch(() => null),
-        fetch(`/api/daily-goals?start=${TRACKER_START_KEY}&end=${TRACKER_END_KEY}`)
+        fetch(`/api/daily-goals?start=${TRACKER_START_KEY}&end=${TRACKER_END_KEY}`, { signal: controller.signal })
           .then(async (response) => (response.ok ? ((await response.json()) as DailyGoalEntry[]) : null))
           .catch(() => null),
-        fetch(`/api/screen-time?start=${TRACKER_START_KEY}&end=${TRACKER_END_KEY}`)
+        fetch(`/api/screen-time?start=${TRACKER_START_KEY}&end=${TRACKER_END_KEY}`, { signal: controller.signal })
           .then(async (response) => (response.ok ? ((await response.json()) as ScreenTimeEntry[]) : null))
           .catch(() => null),
       ]);
+
+      if (fetchController.current !== controller) return;
+      if (!subjectsData || !goalsData || !screenData) {
+        setFetchError("We couldn’t load the complete record. Existing drafts are preserved; retry before recording a different date.");
+        return;
+      }
+      setFetchError("");
 
       if (subjectsData) setSubjects(subjectsData);
       if (screenData) {
@@ -566,47 +592,49 @@ export default function DailyGoalsPage() {
               ? String(Math.round(todayGoals.reduce((sum, goal) => sum + goal.completionPercent, 0) / todayGoals.length))
               : "",
           });
+          setLoadedDate(selectedDate);
         }
       }
       setLastSynced(new Date());
     } finally {
-      if (!silent) setLoading(false);
+      window.clearTimeout(timeout);
+      if (fetchController.current === controller) {
+        fetchController.current = null;
+        setLoading(false);
+      }
     }
   }, [selectedDate]);
 
   useEffect(() => {
     fetchData();
+    return () => { fetchController.current?.abort(); };
   }, [fetchData]);
 
   const syncOfflineGoals = useCallback(async () => {
+    if (syncInFlight.current) return;
     const queue = readOfflineDailyGoals();
     setPendingOffline(queue.length);
-
     if (!queue.length || !navigator.onLine) return;
-
-    let remaining: QueuedDailyGoal[] = [];
-
+    syncInFlight.current = true;
     try {
       const response = await fetch("/api/daily-goals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        // This queue owns the replay; the shared offline transport must not
+        // create a second copy if the connection fails again.
+        headers: { "Content-Type": "application/json", "x-offline-replay": "1" },
         body: JSON.stringify({ entries: queue }),
       });
-
-      if (!response.ok) {
-        remaining = queue;
-      } else {
-        const data = (await response.json()) as DailyGoalBatchResponse;
-        const failedIds = new Set((data.results || []).filter((result) => !result.ok).map((result) => result.id));
-        remaining = queue.filter((entry) => failedIds.has(entry.id));
-      }
+      const data: unknown = await response.json().catch(() => null);
+      const acknowledged = acknowledgedDailyGoalIds(response.status, data, queue.map(entry => entry.id));
+      const remaining = reconcileDailyGoalQueue(readOfflineDailyGoals(), queue, acknowledged);
+      writeOfflineDailyGoals(remaining);
+      setPendingOffline(remaining.length);
+      if (acknowledged.size > 0) void fetchData(true);
     } catch {
-      remaining = queue;
+      setSaveNotice("Your queued logs are still on this device. Reconnect and retry syncing.");
+    } finally {
+      syncInFlight.current = false;
     }
-
-    writeOfflineDailyGoals(remaining);
-    setPendingOffline(remaining.length);
-    if (remaining.length < queue.length) fetchData(true);
   }, [fetchData]);
 
   useEffect(() => {
@@ -697,6 +725,20 @@ export default function DailyGoalsPage() {
   }, [goals, lastLoggedDate]);
 
   const handleSave = async () => {
+    if (!formReady || saving || saveInFlight.current) return;
+    if (syncInFlight.current) { setSaveNotice("Your earlier log is still syncing. Please wait for it to finish before saving this draft."); return; }
+    const validNumber = (value: string, max: number, integer = false) => value === "" || (
+      Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= max && (!integer || Number.isSafeInteger(Number(value)))
+    );
+    if (Object.values(form).some(value => !validNumber(value.hours, 24) || !validNumber(value.questions, Number.MAX_SAFE_INTEGER, true) || !validNumber(value.intensity, 5, true)) ||
+        !validNumber(dailyMeta.disciplineScore, 100, true) || !validNumber(dailyMeta.completionPercent, 100, true) ||
+        Object.values(form).reduce((total, value) => total + Number(value.hours || 0), 0) > 24) {
+      setSaveNotice("Check your numbers: use whole questions, intensity from 0–5, scores from 0–100, and no more than 24 total study hours.");
+      return;
+    }
+    saveInFlight.current = true;
+    setSaveNotice("");
+    setSaved(false);
     setSaving(true);
     const disciplineScore = Math.max(0, Math.min(100, parseInt(dailyMeta.disciplineScore) || 0));
     const completionPercent = Math.max(0, Math.min(100, parseInt(dailyMeta.completionPercent) || 0));
@@ -726,29 +768,48 @@ export default function DailyGoalsPage() {
 
         if (!response.ok) {
           failedEntries.push(...entries);
+        } else if (response.status === 202) {
+          // The shared transport already owns this queued request. Do not
+          // enqueue it again or acknowledge it as a committed database save.
+          setSaveNotice("Queued on this device. Your log has not reached the database yet; reconnect to sync it.");
+          setSaving(false);
+          saveInFlight.current = false;
+          return;
         } else {
           const data = (await response.json()) as DailyGoalBatchResponse;
-          const failedIds = new Set((data.results || []).filter((result) => !result.ok).map((result) => result.id));
-          failedEntries.push(...entries.filter((entry) => failedIds.has(entry.id)));
+          const savedIds = acknowledgedDailyGoalIds(response.status, data, entries.map(entry => entry.id));
+          failedEntries.push(...entries.filter((entry) => !savedIds.has(entry.id)));
         }
       } catch {
         failedEntries.push(...entries);
       }
     }
 
-    if (failedEntries.length) {
-      setPendingOffline(queueOfflineDailyGoals(failedEntries));
-    } else {
-      await syncOfflineGoals();
+    try {
+      const failedIds = new Set(failedEntries.map(entry => entry.id));
+      const confirmedIds = new Set(entries.filter(entry => !failedIds.has(entry.id)).map(entry => entry.id));
+      // A newly saved value replaces an older queued value for the same day.
+      // Never replay the stale queued draft immediately over the fresh save.
+      if (confirmedIds.size > 0) writeOfflineDailyGoals(readOfflineDailyGoals().filter(entry => !confirmedIds.has(entry.id)));
+      if (failedEntries.length) {
+        setPendingOffline(queueOfflineDailyGoals(failedEntries));
+        setSaveNotice("Some entries are queued on this device, not saved to the database yet. Your draft is still here.");
+      } else {
+        await syncOfflineGoals();
+      }
+      setSaved(entries.length > 0 && failedEntries.length === 0);
+      setTimeout(() => setSaved(false), 3000);
+      if (!failedEntries.length) void fetchData();
+    } catch {
+      setSaveNotice("This device could not retain the pending log. Keep this page open and retry; your form has not been cleared.");
+    } finally {
+      setSaving(false);
+      saveInFlight.current = false;
     }
-
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-    if (!failedEntries.length) fetchData();
   };
 
   const handleScreenSave = async () => {
+    if (!formReady || savingScreen) return;
     setSavingScreen(true);
     setScreenSaved(false);
     try {
@@ -762,6 +823,8 @@ export default function DailyGoalsPage() {
       setScreenSaved(true);
       setTimeout(() => setScreenSaved(false), 2800);
       await fetchData(true);
+    } catch {
+      setSaveNotice("Screen-time could not be saved. Your entries are still here; please retry.");
     } finally {
       setSavingScreen(false);
     }
@@ -807,8 +870,8 @@ export default function DailyGoalsPage() {
   const activeDaysInRange = chartData.filter((d) => d.questions > 0 || d.hours > 0).length;
   const activeDays30 = monthlyChartData.filter((d) => d.questions > 0 || d.hours > 0).length;
   const selectedMetric = STUDY_METRICS[studyMetric];
-  const selectedMetricValues = chartData.map((d) => Number(d[studyMetric]) || 0);
-  const avgSelectedMetric = selectedMetricValues.reduce((sum, value) => sum + value, 0) / Math.max(chartData.length, 1);
+  const selectedMetricValues = chartData.filter(d => d.recorded).map((d) => Number(d[studyMetric]) || 0);
+  const avgSelectedMetric = selectedMetricValues.reduce((sum, value) => sum + value, 0) / Math.max(selectedMetricValues.length, 1);
   const avgHoursInRange = chartData.reduce((sum, d) => sum + d.hours, 0) / chartData.length;
   const bestChartPoint = chartData.reduce((best, current) => (Number(current[studyMetric]) > Number(best[studyMetric]) ? current : best), chartData[0]);
   const currentStreak = getCurrentStreak(goals);
@@ -856,25 +919,8 @@ export default function DailyGoalsPage() {
     .filter((marker, index, all) => index === 0 || marker.label !== all[index - 1].label);
 
   const maxChartValue = Math.max(selectedMetric.cap, ...selectedMetricValues, 1);
-  const chartWidth = 1000;
-  const chartHeight = 270;
-  const padX = Math.max(58, String(Math.ceil(maxChartValue)).length * 9 + 28);
-  const padY = 44;
-  const usableW = chartWidth - padX * 2;
-  const usableH = chartHeight - padY * 2;
-
-  const chartPoints = chartData.map((d, i) => {
-    const x = padX + (i / Math.max(chartData.length - 1, 1)) * usableW;
-    const value = Number(d[studyMetric]) || 0;
-    const y = chartHeight - padY - (value / maxChartValue) * usableH;
-    return { x, y, value, ...d };
-  });
-
-  const lineD = `M ${chartPoints.map((p) => `${p.x},${p.y}`).join(" L ")}`;
-  const areaD = `${lineD} L ${chartPoints[chartPoints.length - 1].x},${chartHeight - padY} L ${chartPoints[0].x},${chartHeight - padY} Z`;
-
   return (
-    <div className="goals-page">
+    <div className={`goals-page ${styles.journal}`} data-studio-native>
       <div className={`ambient-orb orb-1 ${intensityBand.label === "Chumma" ? "orb-peak" : ""}`} />
       <div className={`ambient-orb orb-2 ${intensityBand.label === "Chumma" ? "orb-peak" : ""}`} />
       <div className="ambient-orb orb-3" />
@@ -886,24 +932,24 @@ export default function DailyGoalsPage() {
             <div className="eyebrow-row">
               <span className="eyebrow-chip">Daily Goals</span>
               <span className="eyebrow-divider" />
-              <span className="eyebrow-copy">May 2026 to May 2027. Live from real logs.</span>
+              <span className="eyebrow-copy">YOUR DAILY STUDY JOURNAL</span>
             </div>
-            <h1 className="title gradient-text">Daily Analytics</h1>
-            <p className="subtitle">Log the day, then read the full NEET cycle from left to right without fabricated numbers.</p>
+            <h1 className="title gradient-text">A day worth recording.</h1>
+            <p className="subtitle">Speak it, or write it. Your study, revision and progress in one place.</p>
           </div>
           <div className="date-picker-glass">
-            <button className="date-nav-btn" onClick={() => changeDate(-1)} aria-label="Previous day">
+            <button className="date-nav-btn" onClick={() => changeDate(-1)} aria-label="Previous day" disabled={saving || savingScreen}>
               <ChevronLeft size={18} />
             </button>
             <div className="date-display">
               <Calendar size={16} className="date-icon" />
               <span>{format(new Date(selectedDate), "MMM dd, yyyy")}</span>
-              <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="hidden-date-input" />
+              <input type="date" value={selectedDate} max={format(new Date(), "yyyy-MM-dd")} disabled={saving || savingScreen} aria-label="Choose study date" onChange={(e) => setSelectedDate(e.target.value)} className="hidden-date-input" />
             </div>
             <button
               className="date-nav-btn"
               onClick={() => changeDate(1)}
-              disabled={selectedDate === format(new Date(), "yyyy-MM-dd")}
+              disabled={saving || savingScreen || selectedDate === format(new Date(), "yyyy-MM-dd")}
               aria-label="Next day"
             >
               <ChevronRight size={18} />
@@ -911,254 +957,8 @@ export default function DailyGoalsPage() {
           </div>
         </header>
 
-        <section className="hero-band animate-slide-up" style={{ animationDelay: "60ms" }}>
-          <div className="hero-copy">
-            <span className="hero-kicker">Live command center</span>
-            <h2 className="hero-title">One honest timeline from May 2026 to May 2027.</h2>
-            <p className="hero-desc">
-              Every tile, line, and subject bar below is calculated from saved daily-goal entries. Empty days stay empty until work is logged.
-            </p>
-            <div className="hero-mini-row">
-              <div className="mini-chip">
-                <Sparkles size={14} />
-                <span>{filledSubjects} subjects touched</span>
-              </div>
-              <div className="mini-chip">
-                <Target size={14} />
-                <span>{activeDays30}/30 active days</span>
-              </div>
-              <div className="mini-chip">
-                <Activity size={14} />
-                <span>{lastSynced ? `Synced ${format(lastSynced, "HH:mm:ss")}` : "Live sync pending"}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="hero-pulse-card">
-            <div className="hero-pulse-label">Cycle consistency</div>
-            <div className="hero-pulse-value">{cycleConsistencyPct}%</div>
-            <div className="hero-pulse-meta">
-              <span>{cycleActiveDays} active days in the NEET cycle</span>
-              <span>{cycleHours.toFixed(1)} total hours logged</span>
-              <span>{cycleQuestions} total questions solved</span>
-            </div>
-          </div>
-        </section>
-
-        <div className="metrics-grid">
-          <div className="metric-card animate-slide-up" style={{ animationDelay: "100ms" }}>
-            <div className="metric-icon-wrap blue-glow">
-              <Clock size={24} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val">{todayTotalHours.toFixed(1)}</h2>
-              <span className="metric-label">Hours Logged</span>
-            </div>
-          </div>
-          <div className="metric-card animate-slide-up" style={{ animationDelay: "180ms" }}>
-            <div className="metric-icon-wrap purple-glow">
-              <BookOpen size={24} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val">{todayTotalQs}</h2>
-              <span className="metric-label">Questions Solved</span>
-            </div>
-          </div>
-          <div className="metric-card animate-slide-up" style={{ animationDelay: "250ms" }}>
-            <div className="metric-icon-wrap blue-glow soft-alt">
-              <CheckCircle2 size={24} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val">{filledSubjects}</h2>
-              <span className="metric-label">Subjects Logged</span>
-            </div>
-          </div>
-          <div className={`metric-card animate-slide-up ${intensityBand.cardClass}`} style={{ animationDelay: "320ms" }}>
-            <div className={`metric-icon-wrap ${intensityBand.glowClass}`}>
-              <Flame size={24} className={intensityBand.label === "Chumma" ? "flame-peak" : ""} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val" style={{ color: intensityBand.accent }}>
-                {intensityBand.label}
-              </h2>
-              <span className="metric-label">Intensity Level</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-panel chart-panel animate-slide-up" style={{ animationDelay: "400ms" }}>
-          <div className="panel-header chart-header">
-            <div>
-              <h3>
-                <TrendingUp size={20} className="inline-icon" /> Performance Trajectory
-              </h3>
-              <p className="panel-desc">Switch between hours, questions, discipline, completion, and rhythm without leaving the daily desk.</p>
-            </div>
-            <div className="chart-control-stack">
-              <div className="range-tabs" aria-label="Study range">
-                {RANGE_LABELS.map((range) => (
-                  <button
-                    key={range.key}
-                    type="button"
-                    className={`range-tab ${studyRange === range.key ? "range-tab-active" : ""}`}
-                    onClick={() => setStudyRange(range.key)}
-                  >
-                    {range.label}
-                  </button>
-                ))}
-              </div>
-              <div className="chart-stat-badge">
-                Max: <span>{Math.ceil(maxChartValue)} {selectedMetric.unit}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="metric-tabs" aria-label="Study metric">
-            {(Object.keys(STUDY_METRICS) as StudyMetricKey[]).map((metricKey) => (
-              <button
-                key={metricKey}
-                type="button"
-                className={`metric-tab ${studyMetric === metricKey ? "metric-tab-active" : ""}`}
-                style={{ "--metric-accent": STUDY_METRICS[metricKey].accent } as CSSProperties}
-                onClick={() => setStudyMetric(metricKey)}
-              >
-                {STUDY_METRICS[metricKey].label}
-              </button>
-            ))}
-          </div>
-
-          <div className="chart-layout">
-            <div className="chart-container">
-              <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="line-chart">
-                <defs>
-                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsla(38,72%,58%,0.34)" />
-                    <stop offset="100%" stopColor="hsla(38,72%,58%,0)" />
-                  </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="3.5" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-
-                <text x={padX} y="20" className="chart-axis-title">
-                  {selectedMetric.label}
-                </text>
-
-                {[0, 0.5, 1].map((ratio) => {
-                  const y = chartHeight - padY - ratio * usableH;
-                  return (
-                    <g key={ratio} className="grid-line-group">
-                      <line x1={padX} y1={y} x2={chartWidth - padX} y2={y} className="grid-line" />
-                      <text x={padX - 12} y={y + 4} className="axis-label y-axis">
-                        {Math.round(ratio * maxChartValue)}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                <path d={areaD} fill="url(#areaGradient)" className="chart-area" />
-                <path d={lineD} fill="none" className="chart-line" filter="url(#glow)" style={{ stroke: selectedMetric.accent }} />
-
-                {chartPoints.map((p, i) => {
-                  const isHovered = hoveredPoint === i;
-                  const tooltipWidth = 104;
-                  const tooltipHeight = 38;
-                  const tooltipGap = 14;
-                  const tooltipX = Math.min(
-                    Math.max(p.x - tooltipWidth / 2, padX - 10),
-                    chartWidth - padX - tooltipWidth + 10
-                  );
-                  const showBelow = p.y < padY + tooltipHeight + tooltipGap;
-                  const tooltipY = showBelow ? p.y + tooltipGap : p.y - tooltipHeight - tooltipGap;
-                  const tooltipCenterX = tooltipX + tooltipWidth / 2;
-                  const tooltipCenterY = tooltipY + tooltipHeight / 2 + 1;
-
-                  return (
-                    <g key={i} onMouseEnter={() => setHoveredPoint(i)} onMouseLeave={() => setHoveredPoint(null)} className="point-group">
-                      <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
-                      <circle
-                        cx={p.x}
-                        cy={p.y}
-                        r={isHovered ? "6" : "4"}
-                        className={`chart-point ${isHovered ? "point-hovered" : ""}`}
-                        style={{ stroke: selectedMetric.accent, fill: isHovered ? selectedMetric.accent : undefined } as CSSProperties}
-                      />
-
-                      {i % 3 === 0 && (
-                        <text x={p.x} y={chartHeight - 12} className="axis-label x-axis">
-                          {p.displayDate}
-                        </text>
-                      )}
-
-                      {isHovered && (
-                        <g className={`chart-tooltip ${showBelow ? "tooltip-below" : ""}`}>
-                          <line
-                            x1={p.x}
-                            y1={showBelow ? p.y + 9 : p.y - 9}
-                            x2={p.x}
-                            y2={showBelow ? tooltipY : tooltipY + tooltipHeight}
-                            className="tooltip-stem"
-                          />
-                          <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height={tooltipHeight} rx="13" className="tooltip-bg" />
-                          <text x={tooltipCenterX} y={tooltipCenterY} className="tooltip-text">
-                            <tspan className="tooltip-value">{Number.isInteger(p.value) ? p.value : p.value.toFixed(1)}</tspan>
-                            <tspan dx="4" className="tooltip-unit">{selectedMetric.unit}</tspan>
-                          </text>
-                        </g>
-                      )}
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
-
-            <div className="chart-insight-rail">
-              <div className="insight-card insight-card-primary">
-                <span className="insight-label">Average / day</span>
-                <strong className="insight-value">{studyMetric === "hours" ? avgSelectedMetric.toFixed(1) : Math.round(avgSelectedMetric)}</strong>
-                <span className="insight-meta">{selectedMetric.label.toLowerCase()} across {RANGE_DAYS[studyRange]} days</span>
-              </div>
-              <div className="insight-card">
-                <span className="insight-label">Best day</span>
-                <strong className="insight-value">
-                  {studyMetric === "hours" ? Number(bestChartPoint[studyMetric]).toFixed(1) : Math.round(Number(bestChartPoint[studyMetric]) || 0)}
-                </strong>
-                <span className="insight-meta">{bestChartPoint.displayDate}</span>
-              </div>
-              <div className="insight-card">
-                <span className="insight-label">Active cadence</span>
-                <strong className="insight-value">{activeDaysInRange}/{RANGE_DAYS[studyRange]}</strong>
-                <span className="insight-meta">{avgHoursInRange.toFixed(1)} avg hours per day</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="subject-analytics">
-            {subjectAnalytics.map((subject) => (
-              <div className="subject-analytics-row" key={subject.id}>
-                <div className="subject-analytics-copy">
-                  <span className="subject-analytics-name" style={{ color: subject.color }}>
-                    {subject.name}
-                  </span>
-                  <span>{subject.hours.toFixed(1)} hrs / {subject.questions} qs</span>
-                </div>
-                <div className="subject-analytics-track">
-                  <span
-                    className="subject-analytics-fill"
-                    style={{
-                      width: `${Math.max(3, (subject.hours / maxSubjectHours) * 100)}%`,
-                      background: subject.color,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {fetchError && <div className="studio-error" role="alert"><p>{fetchError}</p><button className="studio-action" disabled={loading} onClick={() => void fetchData()}>Retry loading</button></div>}
+        {saveNotice && <p className="studio-panel" role="status">{saveNotice}</p>}
 
         <div className="main-grid">
           <div className="glass-panel form-panel animate-slide-up" style={{ animationDelay: "500ms" }}>
@@ -1167,13 +967,13 @@ export default function DailyGoalsPage() {
                 <h3>
                   <BarChart3 size={20} className="inline-icon" /> Daily Logging Desk
                 </h3>
-                <p className="panel-desc">Capture work subject by subject so the graph and heatmap stay honest.</p>
+                <p className="panel-desc">Take a moment to record what you worked on.</p>
               </div>
               {loading && <span className="loading-pulse">Restoring...</span>}
               {pendingOffline > 0 && !loading && <span className="offline-sync-pill">{pendingOffline} queued offline</span>}
             </div>
 
-            <VoiceDailyLog
+            {formReady ? <><VoiceDailyLog
               subjects={subjects}
               selectedDate={selectedDate}
               initialValues={form}
@@ -1304,14 +1104,12 @@ export default function DailyGoalsPage() {
                 return (
                   <div className={`subject-row group ${isFilled ? "subject-row-active" : ""}`} key={s.id}>
                     <div className="subject-info">
-                      <div className="subject-avatar" style={{ color: s.color }}>
-                        <span className="emoji">{s.emoji}</span>
-                      </div>
+                      <SubjectMark subject={s.slug} />
                       <div className="subject-copy">
                         <span className="name" style={{ color: s.color }}>
                           {s.name}
                         </span>
-                        <span className="subject-tag">{isFilled ? "Logged today" : "Awaiting entry"}</span>
+                        <span className="subject-tag">{isFilled ? "Entry in this form" : "Awaiting entry"}</span>
                       </div>
                     </div>
                     <div className="inputs-group">
@@ -1321,6 +1119,8 @@ export default function DailyGoalsPage() {
                           type="number"
                           step="0.5"
                           min="0"
+                          max="24"
+                          aria-label={`${s.name} study hours`}
                           placeholder="0.0"
                           value={e.hours}
                           onChange={(ev) => setSubjectFormValue(s.id, { hours: ev.target.value })}
@@ -1335,6 +1135,8 @@ export default function DailyGoalsPage() {
                           min="0"
                           placeholder="0"
                           value={e.questions}
+                          step="1"
+                          aria-label={`${s.name} questions solved`}
                           onChange={(ev) => setSubjectFormValue(s.id, { questions: ev.target.value })}
                           className="glass-input"
                         />
@@ -1381,7 +1183,7 @@ export default function DailyGoalsPage() {
               })}
             </div>
 
-            <button className={`save-btn ${saved ? "saved" : ""}`} onClick={handleSave} disabled={saving || loading}>
+            <button className={`save-btn ${saved ? "saved" : ""}`} onClick={handleSave} disabled={saving || loading || !formReady}>
               {saved ? (
                 <>
                   <CheckCircle2 size={18} /> {pendingOffline > 0 ? "Queued" : "Recorded"}
@@ -1392,10 +1194,11 @@ export default function DailyGoalsPage() {
                 </>
               ) : (
                 <>
-                  <Save size={18} /> {pendingOffline > 0 ? "Save / Sync Later" : "Forge Daily Goal"}
+                  <Save size={18} /> {pendingOffline > 0 ? "Save / Sync Later" : "Save study log"}
                 </>
               )}
             </button>
+            </> : <p className="panel-desc" role="status">{loading ? "Loading the selected day before you start…" : "Reload this day to safely edit its study record."}</p>}
           </div>
 
           <div className="glass-panel heatmap-panel animate-slide-up" style={{ animationDelay: "600ms" }}>
@@ -1446,14 +1249,16 @@ export default function DailyGoalsPage() {
                       return (
                         <button
                           key={c.date}
-                          className={`heat-cell emoji-heat-cell tier-${HEAT_TIERS.indexOf(tier)}`}
+                          className={`heat-cell tier-${HEAT_TIERS.indexOf(tier)}`}
                           style={{ background: tier.color } as CSSProperties}
                           title={`${c.date}: ${tier.label} - ${c.totalHours} hrs, ${c.totalQuestions} qs`}
+                          aria-label={`${c.date}: ${c.totalHours} study hours, ${c.totalQuestions} questions`}
                           onMouseEnter={() => setHoveredHeat(c)}
                           onMouseLeave={() => setHoveredHeat(null)}
+                          onFocus={() => setHoveredHeat(c)}
+                          onClick={() => setHoveredHeat(c)}
                           type="button"
                         >
-                          <span className="heat-emoji">{tier.emoji}</span>
                         </button>
                       );
                     })}
@@ -1464,15 +1269,13 @@ export default function DailyGoalsPage() {
 
             <div className="heatmap-footer">
               <div className="heatmap-legend">
-                <span>Below 10h is still building</span>
+                <span>Fewer hours</span>
                 <div className="legend-colors">
                   {HEAT_TIERS.map((tier) => (
-                    <div key={tier.label} className="legend-cell emoji-legend-cell" style={{ background: tier.color } as CSSProperties}>
-                      {tier.emoji}
-                    </div>
+                    <div key={tier.label} className="legend-cell" title={`${tier.min}+ hours`} style={{ background: tier.color } as CSSProperties} />
                   ))}
                 </div>
-                <span>10h good, 12h excellent, 13h+ peak</span>
+                <span>More hours · tap a day for details</span>
               </div>
               <div className="heatmap-hover-card">
                 {hoveredHeat ? (
@@ -1488,6 +1291,179 @@ export default function DailyGoalsPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+
+        <section className="hero-band animate-slide-up" style={{ animationDelay: "60ms" }}>
+          <div className="hero-copy">
+            <span className="hero-kicker">THE LONG VIEW</span>
+            <h2 className="hero-title">Small days. Lasting progress.</h2>
+            <p className="hero-desc">
+              Your year is built from the days you record. The log above is your record; these patterns help you reflect.
+            </p>
+            <div className="hero-mini-row">
+              <div className="mini-chip">
+                <Sparkles size={14} />
+                <span>{filledSubjects} subjects touched</span>
+              </div>
+              <div className="mini-chip">
+                <Target size={14} />
+                <span>{activeDays30}/30 active days</span>
+              </div>
+              <div className="mini-chip">
+                <Activity size={14} />
+                <span>{lastSynced ? `Synced ${format(lastSynced, "HH:mm:ss")}` : "Live sync pending"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-pulse-card">
+            <div className="hero-pulse-label">Cycle consistency</div>
+            <div className="hero-pulse-value">{cycleConsistencyPct}%</div>
+            <div className="hero-pulse-meta">
+              <span>{cycleActiveDays} active days in the NEET cycle</span>
+              <span>{cycleHours.toFixed(1)} total hours logged</span>
+              <span>{cycleQuestions} total questions solved</span>
+            </div>
+          </div>
+        </section>
+
+        <div className="metrics-grid">
+          <div className="metric-card animate-slide-up" style={{ animationDelay: "100ms" }}>
+            <div className="metric-icon-wrap blue-glow">
+              <Clock size={24} />
+            </div>
+            <div className="metric-info">
+              <h2 className="metric-val">{todayTotalHours.toFixed(1)}</h2>
+              <span className="metric-label">Hours Logged</span>
+            </div>
+          </div>
+          <div className="metric-card animate-slide-up" style={{ animationDelay: "180ms" }}>
+            <div className="metric-icon-wrap purple-glow">
+              <BookOpen size={24} />
+            </div>
+            <div className="metric-info">
+              <h2 className="metric-val">{todayTotalQs}</h2>
+              <span className="metric-label">Questions Solved</span>
+            </div>
+          </div>
+          <div className="metric-card animate-slide-up" style={{ animationDelay: "250ms" }}>
+            <div className="metric-icon-wrap blue-glow soft-alt">
+              <CheckCircle2 size={24} />
+            </div>
+            <div className="metric-info">
+              <h2 className="metric-val">{filledSubjects}</h2>
+              <span className="metric-label">Subjects Logged</span>
+            </div>
+          </div>
+          <div className={`metric-card animate-slide-up ${intensityBand.cardClass}`} style={{ animationDelay: "320ms" }}>
+            <div className={`metric-icon-wrap ${intensityBand.glowClass}`}>
+              <Flame size={24} className={intensityBand.label === "Chumma" ? "flame-peak" : ""} />
+            </div>
+            <div className="metric-info">
+              <h2 className="metric-val" style={{ color: intensityBand.accent }}>
+                {filledSubjects ? intensityBand.label : "—"}
+              </h2>
+              <span className="metric-label">Intensity Level</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-panel chart-panel animate-slide-up" style={{ animationDelay: "400ms" }}>
+          <div className="panel-header chart-header">
+            <div>
+              <h3>
+                <TrendingUp size={20} className="inline-icon" /> Your study rhythm
+              </h3>
+              <p className="panel-desc">Switch between hours, questions, discipline, completion, and rhythm without leaving the daily desk.</p>
+            </div>
+            <div className="chart-control-stack">
+              <div className="range-tabs" aria-label="Study range">
+                {RANGE_LABELS.map((range) => (
+                  <button
+                    key={range.key}
+                    type="button"
+                    className={`range-tab ${studyRange === range.key ? "range-tab-active" : ""}`}
+                    onClick={() => setStudyRange(range.key)}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+              <div className="chart-stat-badge">
+                Max: <span>{Math.ceil(maxChartValue)} {selectedMetric.unit}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="metric-tabs" aria-label="Study metric">
+            {(Object.keys(STUDY_METRICS) as StudyMetricKey[]).map((metricKey) => (
+              <button
+                key={metricKey}
+                type="button"
+                className={`metric-tab ${studyMetric === metricKey ? "metric-tab-active" : ""}`}
+                style={{ "--metric-accent": STUDY_METRICS[metricKey].accent } as CSSProperties}
+                onClick={() => setStudyMetric(metricKey)}
+              >
+                {STUDY_METRICS[metricKey].label}
+              </button>
+            ))}
+          </div>
+
+          <div className="chart-layout">
+            <div className="chart-container">
+              <ResponsiveChart height={300}>{(width,height) => <AreaChart width={width} height={height} data={chartData.map(d => ({...d, value:d.recorded?d[studyMetric]:null}))} margin={{top:16,right:14,bottom:12,left:0}} accessibilityLayer>
+                <defs><linearGradient id="daily-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={selectedMetric.accent} stopOpacity={0.25}/><stop offset="1" stopColor={selectedMetric.accent} stopOpacity={0}/></linearGradient></defs>
+                <CartesianGrid vertical={false} stroke="var(--glass-border)" strokeDasharray="3 6"/>
+                <XAxis dataKey="displayDate" minTickGap={45} tick={{fill:"var(--text-secondary)",fontSize:12}} tickLine={false} axisLine={false}/>
+                <YAxis tick={{fill:"var(--text-secondary)",fontSize:12}} tickLine={false} axisLine={false} width={45}/>
+                <Tooltip contentStyle={{background:"var(--bg-secondary)",border:"1px solid var(--glass-border)",borderRadius:12,color:"var(--text-primary)"}} labelStyle={{color:"var(--text-secondary)"}} formatter={(value)=>[value, selectedMetric.unit]}/>
+                <Area type="linear" dataKey="value" name={selectedMetric.label} stroke={selectedMetric.accent} strokeWidth={2} fill="url(#daily-area)" connectNulls={false} isAnimationActive={false} dot={{r:2}} activeDot={{r:5}}/>
+              </AreaChart>}</ResponsiveChart>
+              <MetricNote>Gaps mean no saved log; zero means a logged zero. The average uses logged days only. The daily study index combines hours (45%), questions (25%), self-rated discipline (15%) and completion (15%), using 12 hours and 500 questions as scale references—not required targets or a prediction.</MetricNote>
+            </div>
+
+            <div className="chart-insight-rail">
+              <div className="insight-card insight-card-primary">
+                <span className="insight-label">Average / day</span>
+                <strong className="insight-value">{studyMetric === "hours" ? avgSelectedMetric.toFixed(1) : Math.round(avgSelectedMetric)}</strong>
+                <span className="insight-meta">{selectedMetric.label.toLowerCase()} across {selectedMetricValues.length} logged days</span>
+              </div>
+              <div className="insight-card">
+                <span className="insight-label">Best day</span>
+                <strong className="insight-value">
+                  {studyMetric === "hours" ? Number(bestChartPoint[studyMetric]).toFixed(1) : Math.round(Number(bestChartPoint[studyMetric]) || 0)}
+                </strong>
+                <span className="insight-meta">{bestChartPoint.displayDate}</span>
+              </div>
+              <div className="insight-card">
+                <span className="insight-label">Active cadence</span>
+                <strong className="insight-value">{activeDaysInRange}/{RANGE_DAYS[studyRange]}</strong>
+                <span className="insight-meta">{avgHoursInRange.toFixed(1)} avg hours per day</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="subject-analytics">
+            {subjectAnalytics.map((subject) => (
+              <div className="subject-analytics-row" key={subject.id}>
+                <div className="subject-analytics-copy">
+                  <span className="subject-analytics-name" style={{ color: subject.color }}>
+                    {subject.name}
+                  </span>
+                  <span>{subject.hours.toFixed(1)} hrs / {subject.questions} qs</span>
+                </div>
+                <div className="subject-analytics-track">
+                  <span
+                    className="subject-analytics-fill"
+                    style={{
+                      width: `${Math.max(0, (subject.hours / maxSubjectHours) * 100)}%`,
+                      background: subject.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -1570,7 +1546,7 @@ export default function DailyGoalsPage() {
                 placeholder="Optional note: what was study, what was avoidable?"
               />
 
-              <button className={`save-btn screen-save-btn ${screenSaved ? "saved" : ""}`} onClick={handleScreenSave} disabled={savingScreen}>
+              <button className={`save-btn screen-save-btn ${screenSaved ? "saved" : ""}`} onClick={handleScreenSave} disabled={savingScreen || !formReady}>
                 {screenSaved ? (
                   <>
                     <CheckCircle2 size={18} /> Screen-time recorded

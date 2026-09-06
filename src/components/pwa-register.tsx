@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, RefreshCw, Wifi, WifiOff } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   flushOfflineQueue,
   getOfflineQueueCount,
@@ -14,29 +14,34 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+function subscribeOnline(callback: () => void) {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => { window.removeEventListener("online", callback); window.removeEventListener("offline", callback); };
+}
+
 export default function PwaRegister() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [queueCount, setQueueCount] = useState(0);
-  const [online, setOnline] = useState(true);
+  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const [syncing, setSyncing] = useState(false);
+  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+  const [updating, setUpdating] = useState(false);
   const [installState, setInstallState] = useState<"idle" | "installing" | "installed">("idle");
   const refreshingRef = useRef(false);
   const shouldRefreshOnControllerChangeRef = useRef(false);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
     const cleanupQueue = installOfflineMutationQueue();
     const unsubscribe = subscribeOfflineQueue(setQueueCount);
 
     const handleOnline = async () => {
-      setOnline(true);
       setSyncing(true);
       await flushOfflineQueue();
       setQueueCount(getOfflineQueueCount());
       setSyncing(false);
     };
 
-    const handleOffline = () => setOnline(false);
     const handleInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
@@ -49,7 +54,6 @@ export default function PwaRegister() {
     };
 
     window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
     window.addEventListener("beforeinstallprompt", handleInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
@@ -57,7 +61,6 @@ export default function PwaRegister() {
       cleanupQueue();
       unsubscribe();
       window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
       window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
@@ -78,10 +81,11 @@ export default function PwaRegister() {
 
     const register = () => {
       navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
-        void registration.update();
+        if (registration.waiting) setWaitingWorker(registration.waiting);
+        void registration.update().catch(() => undefined);
 
         const update = () => {
-          if (document.visibilityState === "visible") void registration.update();
+          if (document.visibilityState === "visible") void registration.update().catch(() => undefined);
         };
 
         document.addEventListener("visibilitychange", update);
@@ -91,8 +95,7 @@ export default function PwaRegister() {
           if (!worker) return;
           worker.addEventListener("statechange", () => {
             if (worker.state === "installed" && navigator.serviceWorker.controller) {
-              shouldRefreshOnControllerChangeRef.current = true;
-              worker.postMessage({ type: "SKIP_WAITING" });
+              setWaitingWorker(worker);
             }
           });
         });
@@ -124,16 +127,31 @@ export default function PwaRegister() {
     };
   }, []);
 
-  const showStatus = queueCount > 0 || !online || syncing || installPrompt || installState !== "idle";
+  const showStatus = queueCount > 0 || !online || syncing || installPrompt || installState !== "idle" || waitingWorker;
 
   if (!showStatus) return null;
 
   return (
-    <div className="pwa-status" aria-live="polite">
+    <div className="pwa-status" aria-live="polite" data-studio-chrome>
       <div className={`pwa-pill ${online ? "" : "offline"}`}>
         {syncing ? <RefreshCw size={14} className="spin" /> : online ? <Wifi size={14} /> : <WifiOff size={14} />}
         <span>{queueCount > 0 ? `${queueCount} waiting to sync` : online ? "Synced" : "Offline"}</span>
       </div>
+
+      {waitingWorker && (
+        <button className="pwa-install" type="button" disabled={updating || queueCount > 0 || syncing || !online}
+          title={queueCount > 0 ? "Sync your saved changes before updating" : "Apply the update when you have finished your current work"}
+          onClick={() => {
+            if (document.body.classList.contains("cbt-exam-active") || getOfflineQueueCount() > 0) return;
+            if (!window.confirm("Ready to update? The app will reload. Save any open form and finish your voice session first.")) return;
+            setUpdating(true);
+            shouldRefreshOnControllerChangeRef.current = true;
+            if (waitingWorker.state === "activated") window.location.reload();
+            else waitingWorker.postMessage({ type: "SKIP_WAITING" });
+          }}>
+          <RefreshCw size={14} />{updating ? "Updating…" : "Update when ready"}
+        </button>
+      )}
 
       {installPrompt && (
         <button
@@ -169,11 +187,14 @@ export default function PwaRegister() {
         .pwa-status {
           position: fixed;
           left: 50%;
-          bottom: calc(18px + env(safe-area-inset-bottom));
+          bottom: calc(164px + env(safe-area-inset-bottom));
           z-index: 1000;
           display: flex;
           align-items: center;
           gap: 8px;
+          max-width: calc(100vw - 24px);
+          flex-wrap: wrap;
+          justify-content: center;
           transform: translateX(-50%);
           pointer-events: none;
         }
@@ -184,9 +205,9 @@ export default function PwaRegister() {
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          border: 1px solid rgba(255,255,255,0.12);
+          border: 1px solid var(--glass-border-mid);
           border-radius: 999px;
-          background: rgba(16,16,22,0.82);
+          background: var(--bg-surface);
           color: var(--text-primary);
           box-shadow: 0 12px 26px rgba(0,0,0,0.32);
           backdrop-filter: blur(18px) saturate(150%);
@@ -212,11 +233,13 @@ export default function PwaRegister() {
         .pwa-install {
           padding: 0 13px;
           border-color: rgba(212,168,83,0.3);
-          background: linear-gradient(135deg, rgba(212,168,83,0.94), rgba(232,114,138,0.9));
-          color: #08080b;
+          background: var(--gold);
+          color: var(--bg-void);
           cursor: pointer;
           pointer-events: auto;
         }
+
+        .pwa-install:disabled { opacity: .55; cursor: not-allowed; }
 
         .spin {
           animation: spin 0.9s linear infinite;
@@ -228,7 +251,7 @@ export default function PwaRegister() {
 
         @media (max-width: 600px) {
           .pwa-status {
-            bottom: calc(76px + env(safe-area-inset-bottom));
+            bottom: calc(164px + env(safe-area-inset-bottom));
           }
 
           .pwa-pill span,
