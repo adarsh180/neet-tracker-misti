@@ -346,7 +346,7 @@ That is a credible path to the premium product requested. The current version is
 
 ## 12. Implementation checkpoint — 6 September 2026
 
-This is an implementation checkpoint, not certification that every page or voice action is complete. The changes remain local and have not yet been pushed or deployed.
+This is an implementation checkpoint, not certification that every page or voice action is complete. The core batch was subsequently pushed and released on 6 September; see the release receipt below.
 
 ### Page-specific work completed in the current batch
 
@@ -401,3 +401,16 @@ NEET-GURU now uses the shared ink/cream/gold theme, a responsive conversation ra
 - Verify the candidate with normal sign-in, read-only application endpoints, protected audio and byte-range delivery, PDF worker availability and page responses. No new production bank replacement, schema migration or live AI generation is part of this release verification.
 - The first candidate failed before promotion because an unanchored deployment ignore rule also excluded `src/data`. The rule was narrowed to root-only local exports; syllabus/catalog assets and private authenticated audio are included, while environment files remain excluded. The previous production site was not changed.
 - Work began on the remaining Cycle Planner reliability pass: omitted pain/energy values now remain unknown on both ingestion and reading, instead of coercing null to zero/minimum. Explicit zero pain remains valid. This does not repair historically coerced values or validate the forecasting/health model.
+
+## 13. Core-batch release receipt — 6 September 2026
+
+- Live site: https://neet-tracker-misti.vercel.app
+- Promoted deployment: `dpl_2pwCGakYvNwy7GBGe1cA5ktLZ7w8`, runtime source commit `b5c4a55`.
+- GitHub source branch: `codex/study-studio-release-20260906`. Main was not merged; the private voice asset delivery still requires the existing authenticated CLI release workflow. Follow-up commits containing only this receipt and QA tooling do not change the deployed application.
+- Vercel production build succeeded with Node 22, Prisma generation, PDF.js asset preparation and all 48 static pages. Production alias inspection resolved to the promoted deployment.
+- Local source gates: 50 tests passed, full ESLint had zero errors / 14 warnings, production build succeeded, and the final affected-route browser run passed all 21 interaction checks. Desktop core routes and tablet/phone NEET-GURU loaded without horizontal overflow or reported page/API errors. Real NCERT PDF rendering and zoom/fit passed. Transport-fixture results are not live AI evaluations.
+- Both the protected candidate and public production address passed the release checks: normal credential sign-in; session, dashboard, subjects, assistant context, Practice availability, reader and task API reads; eight protected page responses; and the versioned PDF worker. The private clone audio returned 401 without the application session, 200 with it and 206 for a valid byte-range request. Audio files were not committed to GitHub.
+- No schema migration, production question-bank replacement or live provider generation was performed during release verification. Existing study records were preserved. Normal authentication and existing GET-side effects may update session/derived metadata.
+- Remaining: Cycle Planner's full UI and save/retry pass; PYQ archive/question browsing; deeper Practice landing/palette/results refinement; academically reviewed passage links and bank coverage; durable user-scoped offline conflict handling; arbitrary dynamic cloned speech and real iPad/PWA/Comet microphone qualification. These are not claimed complete by this release.
+
+For an already open PWA, finish and save current work before closing/reopening or accepting the update prompt. Never clear browser storage to force the update while unsynced work remains.
