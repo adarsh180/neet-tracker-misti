@@ -60,7 +60,7 @@ try {
   const cookie = login.headers.getSetCookie().map(entry => entry.split(";")[0]).join("; ");
   assert.ok(cookie.includes("neet_private_session="));
   const headers = { cookie };
-  for (const route of ["/api/auth/session", "/api/dashboard/metrics", "/api/subjects", "/api/assistant/context", "/api/practice/availability", "/api/reader", "/api/tasks"]) {
+  for (const route of ["/api/auth/session", "/api/dashboard/metrics", "/api/subjects", "/api/assistant/context", "/api/practice/availability", "/api/reader", "/api/tasks", "/api/cycle", "/api/pyq/questions", "/api/pyq/progress?exam=neet-ug"]) {
     const response = await request(route, { headers });
     assert.equal(response.status, 200, `Release read failed: ${route}`);
     const data = await response.json();
@@ -78,7 +78,7 @@ try {
   assert.equal(range.status, 206);
   assert.equal((await range.arrayBuffer()).byteLength, 1024);
   record("/api/voice/audio/assistant-ready-warm", range, { rangePlayback: true });
-  for (const route of ["/dashboard", "/daily-goals", "/todo", "/reviews", "/ai-insights/neet-guru", "/reader", "/subjects/physics", "/practice"]) {
+  for (const route of ["/dashboard", "/daily-goals", "/todo", "/reviews", "/ai-insights/neet-guru", "/reader", "/subjects/physics", "/practice", "/ai-insights/cycle-planner", "/pyq", "/pyq/questions"]) {
     const response = await request(route, { headers });
     assert.equal(response.status, 200, `Release page failed: ${route}`);
     record(route, response);

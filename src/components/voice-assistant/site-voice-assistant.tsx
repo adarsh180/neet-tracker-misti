@@ -390,7 +390,9 @@ export default function SiteVoiceAssistant() {
   if (!open) {
     // The chat has a fixed composer; the header microphone and assistant's
     // wake-word control remain available without a reminder covering typing.
-    const needsActivation = preferenceLoaded && preference.interactionMode === "WAKE" && !wakeArmed && pathname !== "/ai-insights/neet-guru";
+    // Keep permission education on the dashboard; never cover a study form or answer.
+    // The persistent header microphone still activates voice from every protected page.
+    const needsActivation = preferenceLoaded && preference.interactionMode === "WAKE" && !wakeArmed && pathname === "/dashboard";
     return <>{needsActivation ? <button data-studio-chrome className={styles.permissionNudge} onClick={() => void enableHandsFree()}><Mic size={15} /><span><strong>{micPermission === "denied" ? "Fix microphone access" : "Enable “Hey Bubu”"}</strong><small>{micPermission === "denied" ? "Allow Microphone in this site’s settings" : "One tap for microphone access"}</small></span></button> : null}<span className={`${styles.wakeSentinel} ${wakeActive ? styles.wakeSentinelActive : ""}`} aria-hidden="true" /></>;
   }
 

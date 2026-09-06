@@ -59,16 +59,19 @@ function buildDocumentUrl(pathname: string, download = false) {
 const NEET_YEARS = Array.from({ length: 2025 - 2006 + 1 }, (_, index) => String(2025 - index));
 
 export default function PyqLibraryClient({ jeeCatalog }: Props) {
-  const [activeArchive, setActiveArchive] = useState<"jee" | "neet" | null>(null);
+  const [activeArchive, setActiveArchive] = useState<"jee" | "neet" | null>("neet");
   const [selectedYear, setSelectedYear] = useState(jeeCatalog.years[0]?.year ?? "");
   const [query, setQuery] = useState("");
   const [yearProgress, setYearProgress] = useState<Record<string, YearProgress>>({});
   const [neetProgress, setNeetProgress] = useState<Record<string, YearProgress>>({});
   const [progressLoading, setProgressLoading] = useState(true);
+  const [progressReady, setProgressReady] = useState(false);
   const [savingYears, setSavingYears] = useState<Set<string>>(() => new Set());
   const [progressError, setProgressError] = useState("");
   const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
   const pendingYearsRef = useRef(new Set<string>());
+  const loadingProgressRef = useRef(false);
+  const progressVersionRef = useRef(0);
 
   const currentYear = jeeCatalog.years.find((folder) => folder.year === selectedYear);
   const normalizedQuery = query.trim().toLowerCase();
@@ -98,17 +101,23 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
   }, [currentYear, jeeCatalog.years, normalizedQuery, filter, yearProgress]);
 
   const loadProgress = useCallback(async (quiet = false) => {
+    if (loadingProgressRef.current || pendingYearsRef.current.size || (quiet && document.hidden)) return;
+    loadingProgressRef.current = true;
+    const version = progressVersionRef.current;
     if (!quiet) setProgressLoading(true);
 
     try {
       const [jeeResponse, neetResponse] = await Promise.all([
-        fetch("/api/pyq/progress?exam=jee-main", { cache: "no-store" }),
-        fetch("/api/pyq/progress?exam=neet-ug", { cache: "no-store" }),
+        fetch("/api/pyq/progress?exam=jee-main", { cache: "no-store", signal: AbortSignal.timeout(20000) }),
+        fetch("/api/pyq/progress?exam=neet-ug", { cache: "no-store", signal: AbortSignal.timeout(20000) }),
       ]);
       if (!jeeResponse.ok || !neetResponse.ok) throw new Error("Unable to load PYQ progress");
 
       const records = (await jeeResponse.json()) as YearProgress[];
       const neetRecords = (await neetResponse.json()) as YearProgress[];
+      if (version !== progressVersionRef.current) return;
+      if (!Array.isArray(records) || !Array.isArray(neetRecords)) throw new Error("Invalid progress response");
+      setProgressReady(true);
       setYearProgress((current) => {
         const synced = Object.fromEntries(records.map((record) => [record.year, record]));
         pendingYearsRef.current.forEach((year) => {
@@ -127,6 +136,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
     } catch {
       setProgressError("Progress could not be synced right now.");
     } finally {
+      loadingProgressRef.current = false;
       if (!quiet) setProgressLoading(false);
     }
   }, []);
@@ -136,7 +146,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
 
     const intervalId = window.setInterval(() => {
       void loadProgress(true);
-    }, 5000);
+    }, 60000);
     const handleFocus = () => void loadProgress(true);
     const handleVisibility = () => {
       if (document.visibilityState === "visible") void loadProgress(true);
@@ -156,19 +166,22 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
     changes: Partial<Pick<YearProgress, "completed" | "revisionCount">>,
     exam: "jee-main" | "neet-ug" = "jee-main",
   ) {
+    const saveKey = `${exam}:${year}`;
+    if (!progressReady || pendingYearsRef.current.has(saveKey)) return;
     const progressMap = exam === "neet-ug" ? neetProgress : yearProgress;
     const setProgressMap = exam === "neet-ug" ? setNeetProgress : setYearProgress;
     const previous = progressMap[year] ?? { year, completed: false, revisionCount: 0 };
     const next = { ...previous, ...changes };
 
-    pendingYearsRef.current.add(year);
-    setProgressMap((current) => ({ ...current, [year]: next }));
-    setSavingYears((current) => new Set(current).add(year));
+    pendingYearsRef.current.add(saveKey);
+    progressVersionRef.current += 1;
+    setSavingYears((current) => new Set(current).add(saveKey));
     setProgressError("");
 
     try {
       const response = await fetch("/api/pyq/progress", {
         method: "PATCH",
+        signal: AbortSignal.timeout(30000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           exam,
@@ -177,18 +190,20 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
           revisionCount: next.revisionCount,
         }),
       });
-      if (!response.ok) throw new Error("Unable to save PYQ progress");
+      if (response.status === 202) throw new Error("This update is waiting for a connection, not confirmed saved. Reconnect and refresh before retrying.");
+      if (!response.ok) throw new Error("Progress could not be saved. Please try again.");
 
       const saved = (await response.json()) as YearProgress;
+      if (saved.year !== year || saved.completed !== next.completed || saved.revisionCount !== next.revisionCount) throw new Error("The saved progress could not be confirmed. Refresh before retrying.");
       setProgressMap((current) => ({ ...current, [year]: saved }));
-    } catch {
-      setProgressMap((current) => ({ ...current, [year]: previous }));
-      setProgressError("Progress could not be saved. Please try again.");
+    } catch (error) {
+      setProgressError(error instanceof Error ? error.message : "Progress could not be saved. Please try again.");
     } finally {
-      pendingYearsRef.current.delete(year);
+      pendingYearsRef.current.delete(saveKey);
+      progressVersionRef.current += 1;
       setSavingYears((current) => {
         const nextSaving = new Set(current);
-        nextSaving.delete(year);
+        nextSaving.delete(saveKey);
         return nextSaving;
       });
     }
@@ -206,10 +221,10 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
           <span className="archive-eyebrow">Study archive</span>
           <h1>Previous Year Papers</h1>
           <p>
-            An ordered desk of real papers, ready for an unhurried study session.
+            Your NEET year tracker, question library and supporting papers.
           </p>
         </div>
-        <div className="archive-overview" aria-label="Archive summary">
+        {activeArchive === "jee" && <div className="archive-overview" aria-label="JEE archive summary">
           <div>
             <strong>{jeeCatalog.totalPapers}</strong>
             <span>JEE papers</span>
@@ -226,8 +241,11 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
             <strong>{revisionRounds}</strong>
             <span>Revision rounds</span>
           </div>
-        </div>
+        </div>}
       </header>
+
+      <nav className="archive-switch" aria-label="Archive collections"><button aria-pressed={activeArchive === "neet"} onClick={() => { setActiveArchive("neet"); setQuery(""); }}>NEET years</button><button aria-pressed={activeArchive === "jee"} onClick={() => { setActiveArchive("jee"); setQuery(""); }}>JEE supporting papers</button><a href="/pyq/questions"><Search size={16} /> Explore NEET questions <ArrowUpRight size={16} /></a></nav>
+      {progressError && <div className="delivery-note delivery-note-error" role="alert">{progressError} <button className="back-button" onClick={() => void loadProgress()}>Retry sync</button></div>}
 
       {!activeArchive && (
         <section className="cabinet" aria-label="Paper collections">
@@ -264,17 +282,17 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
             </button>
             <div className="neet-shelf-head">
               <span className="archive-eyebrow">NEET UG · 2006-2025</span>
-              <h2>Year-wise NEET papers</h2>
+              <h2>Choose a year to practise</h2>
               <p>
-                Tick a year after finishing it from your books, count revision rounds, or launch a Practice Arena
-                session built from that year&apos;s PYQs with verified answer keys.
+                Mark work completed from your books or practise available bank questions. These year slots are a personal tracker, not a claim that every paper is available.
               </p>
             </div>
           </div>
+          <div className="neet-filter"><label className="search-box"><Search size={16} /><input aria-label="Find a NEET year" type="search" placeholder="Find a year" value={query} onChange={event => setQuery(event.target.value)} /></label><select aria-label="NEET year progress filter" value={filter} onChange={event => setFilter(event.target.value as typeof filter)}><option value="all">All years</option><option value="pending">To finish</option><option value="completed">Completed</option></select></div>
           <div className="neet-grid">
-            {NEET_YEARS.map((year, index) => {
+            {NEET_YEARS.filter(year => year.includes(query.trim()) && (filter === "all" || Boolean(neetProgress[year]?.completed) === (filter === "completed"))).map((year, index) => {
               const status = neetProgress[year] ?? { year, completed: false, revisionCount: 0 };
-              const saving = savingYears.has(year);
+              const saving = savingYears.has(`neet-ug:${year}`);
               return (
                 <div className={`neet-year ${status.completed ? "is-complete" : ""}`} key={year} style={{ "--folder-index": index } as CSSProperties}>
                   <div className="neet-year-top">
@@ -288,7 +306,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                     <label className={`completion-check ${status.completed ? "is-checked" : ""}`}>
                       <input
                         checked={status.completed}
-                        disabled={progressLoading || saving}
+                        disabled={!progressReady || progressLoading || saving}
                         onChange={(event) => void saveProgress(year, { completed: event.target.checked }, "neet-ug")}
                         type="checkbox"
                       />
@@ -298,7 +316,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                     <div className="revision-control" aria-label={`NEET ${year} revision rounds`}>
                       <button
                         aria-label={`Decrease NEET ${year} revision count`}
-                        disabled={progressLoading || saving || status.revisionCount === 0}
+                        disabled={!progressReady || progressLoading || saving || status.revisionCount === 0}
                         onClick={() => void saveProgress(year, { revisionCount: Math.max(0, status.revisionCount - 1) }, "neet-ug")}
                         type="button"
                       >
@@ -307,7 +325,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                       <span><strong>{status.revisionCount}</strong> Rev</span>
                       <button
                         aria-label={`Increase NEET ${year} revision count`}
-                        disabled={progressLoading || saving || status.revisionCount === 99}
+                        disabled={!progressReady || progressLoading || saving || status.revisionCount === 99}
                         onClick={() => void saveProgress(year, { revisionCount: Math.min(99, status.revisionCount + 1) }, "neet-ug")}
                         type="button"
                       >
@@ -315,7 +333,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                       </button>
                     </div>
                   </div>
-                  <a className="neet-practice" href={`/practice?year=${year}`}>
+                  <a className="neet-practice" href={`/practice?year=${year}&source=pyq`}>
                     Practice {year} PYQs <ArrowUpRight size={13} />
                   </a>
                 </div>
@@ -336,6 +354,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                 <Search size={16} />
                 <input
                   type="search"
+                  aria-label="Search supporting papers"
                   placeholder="Find a year, date, shift or subject"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -367,11 +386,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
             </div>
           </div>
 
-          {progressError && (
-            <div className="delivery-note delivery-note-error" role="status">
-              {progressError}
-            </div>
-          )}
+
 
           <div className="explorer-shell">
             <aside className="year-rail" aria-label="JEE paper years">
@@ -387,7 +402,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                   completed: false,
                   revisionCount: 0,
                 };
-                const saving = savingYears.has(folder.year);
+                const saving = savingYears.has(`jee-main:${folder.year}`);
                 return (
                   <div
                     className={`year-folder ${active ? "is-active" : ""}`}
@@ -409,7 +424,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                       <label className={`completion-check ${status.completed ? "is-checked" : ""}`}>
                         <input
                           checked={status.completed}
-                          disabled={progressLoading || saving}
+                          disabled={!progressReady || progressLoading || saving}
                           onChange={(event) => void saveProgress(folder.year, { completed: event.target.checked })}
                           type="checkbox"
                         />
@@ -419,7 +434,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                       <div className="revision-control" aria-label={`${folder.year} revision rounds`}>
                         <button
                           aria-label={`Decrease ${folder.year} revision count`}
-                          disabled={progressLoading || saving || status.revisionCount === 0}
+                          disabled={!progressReady || progressLoading || saving || status.revisionCount === 0}
                           onClick={() => void saveProgress(folder.year, { revisionCount: Math.max(0, status.revisionCount - 1) })}
                           type="button"
                         >
@@ -428,7 +443,7 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
                         <span><strong>{status.revisionCount}</strong> Rev</span>
                         <button
                           aria-label={`Increase ${folder.year} revision count`}
-                          disabled={progressLoading || saving || status.revisionCount === 99}
+                          disabled={!progressReady || progressLoading || saving || status.revisionCount === 99}
                           onClick={() => void saveProgress(folder.year, { revisionCount: Math.min(99, status.revisionCount + 1) })}
                           type="button"
                         >
@@ -1289,6 +1304,24 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
         @media (max-width: 480px) {
           .neet-grid { grid-template-columns: 1fr; }
         }
+
+        .archive-switch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0}
+        .archive-switch button,.archive-switch a{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border:1px solid var(--glass-border);background:var(--bg-surface);color:var(--text-secondary);border-radius:10px;padding:10px 16px;font-size:14px;text-decoration:none;cursor:pointer}
+        .archive-switch button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+        .archive-switch a{margin-left:auto;color:var(--gold)}
+        .neet-filter{display:flex;gap:14px;margin:22px 0}
+        .neet-filter .search-box{flex:1}
+        .neet-filter select{min-height:44px;padding:10px;border:1px solid var(--glass-border);border-radius:9px;background:var(--bg-surface);color:var(--text-primary);font-size:16px}
+        .archive-hero{box-shadow:none;backdrop-filter:none;background:var(--bg-surface);border-color:var(--glass-border)}
+        .archive-hero::after{display:none}
+        .archive-background{background:var(--bg-void)}
+        .neet-year{box-shadow:none;backdrop-filter:none;background:var(--bg-surface);border-color:var(--glass-border);animation:none}
+        .neet-year-top strong{font-size:20px}
+        .completion-check,.revision-control span,.neet-practice{font-size:14px}
+        .archive-page button:focus-visible,.archive-page a:focus-visible,.archive-page input:focus-visible,.archive-page select:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+        .revision-control button{width:36px;height:40px}
+        @media(max-width:600px){.archive-switch a{margin-left:0;width:100%}.neet-filter{flex-wrap:wrap}.archive-hero{padding:22px 16px}.archive-heading h1{font-size:32px}}
+
       `}</style>
     </main>
   );

@@ -32,6 +32,7 @@ try {
       : "#studio-content h1";
     await page.waitForSelector(selector, { timeout: 30000 });
     if (route === "/planner") await page.waitForFunction(() => !document.querySelector('[role="status"]')?.textContent.includes("Finding your next steps"), { timeout: 45000 });
+    if (route === "/ai-insights/cycle-planner") await page.waitForFunction(() => !document.querySelector('.cycle-loading'), { timeout: 45000 });
     // Polling notifications and navigation-aborted auth requests are not page readiness.
     await page.waitForFunction(() => ![...document.querySelectorAll('#studio-content [class*="skeleton"], #studio-content .loading-pulse')].some(node => node.getBoundingClientRect().height > 0), { timeout: 60000 });
     await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))));
@@ -109,6 +110,8 @@ try {
   report.push(...await checkReviewInteractions(page, base, output));
   const { checkGuruInteractions } = await import("./guru-interactions.mjs");
   report.push(...await checkGuruInteractions(page, base, output));
+  const { checkCyclePyqInteractions } = await import("./cycle-pyq-interactions.mjs");
+  report.push(...await checkCyclePyqInteractions(page, base, output));
   console.log(JSON.stringify({ interactions: report.filter(item => item.interaction) }));
 } finally {
   await writeFile(path.join(output, "report.json"), JSON.stringify(report, null, 2));

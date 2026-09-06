@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   const classLevel = params.get("classLevel")?.trim();
   const chapter = params.get("chapter")?.trim();
   const difficulty = params.get("difficulty")?.trim();
-  const page = Math.max(1, Number(params.get("page")) || 1);
+  const requestedPage = Number(params.get("page"));
+  const page = Number.isFinite(requestedPage) ? Math.min(10000, Math.max(1, Math.floor(requestedPage))) : 1;
   const pageSize = 20;
   const where: Prisma.BankQuestionWhereInput = {
     source: "NEET_PYQ",
@@ -66,4 +67,3 @@ export async function GET(request: NextRequest) {
     })),
   });
 }
-

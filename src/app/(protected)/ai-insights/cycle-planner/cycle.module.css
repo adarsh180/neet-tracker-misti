@@ -1,0 +1,134 @@
+.page { max-width:1380px; color:var(--text-primary); }
+.page :global(.cycle-shell) { display:grid; gap:24px; }
+.page :global(.btn) { min-height:44px; border-radius:10px; padding:10px 16px; font-size:14px; }
+.page :global(.btn-primary) { background:var(--gold); color:var(--bg-void); box-shadow:none; }
+.page :global(.cycle-patterns) { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0; }
+.page :global(.privacy-card) { display:flex; gap:14px; color:var(--text-secondary); }
+.page :global(.privacy-card svg) { flex-shrink:0; margin-top:2px; }
+.page :global(.privacy-card h3) { font:500 14px var(--font-body),sans-serif; margin:0 0 6px; }
+.page :global(.privacy-card p) { font-size:13px; margin:0; }
+.page :global(.cycle-header), .page :global(.cycle-title-wrap), .page :global(.cycle-actions), .page :global(.panel-head) { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.page :global(.cycle-title-wrap) { justify-content:flex-start; }
+.page :global(.cycle-kicker) { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; }
+.page :global(.cycle-title) { font:500 clamp(32px,4vw,46px)/1.2 var(--font-display),serif; letter-spacing:-1px; margin:8px 0; }
+.page :global(.cycle-subtitle) { margin:0; color:var(--text-secondary); font-size:15px; line-height:1.7; }
+.page :global(.glass-card), .page :global(.metric-card), .page :global(.cycle-phase-card) { padding:24px; background:var(--bg-surface); border:1px solid var(--glass-border); border-radius:16px; box-shadow:none; backdrop-filter:none; min-width:0; }
+.page :global(.cycle-error), .page :global(.cycle-notice) { padding:16px; border:1px solid var(--danger); border-radius:12px; font-size:14px; line-height:1.6; }
+.page :global(.cycle-notice) { border-color:var(--success); margin:0; }
+.page :global(.cycle-loading) { text-align:center; padding:60px; }
+.page :global(.calendar-layout) { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(290px,1fr); gap:24px; align-items:start; }
+.page :global(.calendar-card) { padding:26px; }
+.page :global(.calendar-head) { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.page :global(h2) { font:500 25px/1.3 var(--font-display),serif; margin:0 0 6px; }
+.page :global(h3) { font-size:16px; font-weight:600; margin:0 0 12px; }
+.page :global(p) { line-height:1.7; }
+.page :global(.calendar-head p), .page :global(.panel-head p) { font-size:14px; color:var(--text-secondary); margin:0; }
+.page :global(.icon-btn) { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; background:transparent; color:var(--text-primary); border:1px solid var(--glass-border); border-radius:10px; cursor:pointer; }
+.page :global(button:hover:not(:disabled)) { background:var(--bg-hover); }
+.page :global(button:active:not(:disabled)) { transform:translateY(1px); }
+.page :global(button:focus-visible), .page :global(summary:focus-visible) { outline:2px solid var(--gold); outline-offset:3px; }
+.page :global(button:disabled) { opacity:.5; cursor:not-allowed; }
+.page :global(.legend-row) { display:flex; flex-wrap:wrap; gap:10px 16px; padding:24px 0; font-size:12px; color:var(--text-secondary); }
+.page :global(.legend-row>span) { display:flex; align-items:center; gap:7px; }
+.page :global(.legend), .page :global(.marker) { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--text-secondary); }
+.page :global(.actual) { --mark:var(--rose-bright); }
+.page :global(.predicted) { --mark:var(--gold); }
+.page :global(.pms) { --mark:var(--lotus-bright); }
+.page :global(.fertile), .page :global(.ovulation) { --mark:var(--botany); }
+.page :global(.legend:not(.mood)), .page :global(.marker:not(.mood)) { background:var(--mark); }
+.page :global(.weekday-grid), .page :global(.calendar-grid) { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:7px; }
+.page :global(.weekday-grid) { text-align:center; color:var(--text-secondary); font-size:12px; padding-bottom:12px; }
+.page :global(.calendar-day) { min-height:72px; padding:10px; border:1px solid transparent; background:var(--bg-base); border-radius:10px; display:flex; flex-wrap:wrap; justify-content:space-between; align-content:space-between; color:var(--text-primary); cursor:pointer; position:relative; }
+.page :global(.calendar-day.actual) { background:color-mix(in srgb,var(--rose-bright) 13%,var(--bg-surface)); border-color:color-mix(in srgb,var(--rose-bright) 36%,transparent); }
+.page :global(.calendar-day.predicted:not(.actual)), .page :global(.calendar-day.pms:not(.actual)), .page :global(.calendar-day.fertile:not(.actual)) { border:1px dashed color-mix(in srgb,var(--mark) 45%,transparent); }
+.page :global(.calendar-day.selected) { outline:2px solid var(--gold); outline-offset:1px; }
+.page :global(.calendar-day.today .day-number) { text-decoration:underline; text-underline-offset:5px; }
+.page :global(.calendar-day.muted) { opacity:.4; }
+.page :global(.day-number) { font-size:17px; font-variant-numeric:tabular-nums; }
+.page :global(.cycle-day) { font-size:10px; color:var(--text-secondary); }
+.page :global(.day-markers) { width:100%; display:flex; gap:4px; min-height:7px; }
+.page :global(.side-stack) { display:grid; gap:16px; }
+.page :global(.day-detail) { margin-top:20px; }
+.page :global(.detail-row) { display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid var(--glass-border); padding:13px 0; font-size:14px; }
+.page :global(.detail-row span), .page :global(.empty-copy) { color:var(--text-secondary); }
+.page :global(.detail-row strong) { font-weight:500; }
+.page :global(.detail-note), .page :global(.mood-box) { margin-top:14px; padding:14px; border-radius:10px; background:var(--bg-base); font-size:14px; overflow-wrap:anywhere; }
+.page :global(.mood-mini), .page :global(.history-meta), .page :global(.day-detail-pills) { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.page :global(.mood-mini span), .page :global(.history-meta span), .page :global(.day-detail-pills span) { padding:5px 8px; background:var(--bg-base); border-radius:6px; font-size:12px; color:var(--text-secondary); }
+.page :global(.privacy-note) { display:flex; gap:12px; font-size:13px; color:var(--text-secondary); }
+.page :global(.symptoms-card), .page :global(.health-card) { font-size:14px; color:var(--text-secondary); }
+.page :global(.signal-list>div) { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--glass-border); }
+.page :global(.signal-list strong) { text-align:right; font-weight:500; }
+.page :global(.red-flag-list) { display:grid; gap:10px; padding:12px; border-left:2px solid var(--rose-bright); }
+.page :global(.cycle-insights) { border-block:1px solid var(--glass-border); }
+.page :global(.cycle-insights>summary) { padding:22px 0; cursor:pointer; font-size:17px; }
+.page :global(.cycle-insights>summary span) { font-size:13px; color:var(--text-secondary); margin-left:16px; }
+.page :global(.estimate-note) { color:var(--text-secondary); max-width:90ch; font-size:14px; }
+.page :global(.cycle-hero), .page :global(.intelligence-strip) { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:18px 0; }
+.page :global(.cycle-phase-card) { border-color:var(--phase-border); }
+.page :global(.phase-icon) { color:var(--phase); margin-bottom:16px; }
+.page :global(.phase-label), .page :global(.metric-top), .page :global(.intel-top) { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--text-secondary); margin-bottom:12px; }
+.page :global(.phase-study), .page :global(.phase-main p), .page :global(.metric-card p), .page :global(.intel-card p) { color:var(--text-secondary); font-size:14px; line-height:1.7; }
+.page :global(.prediction-grid) { grid-column:span 2; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.page :global(.metric-card strong), .page :global(.intel-card strong) { display:block; font-size:23px; font-weight:500; }
+.page :global(.confidence-bar) { height:4px; background:var(--bg-base); margin-top:12px; border-radius:4px; overflow:hidden; }
+.page :global(.confidence-bar span) { display:block; height:100%; background:var(--gold); }
+.page :global(.history-ai-grid) { display:grid; grid-template-columns:1.2fr 1fr; gap:24px; align-items:start; }
+.page :global(.history-list) { display:grid; gap:16px; margin-top:20px; }
+.page :global(.history-row) { padding:16px 0; border-top:1px solid var(--glass-border); }
+.page :global(.history-date) { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.page :global(.history-date strong), .page :global(.history-date span) { display:block; font-size:15px; }
+.page :global(.history-date span), .page :global(.history-row p) { font-size:13px; color:var(--text-secondary); margin-top:6px; overflow-wrap:anywhere; }
+.page :global(.ai-panel-top), .page :global(.ai-empty), .page :global(.ai-loading), .page :global(.ai-brief-section) { display:flex; gap:14px; margin-bottom:20px; }
+.page :global(.ai-mark), .page :global(.ai-brief-icon) { color:var(--gold); }
+.page :global(.ai-heading>span) { color:var(--gold); font-size:12px; }
+.page :global(.ai-heading p), .page :global(.ai-empty p), .page :global(.ai-loading p), .page :global(.ai-brief-section p) { font-size:14px; color:var(--text-secondary); margin:8px 0; white-space:pre-line; }
+.page :global(.ai-context-strip) { display:none; }
+.page :global(.ai-button) { margin-bottom:24px; width:100%; }
+.page :global(.ai-footnote) { display:flex; gap:8px; font-size:12px; color:var(--text-secondary); }
+.page :global(.log-panel) { margin:0; animation:arrive .25s ease-out; scroll-margin-top:100px; }
+.page :global(.log-grid) { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin-top:24px; }
+.page :global(label>span), .page :global(.symptom-wrap>span), .page :global(.period-days-head span) { display:block; font-size:14px; color:var(--text-secondary); margin-bottom:9px; }
+.page :global(.input) { width:100%; min-height:46px; font-size:16px; border-radius:9px; background:var(--bg-base); }
+.page :global(.symptom-wrap) { margin-top:22px; }
+.page :global(.symptom-list), .page :global(.log-actions) { display:flex; flex-wrap:wrap; gap:8px; }
+.page :global(.symptom-chip) { border:1px solid var(--glass-border); border-radius:8px; color:var(--text-secondary); background:transparent; min-height:42px; padding:8px 13px; cursor:pointer; font-size:14px; }
+.page :global(.symptom-chip.active) { border-color:var(--rose-bright); background:color-mix(in srgb,var(--rose-bright) 10%,transparent); color:var(--text-primary); }
+.page :global(.period-days-wrap) { margin-top:28px; }
+.page :global(.period-days-head) { display:flex; justify-content:space-between; gap:16px; }
+.page :global(.period-days-head p), .page :global(.period-days-head small) { font-size:13px; color:var(--text-secondary); }
+.page :global(.period-day-list) { display:grid; gap:12px; }
+.page :global(.period-day-row) { display:grid; grid-template-columns:80px repeat(4,minmax(80px,1fr)) minmax(140px,2fr); gap:12px; padding:16px; border:1px solid var(--glass-border); border-radius:12px; align-items:end; }
+.page :global(.period-day-title) { align-self:center; display:grid; gap:6px; font-size:14px; }
+.page :global(.period-day-title span) { color:var(--text-secondary); font-size:12px; }
+.page :global(.notes-label) { display:block; margin:24px 0; }
+.page :global(textarea) { min-height:100px; resize:vertical; }
+.page :global(.spin) { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes arrive { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+@media(max-width:1050px) {
+ .page :global(.calendar-layout), .page :global(.history-ai-grid) { grid-template-columns:1fr; }
+ .page :global(.side-stack) { grid-template-columns:1fr 1fr; }
+ .page :global(.period-day-row) { grid-template-columns:repeat(4,minmax(0,1fr)); }
+ .page :global(.period-day-title), .page :global(.period-day-notes) { grid-column:1/-1; }
+ .page :global(.cycle-header) { flex-wrap:wrap; }
+}
+@media(max-width:600px) {
+ .page :global(.cycle-patterns) { grid-template-columns:1fr; }
+ .page :global(.cycle-title-wrap) { align-items:start; }
+ .page :global(.cycle-back) { display:none; }
+ .page :global(.cycle-actions) { width:100%; justify-content:flex-end; }
+ .page :global(.glass-card), .page :global(.metric-card), .page :global(.cycle-phase-card) { padding:18px; }
+ .page :global(.calendar-card) { padding:16px 12px; }
+ .page :global(.calendar-head h2) { font-size:22px; }
+ .page :global(.calendar-head p) { display:none; }
+ .page :global(.calendar-grid), .page :global(.weekday-grid) { gap:5px; }
+ .page :global(.calendar-day) { min-height:60px; padding:7px 5px; }
+ .page :global(.cycle-day) { display:none; }
+ .page :global(.side-stack), .page :global(.cycle-hero), .page :global(.intelligence-strip) { grid-template-columns:1fr; }
+ .page :global(.prediction-grid) { grid-column:auto; grid-template-columns:1fr; }
+ .page :global(.log-grid), .page :global(.period-day-row) { grid-template-columns:1fr 1fr; }
+ .page :global(.cycle-insights>summary span) { display:block; margin:8px 0 0; }
+ .page :global(.period-days-head) { display:block; }
+}
+@media(prefers-reduced-motion:reduce) { .page :global(*) { animation:none !important; transition:none !important; } }
