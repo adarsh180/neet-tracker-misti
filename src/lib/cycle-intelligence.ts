@@ -1,5 +1,6 @@
 import { addDays, differenceInCalendarDays, isWithinInterval } from "date-fns";
 import { db } from "@/lib/db";
+import { optionalRating } from "@/lib/optional-rating";
 
 // India Standard Time offset (no DST). Cycle dates live in date-only (@db.Date)
 // columns that Prisma reads back as UTC midnight, so day keys are derived from
@@ -223,15 +224,12 @@ function normalizePeriodDayDetails(value: unknown): PeriodDayDetail[] {
           ? row.symptoms.split(",").map((symptom) => symptom.trim()).filter(Boolean)
           : [];
 
-      const pain = typeof row.pain === "number" ? row.pain : Number(row.pain);
-      const energy = typeof row.energy === "number" ? row.energy : Number(row.energy);
-
       return {
         day: Math.round(day),
         date: typeof row.date === "string" && row.date ? row.date : null,
         flowLevel: typeof row.flowLevel === "string" && row.flowLevel ? row.flowLevel : null,
-        pain: Number.isFinite(pain) ? clamp(Math.round(pain), 0, 10) : null,
-        energy: Number.isFinite(energy) ? clamp(Math.round(energy), 1, 10) : null,
+        pain: optionalRating(row.pain, 0, 10),
+        energy: optionalRating(row.energy, 1, 10),
         mood: typeof row.mood === "string" && row.mood ? row.mood : null,
         symptoms: [...new Set(symptoms)].slice(0, 10),
         notes: typeof row.notes === "string" && row.notes ? row.notes.slice(0, 360) : null,

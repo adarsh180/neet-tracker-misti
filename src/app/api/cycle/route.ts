@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { buildCycleIntelligence } from "@/lib/cycle-intelligence";
 import { maybeSendCyclePredictionNudge } from "@/lib/cycle-nudge";
 import { getPrivateSession } from "@/lib/server-auth";
+import { optionalRating } from "@/lib/optional-rating";
 
 function unauthorized() {
   return NextResponse.json({ error: "Private session required" }, { status: 401 });
@@ -17,10 +18,6 @@ function parseDateInput(value?: string | null) {
   // here pushes the instant into the previous UTC day and the period reads back
   // as starting "yesterday".
   return new Date(`${value}T00:00:00.000Z`);
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
 
 function cleanText(value: unknown, max = 360) {
@@ -41,8 +38,6 @@ function sanitizeDayDetails(value: unknown) {
       const day = Number(row.day);
       if (!Number.isFinite(day) || day < 1 || day > 12) return null;
 
-      const pain = Number(row.pain);
-      const energy = Number(row.energy);
       const symptoms = Array.isArray(row.symptoms)
         ? row.symptoms.filter((symptom): symptom is string => typeof symptom === "string").map((symptom) => symptom.trim()).filter(Boolean)
         : typeof row.symptoms === "string"
@@ -53,8 +48,8 @@ function sanitizeDayDetails(value: unknown) {
         day: Math.round(day),
         date: cleanText(row.date, 24),
         flowLevel: cleanText(row.flowLevel, 24),
-        pain: Number.isFinite(pain) ? clamp(Math.round(pain), 0, 10) : null,
-        energy: Number.isFinite(energy) ? clamp(Math.round(energy), 1, 10) : null,
+        pain: optionalRating(row.pain, 0, 10),
+        energy: optionalRating(row.energy, 1, 10),
         mood: cleanText(row.mood, 32),
         symptoms: [...new Set(symptoms)].slice(0, 10),
         notes: cleanText(row.notes),
