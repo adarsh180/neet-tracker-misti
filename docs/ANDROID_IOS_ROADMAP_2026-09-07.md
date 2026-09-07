@@ -8,6 +8,14 @@ Second slice: native task creation/editing and daily totals/screen-time forms ar
 
 Third slice: native chapter detail now supports reviewed per-topic question additions, completion changes and confirmed full-topic revisions, using the same database and duplicate-safe receipts. See `NATIVE_PROGRESS_RELEASE_2026-09-07.md`. Structural chapter/topic creation, combined daily-log/chapter allocation, native reader/exams/voice and signed store builds remain unfinished.
 
+## Owner account status and first distribution path
+
+On 7 September the owner confirmed that they do not yet have an Expo account or Apple Developer membership. This does not prevent source development or local bundle qualification. No account, paid membership or store submission has been created on their behalf.
+
+- **Android:** start with an installable test APK, not a Play Store release. EAS cloud builds require an Expo account and are available on a free plan; direct APK testing does not require a Google Play developer membership. Account-free local compilation is another route using Expo CLI/Android tooling, but this Windows host still needs its Android SDK/JDK setup. `eas build --local` itself still requires Expo authentication and is not the account-free route. [Expo build setup](https://docs.expo.dev/build/setup/), [local build distinctions](https://docs.expo.dev/build-reference/local-builds/).
+- **iPad:** keep the existing PWA usable while native work continues. TestFlight/App Store distribution needs Apple Developer Program access. Free personal testing through Xcode is limited and requires rebuilding/reinstalling when seven-day provisioning expires; it is not an equivalent long-lived distribution solution from this Windows machine. [Apple account and membership limits](https://developer.apple.com/help/account/basics/about-your-developer-account).
+- **Next owner step when ready:** create an Expo account in the owner's name and authenticate locally; do not paste passwords, session tokens or signing keys into chat. Confirm final identifiers and distribution scope before creating signing credentials. Paid Apple enrollment remains an explicit owner choice, not a prerequisite for continuing implementation now.
+
 ## Recommendation
 
 Keep the current Next.js website, Vercel backend and Prisma/MySQL records. Add one TypeScript React Native application for Android and iOS, using Expo development builds. Share tested domain logic and API contracts; build device-appropriate native screens. Do not move student records into a disconnected app database or ship server credentials inside the app.
