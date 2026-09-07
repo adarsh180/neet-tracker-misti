@@ -2,6 +2,12 @@ import { fetch } from "expo/fetch";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import {
+  dateKey,
+  parseDay,
+  parseWriteReceipt,
+  type Write,
+} from "./forms-contract";
+import {
   apiUrl,
   COOKIE_NAME,
   extractSessionCookie,
@@ -60,6 +66,15 @@ async function request(
       throw new SessionExpired();
     }
     if (!response.ok || response.status === 202) {
+      if (
+        (response.status === 400 || response.status === 409) &&
+        path === "/api/native/workspace" &&
+        body &&
+        typeof body === "object" &&
+        "error" in body &&
+        typeof body.error === "string"
+      )
+        throw new Error(body.error);
       if (options.anonymous && response.status === 401)
         throw new Error("Email or password is incorrect.");
       if (response.status === 429)
@@ -76,7 +91,9 @@ async function request(
   } catch (error) {
     if (controller.signal.aborted)
       throw new Error(
-        "The connection took too long. The save status is unknown; refresh before retrying a change.",
+        path === "/api/native/workspace"
+          ? "The connection took too long. Keep this draft and retry the same save; its receipt prevents duplicates."
+          : "The connection took too long. The save status is unknown; refresh before retrying a change.",
         { cause: error },
       );
     throw error;
@@ -131,4 +148,15 @@ export async function completeTask(id: string) {
     { method: "POST", body: { status: "DONE" } },
   );
   return parseTaskReceipt(body, id, "DONE" satisfies Task["status"]);
+}
+export async function loadDay(date: string) {
+  const { body } = await request(`/api/native/workspace?date=${dateKey(date)}`);
+  return parseDay(body, date);
+}
+export async function saveForm(write: Write) {
+  const { body } = await request("/api/native/workspace", {
+    method: "POST",
+    body: write,
+  });
+  return parseWriteReceipt(body, write);
 }

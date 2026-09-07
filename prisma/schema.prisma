@@ -160,6 +160,18 @@ model DailyGoal {
   @@map("daily_goals")
 }
 
+// Durable native write receipts survive task deletion and device retries.
+model NativeMutation {
+  id          String   @id @db.VarChar(80)
+  userId      String
+  payloadHash String   @db.VarChar(64)
+  resultJson  Json
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("native_mutations")
+}
+
 model ScreenTimeLog {
   id           String   @id @default(cuid())
   userId       String   @default("misti")

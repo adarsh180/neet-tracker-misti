@@ -4,6 +4,8 @@ Prepared 7 September 2026. This is a proposed migration plan, not a claim that n
 
 Implementation has now started: the first native client is in `apps/mobile`, with actual status and verification in its README. The phases below remain the wider roadmap; they are not all complete.
 
+Second slice: native task creation/editing and daily totals/screen-time forms are implemented with atomic, version-checked saves. See `NATIVE_FORMS_RELEASE_2026-09-07.md` for tests and remaining integration gates. Chapter allocation, native reader/exams/voice and signed store builds remain unfinished.
+
 ## Recommendation
 
 Keep the current Next.js website, Vercel backend and Prisma/MySQL records. Add one TypeScript React Native application for Android and iOS, using Expo development builds. Share tested domain logic and API contracts; build device-appropriate native screens. Do not move student records into a disconnected app database or ship server credentials inside the app.

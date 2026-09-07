@@ -1,6 +1,6 @@
 # Misti’s Study Studio — native client
 
-This is the first implemented Android/iPhone/iPad slice, not a finished port or a store release. It lives alongside the existing Next.js project and uses the live NEET Tracker backend. Vercel ignores this directory; the website’s dependency graph is unchanged.
+This contains the first two implemented Android/iPhone/iPad slices, not a finished port or a store release. It lives alongside the existing Next.js project and uses the live NEET Tracker backend. Vercel ignores this directory; the website’s dependency graph is unchanged.
 
 ## Implemented
 
@@ -9,6 +9,9 @@ This is the first implemented Android/iPhone/iPad slice, not a finished port or 
 - Today: real saved totals, syllabus completion and labelled 14-day study-hour history. Unlogged days remain unknown instead of becoming zero study.
 - Subjects: all four subjects from the API, chapter/topic search, class filtering, completion and question/revision counts. Chapter-only question totals are not doubled across ambiguous class names. Editing remains a labelled website handoff.
 - Todo: current shared board, completed filter, server-confirmed completion. Failed/uncertain writes require refresh before another change. No automatic retry, invented offline receipt or duplicate task creation.
+- Native task creation/editing: title, notes, subject, priority, due date and planned minutes, with review before save. Existing status, AI preference and task history are preserved. The app uses a durable operation receipt and checks the loaded record version; a retry cannot recreate a subsequently deleted task.
+- Native daily log from Today → **Record your day**, or Explore → **Daily log**. Includes all four subject totals, hours, questions, intensity, notes, discipline/completion scores and optional screen time (all ten website categories). Date changes explicitly load that day; skipped subjects keep existing records. This form records daily totals, **not chapter allocations or revision updates**. Tomorrow’s plans remain in Todo.
+- Both editors use native modal sheets, keyboard avoidance, unsaved-exit confirmation, reduced motion, review summaries and server-confirmed saves. Day entries and screen time commit together or roll back together. Failed requests keep a frozen in-memory draft for the same-operation retry; **force-quit/offline durable draft recovery is not yet implemented**.
 - Device-local daily reminder: explicit permission request, Android channel, validated 24-hour time, scheduled-notification receipt, permission recheck when returning from Settings, cancellation, generic lock-screen copy and tap-to-Todo handling. It is not remote push or a cross-device scheduler.
 - Explore: labelled browser handoffs to the rest of the website. Native voice is explicitly pending; this build does not request microphone access, ship personal recordings or fall back to another speaker.
 
@@ -47,16 +50,16 @@ The root script `scripts/check-mobile-preview.mjs` checks the exported sign-in s
 ## Verification at this handoff
 
 - Android, iOS and web bundle exports pass.
-- Seven unit checks cover session parsing, first-party URL restrictions, degraded-data handling, matching save receipts, reminder time validation, chapter count/class scope and Xcode UUID compatibility.
+- Eleven unit checks cover session parsing, first-party URL restrictions, degraded-data handling, matching save receipts, form validation, reminder time validation, chapter count/class scope and Xcode UUID compatibility.
 - Expo Doctor: 18/18 checks; compatible SDK dependencies; native TypeScript/lint pass.
 - Live read contracts pass for dashboard, subjects and tasks through Node HTTP. The actual Expo networking bridge has been inspected but still needs device qualification.
-- Sign-in web rendering: 390×844, 820×1180 and 1440×1000, without overflow or browser exceptions. Authenticated native screens and hardware delivery remain unqualified.
+- Sign-in and fixture daily/task form web rendering: 390×844, 820×1180 and 1440×1000, without overflow or browser exceptions. Actual native networking, keyboards and hardware delivery remain unqualified.
 - `npm audit` reports zero vulnerabilities after a **scoped** `xcode → uuid 11.1.1` override. Xcode uses `uuid.v4()`; a regression test verifies its 24-character project IDs. No broad forced Expo downgrade was used.
 
 ## Next implementation gates
 
 1. Owner account/build signing, installed Android and iPad development clients; verify SecureStore session restart/expiry/logout, keyboard, large text, back navigation and reminder taps/denial/reboot.
-2. Native task creation/editing with operation IDs, daily-log forms and per-subject allocations, checked topic/revision updates. Extend shared domain contracts rather than parse commands independently in each screen.
+2. Task creation/editing and daily totals are implemented. Remaining: durable encrypted draft recovery, chapter/topic allocations and checked revision updates. Extend shared domain contracts rather than parse commands independently in each screen.
 3. Native PDF downloads, chapter filenames and reviewed normalized-coordinate highlights; test offline reopen and storage cleanup.
 4. Native exam engine/palette/results with durable attempt snapshots and explicit conflict recovery.
 5. Foreground voice recognition, reviewed local action registry and authenticated private cloned clips at 1×. Background wake and arbitrary cloned speech are separate feasibility gates, not current capabilities.

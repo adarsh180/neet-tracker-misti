@@ -57,6 +57,7 @@ import {
   reminderState,
 } from "./notifications";
 import { colors, s, subjectColor } from "./theme";
+import { StudyForm } from "./StudyForms";
 
 type Tab = "today" | "subjects" | "todo" | "more";
 type Workspace = Awaited<ReturnType<typeof api.loadWorkspace>>;
@@ -226,8 +227,14 @@ function Studio() {
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [editor, setEditor] = useState<{
+    mode: "day" | "task";
+    task?: Task;
+  } | null>(null);
+  const [saveNotice, setSaveNotice] = useState("");
   const loadVersion = useRef(0),
     loadingRef = useRef(false),
+    refreshAgain = useRef(false),
     pendingDestination = useRef<Tab | null>(null);
   const { width } = useWindowDimensions(),
     wide = width >= 1000;
@@ -245,8 +252,11 @@ function Studio() {
     );
     return () => listener.remove();
   }, []);
-  const refresh = useCallback(async () => {
-    if (loadingRef.current) return;
+  const refresh = useCallback(async function readWorkspace() {
+    if (loadingRef.current) {
+      refreshAgain.current = true;
+      return;
+    }
     loadingRef.current = true;
     const version = ++loadVersion.current;
     setBusy(true);
@@ -259,12 +269,18 @@ function Studio() {
         setError(readable(err));
         if (err instanceof api.SessionExpired) {
           setAuth("out");
+          setEditor(null);
+          refreshAgain.current = false;
           setData(null);
         }
       }
     } finally {
       loadingRef.current = false;
       if (version === loadVersion.current) setBusy(false);
+      if (version === loadVersion.current && refreshAgain.current) {
+        refreshAgain.current = false;
+        void readWorkspace();
+      }
     }
   }, []);
   const initialise = useCallback(async () => {
@@ -360,6 +376,8 @@ function Studio() {
                 setData(null);
                 setError(null);
                 setAuth("out");
+                setEditor(null);
+                setSaveNotice("");
               } catch (err) {
                 setError(readable(err));
               }
@@ -444,6 +462,14 @@ function Studio() {
             {error && (
               <ErrorNotice message={error} onRetry={() => void refresh()} />
             )}
+            {!!saveNotice && (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[s.text, { color: colors.green }]}
+              >
+                {saveNotice}
+              </Text>
+            )}
             {!data && busy && (
               <ActivityIndicator
                 color={colors.gold}
@@ -453,6 +479,7 @@ function Studio() {
             {data && tab === "today" && (
               <Today
                 data={data}
+                onLogDay={() => setEditor({ mode: "day" })}
                 navigate={navigate}
                 chooseSubject={(slug) => {
                   setTab("subjects");
@@ -486,6 +513,14 @@ function Studio() {
                 onError={(message) => setError(message)}
                 openWebsite={openWebsite}
                 refresh={() => void refresh()}
+                editTask={(task) => setEditor({ mode: "task", task })}
+              />
+            )}
+            {tab === "more" && (
+              <Button
+                title="Daily log"
+                onPress={() => setEditor({ mode: "day" })}
+                disabled={!data}
               />
             )}
             {tab === "more" && (
@@ -504,6 +539,20 @@ function Studio() {
           </ScrollView>
         </Animated.View>
       </View>
+      {editor && data && (
+        <StudyForm
+          mode={editor.mode}
+          task={editor.task}
+          subjects={data.subjects}
+          onClose={() => setEditor(null)}
+          onSaved={() => {
+            setError(null);
+            setSaveNotice("Saved to your account.");
+            void refresh();
+          }}
+          onReload={() => void refresh()}
+        />
+      )}
       {!wide && (
         <View style={s.tabbar}>
           {tabs.map(({ id, name, Icon }) => (
@@ -622,10 +671,12 @@ export function Today({
   data,
   navigate,
   chooseSubject,
+  onLogDay,
 }: {
   data: Workspace;
   navigate: (tab: Tab) => void;
   chooseSubject: (slug: string) => void;
+  onLogDay: () => void;
 }) {
   const { metrics, subjects, tasks } = data;
   const wide = useWindowDimensions().width >= 820;
@@ -649,8 +700,13 @@ export function Today({
           />
         </View>
         <Button
-          title="Choose a subject"
+          title="Record your day"
           primary
+          Icon={Check}
+          onPress={onLogDay}
+        />
+        <Button
+          title="Choose a subject"
           onPress={() => navigate("subjects")}
           Icon={ArrowUpRight}
         />
@@ -927,12 +983,14 @@ export function Tasks({
   onError,
   openWebsite,
   refresh,
+  editTask,
 }: {
   tasks: Task[];
   onUpdate: (task: Task) => void;
   onError: (message: string) => void;
   openWebsite: (path: string) => void;
   refresh: () => void;
+  editTask: (task?: Task) => void;
 }) {
   const [pending, setPending] = useState<string | null>(null),
     [showDone, setShowDone] = useState(false),
@@ -967,6 +1025,12 @@ export function Tasks({
         website.
       </Text>
       <View style={s.wrap}>
+        <Button
+          title="New task"
+          primary
+          onPress={() => editTask()}
+          disabled={!!pending || needsRefresh}
+        />
         <Button
           title="To do"
           primary={!showDone}
@@ -1023,12 +1087,17 @@ export function Tasks({
                   {task.dueDate ? ` · ${task.dueDate.slice(0, 10)}` : ""}
                 </Text>
               </View>
+              <Button
+                title="Edit"
+                onPress={() => editTask(task)}
+                disabled={!!pending || needsRefresh}
+              />
             </View>
           ))
         )}
       </View>
       <Button
-        title="Plan or edit tasks on website"
+        title="Full task history on website"
         onPress={() => openWebsite("/todo")}
         Icon={ArrowUpRight}
       />
@@ -1148,7 +1217,6 @@ function Explore({
           built. Browser sign-in is separate.
         </Text>
         {[
-          ["Daily log", "/daily-goals"],
           ["Practice Arena", "/practice"],
           ["NCERT reader", "/reader"],
           ["Test log & analysis", "/tests"],

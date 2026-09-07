@@ -5,6 +5,9 @@ export type Task = {
   priority: string;
   dueDate: string | null;
   plannedMinutes: number | null;
+  description?: string | null;
+  subjectId?: string | null;
+  updatedAt?: string;
   subject?: { name: string; slug: string } | null;
 };
 export type Topic = {

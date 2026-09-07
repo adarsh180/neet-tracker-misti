@@ -9,6 +9,7 @@ import {
   parseSubjects,
   parseTasks,
 } from "../src/contracts";
+import { parseDay, todayKey, editableTask } from "../src/forms-contract";
 const root = path.resolve(import.meta.dirname, "../../..");
 const require = createRequire(path.join(root, "package.json"));
 require("@next/env").loadEnvConfig(root);
@@ -29,7 +30,11 @@ try {
   for (const [route, validate] of [
     ["/api/dashboard/metrics", parseMetrics],
     ["/api/subjects", parseSubjects],
-    ["/api/tasks", parseTasks],
+    ["/api/tasks", (body: unknown) => parseTasks(body).forEach(editableTask)],
+    [
+      `/api/native/workspace?date=${todayKey()}`,
+      (body: unknown) => parseDay(body, todayKey()),
+    ],
   ] as const) {
     const response = await fetch(apiUrl(route), {
       headers: { Cookie: `${COOKIE_NAME}=${cookie}` },

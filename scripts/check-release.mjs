@@ -10,6 +10,7 @@ const pdfVersion = require("pdfjs-dist/package.json").version;
 const base = process.env.RELEASE_URL;
 if (!base || !/^https:\/\/neet-tracker-misti(?:-[a-z0-9-]+)?\.vercel\.app$/.test(base)) throw new Error("Provide the exact existing project's Vercel release URL.");
 const report = [];
+let sessionCookie;
 // Use the owner's normal CLI access for protected candidates. The CLI handles
 // its protection token; neither it nor the private session is logged/saved here.
 async function cliRequest(route, init) {
@@ -52,14 +53,28 @@ try {
   const privateVoice = await request("/api/voice/audio/assistant-ready-warm");
   record("/api/voice/audio/assistant-ready-warm", privateVoice, { unauthenticated: true });
   assert.equal(privateVoice.status, 401);
+  const nativePrivate = await request("/api/native/workspace?date=2026-01-01");
+  assert.equal(nativePrivate.status, 401);
+  record("/api/native/workspace", nativePrivate, { unauthenticated: true });
   const signin = await request("/signin");
   assert.equal(signin.status, 200);
   const login = await request("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: process.env.MISTI_EMAIL, password: process.env.MISTI_PWD }) });
   record("/api/auth/login", login);
   assert.equal(login.status, 200, "Normal release sign-in must succeed; do not retry invalid credentials.");
   const cookie = login.headers.getSetCookie().map(entry => entry.split(";")[0]).join("; ");
+  sessionCookie = cookie;
   assert.ok(cookie.includes("neet_private_session="));
   const headers = { cookie };
+  const nativeRead = await request("/api/native/workspace?date=2026-01-01", { headers });
+  assert.equal(nativeRead.status, 200);
+  const nativeDay = await nativeRead.json();
+  assert.equal(nativeDay.date, "2026-01-01");
+  assert.ok(Array.isArray(nativeDay.entries));
+  assert.match(nativeRead.headers.get("cache-control"), /no-store/);
+  record("/api/native/workspace", nativeRead, { privateDayRead: true });
+  const nativeInvalid = await request("/api/native/workspace", { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "task", operationId: "invalid" }) });
+  assert.equal(nativeInvalid.status, 400);
+  record("/api/native/workspace", nativeInvalid, { invalidWriteRejected: true });
   for (const route of ["/api/auth/session", "/api/dashboard/metrics", "/api/subjects", "/api/assistant/context", "/api/practice/availability", "/api/reader", "/api/tasks", "/api/cycle", "/api/pyq/questions", "/api/pyq/progress?exam=neet-ug"]) {
     const response = await request(route, { headers });
     assert.equal(response.status, 200, `Release read failed: ${route}`);
@@ -88,6 +103,7 @@ try {
   assert.equal(worker.status, 200);
   record(workerPath, worker);
 } finally {
+  if (sessionCookie) await request("/api/auth/logout", { method: "POST", headers: { cookie: sessionCookie } }).catch(() => {});
   const output = path.resolve("output", "release-checks");
   await mkdir(output, { recursive: true });
   await writeFile(path.join(output, `${new URL(base).hostname}.json`), JSON.stringify({ base, checkedAt: new Date().toISOString(), report }, null, 2));
