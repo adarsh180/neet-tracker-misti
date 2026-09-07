@@ -12,4 +12,5 @@ output
 /.data/
 /.claude/
 *.tsbuildinfo
+/apps/mobile/
 next-dev*.err

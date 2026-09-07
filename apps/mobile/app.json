@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Misti’s Study Studio",
+    "slug": "neet-study-studio",
+    "version": "0.1.0",
+    "scheme": "neetstudio",
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "icon": "../../public/icon-512.png",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.neettracker.misti",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.neettracker.misti",
+      "permissions": ["POST_NOTIFICATIONS"],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#D6B679",
+          "defaultChannel": "study-reminders"
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "autolinkingModuleResolution": true
+    }
+  }
+}

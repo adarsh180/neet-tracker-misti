@@ -2,6 +2,8 @@
 
 Prepared 7 September 2026. This is a proposed migration plan, not a claim that native apps have been built or that every requested website feature is complete.
 
+Implementation has now started: the first native client is in `apps/mobile`, with actual status and verification in its README. The phases below remain the wider roadmap; they are not all complete.
+
 ## Recommendation
 
 Keep the current Next.js website, Vercel backend and Prisma/MySQL records. Add one TypeScript React Native application for Android and iOS, using Expo development builds. Share tested domain logic and API contracts; build device-appropriate native screens. Do not move student records into a disconnected app database or ship server credentials inside the app.

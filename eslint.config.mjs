@@ -21,6 +21,7 @@ const eslintConfig = defineConfig([
     "public/vendor/**",
     "tmp/**",
     "output/**",
+    "apps/mobile/**",
   ]),
 ]);
 
