@@ -88,6 +88,13 @@ export function numeric(value: string, max: number, integer = false) {
     );
   return n;
 }
+export function reviewedScore(
+  saved: number | undefined,
+  input: string,
+  edited: boolean,
+) {
+  return !edited && saved !== undefined ? saved : numeric(input, 100, true);
+}
 function stamp(v: unknown): v is string {
   return (
     typeof v === "string" &&

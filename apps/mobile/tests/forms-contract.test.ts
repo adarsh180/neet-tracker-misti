@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  reviewedScore,
   dateKey,
   editableTask,
   numeric,
@@ -10,6 +11,12 @@ import {
   type DayWrite,
   type TaskWrite,
 } from "../src/forms-contract";
+test("historical subject scores remain intact unless explicitly edited", () => {
+  assert.equal(reviewedScore(70, "90", false), 70);
+  assert.equal(reviewedScore(70, "90", true), 90);
+  assert.equal(reviewedScore(undefined, "90", false), 90);
+  assert.equal(reviewedScore(undefined, "", false), 0);
+});
 const date = "2026-01-01",
   updatedAt = "2026-01-01T12:00:00.000Z";
 const entry = {

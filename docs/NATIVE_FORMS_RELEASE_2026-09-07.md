@@ -32,3 +32,15 @@ The narrowly scoped migration was applied using `scripts/apply-native-receipts.m
 No APK/IPA or store release is claimed. Installed-device qualification and owner-controlled Expo/signing/Apple provisioning remain necessary. Native PDF reader/downloads/highlights, the full exam engine, chapter/revision editing, cloned-voice action integration, remote APNs/FCM delivery and durable offline drafts remain separate unfinished slices. Local reminders already exist; they are not remote push. No substitute voice or external AI key was added.
 
 To reproduce the isolated form screenshots: temporarily switch `apps/mobile/index.ts` to import `./qa/FormsPreview`, export web into `output/mobile-forms-preview`, restore the production `./src/App` entry, then run `scripts/check-native-forms-preview.mjs`. The fixture entry is not imported by the production app and never uses real account data.
+
+## Final release receipt
+
+- Runtime source: `c610c77`, pushed to `codex/study-studio-release-20260906`.
+- Deployment: `dpl_B6EJsrWR1wt2ue3X9PWYhMMDRr6c`, READY, then explicitly promoted after candidate checks.
+- Public site: https://neet-tracker-misti.vercel.app
+- Immutable deployment: https://neet-tracker-misti-fj9leq8sw-adarsh180s-projects.vercel.app
+- Rollback target: `dpl_9TWB8YnW7YBSkhvRvYkXLKwLidvW`. The new receipt table is additive and compatible with that previous runtime; do not drop receipt history as part of a rollback.
+- Candidate and public release checks passed: private endpoint unauthenticated 401, authenticated day read 200/no-store, invalid write 400, existing protected data/page reads 200, PDF.js worker 200, private audio unauthenticated 401/authenticated 200 (45,837 bytes) and byte-range 206. Verification sessions were logged out.
+- Native live contracts passed for dashboard, subjects, editable tasks and the current saved day through Node HTTP. No production academic writes were used for those checks.
+- Final native qualification: 12 unit tests, TypeScript and lint pass; Expo Doctor 18/18 and SDK dependency compatibility pass; Android/iOS/web exports pass. The native-only follow-up preserves differing historical subject scores unless explicitly edited. It does not change the deployed website runtime.
+- Final production entry remains `./src/App`. Fixture previews, generated bundles, private voice files and credentials are not included in Git.

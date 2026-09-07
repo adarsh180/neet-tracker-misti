@@ -50,9 +50,9 @@ The root script `scripts/check-mobile-preview.mjs` checks the exported sign-in s
 ## Verification at this handoff
 
 - Android, iOS and web bundle exports pass.
-- Eleven unit checks cover session parsing, first-party URL restrictions, degraded-data handling, matching save receipts, form validation, reminder time validation, chapter count/class scope and Xcode UUID compatibility.
+- Twelve unit checks cover session parsing, first-party URL restrictions, degraded-data handling, matching save receipts, form validation, preservation of historical per-subject scores, reminder time validation, chapter count/class scope and Xcode UUID compatibility.
 - Expo Doctor: 18/18 checks; compatible SDK dependencies; native TypeScript/lint pass.
-- Live read contracts pass for dashboard, subjects and tasks through Node HTTP. The actual Expo networking bridge has been inspected but still needs device qualification.
+- Live read contracts pass for dashboard, subjects, editable tasks and the current daily log through Node HTTP. The actual Expo networking bridge has been inspected but still needs device qualification.
 - Sign-in and fixture daily/task form web rendering: 390×844, 820×1180 and 1440×1000, without overflow or browser exceptions. Actual native networking, keyboards and hardware delivery remain unqualified.
 - `npm audit` reports zero vulnerabilities after a **scoped** `xcode → uuid 11.1.1` override. Xcode uses `uuid.v4()`; a regression test verifies its 24-character project IDs. No broad forced Expo downgrade was used.
 

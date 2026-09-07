@@ -22,6 +22,7 @@ import {
   dateKey,
   editableTask,
   numeric,
+  reviewedScore,
   screenFields,
   todayKey,
   type DayRecord,
@@ -42,6 +43,8 @@ type Draft = {
   entries: Record<string, DraftEntry>;
   discipline: string;
   completion: string;
+  disciplineEdited: boolean;
+  completionEdited: boolean;
   screenEnabled: boolean;
   screen: Record<ScreenKey, string>;
   screenNote: string;
@@ -122,6 +125,8 @@ function makeDraft(day: DayRecord, subjects: Subject[]): Draft {
     date: day.date,
     discipline: String(day.entries[0]?.disciplineScore ?? ""),
     completion: String(day.entries[0]?.completionPercent ?? ""),
+    disciplineEdited: false,
+    completionEdited: false,
     entries: Object.fromEntries(
       subjects.map((subject) => {
         const entry = day.entries.find((e) => e.subjectId === subject.id);
@@ -198,6 +203,13 @@ export function StudyForm({
     epoch = useRef(0),
     alive = useRef(true);
   const frozen = busy || attempted || !!review;
+  const variedScores =
+    review?.kind === "day" &&
+    review.entries.some(
+      (entry) =>
+        entry.disciplineScore !== review.entries[0]?.disciplineScore ||
+        entry.completionPercent !== review.entries[0]?.completionPercent,
+    );
   const load = async (date: string) => {
     const version = ++epoch.current;
     setBusy(true);
@@ -318,6 +330,9 @@ export function StudyForm({
           .filter((subject) => draft.entries[subject.id]?.active)
           .map((subject) => {
             const value = draft.entries[subject.id];
+            const previous = loaded.entries.find(
+              (entry) => entry.subjectId === subject.id,
+            );
             return {
               subjectId: subject.id,
               expectedUpdatedAt:
@@ -326,8 +341,16 @@ export function StudyForm({
               hoursStudied: numeric(value.hours, 24),
               questionsSolved: numeric(value.questions, 2147483647, true),
               intensityLevel: numeric(value.intensity, 5, true),
-              disciplineScore: numeric(draft.discipline, 100, true),
-              completionPercent: numeric(draft.completion, 100, true),
+              disciplineScore: reviewedScore(
+                previous?.disciplineScore,
+                draft.discipline,
+                draft.disciplineEdited,
+              ),
+              completionPercent: reviewedScore(
+                previous?.completionPercent,
+                draft.completion,
+                draft.completionEdited,
+              ),
               notes: value.notes.trim() || null,
             };
           });
@@ -469,9 +492,15 @@ export function StudyForm({
                           {entry.notes && (
                             <Text style={s.muted}>{entry.notes}</Text>
                           )}
+                          {variedScores && (
+                            <Text style={s.muted}>
+                              Discipline {entry.disciplineScore}/100 · Plan
+                              completion {entry.completionPercent}%
+                            </Text>
+                          )}
                         </View>
                       ))}
-                      {review.entries.length > 0 && (
+                      {review.entries.length > 0 && !variedScores && (
                         <Text style={s.text}>
                           Discipline {review.entries[0].disciplineScore}/100 ·
                           Plan completion {review.entries[0].completionPercent}%
@@ -577,14 +606,18 @@ export function StudyForm({
                           numeric
                           value={draft.discipline}
                           disabled={frozen}
-                          onChange={(discipline) => change({ discipline })}
+                          onChange={(discipline) =>
+                            change({ discipline, disciplineEdited: true })
+                          }
                         />
                         <Field
                           label="Plan completed · %"
                           numeric
                           value={draft.completion}
                           disabled={frozen}
-                          onChange={(completion) => change({ completion })}
+                          onChange={(completion) =>
+                            change({ completion, completionEdited: true })
+                          }
                         />
                       </View>
                     </View>
