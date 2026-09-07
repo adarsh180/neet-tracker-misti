@@ -53,6 +53,62 @@ async function main() {
       const stale = parseNativeWrite({ operationId: randomUUID(), kind: "day", date: "2001-01-01", entries: [entry], screen: null });
       await assert.rejects(() => saveNative(adapter, userId, stale), /another device/);
       console.log("PASS missing-version daily overwrite rejected"); passed++;
+      const topic = await tx.topic.create({ data: { subjectId: subject.id, name: "Topic fixture", chapter: "Chapter fixture", classLevel: "11", questionsSolved: 20 } });
+      const progress = parseNativeWrite({ kind: "progress", operationId: randomUUID(), date: "2001-01-01", entries: [{ topicId: topic.id, subjectId: subject.id, chapter: topic.chapter, classLevel: topic.classLevel, expectedUpdatedAt: topic.updatedAt.toISOString(), expectedQuestions: 20, expectedCompleted: false, expectedRevisions: 0, questionsDelta: 45, completed: true, fullRevision: true, note: "Fixture" }] });
+      const progressReceipt = await saveNative(adapter, userId, progress);
+      assert.deepEqual(await saveNative(adapter, userId, progress), progressReceipt);
+      const savedTopic = await tx.topic.findUniqueOrThrow({ where: { id: topic.id }, include: { _count: { select: { revisions: true } } } });
+      assert.equal(savedTopic.questionsSolved, 65); assert.equal(savedTopic.isCompleted, true); assert.equal(savedTopic._count.revisions, 1);
+      assert.equal(await tx.revisionSession.count({ where: { topicId: topic.id } }), 1);
+      assert.equal(await tx.studyActivity.count({ where: { topicId: topic.id } }), 1);
+      assert.equal((await tx.dailyGoal.findUniqueOrThrow({ where: { id: previous.id } })).questionsSolved, 80);
+      console.log("PASS progress replay adds questions and revision once without changing daily totals"); passed++;
+      if (progress.kind !== "progress") throw new Error("Fixture type");
+      await assert.rejects(() => saveNative(adapter, userId, { ...progress, operationId: randomUUID() }), /another device/);
+      await assert.rejects(() => saveNative(adapter, userId, { ...progress, operationId: randomUUID(), entries: [{ ...progress.entries[0], classLevel: "12" }] }), /moved or was removed/);
+      assert.equal((await tx.topic.findUniqueOrThrow({ where: { id: topic.id } })).questionsSolved, 65);
+      console.log("PASS stale and wrong-class progress updates rejected without increments"); passed++;
+      const groupTopics = await Promise.all(["First", "Second", "Unselected"].map(name => tx.topic.create({ data: {
+        subjectId: subject.id, name, chapter: "Grouped fixture", classLevel: "12",
+      } })));
+      const groupedProgress = parseNativeWrite({ kind: "progress", operationId: randomUUID(), date: "2001-01-01", entries: groupTopics.slice(0, 2).map(t => ({
+        topicId: t.id, subjectId: t.subjectId, chapter: t.chapter, classLevel: t.classLevel,
+        expectedUpdatedAt: t.updatedAt.toISOString(), expectedQuestions: 0, expectedCompleted: false, expectedRevisions: 0,
+        questionsDelta: 0, completed: null, fullRevision: true, note: null,
+      })) });
+      const groupedReceipt = await saveNative(adapter, userId, groupedProgress);
+      assert.deepEqual(await saveNative(adapter, userId, groupedProgress), groupedReceipt);
+      const groupedSessions = await tx.revisionSession.findMany({ where: { subjectId: subject.id, chapter: "Grouped fixture" }, include: { revisions: true } });
+      assert.equal(groupedSessions.length, 1);
+      assert.equal(groupedSessions[0].topicId, null);
+      assert.equal(groupedSessions[0].coverage, "PARTIAL");
+      assert.deepEqual(groupedSessions[0].revisions.map(r => r.topicId).sort(), groupTopics.slice(0, 2).map(t => t.id).sort());
+      assert.equal(await tx.revision.count({ where: { topicId: groupTopics[2].id } }), 0);
+      console.log("PASS multi-topic revision has one replay-safe session and does not claim the whole chapter"); passed++;
+      await tx.topic.create({ data: { subjectId: subject.id, name: "Other class", chapter: "Grouped fixture", classLevel: "11" } });
+      const allGroupTopics = await tx.topic.findMany({ where: { subjectId: subject.id, chapter: "Grouped fixture" }, include: { _count: { select: { revisions: true } } } });
+      const allGroups = parseNativeWrite({ kind: "progress", operationId: randomUUID(), date: "2001-01-01", entries: allGroupTopics.map(t => ({
+        topicId: t.id, subjectId: t.subjectId, chapter: t.chapter, classLevel: t.classLevel,
+        expectedUpdatedAt: t.updatedAt.toISOString(), expectedQuestions: t.questionsSolved, expectedCompleted: t.isCompleted, expectedRevisions: t._count.revisions,
+        questionsDelta: 0, completed: null, fullRevision: true, note: null,
+      })) });
+      await saveNative(adapter, userId, allGroups);
+      const fullSessions = await tx.revisionSession.findMany({ where: { subjectId: subject.id, chapter: "Grouped fixture", id: { not: groupedSessions[0].id } }, include: { revisions: true } });
+      assert.equal(fullSessions.length, 2);
+      assert.ok(fullSessions.every(s => s.coverage === "FULL"));
+      for (const session of fullSessions) {
+        assert.equal(new Set(session.revisions.map(r => allGroupTopics.find(t => t.id === r.topicId)!.classLevel)).size, 1);
+      }
+      console.log("PASS full chapter revision coverage is class-scoped and separate classes have separate sessions"); passed++;
+      const reopen = parseNativeWrite({ ...progress, operationId: randomUUID(), entries: [{ ...progress.entries[0],
+        expectedUpdatedAt: savedTopic.updatedAt.toISOString(), expectedQuestions: 65, expectedCompleted: true, expectedRevisions: 1,
+        questionsDelta: 0, completed: false, fullRevision: false, note: "Reopened for more practice",
+      }] });
+      await saveNative(adapter, userId, reopen);
+      const reopened = await tx.topic.findUniqueOrThrow({ where: { id: topic.id } });
+      assert.equal(reopened.isCompleted, false); assert.equal(reopened.completedAt, null); assert.equal(reopened.questionsSolved, 65);
+      assert.equal(await tx.studyActivity.count({ where: { topicId: topic.id, notes: "Reopened for more practice" } }), 1);
+      console.log("PASS reopening completion preserves its note without adding questions or revisions"); passed++;
       throw rollback;
     }, { isolationLevel: "ReadCommitted", timeout: 120000, maxWait: 10000 });
   } catch (error) { if (error !== rollback) throw error; }

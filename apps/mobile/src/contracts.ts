@@ -12,6 +12,8 @@ export type Task = {
 };
 export type Topic = {
   id: string;
+  subjectId?: string;
+  updatedAt?: string;
   name: string;
   chapter: string | null;
   classLevel: string | null;

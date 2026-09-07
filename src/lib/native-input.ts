@@ -34,6 +34,23 @@ export function parseNativeWrite(value: unknown) {
   const body = object(value);
   if (typeof body.operationId !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(body.operationId)) throw new NativeInputError("Invalid save identifier.");
   const operationId = body.operationId;
+  if (body.kind === "progress") {
+    const date = studyDay(body.date);
+    if (!Array.isArray(body.entries) || !body.entries.length || body.entries.length > 40) throw new NativeInputError("Select between 1 and 40 topics.");
+    const entries = body.entries.map(raw => {
+      const item = object(raw), expectedUpdatedAt = version(item.expectedUpdatedAt);
+      if (!expectedUpdatedAt || typeof item.expectedCompleted !== "boolean" || typeof item.fullRevision !== "boolean" || !(item.completed === null || typeof item.completed === "boolean")) throw new NativeInputError("Reload the topics and confirm the intended update.");
+      const entry = { topicId: subjectId(item.topicId), subjectId: subjectId(item.subjectId),
+        chapter: item.chapter === null ? null : text(item.chapter, 191), classLevel: item.classLevel === null ? null : text(item.classLevel, 191),
+        expectedUpdatedAt, expectedQuestions: number(item.expectedQuestions, 2147483647, true), expectedRevisions: number(item.expectedRevisions, 2147483647, true), expectedCompleted: item.expectedCompleted,
+        questionsDelta: number(item.questionsDelta, 100000, true), completed: item.completed as boolean | null, fullRevision: item.fullRevision, note: note(item.note) };
+      if (entry.expectedQuestions + entry.questionsDelta > 2147483647) throw new NativeInputError("This question total is too large.");
+      if (!entry.questionsDelta && !entry.fullRevision && (entry.completed === null || entry.completed === entry.expectedCompleted)) throw new NativeInputError("Choose a change for every selected topic.");
+      return entry;
+    }).sort((a, b) => a.topicId.localeCompare(b.topicId));
+    if (new Set(entries.map(e => e.topicId)).size !== entries.length) throw new NativeInputError("A topic may only appear once in a save.");
+    return { operationId, kind: "progress" as const, date, entries };
+  }
   if (body.kind === "task") {
     const item = object(body.task), title = text(item.title, 240);
     if (!title) throw new NativeInputError("Give your task a title.");
@@ -47,10 +64,7 @@ export function parseNativeWrite(value: unknown) {
     } };
   }
   if (body.kind !== "day") throw new NativeInputError("Unsupported save.");
-  const date = day(body.date);
-  // Study dates follow the student's India calendar, never the server timezone.
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-  if (date > today) throw new NativeInputError("Study logs cannot be in the future.");
+  const date = studyDay(body.date);
   if (!Array.isArray(body.entries) || body.entries.length > 12) throw new NativeInputError("Invalid subject entries.");
   const entries = body.entries.map(raw => {
     const entry = object(raw);
@@ -65,6 +79,12 @@ export function parseNativeWrite(value: unknown) {
     ...Object.fromEntries(screenKeys.map(key => [key, number(screen[key], 24)])) as Record<typeof screenKeys[number], number> } : null;
   if (!entries.length && !screenTime) throw new NativeInputError("Add a study entry or screen-time record first.");
   return { operationId, kind: "day" as const, date, entries, screen: screenTime };
+}
+function studyDay(value: unknown) {
+  const date = day(value);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  if (date > today) throw new NativeInputError("Study records cannot be in the future.");
+  return date;
 }
 export type NativeWrite = ReturnType<typeof parseNativeWrite>;
 export function checkVersion(actual: Date | null, expected: string | null) {

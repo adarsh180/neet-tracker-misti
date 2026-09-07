@@ -1,6 +1,7 @@
 import { fetch } from "expo/fetch";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { parseProgressReceipt, type ProgressWrite } from "./progress-contract";
 import {
   dateKey,
   parseDay,
@@ -152,6 +153,13 @@ export async function completeTask(id: string) {
 export async function loadDay(date: string) {
   const { body } = await request(`/api/native/workspace?date=${dateKey(date)}`);
   return parseDay(body, date);
+}
+export async function saveProgress(write: ProgressWrite) {
+  const { body } = await request("/api/native/workspace", {
+    method: "POST",
+    body: write,
+  });
+  return parseProgressReceipt(body, write);
 }
 export async function saveForm(write: Write) {
   const { body } = await request("/api/native/workspace", {

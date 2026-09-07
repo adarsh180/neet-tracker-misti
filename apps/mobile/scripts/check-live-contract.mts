@@ -10,6 +10,7 @@ import {
   parseTasks,
 } from "../src/contracts";
 import { parseDay, todayKey, editableTask } from "../src/forms-contract";
+import { prepareProgress } from "../src/progress-contract";
 const root = path.resolve(import.meta.dirname, "../../..");
 const require = createRequire(path.join(root, "package.json"));
 require("@next/env").loadEnvConfig(root);
@@ -29,7 +30,26 @@ try {
   cookie = extractSessionCookie(login.headers.get("set-cookie"));
   for (const [route, validate] of [
     ["/api/dashboard/metrics", parseMetrics],
-    ["/api/subjects", parseSubjects],
+    [
+      "/api/subjects",
+      (body: unknown) => {
+        // Validate review inputs only; never submit a progress write in live QA.
+        for (const subject of parseSubjects(body)) {
+          for (const topic of subject.topics) {
+            prepareProgress(
+              subject.id,
+              [topic],
+              { [topic.id]: { selected: true, questions: "0" } },
+              null,
+              true,
+              "",
+              todayKey(),
+              "00000000-0000-4000-8000-000000000001",
+            );
+          }
+        }
+      },
+    ],
     ["/api/tasks", (body: unknown) => parseTasks(body).forEach(editableTask)],
     [
       `/api/native/workspace?date=${todayKey()}`,

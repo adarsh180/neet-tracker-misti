@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { checkVersion, NativeInputError, type NativeWrite } from "./native-input";
+import { saveNativeProgress } from "./native-progress";
 
 export async function saveNative(db: PrismaClient, userId: string, write: NativeWrite) {
   const id = `${userId}:${write.operationId}`;
@@ -22,7 +23,9 @@ export async function saveNative(db: PrismaClient, userId: string, write: Native
           return receipt.resultJson;
         }
         let result: unknown;
-        if (write.kind === "task") {
+        if (write.kind === "progress") {
+          result = await saveNativeProgress(tx, userId, write);
+        } else if (write.kind === "task") {
           const { id: taskId, expectedUpdatedAt, dueDate, ...fields } = write.task;
           if (fields.subjectId && !await tx.subject.findUnique({ where: { id: fields.subjectId }, select: { id: true } })) throw new NativeInputError("This subject no longer exists.", 409);
           const data = { ...fields, dueDate: dueDate ? new Date(dueDate) : null };

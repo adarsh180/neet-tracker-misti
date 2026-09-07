@@ -44,7 +44,21 @@ try {
     await page.screenshot({ path: path.join(output, `native-task-${name}.png`) });
     await click("Review your changes"); await page.waitForFunction(() => document.body.textContent.includes("45 minutes"));
     await click("Confirm & save"); await page.waitForFunction(() => document.body.textContent.includes("Fixture save confirmed"));
-    report.push({ viewport: name, overflow, dailyReview: true, taskReview: true, fixtureSave: true, source: "React Native Web, fixture-only; not physical device QA" });
+    await click("Open progress editor");
+    await page.locator('[aria-label="Select Newton’s laws"]').click();
+    await fill("New questions for Newton’s laws", "45");
+    await click("Completed");
+    await page.locator('[aria-label="Confirm full topic revision"]').click();
+    await click("Review topic updates");
+    await page.waitForFunction(() => document.body.textContent.includes("20 → 65") && document.body.textContent.includes("2 → 3"));
+    const progressOverflow = await page.evaluate(() => [...document.querySelectorAll("div")].some(el => el.clientWidth > 50 && el.scrollWidth > el.clientWidth + 3 && getComputedStyle(el).overflowX !== "hidden"));
+    assert.equal(progressOverflow, false, `${name}: progress overflow`);
+    await page.screenshot({ path: path.join(output, `native-progress-review-${name}.png`) });
+    await click("Confirm progress update");
+    await page.waitForFunction(() => document.body.textContent.includes("Fixture connection interrupted"));
+    await click("Retry this exact update");
+    await page.waitForFunction(() => document.body.textContent.includes("Fixture save confirmed"));
+    report.push({ viewport: name, overflow, progressOverflow, dailyReview: true, taskReview: true, progressReviewAndRetry: true, fixtureSave: true, source: "React Native Web, fixture-only; not physical device QA" });
   }
   assert.deepEqual(errors, []);
 } finally { await writeFile(path.join(output, "forms-report.json"), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report)); await browser.close(); server.close(); }

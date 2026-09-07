@@ -32,3 +32,11 @@ test("optimistic checks detect create/delete/edit conflicts", () => {
   assert.throws(() => checkVersion(null, date.toISOString()));
   assert.throws(() => checkVersion(date, "2026-01-01T12:00:00.124Z"));
 });
+test("progress requests require exact scope, explicit revision and whole positive deltas", () => {
+  const entry = { topicId: "nlm", subjectId: "physics", chapter: "Laws of Motion", classLevel: "11", expectedUpdatedAt: "2026-01-01T12:00:00.000Z", expectedQuestions: 20, expectedRevisions: 2, expectedCompleted: false, questionsDelta: 45, completed: true, fullRevision: true, note: null };
+  const request = { operationId, kind: "progress", date: "2026-01-01", entries: [entry] };
+  assert.equal(parseNativeWrite(request).kind, "progress");
+  for (const patch of [{ questionsDelta: -1 }, { questionsDelta: 1.5 }, { fullRevision: "yes" }, { expectedUpdatedAt: null }, { expectedRevisions: undefined }, { expectedQuestions: 2147483640 }, { completed: "true" }, { chapter: undefined }]) assert.throws(() => parseNativeWrite({ ...request, entries: [{ ...entry, ...patch }] }));
+  assert.throws(() => parseNativeWrite({ ...request, entries: [entry, entry] }));
+  assert.throws(() => parseNativeWrite({ ...request, entries: [{ ...entry, questionsDelta: 0, completed: null, fullRevision: false }] }));
+});

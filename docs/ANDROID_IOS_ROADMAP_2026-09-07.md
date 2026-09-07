@@ -4,7 +4,9 @@ Prepared 7 September 2026. This is a proposed migration plan, not a claim that n
 
 Implementation has now started: the first native client is in `apps/mobile`, with actual status and verification in its README. The phases below remain the wider roadmap; they are not all complete.
 
-Second slice: native task creation/editing and daily totals/screen-time forms are implemented with atomic, version-checked saves. See `NATIVE_FORMS_RELEASE_2026-09-07.md` for tests and remaining integration gates. Chapter allocation, native reader/exams/voice and signed store builds remain unfinished.
+Second slice: native task creation/editing and daily totals/screen-time forms are implemented with atomic, version-checked saves. See `NATIVE_FORMS_RELEASE_2026-09-07.md` for its release receipt.
+
+Third slice: native chapter detail now supports reviewed per-topic question additions, completion changes and confirmed full-topic revisions, using the same database and duplicate-safe receipts. See `NATIVE_PROGRESS_RELEASE_2026-09-07.md`. Structural chapter/topic creation, combined daily-log/chapter allocation, native reader/exams/voice and signed store builds remain unfinished.
 
 ## Recommendation
 

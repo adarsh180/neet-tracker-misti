@@ -75,6 +75,10 @@ try {
   const nativeInvalid = await request("/api/native/workspace", { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "task", operationId: "invalid" }) });
   assert.equal(nativeInvalid.status, 400);
   record("/api/native/workspace", nativeInvalid, { invalidWriteRejected: true });
+  const invalidProgress = await request("/api/native/workspace", { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "progress", operationId: "00000000-0000-4000-8000-000000000001", date: "2026-01-01", entries: [] }) });
+  assert.equal(invalidProgress.status, 400);
+  assert.equal((await invalidProgress.json()).error, "Select between 1 and 40 topics.");
+  record("/api/native/workspace", invalidProgress, { emptyProgressRejected: true });
   for (const route of ["/api/auth/session", "/api/dashboard/metrics", "/api/subjects", "/api/assistant/context", "/api/practice/availability", "/api/reader", "/api/tasks", "/api/cycle", "/api/pyq/questions", "/api/pyq/progress?exam=neet-ug"]) {
     const response = await request(route, { headers });
     assert.equal(response.status, 200, `Release read failed: ${route}`);

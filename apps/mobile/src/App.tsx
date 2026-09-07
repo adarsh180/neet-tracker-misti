@@ -58,6 +58,7 @@ import {
 } from "./notifications";
 import { colors, s, subjectColor } from "./theme";
 import { StudyForm } from "./StudyForms";
+import { ProgressEditor } from "./ProgressEditor";
 
 type Tab = "today" | "subjects" | "todo" | "more";
 type Workspace = Awaited<ReturnType<typeof api.loadWorkspace>>;
@@ -232,6 +233,10 @@ function Studio() {
     task?: Task;
   } | null>(null);
   const [saveNotice, setSaveNotice] = useState("");
+  const [progressEditor, setProgressEditor] = useState<{
+    subject: Subject;
+    topics: Subject["topics"];
+  } | null>(null);
   const loadVersion = useRef(0),
     loadingRef = useRef(false),
     refreshAgain = useRef(false),
@@ -270,6 +275,7 @@ function Studio() {
         if (err instanceof api.SessionExpired) {
           setAuth("out");
           setEditor(null);
+          setProgressEditor(null);
           refreshAgain.current = false;
           setData(null);
         }
@@ -377,6 +383,7 @@ function Studio() {
                 setError(null);
                 setAuth("out");
                 setEditor(null);
+                setProgressEditor(null);
                 setSaveNotice("");
               } catch (err) {
                 setError(readable(err));
@@ -493,6 +500,9 @@ function Studio() {
                 selected={selectedSubject}
                 onSelect={setSelectedSubject}
                 openWebsite={openWebsite}
+                editProgress={(subject, topics) =>
+                  setProgressEditor({ subject, topics })
+                }
               />
             )}
             {data && tab === "todo" && (
@@ -539,6 +549,18 @@ function Studio() {
           </ScrollView>
         </Animated.View>
       </View>
+      {progressEditor && data && (
+        <ProgressEditor
+          subject={progressEditor.subject}
+          topics={progressEditor.topics}
+          onClose={() => setProgressEditor(null)}
+          onSaved={() => {
+            setSaveNotice("Topic progress saved to your account.");
+            void refresh();
+          }}
+          onReload={() => void refresh()}
+        />
+      )}
       {editor && data && (
         <StudyForm
           mode={editor.mode}
@@ -796,11 +818,13 @@ export function Subjects({
   selected,
   onSelect,
   openWebsite,
+  editProgress,
 }: {
   subjects: Subject[];
   selected: string | null;
   onSelect: (slug: string | null) => void;
   openWebsite: (path: string) => void;
+  editProgress: (subject: Subject, topics: Subject["topics"]) => void;
 }) {
   const [query, setQuery] = useState(""),
     [classLevel, setClassLevel] = useState("all"),
@@ -893,6 +917,12 @@ export function Subjects({
                 {current.questions} questions recorded · Class{" "}
                 {current.classLevel}
               </Text>
+              <Button
+                title="Update topic progress"
+                primary
+                onPress={() => editProgress(subject, current.topics)}
+                Icon={Check}
+              />
               {current.topics.map((topic) => (
                 <View key={topic.id} style={s.listRow}>
                   <View style={s.taskCheck}>
@@ -920,13 +950,14 @@ export function Subjects({
                 </View>
               ))}
               <Button
-                title="Edit chapter on website"
+                title="Manage chapter structure on website"
                 onPress={() => openWebsite(`/subjects/${subject.slug}`)}
                 Icon={ArrowUpRight}
               />
               <Text style={s.small}>
-                Chapter editing and voice updates currently open the website.
-                Your browser may ask you to sign in separately.
+                Adding, renaming or deleting topics and voice updates currently
+                open the website. Your browser may ask you to sign in
+                separately.
               </Text>
             </View>
           ) : visible.length ? (
