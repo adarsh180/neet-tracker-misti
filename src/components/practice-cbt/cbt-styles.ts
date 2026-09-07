@@ -3,10 +3,23 @@
 // semantic NTA colors confined to the palette, weights 600-700, generous whitespace.
 
 export const listStyles = `
+  .arena-continue { display: grid; gap: 10px; margin: 24px 0; padding: clamp(18px, 3vw, 30px); border: 1px solid var(--glass-border); border-radius: 24px; background: radial-gradient(ellipse at top right, var(--gold-dim), transparent 70%), var(--bg-surface); }
+  .arena-continue h2 { font: 500 clamp(22px, 3vw, 32px)/1.2 var(--font-display), serif; margin: 8px 0 16px; color: var(--text-primary); }
+  .arena-continue > button { display: flex; align-items: center; gap: 15px; padding: 17px; border: 1px solid var(--glass-border); border-radius: 14px; background: var(--bg-elevated); color: var(--gold); text-align: left; cursor: pointer; transition: border-color .2s, transform .2s; }
+  .arena-continue > button:hover { border-color: var(--gold); transform: translateX(2px); }
+  .arena-continue > button span { flex: 1; min-width: 0; }
+  .arena-continue strong { display: block; font-size: 15px; color: var(--text-primary); overflow-wrap: anywhere; }
+  .arena-continue small { display: block; color: var(--text-secondary); margin-top: 5px; font-size: 12px; }
+  .arena-folder-toggle { cursor: pointer; color: var(--text-primary); font-weight: 600; font-size: 15px; }
+  .arena-folder-toggle span { display: inline-block; color: var(--text-secondary); font-size: 12px; font-weight: 400; margin-left: 12px; }
+  .test-folders[open] .arena-folder-toggle { margin-bottom: 20px; }
+  .cbt-page :is(button, select, summary, input):focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .cbt-page button:disabled { opacity: .5; cursor: not-allowed; }
+  @media (prefers-reduced-motion: reduce) { .arena-continue > button { transition: none; } }
   .cbt-list-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; padding-right: 52px; }
   .cbt-brand-mark { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: var(--gold); background: var(--gold-dim); border: 1px solid var(--gold-glow); }
   .cbt-list-head div:nth-child(2) { flex: 1; min-width: 240px; }
-  .cbt-list-head h1 { font-family: var(--font-display), 'Playfair Display', serif; font-size: 23px; font-weight: 600; margin: 0; color: var(--text-primary); }
+  .cbt-list-head h1 { font-family: var(--font-display), 'Playfair Display', serif; font-size: clamp(30px, 4vw, 46px); font-weight: 500; margin: 7px 0; color: var(--text-primary); }
   .cbt-list-head p { margin: 3px 0 0; color: var(--text-secondary); font-size: 12.5px; }
   .cbt-list-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .cbt-bookmark-entry { color: var(--gold); border-color: var(--gold-glow); background: color-mix(in srgb, var(--gold) 5%, transparent); }

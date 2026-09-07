@@ -7,6 +7,7 @@ import { chatWithAI } from "@/lib/openrouter";
 import { sendWebPushNotification } from "@/lib/web-push";
 import { startOfLocalDay } from "@/lib/tasks";
 import { buildTaskDescriptionWithReason } from "@/lib/todo-workspace";
+import { scheduleTotals, scheduleSummary } from "@/lib/planner-totals";
 
 /**
  * Morning Command — the autonomous daily planner agent.
@@ -272,7 +273,7 @@ function validatePlannerPayload(payload: DailyPlannerPayload | null): DailyPlann
 
   return {
     title: String(payload.title).slice(0, 140),
-    summary: String(payload.summary),
+    summary: scheduleSummary(totals),
     insights: Array.isArray(payload.insights) ? payload.insights.map(String).slice(0, 6) : [],
     totals,
     schedule,
@@ -560,7 +561,7 @@ function buildPlannerPrompt(
   ].join("\n\n");
 }
 
-function buildPlannerMarkdown(dateIST: string, payload: DailyPlannerPayload) {
+export function buildPlannerMarkdown(dateIST: string, payload: DailyPlannerPayload) {
   const scheduleRows = payload.schedule
     .map((block) => `| ${block.start}–${block.end} | ${block.subject} | ${block.kind} | ${block.focus} |`)
     .join("\n");
@@ -772,7 +773,7 @@ export async function ensureDailyPlanner(options: { notify?: boolean; force?: bo
     created = true;
   }
 
-  const payload = session.responseJson as unknown as DailyPlannerPayload;
+  const payload = normalizePlannerSummary(session.responseJson as unknown as DailyPlannerPayload);
   const notification = options.notify
     ? await notifyPlanner(dateIST, payload)
     : { notified: false, reason: "notify-disabled" };
@@ -783,9 +784,15 @@ export async function ensureDailyPlanner(options: { notify?: boolean; force?: bo
     sessionId: session.id,
     model: session.model,
     payload,
-    markdown: session.responseMarkdown,
+    markdown: buildPlannerMarkdown(dateIST, payload),
     createdAt: session.createdAt,
     tasksCreated,
     notification,
   };
+}
+
+/** Repair the presentation of old plans without rewriting saved tasks or history. */
+export function normalizePlannerSummary(payload: DailyPlannerPayload): DailyPlannerPayload {
+  const totals = scheduleTotals(payload.schedule);
+  return { ...payload, totals, summary: scheduleSummary(totals), dailyCommand: { ...payload.dailyCommand, studyMinutes: Math.round(totals.studyHours * 60) } };
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlarmClock, BookOpenCheck, Brain, ListTodo, RefreshCw, Sunrise } from "lucide-react";
 import SmoothLink from "@/components/layout/smooth-link";
 import styles from "./planner.module.css";
+import { scheduleTotals, scheduleSummary } from "@/lib/planner-totals";
 
 type PlannerBlock = {
   start: string;
@@ -124,18 +125,19 @@ export default function PlannerPage() {
 }
 
 function PlanView({ date, plan, model }: { date: string; plan: PlannerPlan; model: string | null }) {
+  const totals = scheduleTotals(plan.schedule);
   return (
     <div className={styles.plan}>
       <section className={styles.summary}>
         <span className="studio-eyebrow">{formatIST(date)}</span>
         <h2>{plan.title}</h2>
-        <p>{plan.summary}</p>
+        <p>{scheduleSummary(totals)}</p>
         <dl className={styles.totals}>
           {[
-            ["Planned study", plan.totals.studyHours],
-            ["Biology", plan.totals.biologyHours],
-            ["Physics + Chemistry", plan.totals.physicsChemistryHours],
-            ["Revision included", plan.totals.revisionHours],
+            ["Planned study", totals.studyHours],
+            ["Biology", totals.biologyHours],
+            ["Physics + Chemistry", totals.physicsChemistryHours],
+            ["Revision included", totals.revisionHours],
           ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}<span> h</span></dd></div>)}
         </dl>
       </section>

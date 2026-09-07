@@ -1,6 +1,7 @@
 "use client";
 import MarkdownBlock from "@/components/studio/markdown-block";
 import { SITE_ASSISTANT_WAKE_PAUSE_EVENT } from "@/lib/site-assistant";
+import { readPracticeReceipt } from "@/lib/practice-receipt";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -330,31 +331,38 @@ export function useAttemptAutosave({
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const inFlight = useRef(false);
+  const inFlight = useRef<Promise<boolean> | null>(null);
 
   useEffect(() => {
     payloadRef.current = payload;
   }, [payload]);
 
   const saveNow = useCallback(async (action = "autosave") => {
-    if (!enabled || inFlight.current) return;
-    inFlight.current = true;
+    if (!enabled) return false;
+    if (inFlight.current) return inFlight.current;
     setSaving(true);
+    const pending = (async () => {
     try {
       const response = await fetch(`/api/practice/${testId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action, ...payloadRef.current() }),
+        signal: AbortSignal.timeout(15000),
       });
-      if (!response.ok || response.status === 202) throw new Error("Responses are not synced yet. Keep this test open; saving will retry automatically.");
+      await readPracticeReceipt(response, testId);
       setSaveError(null);
       setSavedAt(new Date());
+      return true;
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Responses could not be synced. Retrying…");
+      return false;
     } finally {
-      inFlight.current = false;
+      inFlight.current = null;
       setSaving(false);
     }
+    })();
+    inFlight.current = pending;
+    return pending;
   }, [enabled, testId]);
 
   useEffect(() => {
@@ -363,7 +371,8 @@ export function useAttemptAutosave({
     return () => window.clearInterval(timer);
   }, [enabled, saveNow]);
 
-  return { saving, savedAt, saveNow, saveError };
+  const waitForSave = useCallback(async () => { await inFlight.current; }, []);
+  return { saving, savedAt, saveNow, saveError, waitForSave };
 }
 
 export function useCBTSecurityGuard({
@@ -402,7 +411,11 @@ export function useCBTSecurityGuard({
       if (!isExamFullscreenActive()) trigger("FULLSCREEN_EXIT");
     };
     const onPopState = () => trigger("BACK_NAVIGATION");
-    const onBeforeUnload = () => trigger("RELOAD");
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      trigger("RELOAD");
+      event.preventDefault();
+      event.returnValue = "";
+    };
 
     document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("fullscreenchange", onFullscreen);
@@ -429,6 +442,8 @@ export default function PracticeCBTClient({ initialFolderId = null }: { initialF
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [proctorStream, setProctorStream] = useState<MediaStream | null>(null);
+  const openVersion = useRef(0);
+  useEffect(() => () => { proctorStream?.getTracks().forEach(track => track.stop()); }, [proctorStream]);
 
   const stopProctorStream = useCallback(() => {
     setProctorStream((stream) => {
@@ -440,10 +455,11 @@ export default function PracticeCBTClient({ initialFolderId = null }: { initialF
   const loadList = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/practice", { cache: "no-store" });
+      const response = await fetch("/api/practice", { cache: "no-store", signal: AbortSignal.timeout(20000) });
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error || "Could not load practice tests");
-      setTests(json.tests ?? []);
+      if (!response.ok || !Array.isArray(json.tests)) throw new Error(json.error || "Could not load practice tests");
+      setTests(json.tests);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load practice tests");
     } finally {
@@ -454,7 +470,7 @@ export default function PracticeCBTClient({ initialFolderId = null }: { initialF
   useEffect(() => {
     void loadList();
     const params = new URLSearchParams(window.location.search);
-    if (params.get("year")) setPhase("setup");
+    if (["year", "subject", "chapter", "mode"].some(key => params.has(key))) setPhase("setup");
   }, [loadList]);
 
   useEffect(() => {
@@ -529,22 +545,23 @@ export default function PracticeCBTClient({ initialFolderId = null }: { initialF
   }, [active, tests, driveGeneration]);
 
   const openTest = useCallback(async (id: string) => {
+    const version = ++openVersion.current;
     setError(null);
-    const response = await fetch(`/api/practice/${id}`, { cache: "no-store" });
-    const json = await response.json();
-    if (!response.ok) {
-      setError(json.error || "Could not open test");
-      return;
-    }
-    const test: PracticeTest = json.test;
+    try {
+    const response = await fetch(`/api/practice/${id}`, { cache: "no-store", signal: AbortSignal.timeout(20000) });
+    const test = await readPracticeReceipt<PracticeTest>(response, id);
+    if (version !== openVersion.current) return;
     setActive(test);
     if (test.status === "GENERATING") setPhase("generating");
     else if (test.status === "COMPLETED") setPhase("result");
     else setPhase("preflight");
+    } catch (err) {
+      if (version === openVersion.current) setError(err instanceof Error ? err.message : "Could not open test. Please retry.");
+    }
   }, []);
 
   return (
-    <div className="cbt-page">
+    <div className="cbt-page" data-studio-native>
       {phase === "list" && <PracticeList tests={tests} loading={loading} error={error} initialFolderId={initialFolderId} onNew={() => setPhase("setup")} onBookmarks={() => setPhase("bookmarks")} onOpen={openTest} onDeleted={loadList} onFolderOpen={(folderId) => router.push(`/practice/folders/${folderId}`)} onBackToFolders={() => router.push("/practice")} />}
       {phase === "bookmarks" && <BookmarkLibrary onBack={() => setPhase("list")} />}
       {phase === "setup" && (
@@ -868,15 +885,25 @@ function PracticeList({
         <header className="cbt-list-head">
           <div className="cbt-brand-mark"><ShieldCheck size={22} /></div>
           <div>
-            <h1>NTA CBT Practice Arena</h1>
-            <p>Strict database questions, saved attempts, detailed review and database-backed bookmarks.</p>
+            <span className="studio-eyebrow">Build confidence, one paper at a time</span>
+            <h1>Your practice arena.</h1>
+            <p>Custom chapters, class-wise PCB sectionals and full-length papers.</p>
           </div>
           <div className="cbt-list-actions"><button className="cbt-ghost cbt-bookmark-entry" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button><button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button></div>
         </header>
       )}
-      {error && <p className="cbt-error">{error}</p>}
+      {error && <div className="cbt-error" role="alert">{error} <button className="cbt-ghost" onClick={onDeleted}>Retry</button></div>}
       {actionError && <p className="cbt-error">{actionError}</p>}
-      {!isAllTestsFolder && <section className="test-folders" aria-label={activeFolder ? `Subfolders in ${activeFolder.name}` : "Test folders"}>
+      {!initialFolderId && !loading && tests.some(test => ["RUNNING", "PAUSED", "READY"].includes(test.status)) && (
+        <section className="arena-continue" aria-label="Unfinished tests">
+          <div><span className="studio-eyebrow">Pick up where you left off</span><h2>A little closer to exam day.</h2></div>
+          {tests.filter(test => ["RUNNING", "PAUSED", "READY"].includes(test.status)).slice(0, 3).map(test => (
+            <button key={test.id} onClick={() => onOpen(test.id)}><Play size={19} /><span><strong>{test.title || MODE_LABEL[test.mode]}</strong><small>{test.questionCount} questions · {test.status === "READY" ? "Ready to start" : "Resume your attempt"}</small></span><ArrowRight size={17} /></button>
+          ))}
+        </section>
+      )}
+      {!isAllTestsFolder && <details className="test-folders" open={Boolean(activeFolder)}>
+        <summary className="arena-folder-toggle">Collections <span>{displayedFolders.length} folders · organise your attempts</span></summary>
         <div className="folder-section-head">
           <div><strong>{activeFolder ? `Folders inside ${activeFolder.name}` : "Test folders"}</strong><span>{activeFolder ? "Create as many nested levels as you need." : "All Tests always keeps every attempt. Custom folders organise selected tests."}</span></div>
         </div>
@@ -904,7 +931,7 @@ function PracticeList({
           <button type="button" disabled={creatingFolder || !newFolderName.trim()} onClick={() => void createFolder()}>{creatingFolder ? <Loader2 className="cbt-spin" size={14} /> : "Create"}</button>
         </div>
         <p className="folder-help"><GripVertical size={13} /> Drag a test onto any visible folder, or use the folder menu on touch devices. Every test remains in All Tests.</p>
-      </section>}
+      </details>}
       {!initialFolderId && !loading && tests.length > 0 && (
         <div className="arena-inbox-head"><div><strong>Practice Arena</strong><span>{visibleTests.length} unfiled {visibleTests.length === 1 ? "test" : "tests"}</span></div><small>Tests moved to a custom folder leave this list.</small></div>
       )}
@@ -1258,7 +1285,7 @@ function GenerationView({ test, onReady, onExit }: { test: PracticeTest; onReady
     <div className="gen-card">
       <ShieldCheck size={28} />
       <h1>Assembling CBT paper</h1>
-      <p>Questions are served from the bank snapshot first. If the small live AI portion fails, the bank fills those slots too.</p>
+      <p>Assembling questions from the available question bank. Your paper opens when every slot is ready.</p>
       <div className="gen-bar"><span style={{ width: `${pct}%` }} /></div>
       <strong><AnimatedCount value={generated} />/{target} questions ready</strong>
       <button className="cbt-ghost" onClick={onExit}><ArrowLeft size={15} /> Generate in background</button>
@@ -1271,6 +1298,7 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
   const questions = useMemo(() => test.questions ?? [], [test.questions]);
   const arenaRef = useRef<HTMLDivElement>(null);
   const submittingRef = useRef(false);
+  const startingRef = useRef(false);
   const pauseIntentRef = useRef(false);
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const evidenceRef = useRef<ProctorEvidence[]>([]);
@@ -1287,6 +1315,9 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const transitionRef = useRef(false);
+  const [pauseConfirmed, setPauseConfirmed] = useState(test.status === "PAUSED");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [violationNotice, setViolationNotice] = useState<{ reason: AutoSubmitReason; count: number } | null>(null);
   const violationCountRef = useRef(
@@ -1327,7 +1358,7 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
     totalActiveSeconds,
     totalPausedSeconds,
   }), [answers, currentIndex, pauseLogs, questionStatuses, questions, remainingSeconds, securityEvents, totalActiveSeconds, totalPausedSeconds]);
-  const { saving, savedAt, saveNow, saveError } = useAttemptAutosave({ testId: test.id, enabled: !submitting && (attemptStatus === "RUNNING" || attemptStatus === "PAUSED"), payload });
+  const { saving, savedAt, saveNow, saveError, waitForSave } = useAttemptAutosave({ testId: test.id, enabled: !submitting && !transitioning && (attemptStatus === "RUNNING" || (attemptStatus === "PAUSED" && pauseConfirmed)), payload });
 
   const markVisited = useCallback((index: number) => {
     const question = questions[index];
@@ -1343,8 +1374,10 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
     setSubmitError(null);
     const finalSecurityEvents = reason ? [...securityEvents, nowEvent(reason, "Auto-submit security trigger")] : securityEvents;
     try {
+      await waitForSave();
       const response = await fetch(`/api/practice/${test.id}`, {
         method: "POST",
+        signal: AbortSignal.timeout(30000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           answers: answerArray(questions, answers),
@@ -1360,14 +1393,11 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
           totalPausedSeconds,
         }),
       });
-      const json = await response.json().catch(() => ({})) as { error?: unknown; test?: PracticeTest };
-      if (!response.ok) {
-        throw new Error(typeof json.error === "string" ? json.error : SUBMISSION_RETRY_MESSAGE);
-      }
-      if (!json.test) throw new Error(SUBMISSION_RETRY_MESSAGE);
+      const completed = await readPracticeReceipt<PracticeTest>(response, test.id, "COMPLETED");
       try {
         await fetch(`/api/practice/${test.id}/proctor-report`, {
           method: "POST",
+          signal: AbortSignal.timeout(8000),
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             events: finalSecurityEvents.map((event) => ({ reason: event.type, at: event.at, detail: event.detail })),
@@ -1376,17 +1406,19 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
               : [],
           }),
         });
+      } catch {
+        // Auxiliary reporting must never hide a confirmed submission.
       } finally {
         evidenceRef.current = [];
       }
       await exitFullscreen();
-      onSubmitted(json.test);
+      onSubmitted(completed);
     } catch (err) {
       submittingRef.current = false;
       setSubmitting(false);
       setSubmitError(safeSubmissionError(err));
     }
-  }, [answers, currentIndex, exitFullscreen, onSubmitted, pauseLogs, questionStatuses, questions, remainingSeconds, securityEvents, test.id, totalActiveSeconds, totalPausedSeconds]);
+  }, [answers, currentIndex, exitFullscreen, onSubmitted, pauseLogs, questionStatuses, questions, remainingSeconds, securityEvents, test.id, totalActiveSeconds, totalPausedSeconds, waitForSave]);
 
   useCBTSecurityGuard({
     enabled: attemptStatus === "RUNNING" && !submitting,
@@ -1412,21 +1444,18 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
   });
 
   useEffect(() => {
-    if (attemptStatus !== "READY") return;
+    if (attemptStatus !== "READY" || startingRef.current) return;
+    startingRef.current = true;
     void enterFullscreen();
     fetch(`/api/practice/${test.id}`, {
       method: "PATCH",
+      signal: AbortSignal.timeout(15000),
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "start", ...payload() }),
-    }).then(async (res) => {
-      if (!res.ok || res.status === 202) throw new Error("Could not start your test. Check your connection and reload to retry; your attempt is preserved.");
-      return res.json();
-    }).then((json) => {
-      if (json.test) {
+    }).then(res => readPracticeReceipt<PracticeTest>(res, test.id, "RUNNING")).then((saved) => {
         setAttemptStatus("RUNNING");
-        setRemainingSeconds(json.test.remainingSeconds ?? remainingSeconds);
-      }
-    }).catch((error: Error) => setSubmitError(error.message));
+        setRemainingSeconds(saved.remainingSeconds ?? remainingSeconds);
+    }).catch(() => setSubmitError("Could not start your test. Reload to retry; this attempt is preserved."));
   }, [attemptStatus, enterFullscreen, payload, remainingSeconds, test.id]);
 
   const clockSnapshot = useRef({remainingSeconds, totalActiveSeconds});
@@ -1489,40 +1518,72 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
   };
 
   const pauseTest = async (origin: "MANUAL" | "SECURITY" = "MANUAL") => {
+    if (transitionRef.current || submittingRef.current) return;
+    transitionRef.current = true;
+    setTransitioning(true);
     pauseIntentRef.current = true;
-    if (origin === "MANUAL") {
+    if (origin === "MANUAL" && attemptStatus !== "PAUSED") {
       const count = ++manualPauseCountRef.current;
       const event = nowEvent("PAUSE_MANUAL", `Manual pause ${count}/${MAX_SECURITY_VIOLATIONS}`);
       setSecurityEvents((previous) => [...previous, event]);
       await captureEvidence(event.type, event.detail);
       if (count >= MAX_SECURITY_VIOLATIONS) {
+        transitionRef.current = false;
+        setTransitioning(false);
         void submitAttempt("AUTO", "PAUSE_LIMIT");
         return;
       }
     }
-    const nextLogs = [...pauseLogs, nowEvent(origin === "MANUAL" ? "PAUSE_MANUAL" : "PAUSE_SECURITY")];
+    const nextLogs = attemptStatus === "PAUSED" ? pauseLogs : [...pauseLogs, nowEvent(origin === "MANUAL" ? "PAUSE_MANUAL" : "PAUSE_SECURITY")];
     setPauseLogs(nextLogs);
     setAttemptStatus("PAUSED");
-    await fetch(`/api/practice/${test.id}`, {
+    setPauseConfirmed(false);
+    setSubmitError(null);
+    try {
+    await waitForSave();
+    const response = await fetch(`/api/practice/${test.id}`, {
       method: "PATCH",
+      signal: AbortSignal.timeout(15000),
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "pause", ...payload(), pauseLogs: nextLogs }),
-    }).catch(() => undefined);
+    });
+    await readPracticeReceipt(response, test.id, "PAUSED");
+    setPauseConfirmed(true);
+    } catch {
+      setSubmitError("Pause is not synced yet. Your answers remain here. Retry saving before leaving.");
+    } finally {
+      transitionRef.current = false;
+      setTransitioning(false);
+    }
     await exitFullscreen();
   };
 
   const resumeTest = async () => {
+    if (transitionRef.current || submittingRef.current || !pauseConfirmed) return;
+    transitionRef.current = true;
+    setTransitioning(true);
     await enterFullscreen();
-    pauseIntentRef.current = false;
-    setViolationNotice(null);
     const nextLogs = [...pauseLogs, nowEvent("RESUME")];
-    setPauseLogs(nextLogs);
-    setAttemptStatus("RUNNING");
-    await fetch(`/api/practice/${test.id}`, {
+    setSubmitError(null);
+    try {
+    await waitForSave();
+    const response = await fetch(`/api/practice/${test.id}`, {
       method: "PATCH",
+      signal: AbortSignal.timeout(15000),
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "resume", ...payload(), pauseLogs: nextLogs }),
-    }).catch(() => undefined);
+    });
+    await readPracticeReceipt(response, test.id, "RUNNING");
+    setPauseLogs(nextLogs);
+    setAttemptStatus("RUNNING");
+    pauseIntentRef.current = false;
+    setViolationNotice(null);
+    } catch {
+      setSubmitError("Could not resume yet. Your test stays paused. Please retry.");
+    } finally {
+      transitionRef.current = false;
+      setTransitioning(false);
+    }
   };
 
   if (!questions.length) {
@@ -1541,6 +1602,7 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
   return (
     <div ref={arenaRef} className="arena-shell">
       {saveError && <div role="status" className="studio-error">{saveError}</div>}
+      {submitError && attemptStatus !== "PAUSED" && !confirmOpen && <div role="alert" className="studio-error">{submitError}{attemptStatus !== "READY" && <button className="cbt-ghost" onClick={() => setConfirmOpen(true)}>Retry submission</button>}</div>}
       <video ref={cameraVideoRef} className="proctor-camera-feed" autoPlay playsInline muted aria-hidden="true" />
       <CBTTopBar
         remainingSeconds={remainingSeconds}
@@ -1552,7 +1614,7 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
         onFullscreen={enterFullscreen}
         status={attemptStatus}
       />
-      <main className="arena-main">
+      <main className="arena-main" inert={submitting || transitioning || attemptStatus !== "RUNNING"}>
         <section className="arena-workspace">
           <CBTSubjectStrip questions={questions} currentIndex={currentIndex} onJump={markVisited} />
           <QuestionPanel
@@ -1588,6 +1650,10 @@ export function CBTPracticeArena({ test, proctorStream, onSubmitted, onExit }: {
           elapsed={totalPausedSeconds}
           onResume={resumeTest}
           onExit={onExit}
+          busy={transitioning}
+          saved={pauseConfirmed}
+          error={submitError}
+          onRetry={() => void pauseTest("SECURITY")}
           violation={violationNotice ? { ...violationNotice, max: MAX_SECURITY_VIOLATIONS } : null}
         />
       )}
@@ -1658,7 +1724,7 @@ export function CBTTopBar({
       <div className="arena-ident">
         <ShieldCheck size={16} />
         <div>
-          <strong>National Testing Agency</strong>
+          <strong>NEET Practice</strong>
           <span>
             <i className={`save-dot ${saving ? "saving" : savedAt ? "saved" : ""}`} />
             {saving ? "Saving response" : savedAt ? `Saved ${savedAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : "NEET UG mock console"}
@@ -1673,8 +1739,8 @@ export function CBTTopBar({
         {!isFullscreen && status === "RUNNING" && (
           <button className="top-icon" onClick={onFullscreen} aria-label="Enter fullscreen"><Expand size={15} /></button>
         )}
-        <button className="top-ghost" onClick={onPause}><Pause size={13} /> Pause</button>
-        <button className="top-submit" onClick={onSubmit}><DoorOpen size={13} /> Submit</button>
+        <button className="top-ghost" onClick={onPause} disabled={status !== "RUNNING"}><Pause size={13} /> Pause</button>
+        <button className="top-submit" onClick={onSubmit} disabled={status !== "RUNNING"}><DoorOpen size={13} /> Submit</button>
       </div>
     </header>
   );
@@ -1815,11 +1881,16 @@ export function PauseOverlay({
   onResume,
   onExit,
   violation,
+  busy = false, saved = true, error, onRetry,
 }: {
   elapsed: number;
   onResume: () => void;
   onExit: () => void;
   violation?: { reason: string; count: number; max: number } | null;
+  busy?: boolean;
+  saved?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }) {
   return (
     <div className="pause-overlay">
@@ -1829,15 +1900,16 @@ export function PauseOverlay({
         {violation ? (
           <p>
             <strong>{VIOLATION_LABEL[violation.reason] ?? violation.reason}.</strong> Warning {violation.count} of {violation.max} —
-            the attempt auto-submits on the {violation.max}rd violation. Your answers and timer are safe.
+            the attempt auto-submits on the {violation.max}rd violation.
           </p>
         ) : (
           <p>Questions are hidden, timer is stopped, and security triggers are disabled until resume.</p>
         )}
         <span>Paused time: {formatClock(elapsed)}</span>
+        {error && <p className="cbt-error" role="alert">{error}</p>}
         <div className="pause-actions">
-          <button className="cbt-primary" onClick={onResume}><Play size={16} /> Resume in fullscreen</button>
-          <button className="cbt-ghost" onClick={onExit}>Attempts</button>
+          {saved ? <button className="cbt-primary" disabled={busy} onClick={onResume}><Play size={16} /> {busy ? "Syncing…" : "Resume in fullscreen"}</button> : <button className="cbt-primary" disabled={busy} onClick={onRetry}>{busy ? "Saving pause…" : "Retry saving pause"}</button>}
+          <button className="cbt-ghost" disabled={busy || !saved} onClick={onExit}>Attempts</button>
         </div>
       </div>
     </div>

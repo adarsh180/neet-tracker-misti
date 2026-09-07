@@ -5,6 +5,8 @@ import {
   ensureDailyPlanner,
   findPlannerSession,
   getISTDateString,
+  normalizePlannerSummary,
+  buildPlannerMarkdown,
   type DailyPlannerPayload,
 } from "@/lib/daily-planner";
 import { getPrivateSession } from "@/lib/server-auth";
@@ -29,6 +31,7 @@ export async function GET() {
   try {
     const existing = await findPlannerSession(today);
     if (existing) {
+      const plan = normalizePlannerSummary(existing.responseJson as unknown as DailyPlannerPayload);
       return NextResponse.json({
         status: "ready",
         date: today,
@@ -36,8 +39,8 @@ export async function GET() {
         generatedNow: false,
         createdAt: existing.createdAt,
         model: existing.model,
-        plan: existing.responseJson as unknown as DailyPlannerPayload,
-        markdown: existing.responseMarkdown,
+        plan,
+        markdown: buildPlannerMarkdown(today, plan),
       });
     }
 
