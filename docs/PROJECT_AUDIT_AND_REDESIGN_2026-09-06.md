@@ -431,3 +431,13 @@ This batch follows the core release; it does not certify the whole project as co
 Still outstanding after this batch: deeper Practice landing/palette/results design and interruption checks; planner narrative/total reconciliation; academic review of NCERT links and bank coverage; durable user-scoped offline conflicts; arbitrary dynamic cloned speech; real microphone/wake-word qualification on the specified iPad/PWA/Comet devices. Existing private voice assets must continue to ship through the authenticated CLI deployment, not GitHub.
 
 Final focused browser result: all seven new interaction groups passed on the final runtime build, including draft/receipt/retry integrity, local answer reveal, filter error recovery, responsive screenshots and queued NEET progress. Screenshots were reviewed; no horizontal overflow was found at 1440, 820 or 390 pixels. The broader earlier run in this batch also passed the existing 21 interaction checks and loaded the three affected routes at desktop/tablet/phone sizes. Hardware audio and online-provider generation were not exercised. No schema migration is required for this batch.
+
+## 15. Continuation release receipt — 7 September 2026
+
+- Runtime source commit: `021b8a4`, pushed to `codex/study-studio-release-20260906`.
+- Promoted deployment: `dpl_6Qy5ooNU6QvQZRxoCRT67yVCdtBF`; immutable address: https://neet-tracker-misti-aixjta8z5-adarsh180s-projects.vercel.app.
+- Live address: https://neet-tracker-misti.vercel.app. Candidate verification completed before promotion; the public address subsequently passed the same checks.
+- Deployed checks: normal sign-in; ten authenticated read APIs including Cycle/PYQ; eleven protected page responses; PDF worker; private audio denied without session and delivered with it, including a 206 byte range. Private voice files remain outside GitHub.
+- The final complete local browser run passed all 28 interaction checks and loaded Cycle Planner, PYQ archive and PYQ questions at desktop/tablet/phone sizes without reported page errors or overflow. Production build/TypeScript and 52 unit tests pass; lint has zero errors and 14 existing warnings.
+- Prior core deployment `dpl_2pwCGakYvNwy7GBGe1cA5ktLZ7w8` remains the rollback reference. Main was not merged. Documentation-only commits after this receipt do not alter the deployed runtime.
+- The requested native-app roadmap is in `docs/ANDROID_IOS_ROADMAP_2026-09-07.md`. It is a proposal; no Android/iOS application, account enrollment or store submission was created in this release.
