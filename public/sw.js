@@ -1,4 +1,5 @@
-const CACHE_NAME = "neet-tracker-pwa-v8";
+// Bumped whenever caching rules change; activation clears every older cache.
+const CACHE_NAME = "neet-tracker-pwa-v9";
 const IS_LOCAL = self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
 const OFFLINE_URL = "/offline";
 const APP_SHELL_ASSETS = [
@@ -69,7 +70,8 @@ self.addEventListener("fetch", (event) => {
         cache.match(request).then((cached) => {
           const network = fetch(request)
             .then((response) => {
-              cache.put(request, response.clone());
+              // Never keep a failed response — a 404'd stylesheet would break the page for good.
+              if (response.ok && response.type === "basic") cache.put(request, response.clone());
               return response;
             })
             .catch(() => cached);
@@ -86,8 +88,10 @@ self.addEventListener("fetch", (event) => {
       caches.match(request).then((cached) => {
         if (cached) return cached;
         return fetch(request).then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          if (response.ok && response.type === "basic") {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
           return response;
         });
       }),

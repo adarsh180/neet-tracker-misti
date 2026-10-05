@@ -1,0 +1,359 @@
+/* The living core reads as one studio instrument: it borrows the studio tokens
+   rather than carrying its own palette, so it sits inside the page instead of on top of it. */
+
+/* Registering the tint as a real colour lets the panel drift between palettes
+   instead of snapping. Browsers without @property just cut, which the 2s morph hides. */
+@property --core-subject {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b4f7d7;
+}
+.widget {
+  transition: --core-subject 2.4s ease;
+  --core-line: var(--glass-border, rgba(217, 222, 221, 0.11));
+  --core-line-soft: color-mix(in srgb, var(--core-line) 55%, transparent);
+  --core-text: var(--text-primary, #f2eee5);
+  --core-soft: var(--text-secondary, #b9bab9);
+  --core-muted: var(--text-muted, #909695);
+  --core-accent: var(--gold, #d7b779);
+  --core-subject: var(--botany, #7ee2b8);
+  --core-glass: color-mix(in srgb, var(--bg-elevated, #1d2228) 82%, transparent);
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--core-line);
+  border-radius: var(--r-lg, 18px);
+  background:
+    radial-gradient(
+      130% 100% at 50% -25%,
+      color-mix(in srgb, var(--core-subject) 6%, transparent),
+      transparent 62%
+    ),
+    var(--bg-surface, #171b20);
+  color: var(--core-text);
+  overflow: hidden;
+  margin: 0 0 20px;
+  font-family: var(--font-sans), Inter, "Segoe UI", sans-serif;
+}
+/* ---- layout: sculpture and companion share one frame ---- */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+/* 1.95:1 lands the inner divider on the same vertical as the dashboard's
+   main column gutter below, so the hero reads as part of the same grid. */
+.widget[data-aside="true"] .body {
+  grid-template-columns: minmax(0, 1.95fr) minmax(292px, 1fr);
+}
+.aside {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 26px 28px;
+  border-left: 1px solid var(--core-line);
+  background: color-mix(in srgb, var(--bg-void, #0b0d10) 22%, transparent);
+}
+.stage {
+  position: relative;
+  height: 452px;
+  min-width: 0;
+  isolation: isolate;
+  touch-action: pan-y;
+  cursor: grab;
+  outline-offset: -4px;
+}
+.stage:active {
+  cursor: grabbing;
+}
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+.haze {
+  position: absolute;
+  inset: 6% 10%;
+  background:
+    radial-gradient(
+      ellipse at 50% 50%,
+      color-mix(in srgb, var(--core-subject) 13%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse at 64% 58%,
+      color-mix(in srgb, var(--core-accent) 7%, transparent),
+      transparent 56%
+    );
+  filter: blur(26px);
+  pointer-events: none;
+  animation: core-haze 11s ease-in-out infinite;
+}
+
+/* ---- instrument captions ---- */
+.topLeft,
+.topRight {
+  position: absolute;
+  top: 24px;
+  z-index: 3;
+  pointer-events: none;
+}
+.topLeft {
+  left: 28px;
+}
+.topRight {
+  right: 28px;
+  text-align: right;
+}
+.topLeft strong,
+.topRight strong {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  font-weight: 600;
+  color: var(--core-accent);
+}
+.topRight strong {
+  color: var(--core-muted);
+}
+.topLeft span,
+.topRight span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  margin-top: 6px;
+  color: var(--core-muted);
+}
+.topRight span {
+  font-variant-numeric: tabular-nums;
+}
+.ring {
+  position: absolute;
+  width: 62%;
+  height: 47%;
+  left: 19%;
+  top: 28%;
+  border: 1px solid color-mix(in srgb, var(--core-subject) 16%, transparent);
+  border-radius: 50%;
+  transform: rotate(-24deg);
+  pointer-events: none;
+}
+.ring:after {
+  content: "";
+  position: absolute;
+  right: 12%;
+  top: 13%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--core-subject);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--core-subject) 45%, transparent);
+  opacity: 0.7;
+}
+.ringTwo {
+  width: 71%;
+  height: 41%;
+  left: 14.5%;
+  top: 31%;
+  transform: rotate(24deg);
+  border-color: color-mix(in srgb, var(--core-accent) 15%, transparent);
+}
+.ringTwo:after {
+  left: 15%;
+  top: auto;
+  bottom: 10%;
+  background: var(--core-accent);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--core-accent) 45%, transparent);
+}
+.cross {
+  position: absolute;
+  font-size: 15px;
+  line-height: 10px;
+  color: var(--core-muted);
+  opacity: 0.4;
+  font-weight: 200;
+  pointer-events: none;
+}
+.cross[data-corner="0"] {
+  left: 22px;
+  top: 86px;
+}
+.cross[data-corner="1"] {
+  right: 22px;
+  top: 86px;
+}
+.cross[data-corner="2"] {
+  left: 22px;
+  bottom: 22px;
+}
+.cross[data-corner="3"] {
+  right: 22px;
+  bottom: 22px;
+}
+
+/* ---- floating readouts: pinned to the stage baseline, not scattered ---- */
+.label {
+  position: absolute;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  z-index: 3;
+  max-width: calc(50% - 66px);
+  padding: 12px 15px;
+  border: 1px solid var(--core-line);
+  border-radius: 12px;
+  background: var(--core-glass);
+  backdrop-filter: blur(10px);
+  color: var(--core-subject);
+  pointer-events: none;
+  animation: core-float 8s ease-in-out infinite;
+}
+.label strong {
+  font-size: 11px;
+  font-weight: 500;
+  display: block;
+  color: var(--core-text);
+}
+.label small {
+  font-size: 10px;
+  display: block;
+  margin-top: 4px;
+  color: var(--core-muted);
+  line-height: 1.5;
+}
+.label span {
+  min-width: 0;
+}
+.label svg {
+  flex-shrink: 0;
+}
+.biology {
+  left: 52px;
+}
+.momentum {
+  right: 52px;
+  animation-delay: -4s;
+  color: var(--core-accent);
+}
+
+.stage:focus-visible {
+  outline: 2px solid var(--core-accent);
+  outline-offset: -4px;
+}
+.widget[data-paused="true"] .haze,
+.widget[data-paused="true"] .label {
+  animation-play-state: paused;
+}
+@keyframes core-float {
+  50% {
+    translate: 0 -7px;
+  }
+}
+@keyframes core-haze {
+  50% {
+    opacity: 0.55;
+    transform: scale(1.06);
+  }
+}
+
+@media (max-width: 1080px) {
+  .widget[data-aside="true"] .body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .aside {
+    border-left: 0;
+    border-top: 1px solid var(--core-line);
+    padding: 24px;
+  }
+}
+@media (max-width: 760px) {
+  .stage {
+    height: 400px;
+  }
+  .topLeft {
+    left: 20px;
+  }
+  .topRight {
+    right: 20px;
+  }
+  .topLeft span {
+    max-width: 150px;
+    line-height: 1.6;
+  }
+  .label {
+    padding: 11px;
+    gap: 7px;
+  }
+  .label small {
+    font-size: 9px;
+  }
+  .label strong {
+    font-size: 10px;
+  }
+  .cross[data-corner="2"],
+  .cross[data-corner="3"] {
+    display: none;
+  }
+  .label {
+    max-width: calc(50% - 30px);
+  }
+  .biology {
+    left: 20px;
+  }
+  .momentum {
+    right: 20px;
+  }
+}
+@media (max-width: 430px) {
+  .stage {
+    height: 360px;
+  }
+  .topLeft,
+  .topRight {
+    top: 18px;
+  }
+  .topLeft strong,
+  .topRight strong {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+  }
+  .topLeft span,
+  .topRight span {
+    font-size: 9px;
+  }
+  .label {
+    max-width: calc(50% - 20px);
+    gap: 6px;
+    padding: 9px 10px;
+  }
+  .label svg {
+    width: 14px;
+  }
+  .biology {
+    left: 12px;
+  }
+  .momentum {
+    right: 12px;
+  }
+  .aside {
+    padding: 20px;
+  }
+  .ring {
+    width: 84%;
+    left: 8%;
+  }
+  .ringTwo {
+    width: 90%;
+    left: 5%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .label,
+  .haze {
+    animation: none;
+  }
+}

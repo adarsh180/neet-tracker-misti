@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
 import { NeetLogoMark } from "@/components/brand/neet-logo-mark";
 import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
+import { ECG_PATH, TraceGradient } from "@/components/pulse/heart-loader";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -75,9 +76,12 @@ export default function SignInPage() {
 
   return (
     <div className="signin-page">
-      {/* Ambient */}
-      <div className="signin-orb signin-orb-1" />
-      <div className="signin-orb signin-orb-2" />
+      {/* A heartbeat runs behind the card. */}
+      <svg className="si-ecg" viewBox="0 0 340 130" preserveAspectRatio="none" aria-hidden="true">
+        <TraceGradient />
+        <path className="pl-ecg-ghost" d={ECG_PATH} />
+        <path className="pl-ecg-trace" d={ECG_PATH} pathLength={1} />
+      </svg>
 
       {/* Card */}
       <div className="signin-wrap animate-scale-in">

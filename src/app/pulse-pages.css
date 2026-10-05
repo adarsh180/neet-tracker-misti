@@ -1,0 +1,155 @@
+/* ==========================================================================
+   PULSE — public pages (landing, sign-in) and the bridge for app pages
+   ========================================================================== */
+
+/* ── Landing ───────────────────────────────────────────────────────────── */
+.lp { position: relative; z-index: 1; min-height: 100vh; overflow-x: clip; color: var(--pl-ink); }
+.lp-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  align-items: center;
+  gap: clamp(30px, 5vw, 80px);
+  width: min(1280px, calc(100% - 2 * clamp(16px, 4vw, 40px)));
+  min-height: min(100svh, 940px);
+  margin: 0 auto;
+  padding: clamp(60px, 9vh, 110px) 0 60px;
+}
+.lp-copy { display: grid; justify-items: start; gap: 24px; }
+.lp-badge { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 8px; border-radius: 99px; font: 500 13px/1 var(--font-sans); }
+.lp-title { margin: 0; color: var(--pl-ink); font: 800 clamp(3.2rem, 8.4vw, 7.4rem)/0.9 var(--font-display); letter-spacing: -0.055em; font-variation-settings: "opsz" 96, "wdth" 90; }
+.lp-title .pl-line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.lp-title .pl-line > span { display: inline-block; animation: pl-line 1.1s var(--pl-ease) calc(0.1s + var(--l, 0) * 0.12s) backwards; }
+.lp-title em { font-style: normal; background: linear-gradient(100deg, var(--pl-a1), var(--pl-a2) 60%, var(--pl-a3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-desc { max-width: 46ch; margin: 0; color: var(--pl-ink-2); font-size: clamp(1.02rem, 1.4vw, 1.18rem); line-height: 1.6; }
+.lp-cta { display: grid; gap: 12px; }
+.lp-big { height: 56px; padding: 0 28px; font-size: 16px; }
+.lp-private { display: inline-flex; align-items: center; gap: 6px; color: var(--pl-ink-3); font-size: 12.5px; }
+
+.lp-monitor { position: relative; display: grid; gap: 18px; padding: 24px; overflow: hidden; border-radius: 34px; }
+.lp-monitor::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(var(--pl-grid-major) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--pl-grid-major) 1px, transparent 1px) 0 0 / 24px 24px;
+  opacity: 0.7;
+}
+.lp-monitor-top { display: flex; align-items: center; gap: 18px; }
+.lp-lens { display: grid; place-items: center; width: 92px; height: 92px; flex: none; border-radius: 50%; animation: pl-heart 1.7s ease-in-out infinite; }
+.lp-lens img { width: 58px; height: 58px; }
+.lp-days { display: grid; gap: 4px; }
+.lp-days b { color: var(--pl-ecg); font: 700 clamp(3.4rem, 6vw, 4.6rem)/0.9 var(--font-mono); letter-spacing: -0.04em; text-shadow: 0 0 22px color-mix(in srgb, var(--pl-ecg) 45%, transparent); }
+.lp-days span { color: var(--pl-ink-2); font-size: 13px; }
+.lp-ecg { display: block; width: calc(100% + 48px); height: 120px; margin: 0 -24px; }
+.lp-ecg .pl-ecg-trace { stroke: var(--pl-ecg); filter: drop-shadow(0 0 7px var(--pl-ecg)); stroke-width: 2.6; }
+.lp-ecg .pl-ecg-ghost { stroke: color-mix(in srgb, var(--pl-ecg) 22%, transparent); }
+.lp-message { min-height: 3.2em; margin: 0; color: var(--pl-ink); font: 600 clamp(1.1rem, 1.8vw, 1.35rem)/1.4 var(--font-display); letter-spacing: -0.02em; }
+.lp-cursor { display: inline-block; width: 3px; height: 1.05em; margin-left: 4px; vertical-align: -0.15em; border-radius: 2px; background: var(--pl-a1); animation: lp-blink 0.9s steps(2) infinite; }
+@keyframes lp-blink { 50% { opacity: 0; } }
+@media (max-width: 900px) {
+  .lp-hero { grid-template-columns: 1fr; min-height: auto; }
+}
+
+/* Prescription pad */
+.lp-rx { display: grid; place-items: center; padding: clamp(40px, 8vw, 100px) clamp(16px, 4vw, 40px); }
+.lp-pad {
+  position: relative;
+  width: min(760px, 100%);
+  padding: clamp(24px, 4vw, 44px);
+  border-radius: 10px 10px 28px 28px;
+  background: #fdfbf8;
+  color: #1d1716;
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.7), 0 2px 0 rgba(255, 255, 255, 0.5) inset;
+  transform: rotate(-1.2deg);
+  background-image:
+    linear-gradient(transparent 46px, rgba(214, 72, 96, 0.12) 46px, rgba(214, 72, 96, 0.12) 47px, transparent 47px);
+  background-size: 100% 48px;
+}
+html[data-theme="light"] .lp-pad { box-shadow: 0 30px 60px -36px rgba(70, 30, 40, 0.35), 0 0 0 1px rgba(70, 30, 40, 0.08); }
+.lp-pad::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 10px; border-radius: 10px 10px 0 0; background: linear-gradient(90deg, var(--pl-a1), var(--pl-a2), var(--pl-a3)); }
+.lp-pad-head { display: flex; align-items: center; gap: 16px; padding-bottom: 18px; border-bottom: 2px solid #1d1716; }
+.lp-rx-mark { font: 800 3.4rem/0.8 var(--font-display); color: #b8354f; }
+.lp-pad-head strong { display: block; font: 800 1.5rem/1.1 var(--font-display); letter-spacing: -0.03em; }
+.lp-pad-head span { color: #6b5d58; font-size: 13.5px; }
+.lp-pad ol { display: grid; margin: 0; padding: 8px 0 0; list-style: none; counter-reset: rx; }
+.lp-pad li { display: grid; grid-template-columns: 36px 150px minmax(0, 1fr); align-items: center; gap: 14px; min-height: 48px; counter-increment: rx; }
+.lp-rx-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(184, 53, 79, 0.1); color: #b8354f; }
+.lp-pad li b { font: 700 1.05rem/1.2 var(--font-display); }
+.lp-pad li span:last-child { color: #4a3f3b; font-size: 14px; }
+.lp-pad-foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 14px; margin-top: 18px; color: #6b5d58; }
+.lp-pad-foot .devanagari { color: #a8701f; font-size: 18px; }
+.lp-pad-foot em { font-size: 13px; }
+@media (max-width: 640px) {
+  .lp-pad { transform: none; }
+  .lp-pad li { grid-template-columns: 36px minmax(0, 1fr); padding: 8px 0; }
+  .lp-pad li span:last-child { grid-column: 2; }
+}
+.lp-foot { display: grid; justify-items: center; gap: 6px; padding: 30px 20px 50px; border-top: 1px solid var(--pl-line); text-align: center; color: var(--pl-ink-3); font-size: 12.5px; }
+.lp-foot .devanagari { color: var(--pl-a1); font-size: 15px; }
+
+/* ── Sign in ───────────────────────────────────────────────────────────── */
+.signin-page { position: relative; overflow: hidden; }
+/* A single fine heartbeat crossing a frosted band behind the card. */
+.signin-page::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 170px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--pl-a2) 5%, transparent) 40%, color-mix(in srgb, var(--pl-a1) 5%, transparent) 60%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  z-index: 0;
+}
+.si-ecg {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
+  width: 100%;
+  height: 180px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+}
+.si-ecg .pl-ecg-trace { stroke: url(#pl-trace-grad); stroke-width: 1.4; stroke-dasharray: 0.2 1; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--pl-a2) 80%, transparent)); animation-duration: 3.4s; }
+.si-ecg .pl-ecg-ghost { stroke: color-mix(in srgb, var(--pl-ink) 7%, transparent); stroke-width: 0.8; }
+.signin-page .signin-wrap {
+  position: relative;
+  z-index: 1;
+  border: 0 !important;
+  border-radius: 34px !important;
+  background: var(--pl-glass) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(180%) !important;
+  backdrop-filter: blur(26px) saturate(180%) !important;
+  box-shadow: var(--pl-glass-shadow) !important;
+}
+.signin-page .signin-logo { animation: pl-heart 1.7s ease-in-out infinite !important; }
+.signin-page .signin-title { font-family: var(--font-display) !important; font-weight: 800 !important; letter-spacing: -0.04em !important; }
+.signin-page .signin-greeting-title { font-family: var(--font-display) !important; font-weight: 700 !important; letter-spacing: -0.03em !important; }
+.signin-page .signin-submit { border-radius: 999px !important; background: linear-gradient(135deg, var(--pl-a1), var(--pl-a2)) !important; }
+
+/* ── Bridge: app pages pick up the Pulse skin ──────────────────────────── */
+.protected-route-frame :is(.btn-primary) { background: linear-gradient(135deg, var(--pl-a1), var(--pl-a2)) !important; border-color: transparent !important; }
+.protected-route-frame :is(h1, h2, h3, .page-title, .section-title) { font-family: var(--font-display); letter-spacing: -0.035em; }
+.protected-route-frame h1 { font-weight: 800; }
+.protected-route-frame :is(h2, h3) { font-weight: 700; }
+.protected-route-frame .glass-card { border-radius: 26px; }
+.lp-copy { max-width: 760px; }
+.lp-title { font-size: clamp(3rem, 7.2vw, 6.6rem); }
+.lp-rx-mark { position: relative; font: 800 3rem/0.8 var(--font-display) !important; letter-spacing: -0.06em; }
+.lp-rx-mark i { position: relative; left: -0.12em; top: 0.18em; font-size: 0.6em; font-style: normal; }
+
+/* Landing revision: the hologram leads the hero; a glass note carries the countdown and the lines. */
+.lp-holo { display: grid; gap: 14px; min-width: 0; }
+.lp-holo > div:first-child { margin: 0 !important; }
+.lp-note { display: grid; gap: 12px; padding: 20px 22px; border-radius: 26px; }
+.lp-note .lp-days b { color: var(--pl-ink); font: 800 clamp(2.6rem, 4.4vw, 3.4rem)/0.9 var(--font-display); letter-spacing: -0.05em; text-shadow: none; }
+.lp-note .lp-days { display: flex; align-items: baseline; gap: 12px; }

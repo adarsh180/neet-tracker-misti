@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Serif_Devanagari, Playfair_Display } from "next/font/google";
+import { Bricolage_Grotesque, Inter, JetBrains_Mono, Noto_Serif_Devanagari } from "next/font/google";
 import Script from "next/script";
 import LaunchSplash from "@/components/launch-splash";
 import PwaRegister from "@/components/pwa-register";
 import ThemeToggle from "@/components/theme-toggle";
+import { PulseCycler } from "@/components/pulse/pulse-cycler";
 import "./globals.css";
+import "./pulse.css";
+import "./pulse-dash.css";
+import "./pulse-pages.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,10 +16,18 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
-const playfair = Playfair_Display({
+// Pulse type: Bricolage Grotesque for display (expressive, optical sizes),
+// Inter to read, JetBrains Mono only for monitor-style vital readouts.
+const displaySerif = Bricolage_Grotesque({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-display",
+  variable: "--font-pl-display",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-pl-mono",
 });
 
 const devanagari = Noto_Serif_Devanagari({
@@ -63,7 +75,7 @@ export default function RootLayout({
       lang="en"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${inter.variable} ${playfair.variable} ${devanagari.variable}`}
+      className={`${inter.variable} ${displaySerif.variable} ${mono.variable} ${devanagari.variable}`}
     >
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -81,6 +93,8 @@ export default function RootLayout({
                     ? stored
                     : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
                   document.documentElement.dataset.theme = theme;
+                  var P = ["iodine","aorta","saline","chloro","plasma","lotus"];
+                  document.documentElement.dataset.pulse = P[Math.floor(Date.now() / 60000) % P.length];
                   document.documentElement.style.colorScheme = theme;
                   var meta = document.querySelector('meta[name="theme-color"]');
                   if (meta) meta.setAttribute("content", theme === "light" ? "#f8f1e7" : "#050508");
@@ -95,6 +109,7 @@ export default function RootLayout({
       </head>
       <body>
         <LaunchSplash />
+        <PulseCycler />
         <PwaRegister />
         {children}
         <ThemeToggle />
