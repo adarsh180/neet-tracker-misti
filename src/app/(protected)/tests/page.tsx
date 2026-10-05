@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback, type CSSProperties } from "react";
 import Link from "next/link";
+import { toneFor } from "@/components/pulse/lab-tube";
+import { PulseHead } from "@/components/pulse/pulse-head";
 import {
   AreaChart,
   Area,
@@ -21,12 +23,10 @@ import {
   Plus,
   Trash2,
   TrendingUp,
-  Award,
   Target,
   CheckCircle,
   X,
   BarChart2,
-  Sparkles,
   ChevronDown,
   CalendarDays,
   ArrowUpRight,
@@ -311,18 +311,6 @@ export default function TestsPage() {
   const bestPct = tests.length > 0 ? Math.max(...tests.map((t) => t.percentage)) : 0;
   const trendUp = sorted.length >= 3 && sorted[sorted.length - 1].percentage > sorted[sorted.length - 3].percentage;
 
-  const STATS = [
-    { label: "Total Tests", value: tests.length, unit: "taken", icon: BarChart2, color: "var(--gold)" },
-    { label: "Average", value: `${avgPct}%`, unit: "score", icon: TrendingUp, color: "var(--rose-bright)" },
-    { label: "Personal Best", value: `${bestPct.toFixed(1)}%`, unit: "highest", icon: Award, color: "var(--lotus-bright)" },
-    {
-      label: "AIIMS Status",
-      value: avgPct >= 97 ? "Delhi ✓" : avgPct >= 91 ? "Risk. ≈ Gap" : "Below Cut.",
-      unit: avgPct >= 97 ? "On track" : "Gap remains",
-      icon: Target,
-      color: avgPct >= 97 ? "var(--success)" : avgPct >= 91 ? "var(--warning)" : "var(--danger)",
-    },
-  ];
 
   return (
     <div className="tests-page animate-fade-in">
@@ -335,64 +323,36 @@ export default function TestsPage() {
       </div>
 
       <main className="tests-shell">
-        <div className="page-header tests-header">
-          <div className="tests-heading">
-            <div className="tests-badge">
-              <Sparkles size={14} />
-              Performance intelligence
-            </div>
-            <h1 className="page-title gradient-text tests-title">Test Performance</h1>
-            <p className="page-subtitle tests-subtitle">
-              Track every mock, AITS &amp; sectional — with line &amp; scatter analysis against AIIMS cutoffs
-            </p>
-          </div>
-
-          <div className="tests-header-actions">
-            <div className="tests-mini-stat">
-              <span className="tests-mini-stat-label">Latest average</span>
-              <span className="tests-mini-stat-value">{avgPct}%</span>
-            </div>
-
-            <Link href="/tests/error-log" className="btn btn-glass btn-sm tests-error-log-btn">
-              <FileSpreadsheet size={14} /> Error Log Tracker
-            </Link>
-
-            <button className={`btn btn-primary btn-sm tests-record-btn ${showForm ? "open" : ""}`} onClick={() => setShowForm(!showForm)}>
-              {showForm ? (
-                <>
-                  <X size={14} /> Close
-                </>
-              ) : (
-                <>
-                  <Plus size={14} /> Record Test
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-4 gap-4 mb-6 stagger tests-stats-grid">
-          {STATS.map((s) => (
-            <div key={s.label} className="glass-card tests-stat-card">
-              <div className="tests-stat-top">
-                <div
-                  className="stat-icon tests-stat-icon"
-                  style={{
-                    background: `color-mix(in srgb, ${s.color} 12%, transparent)`,
-                    border: `1px solid color-mix(in srgb, ${s.color} 22%, transparent)`,
-                  }}
-                >
-                  <s.icon size={17} style={{ color: s.color }} />
-                </div>
-                <div className="stat-label">{s.label}</div>
-              </div>
-              <div className="stat-value tests-stat-value" style={{ color: s.color }}>
-                {s.value}
-              </div>
-              <div className="stat-sub">{s.unit}</div>
-            </div>
-          ))}
-        </div>
+        <PulseHead
+          kicker="Mocks · AITS · sectionals"
+          deva="परीक्षा"
+          title="Test"
+          accent="performance."
+          lede="Every mock you log, read against the AIIMS cut-offs — score line, subject balance and the mistakes behind each paper."
+          actions={
+            <>
+              <button className={`pl-btn pl-btn-rx tests-record-btn ${showForm ? "open" : ""}`} onClick={() => setShowForm(!showForm)}>
+                {showForm ? <><X size={15} /> Close</> : <><Plus size={15} /> Record test</>}
+              </button>
+              <Link href="/tests/error-log" className="pl-btn">
+                <FileSpreadsheet size={15} /> Error log
+              </Link>
+            </>
+          }
+          stats={[
+            { label: "Tests logged", value: tests.length, level: Math.min(1, tests.length / 30), note: "30 by May is the aim" },
+            { label: "Average", value: avgPct, unit: "%", level: avgPct / 100, tone: tests.length ? toneFor(avgPct, 91, 80) : "muted" },
+            { label: "Personal best", value: bestPct.toFixed(1), unit: "%", level: bestPct / 100, tone: tests.length ? toneFor(bestPct, 91, 80) : "muted" },
+            {
+              label: "AIIMS gap",
+              value: tests.length ? Math.max(0, Math.round(((97 - avgPct) / 100) * 720)) : "—",
+              unit: tests.length ? "marks" : undefined,
+              level: tests.length ? Math.min(1, avgPct / 97) : 0,
+              tone: !tests.length ? "muted" : avgPct >= 97 ? "good" : avgPct >= 91 ? "warn" : "bad",
+              note: avgPct >= 97 ? "on AIIMS Delhi pace" : "to AIIMS Delhi (~97%)",
+            },
+          ]}
+        />
 
         {showForm && (
           <div className="glass-card animate-scale-in tests-form-card">

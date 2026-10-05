@@ -36,7 +36,7 @@ import {
   Wind,
   Zap,
 } from "lucide-react";
-import SmoothLink from "@/components/layout/smooth-link";
+import { PulseHead } from "@/components/pulse/pulse-head";
 
 type CyclePhase = "menstrual" | "follicular" | "ovulatory" | "luteal" | "late" | "unknown";
 type CalendarDayKind = "logged-period" | "predicted-period" | "pms-window" | "fertile-window" | "ovulation-window" | "mood" | "today";
@@ -583,34 +583,24 @@ Return exactly four sections: Body Signal, Study Strategy, Today Plan, Safety No
       <div className="cycle-bg" />
 
       <div className="cycle-shell">
-        <header className="cycle-header">
-          <div className="cycle-title-wrap">
-            <SmoothLink href="/ai-insights" className="btn btn-ghost btn-sm cycle-back" direction="back">
-              <ChevronLeft size={16} />
-            </SmoothLink>
-            <div>
-              <div className="cycle-kicker">
-                <ShieldCheck size={14} />
-                Private cycle intelligence
-              </div>
-              <h1 className="cycle-title">Cycle & Study Calendar</h1>
-              <p className="cycle-subtitle">
-                Personalized period prediction, mood overlays, and NEET workload rhythm from her real logs.
-              </p>
-            </div>
-          </div>
-
-          <div className="cycle-actions">
-            <button className="btn btn-glass btn-sm" onClick={fetchCycle} disabled={loading} type="button">
-              <RefreshCw size={14} className={loading ? "spin" : ""} />
-              Refresh
-            </button>
-            <button className="btn btn-primary btn-sm" onClick={openNewLog} type="button">
-              <Plus size={14} />
-              Log Period
-            </button>
-          </div>
-        </header>
+        <PulseHead
+          back={{ href: "/ai-insights", label: "Intelligence suite" }}
+          kicker="Private cycle intelligence"
+          deva="चक्र"
+          title="Cycle &"
+          accent="study calendar."
+          lede="Period prediction, mood overlays and the NEET workload rhythm — planned around her real logs, never against them."
+          actions={
+            <>
+              <button className="pl-btn pl-btn-rx" onClick={openNewLog} type="button">
+                <Plus size={15} /> Log period
+              </button>
+              <button className="pl-btn" onClick={fetchCycle} disabled={loading} type="button">
+                <RefreshCw size={15} className={loading ? "spin" : ""} /> Refresh
+              </button>
+            </>
+          }
+        />
 
         {error && <div className="cycle-error">{error}</div>}
 

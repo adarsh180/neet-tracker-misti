@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import {
   ArrowLeft,
   ArrowUpRight,
-  BookMarked,
   Check,
   Download,
   FileText,
@@ -14,6 +13,8 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import SmoothLink from "@/components/layout/smooth-link";
+import { PulseHead } from "@/components/pulse/pulse-head";
 
 type Paper = {
   id: string;
@@ -198,36 +199,25 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
     <main className="archive-page">
       <div className="archive-background" aria-hidden="true" />
 
-      <header className="archive-hero">
-        <div className="archive-hero-mark">
-          <BookMarked size={20} />
-        </div>
-        <div className="archive-heading">
-          <span className="archive-eyebrow">Study archive</span>
-          <h1>Previous Year Papers</h1>
-          <p>
-            An ordered desk of real papers, ready for an unhurried study session.
-          </p>
-        </div>
-        <div className="archive-overview" aria-label="Archive summary">
-          <div>
-            <strong>{jeeCatalog.totalPapers}</strong>
-            <span>JEE papers</span>
-          </div>
-          <div>
-            <strong>{jeeCatalog.firstYear}-{jeeCatalog.lastYear}</strong>
-            <span>Collected years</span>
-          </div>
-          <div>
-            <strong>{completedYears}/{jeeCatalog.years.length}</strong>
-            <span>Years completed</span>
-          </div>
-          <div>
-            <strong>{revisionRounds}</strong>
-            <span>Revision rounds</span>
-          </div>
-        </div>
-      </header>
+      <PulseHead
+        className="archive-ph"
+        kicker="Study archive"
+        deva="पूर्व वर्ष"
+        title="Previous year"
+        accent="papers."
+        lede="An ordered desk of real papers, ready for an unhurried study session — NEET first, JEE for the physics and chemistry stretch."
+        actions={
+          <SmoothLink href="/pyq/questions" className="pl-btn">
+            Search every PYQ
+          </SmoothLink>
+        }
+        stats={[
+          { label: "JEE papers", value: jeeCatalog.totalPapers, level: 1 },
+          { label: "Years collected", value: `${jeeCatalog.firstYear}–${jeeCatalog.lastYear}`, level: 1, tone: "muted" },
+          { label: "Years completed", value: completedYears, unit: `/${jeeCatalog.years.length}`, level: jeeCatalog.years.length ? completedYears / jeeCatalog.years.length : 0, tone: completedYears ? "good" : "muted" },
+          { label: "Revision rounds", value: revisionRounds, level: Math.min(1, revisionRounds / 3), tone: revisionRounds ? "accent" : "muted" },
+        ]}
+      />
 
       {!activeArchive && (
         <section className="cabinet" aria-label="Paper collections">

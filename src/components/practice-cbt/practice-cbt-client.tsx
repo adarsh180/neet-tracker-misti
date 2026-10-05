@@ -49,6 +49,7 @@ import SmoothLink from "@/components/layout/smooth-link";
 import { CHAPTERS, SUBJECT_SLUGS, type ClassLevel, type NeetSubjectSlug } from "@/data/syllabus/neet-chapters";
 import { allCBTStyles } from "@/components/practice-cbt/cbt-styles";
 import PracticeAnalytics, { type AnalyticsTest } from "@/components/practice-cbt/practice-analytics";
+import { PracticeLab, type LabCbtTest } from "@/components/pulse/practice/practice-lab";
 import DetailedAnswerReview from "@/components/practice-cbt/detailed-answer-review";
 import BookmarkLibrary from "@/components/practice-cbt/bookmark-library";
 import TestPreflight from "@/components/practice-cbt/test-preflight";
@@ -872,14 +873,23 @@ function PracticeList({
           </div>
         </header>
       ) : (
-        <header className="cbt-list-head">
-          <div className="cbt-brand-mark"><ShieldCheck size={22} /></div>
-          <div>
-            <h1>NTA CBT Practice Arena</h1>
-            <p>Strict database questions, saved attempts, detailed review and database-backed bookmarks.</p>
-          </div>
-          <div className="cbt-list-actions"><button className="cbt-ghost cbt-bookmark-entry" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button><button className="cbt-primary" onClick={onNew}><FilePlus2 size={16} /> New test</button></div>
-        </header>
+        <>
+          <header className="pa-head">
+            <div className="pa-head-copy">
+              <span className="pl-kicker"><span className="pl-live">NTA-style CBT</span><span className="pl-deva">अभ्यास</span></span>
+              <h1 className="pl-title pa-title">
+                <span className="pl-line"><span>Practice</span></span>
+                <span className="pl-line"><span style={{ "--l": 1 } as React.CSSProperties}><em>arena.</em></span></span>
+              </h1>
+              <p className="pl-lede">Strict database questions in the real exam interface — every attempt saved, reviewed and poured into the lab below.</p>
+            </div>
+            <div className="pa-head-actions">
+              <button className="pl-btn" onClick={onBookmarks}><BookMarked size={16} /> Bookmarks</button>
+              <button className="pl-btn pl-btn-rx" onClick={onNew}><FilePlus2 size={16} /> New test</button>
+            </div>
+          </header>
+          <PracticeLab tests={tests as unknown as LabCbtTest[]} onOpen={onOpen} onNew={onNew} />
+        </>
       )}
       {error && <p className="cbt-error">{error}</p>}
       {actionError && <p className="cbt-error">{actionError}</p>}

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BadgeCheck, ClipboardCheck, History, LineChart as LineChartIcon,
+  BadgeCheck, History, LineChart as LineChartIcon,
   RefreshCw, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
 } from "lucide-react";
 import { Bar, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from "recharts";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
+import { PulseHead } from "@/components/pulse/pulse-head";
 import {
   computeReviewScore,
   computeReviewComparison,
@@ -200,16 +201,28 @@ export default function ReviewsPage() {
 
   return (
     <div className="rv-wrap">
-      <header className="rv-head">
-        <div className="rv-head-icon"><ClipboardCheck size={22} strokeWidth={1.8} /></div>
-        <div>
-          <h1 className="rv-title">Review Cards</h1>
-          <p className="rv-sub">Weekly & monthly report cards with a Truth Check — every answer is cross-examined against your logs</p>
-        </div>
-        <button className="rv-refresh" onClick={load} disabled={loading} aria-label="Refresh">
-          <RefreshCw size={15} className={loading ? "rv-spin" : ""} />
-        </button>
-      </header>
+      <PulseHead
+        kicker="Weekly & monthly"
+        deva="समीक्षा"
+        title="Review"
+        accent="cards."
+        lede="Report cards with a truth check — every answer you give is cross-examined against what your logs actually say."
+        actions={
+          <button className="pl-btn pl-btn-sm" onClick={load} disabled={loading} aria-label="Refresh">
+            <RefreshCw size={14} className={loading ? "rv-spin" : ""} /> Refresh
+          </button>
+        }
+        stats={
+          cards && cards.length
+            ? [
+                { label: "Cards issued", value: cards.length, level: Math.min(1, cards.length / 30) },
+                { label: "Awaiting answers", value: cards.filter((c) => c.status === "AWAITING_ANSWERS").length, level: cards.filter((c) => c.status === "AWAITING_ANSWERS").length ? 1 : 0, tone: cards.some((c) => c.status === "AWAITING_ANSWERS") ? "warn" : "good" },
+                { label: "Weekly", value: cards.filter((c) => c.period === "WEEKLY").length, level: Math.min(1, cards.filter((c) => c.period === "WEEKLY").length / 30) },
+                { label: "Monthly", value: cards.filter((c) => c.period === "MONTHLY").length, level: Math.min(1, cards.filter((c) => c.period === "MONTHLY").length / 8) },
+              ]
+            : undefined
+        }
+      />
 
       {loading && (
         <div className="rv-state">
@@ -250,7 +263,7 @@ export default function ReviewsPage() {
       )}
 
       <style jsx>{`
-        .rv-wrap { max-width: 880px; margin: 0 auto; padding: 24px 20px 80px; display: flex; flex-direction: column; gap: 16px; }
+        .rv-wrap { max-width: 1080px; margin: 0 auto; padding: 8px 20px 80px; display: flex; flex-direction: column; gap: 16px; }
         .rv-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
         .rv-head-icon {
           width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;

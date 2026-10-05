@@ -629,8 +629,8 @@ export default function NEETGuruPage() {
                     <div className="ng-kicker">
                       <Sparkles size={13} /> AIIMS prep mentor
                     </div>
-                    <h1 className="ng-welcome-title">How can I help you today?</h1>
-                    <p className="ng-welcome-subtitle">Your dedicated AI mentor for ruthless clarity, planning, and revision.</p>
+                    <h1 className="ng-welcome-title">Ask your mentor <em>anything.</em></h1>
+                    <p className="ng-welcome-subtitle">It has read your hours, mocks, chapters and mood. Expect clarity, not comfort.</p>
                   </div>
 
                   <div className="ng-suggestions-grid">

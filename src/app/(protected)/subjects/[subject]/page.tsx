@@ -14,13 +14,10 @@ import {
   ChevronRight,
   Check,
   X,
-  Trophy,
-  Target,
   ArrowLeft,
   Search,
   Filter,
   Pencil,
-  Sparkles,
   Brain,
   BarChart3,
   Activity,
@@ -33,6 +30,9 @@ import {
   ScrollText,
 } from "lucide-react";
 import SmoothLink from "@/components/layout/smooth-link";
+import { LabTube } from "@/components/pulse/lab-tube";
+import { PulseHead } from "@/components/pulse/pulse-head";
+import { Roll } from "@/components/pulse/roll";
 
 interface Revision {
   id: string;
@@ -118,14 +118,6 @@ const SUBJECT_META: Record<string, { gradient: string; dimBg: string; glow: stri
     varColor: "var(--chemistry)",
   },
 };
-
-function getEmoji(pct: number) {
-  if (pct >= 90) return "🏆";
-  if (pct >= 70) return "🔥";
-  if (pct >= 50) return "⭐";
-  if (pct >= 30) return "📈";
-  return "🌱";
-}
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
@@ -678,79 +670,32 @@ export default function SubjectPage() {
       </div>
 
       <main className="content-shell">
-        <SmoothLink href="/dashboard" className="back-link" direction="back">
-          <ArrowLeft size={14} /> Dashboard
-        </SmoothLink>
-
-        <section
-          className="hero glass-card premium-card"
-          style={{
-            "--subject-accent": meta.varColor,
-            borderColor: `color-mix(in srgb, ${meta.varColor} 28%, transparent)`,
-            background: meta.dimBg,
-          } as React.CSSProperties}
-        >
-          <div className="hero-ambient" style={{ background: `radial-gradient(circle at 80% 40%, ${meta.glow} 0%, transparent 58%)` }} />
-
-          <div className="hero-left">
-            <div className="hero-badge">
-              <Sparkles size={13} />
-              <span>NEET UG 2027</span>
-            </div>
-            <div className="hero-title-row">
-              <div className="hero-icon" style={{ background: meta.gradient, boxShadow: `0 0 32px ${meta.glow}` }}>
-                <span className="hero-emoji">{subject.emoji}</span>
-              </div>
-              <div>
-                <h1 className="hero-title">{subject.name}</h1>
-                <p className="hero-subtitle">
-                  {completedTopics} of {subject.topics.length} topics done · {totalQs.toLocaleString()} questions · {totalRevisions} revisions
-                </p>
+        <PulseHead
+          className="sj-head"
+          back={{ href: "/dashboard", label: "Dashboard" }}
+          kicker="NEET UG 2027 · subject"
+          deva={subject.name === "Physics" ? "भौतिकी" : subject.name === "Chemistry" ? "रसायन" : subject.name === "Botany" ? "वनस्पति" : "जन्तु"}
+          title={subject.name}
+          accent={pct >= 75 ? "nearly there." : pct >= 40 ? "taking shape." : "the climb."}
+          lede={<>{completedTopics} of {subject.topics.length} topics done, {totalQs.toLocaleString()} questions solved and {totalRevisions} revisions logged. Tick topics as you finish them — the tube fills with you.</>}
+          aside={
+            <div className="sj-specimen pl-glass" style={{ "--sc": meta.varColor } as React.CSSProperties}>
+              <LabTube level={pct / 100} color={meta.varColor} className="sj-tube" />
+              <div className="sj-spec-read">
+                <span className="sj-spec-k">Syllabus filled</span>
+                <strong><Roll value={pct} /><small>%</small></strong>
+                <span className="sj-spec-sub">{completedTopics} done · {pendingTopics} to go</span>
+                <span className="sj-spec-emoji" aria-hidden="true">{subject.emoji}</span>
               </div>
             </div>
-          </div>
-
-          <div className="hero-right">
-            <div className="hero-score-card">
-              <div className="hero-score">{pct}<span>%</span></div>
-              <div className="hero-score-emoji">{getEmoji(pct)}</div>
-            </div>
-
-            <div className="hero-mini-stats">
-              <div className="mini-row">
-                <span>Completion</span>
-                <strong>{pct}%</strong>
-              </div>
-              <div className="progress-track hero-progress">
-                <div className="progress-fill" style={{ width: `${pct}%`, background: meta.gradient }} />
-              </div>
-              <div className="mini-meta">
-                <span>{completedTopics} done</span>
-                <span>{pendingTopics} left</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="stats-grid">
-          {[
-            { label: "Completed", value: completedTopics, unit: "topics", icon: Trophy, color: meta.varColor },
-            { label: "Remaining", value: pendingTopics, unit: "topics", icon: Target, color: "var(--text-secondary)" },
-            { label: "Questions", value: totalQs, unit: "solved", icon: BookOpen, color: "var(--gold)" },
-            { label: "Revisions", value: totalRevisions, unit: "total", icon: RefreshCw, color: "var(--lotus-bright)" },
-          ].map((s) => (
-            <div key={s.label} className="glass-card stat-card premium-card">
-              <div className="stat-top">
-                <div className="stat-icon" style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${s.color} 22%, transparent)` }}>
-                  <s.icon size={16} style={{ color: s.color }} />
-                </div>
-                <div className="stat-label">{s.label}</div>
-              </div>
-              <div className="stat-value">{s.value.toLocaleString()}</div>
-              <div className="stat-unit">{s.unit}</div>
-            </div>
-          ))}
-        </section>
+          }
+          stats={[
+            { label: "Topics completed", value: completedTopics.toLocaleString(), level: subject.topics.length ? completedTopics / subject.topics.length : 0, color: meta.varColor },
+            { label: "Topics remaining", value: pendingTopics.toLocaleString(), level: subject.topics.length ? pendingTopics / subject.topics.length : 0, tone: "muted" },
+            { label: "Questions solved", value: totalQs.toLocaleString(), level: Math.min(1, totalQs / 5000), note: "of a 5,000 goal" },
+            { label: "Revisions", value: totalRevisions.toLocaleString(), level: completedTopics ? Math.min(1, totalRevisions / (completedTopics * 3)) : 0, note: "3 per finished topic is ideal" },
+          ]}
+        />
 
         <section className="insights-grid">
           <div className="glass-card insight-card premium-card">

@@ -2,18 +2,15 @@
 
 import { type CSSProperties, useEffect, useMemo, useState, useCallback } from "react";
 import { format, addDays, subDays as dateFnsSubDays, differenceInCalendarDays } from "date-fns";
+import { PulseHead } from "@/components/pulse/pulse-head";
 import {
-  Clock,
-  BookOpen,
   Save,
-  Flame,
   Calendar,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
   TrendingUp,
   Sparkles,
-  Target,
   BarChart3,
   Activity,
   Smartphone,
@@ -881,110 +878,47 @@ export default function DailyGoalsPage() {
       <div className="ambient-grid" />
 
       <div className="content-wrapper">
-        <header className="page-header animate-fade-in" style={{ animationDelay: "0ms" }}>
-          <div className="header-text">
-            <div className="eyebrow-row">
-              <span className="eyebrow-chip">Daily Goals</span>
-              <span className="eyebrow-divider" />
-              <span className="eyebrow-copy">May 2026 to May 2027. Live from real logs.</span>
-            </div>
-            <h1 className="title gradient-text">Daily Analytics</h1>
-            <p className="subtitle">Log the day, then read the full NEET cycle from left to right without fabricated numbers.</p>
-          </div>
-          <div className="date-picker-glass">
-            <button className="date-nav-btn" onClick={() => changeDate(-1)} aria-label="Previous day">
-              <ChevronLeft size={18} />
-            </button>
-            <div className="date-display">
-              <Calendar size={16} className="date-icon" />
-              <span>{format(new Date(selectedDate), "MMM dd, yyyy")}</span>
-              <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="hidden-date-input" />
-            </div>
-            <button
-              className="date-nav-btn"
-              onClick={() => changeDate(1)}
-              disabled={selectedDate === format(new Date(), "yyyy-MM-dd")}
-              aria-label="Next day"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </header>
-
-        <section className="hero-band animate-slide-up" style={{ animationDelay: "60ms" }}>
-          <div className="hero-copy">
-            <span className="hero-kicker">Live command center</span>
-            <h2 className="hero-title">One honest timeline from May 2026 to May 2027.</h2>
-            <p className="hero-desc">
-              Every tile, line, and subject bar below is calculated from saved daily-goal entries. Empty days stay empty until work is logged.
-            </p>
-            <div className="hero-mini-row">
-              <div className="mini-chip">
-                <Sparkles size={14} />
-                <span>{filledSubjects} subjects touched</span>
+        <PulseHead
+          className="dg-head"
+          kicker={lastSynced ? `Live · synced ${format(lastSynced, "HH:mm")}` : "Live from your logs"}
+          deva="दैनिक लक्ष्य"
+          title="Daily"
+          accent="goals."
+          lede={<>Log the day, then read the whole NEET cycle — May 2026 to May 2027 — from real entries only. {activeDays30}/30 active days this month, {cycleActiveDays} in the cycle so far.</>}
+          aside={
+            <div className="dg-date pl-glass">
+              <span className="dg-date-k">Logging for</span>
+              <div className="date-picker-glass">
+                <button className="date-nav-btn" onClick={() => changeDate(-1)} aria-label="Previous day">
+                  <ChevronLeft size={18} />
+                </button>
+                <div className="date-display">
+                  <Calendar size={16} className="date-icon" />
+                  <span>{format(new Date(selectedDate), "EEE, MMM dd")}</span>
+                  <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="hidden-date-input" />
+                </div>
+                <button
+                  className="date-nav-btn"
+                  onClick={() => changeDate(1)}
+                  disabled={selectedDate === format(new Date(), "yyyy-MM-dd")}
+                  aria-label="Next day"
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
-              <div className="mini-chip">
-                <Target size={14} />
-                <span>{activeDays30}/30 active days</span>
-              </div>
-              <div className="mini-chip">
-                <Activity size={14} />
-                <span>{lastSynced ? `Synced ${format(lastSynced, "HH:mm:ss")}` : "Live sync pending"}</span>
+              <div className="dg-cycle">
+                <strong>{cycleConsistencyPct}<small>%</small></strong>
+                <span>cycle consistency · {cycleHours.toFixed(0)}h · {cycleQuestions.toLocaleString()} questions</span>
               </div>
             </div>
-          </div>
-
-          <div className="hero-pulse-card">
-            <div className="hero-pulse-label">Cycle consistency</div>
-            <div className="hero-pulse-value">{cycleConsistencyPct}%</div>
-            <div className="hero-pulse-meta">
-              <span>{cycleActiveDays} active days in the NEET cycle</span>
-              <span>{cycleHours.toFixed(1)} total hours logged</span>
-              <span>{cycleQuestions} total questions solved</span>
-            </div>
-          </div>
-        </section>
-
-        <div className="metrics-grid">
-          <div className="metric-card animate-slide-up" style={{ animationDelay: "100ms" }}>
-            <div className="metric-icon-wrap blue-glow">
-              <Clock size={24} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val">{todayTotalHours.toFixed(1)}</h2>
-              <span className="metric-label">Hours Logged</span>
-            </div>
-          </div>
-          <div className="metric-card animate-slide-up" style={{ animationDelay: "180ms" }}>
-            <div className="metric-icon-wrap purple-glow">
-              <BookOpen size={24} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val">{todayTotalQs}</h2>
-              <span className="metric-label">Questions Solved</span>
-            </div>
-          </div>
-          <div className="metric-card animate-slide-up" style={{ animationDelay: "250ms" }}>
-            <div className="metric-icon-wrap blue-glow soft-alt">
-              <CheckCircle2 size={24} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val">{filledSubjects}</h2>
-              <span className="metric-label">Subjects Logged</span>
-            </div>
-          </div>
-          <div className={`metric-card animate-slide-up ${intensityBand.cardClass}`} style={{ animationDelay: "320ms" }}>
-            <div className={`metric-icon-wrap ${intensityBand.glowClass}`}>
-              <Flame size={24} className={intensityBand.label === "Chumma" ? "flame-peak" : ""} />
-            </div>
-            <div className="metric-info">
-              <h2 className="metric-val" style={{ color: intensityBand.accent }}>
-                {intensityBand.label}
-              </h2>
-              <span className="metric-label">Intensity Level</span>
-            </div>
-          </div>
-        </div>
+          }
+          stats={[
+            { label: "Hours logged", value: todayTotalHours.toFixed(1), unit: "h", level: Math.min(1, todayTotalHours / 12), tone: todayTotalHours >= 8 ? "good" : todayTotalHours >= 5 ? "warn" : todayTotalHours > 0 ? "bad" : "muted", note: "8h good · 12h peak" },
+            { label: "Questions solved", value: todayTotalQs, level: Math.min(1, todayTotalQs / 200), tone: todayTotalQs >= 150 ? "good" : todayTotalQs >= 80 ? "warn" : todayTotalQs > 0 ? "bad" : "muted", note: "150+ a day keeps pace" },
+            { label: "Subjects logged", value: filledSubjects, unit: "/4", level: filledSubjects / 4, tone: filledSubjects >= 3 ? "good" : filledSubjects >= 2 ? "warn" : filledSubjects ? "bad" : "muted" },
+            { label: "Intensity", value: <span style={{ color: intensityBand.accent }}>{intensityBand.label}</span>, level: Math.min(1, todayTotalHours / 12), color: intensityBand.accent },
+          ]}
+        />
 
         <div className="glass-panel chart-panel animate-slide-up" style={{ animationDelay: "400ms" }}>
           <div className="panel-header chart-header">

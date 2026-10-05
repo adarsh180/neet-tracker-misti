@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlarmClock, BookOpenCheck, Brain, ListTodo, RefreshCw, Sunrise } from "lucide-react";
+import { AlarmClock, BookOpenCheck, Brain, ListTodo, RefreshCw } from "lucide-react";
 import SmoothLink from "@/components/layout/smooth-link";
+import { PulseHead } from "@/components/pulse/pulse-head";
 
 type PlannerBlock = {
   start: string;
@@ -102,16 +103,28 @@ export default function PlannerPage() {
 
   return (
     <div className="pl-wrap">
-      <header className="pl-head">
-        <div className="pl-head-icon"><Sunrise size={22} strokeWidth={1.8} /></div>
-        <div>
-          <h1 className="pl-title">Morning Command</h1>
-          <p className="pl-sub">Autonomous daily planner · built from your live tracker data at 5:00 AM IST</p>
-        </div>
-        <button className="pl-refresh" onClick={load} disabled={loading} aria-label="Refresh plan">
-          <RefreshCw size={15} className={loading ? "pl-spin" : ""} />
-        </button>
-      </header>
+      <PulseHead
+        kicker="Built at 5:00 AM IST"
+        deva="प्रातः"
+        title="Morning"
+        accent="command."
+        lede="Your day, planned from live tracker data — goals, tests, the error log and what's due for revision."
+        actions={
+          <button className="pl-btn pl-btn-sm" onClick={load} disabled={loading} aria-label="Refresh plan">
+            <RefreshCw size={14} className={loading ? "pl-spin" : ""} /> Refresh plan
+          </button>
+        }
+        stats={
+          data && "status" in data && data.status === "ready"
+            ? [
+                { label: "Study planned", value: data.plan.totals.studyHours, unit: "h", level: Math.min(1, data.plan.totals.studyHours / 14), tone: data.plan.totals.studyHours >= 10 ? "good" : "warn" },
+                { label: "Biology", value: data.plan.totals.biologyHours, unit: "h", level: Math.min(1, data.plan.totals.biologyHours / 7), color: "var(--botany)" },
+                { label: "Physics + Chemistry", value: data.plan.totals.physicsChemistryHours, unit: "h", level: Math.min(1, data.plan.totals.physicsChemistryHours / 7), color: "var(--physics)" },
+                { label: "Revision", value: data.plan.totals.revisionHours, unit: "h", level: Math.min(1, data.plan.totals.revisionHours / 4), color: "var(--zoology)" },
+              ]
+            : undefined
+        }
+      />
 
       {loading && (
         <div className="pl-state">
@@ -144,7 +157,7 @@ export default function PlannerPage() {
       )}
 
       <style jsx>{`
-        .pl-wrap { max-width: 880px; margin: 0 auto; padding: 24px 20px 80px; }
+        .pl-wrap { max-width: 1080px; margin: 0 auto; padding: 8px 20px 80px; }
         .pl-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
         .pl-head-icon {
           width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;

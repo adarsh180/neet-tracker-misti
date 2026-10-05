@@ -6,6 +6,7 @@ import { ArrowRight, Brain, Calendar, CheckCircle2, Clock3, Loader2, Plus, Spark
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { TaskPriority, TaskStatus } from "@prisma/client";
+import { PulseHead } from "@/components/pulse/pulse-head";
 
 type SubjectLite = { id: string; name: string; slug: string; color: string; emoji: string };
 type TimelineLite = { id: string; label: string; detail: string | null; createdAt: string };
@@ -318,11 +319,23 @@ export default function TodoPage() {
     <div className="todo-page">
       {error && <div className="todo-error">{error}</div>}
 
+      <PulseHead
+        kicker="Todo copilot"
+        deva="कार्य"
+        title="One prompt."
+        accent="Full control."
+        lede="Ask the copilot to add a chapter, a topic or a whole topic-wise list — manual tasks live on the same board."
+        stats={[
+          { label: "Ready", value: stats.ready, level: tasks.length ? stats.ready / tasks.length : 0, tone: stats.ready ? "accent" : "muted" },
+          { label: "In progress", value: stats.progress, level: tasks.length ? stats.progress / tasks.length : 0, tone: stats.progress ? "warn" : "muted" },
+          { label: "Done", value: stats.done, level: tasks.length ? stats.done / tasks.length : 0, tone: stats.done ? "good" : "muted" },
+          { label: "Skipped", value: stats.skipped, level: tasks.length ? stats.skipped / tasks.length : 0, tone: stats.skipped ? "bad" : "muted" },
+        ]}
+      />
+
       <section className="top-shell">
         <div className="hero glass-card">
-          <div className="eyebrow"><Sparkles size={13} /> Todo Copilot</div>
-          <h1>One prompt. Full control.</h1>
-          <p>Ask AI to add a chapter, add a topic, or build a topic-wise todo list. Manual tasks still live in the same board.</p>
+          <div className="eyebrow"><Sparkles size={13} /> Tell the copilot</div>
           <textarea
             className="input hero-input"
             rows={4}

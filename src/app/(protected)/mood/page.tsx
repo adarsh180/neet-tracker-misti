@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, type ComponentType } from "react";
 import { format, subDays, eachDayOfInterval, isSameDay } from "date-fns";
-import { Save, TrendingUp, Brain, Zap, Heart, CalendarDays, Sparkles } from "lucide-react";
+import { PulseHead } from "@/components/pulse/pulse-head";
+import { Save, Brain, Zap, Heart, CalendarDays } from "lucide-react";
 
 interface MoodEntry {
   id: string;
@@ -152,67 +153,31 @@ export default function MoodPage() {
       </div>
 
       <div className="mood-shell animate-fade-in">
-        <div className="page-header mood-header">
-          <div className="mood-heading">
-            <div className="mood-badge">
-              <Sparkles size={14} />
-              Daily emotional tracking
+        <PulseHead
+          kicker="Twenty seconds a day"
+          deva="मन"
+          title="Mood"
+          accent="& energy."
+          lede="How you feel decides how you study. Log energy, focus and stress — the week's averages fill the tubes below."
+          aside={
+            <div className="md-date pl-glass">
+              <span className="md-date-k"><CalendarDays size={14} /> Logging for</span>
+              <input
+                type="date"
+                className="input mood-date"
+                value={selectedDate}
+                max={format(new Date(), "yyyy-MM-dd")}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+              <span className="md-date-sub">{recent.length ? `${recent.length} check-ins in the last week` : "No check-ins yet this week"}</span>
             </div>
-            <h1 className="page-title gradient-text mood-title">Mood Tracker</h1>
-            <p className="page-subtitle mood-subtitle">
-              Track your daily emotional state and mental energy for study optimisation
-            </p>
-          </div>
-
-          <div className="mood-date-wrap">
-            <div className="mood-date-label">
-              <CalendarDays size={14} />
-              Select date
-            </div>
-            <input
-              type="date"
-              className="input mood-date"
-              value={selectedDate}
-              max={format(new Date(), "yyyy-MM-dd")}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {recent.length > 0 && (
-          <div className="mood-stats grid grid-3 gap-4 mb-6 stagger">
-            {[
-              { label: "Avg Energy", value: avgEnergy, icon: Zap, color: "var(--gold)" },
-              { label: "Avg Focus", value: avgFocus, icon: Brain, color: "var(--lotus-bright)" },
-              {
-                label: "Avg Stress",
-                value: avgStress,
-                icon: TrendingUp,
-                color: avgStress >= 7 ? "var(--danger)" : "var(--success)",
-              },
-            ].map((s) => (
-              <div key={s.label} className="glass-card mood-stat-card">
-                <div className="mood-stat-top">
-                  <div
-                    className="stat-icon mood-stat-icon"
-                    style={{
-                      background: `color-mix(in srgb, ${s.color} 12%, transparent)`,
-                      border: `1px solid color-mix(in srgb, ${s.color} 25%, transparent)`,
-                    }}
-                  >
-                    <s.icon size={17} style={{ color: s.color }} />
-                  </div>
-                  <div className="stat-label">{s.label}</div>
-                </div>
-                <div className="stat-value mood-stat-value" style={{ color: s.color }}>
-                  {s.value}
-                  <span style={{ fontSize: 16, color: "var(--text-muted)" }}>/10</span>
-                </div>
-                <div className="stat-sub">Last 7 days</div>
-              </div>
-            ))}
-          </div>
-        )}
+          }
+          stats={[
+            { label: "Energy · 7 days", value: recent.length ? avgEnergy : "—", unit: recent.length ? "/10" : undefined, level: avgEnergy / 10, tone: !recent.length ? "muted" : avgEnergy >= 7 ? "good" : avgEnergy >= 5 ? "warn" : "bad" },
+            { label: "Focus · 7 days", value: recent.length ? avgFocus : "—", unit: recent.length ? "/10" : undefined, level: avgFocus / 10, tone: !recent.length ? "muted" : avgFocus >= 7 ? "good" : avgFocus >= 5 ? "warn" : "bad" },
+            { label: "Stress · 7 days", value: recent.length ? avgStress : "—", unit: recent.length ? "/10" : undefined, level: avgStress / 10, tone: !recent.length ? "muted" : avgStress <= 4 ? "good" : avgStress <= 6 ? "warn" : "bad", note: "lower is better" },
+          ]}
+        />
 
         <div className="mood-layout">
           <div className="mood-left">

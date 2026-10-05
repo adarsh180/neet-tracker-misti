@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { format } from "date-fns";
 import {
   AlertTriangle,
-  ArrowLeft,
   BarChart3,
   BrainCircuit,
   CheckCircle2,
@@ -43,6 +41,8 @@ import {
 } from "recharts";
 import { SYLLABUS } from "@/lib/syllabus";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
+import { toneFor } from "@/components/pulse/lab-tube";
+import { PulseHead } from "@/components/pulse/pulse-head";
 
 const TEST_TYPES = ["AITS", "SECTIONAL", "UNIT", "FLT", "PYQ", "REAL_ATTEMPT"];
 const SUBJECTS = SYLLABUS.map(s => s.name);
@@ -749,21 +749,27 @@ export default function ErrorLogTrackerPage() {
     <div className="error-log-page animate-fade-in">
       <div className="el-bg" />
       <main className="el-shell">
-        <header className="el-hero glass-card">
-          <div>
-            <Link href="/tests" className="el-back"><ArrowLeft size={14} /> Tests overview</Link>
-            <div className="el-eyebrow"><FileSpreadsheet size={14} /> Method and Error Analysis</div>
-            <h1 className="el-title gradient-text">Log the test. Fix the pattern.</h1>
-            <p className="el-copy">
-              Create a test, record each question cleanly, then let deterministic analytics and on-demand AI expose the repeated damage.
-            </p>
-          </div>
-          <div className="el-hero-meter">
-            <span>Logged coverage</span>
-            <strong>{snapshot?.analytics.total ?? 0}/{snapshot?.questionCount ?? 0}</strong>
-            <em>{snapshot ? `${snapshot.analytics.accuracy}% accuracy from attempted rows` : "Select a test"}</em>
-          </div>
-        </header>
+        <PulseHead
+          back={{ href: "/tests", label: "Tests overview" }}
+          kicker="Method & error analysis"
+          deva="त्रुटि"
+          title="Log the test."
+          accent="Fix the pattern."
+          lede="Record each question cleanly — then the analytics and on-demand AI show which mistakes keep repeating and what they cost."
+          stats={
+            snapshot
+              ? [
+                  { label: "Rows logged", value: snapshot.analytics.total, unit: `/${snapshot.questionCount}`, level: snapshot.questionCount ? snapshot.analytics.total / snapshot.questionCount : 0 },
+                  { label: "Accuracy", value: snapshot.analytics.accuracy, unit: "%", level: snapshot.analytics.accuracy / 100, tone: snapshot.analytics.attempted ? toneFor(snapshot.analytics.accuracy, 90, 80) : "muted", note: "of attempted rows" },
+                  { label: "Wrong", value: snapshot.analytics.wrong, level: snapshot.analytics.total ? snapshot.analytics.wrong / snapshot.analytics.total : 0, tone: snapshot.analytics.wrong ? "bad" : "muted", note: `≈ −${snapshot.analytics.wrong * 5} marks swing` },
+                  { label: "Skipped", value: snapshot.analytics.skipped, level: snapshot.analytics.total ? snapshot.analytics.skipped / snapshot.analytics.total : 0, tone: "warn", note: `${snapshot.analytics.notStudied} not studied` },
+                ]
+              : [
+                  { label: "Ledgers", value: logs.length, level: Math.min(1, logs.length / 20), note: "one per test you sit" },
+                  { label: "Selected", value: "—", level: 0, tone: "muted", note: "pick a test on the left" },
+                ]
+          }
+        />
 
         {error ? <div className="el-alert">{error}</div> : null}
 

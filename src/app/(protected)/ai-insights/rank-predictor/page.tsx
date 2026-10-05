@@ -5,8 +5,8 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine
 } from "recharts";
-import { TrendingUp, AlertTriangle, Target, Zap, ChevronLeft, RefreshCw } from "lucide-react";
-import SmoothLink from "@/components/layout/smooth-link";
+import { TrendingUp, AlertTriangle, Target, Zap, RefreshCw } from "lucide-react";
+import { PulseHead } from "@/components/pulse/pulse-head";
 import ResponsiveChart from "@/components/charts/ResponsiveChart";
 
 interface SubjectBreakdown {
@@ -86,28 +86,23 @@ export default function RankPredictorPage() {
 
   return (
     <div className="rank-page animate-fade-in">
-      <div className="dash-header" style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <SmoothLink href="/ai-insights" className="btn btn-ghost btn-sm" style={{ padding: "6px 10px" }} direction="back">
-            <ChevronLeft size={16} />
-          </SmoothLink>
-          <div>
-            <h1 className="dash-hero-title">Rank Predictor</h1>
-            <p className="text-secondary" style={{ fontSize: 14 }}>AI analyses all your data to predict your NEET rank and gap from AIIMS</p>
-          </div>
-        </div>
-        <button
-          className={`btn ${analysis ? "btn-glass" : "btn-primary"}`}
-          onClick={runPrediction}
-          disabled={loading}
-        >
-          {loading ? (
-            <><RefreshCw size={16} style={{ animation: "spin-slow 1s linear infinite" }} /> Analysing...</>
-          ) : (
-            <><TrendingUp size={16} /> {analysis ? "Re-run Analysis" : "Predict My Rank"}</>
-          )}
-        </button>
-      </div>
+      <PulseHead
+        back={{ href: "/ai-insights", label: "Intelligence suite" }}
+        kicker="NEET-GURU analysis"
+        deva="श्रेणी"
+        title="Rank"
+        accent="predictor."
+        lede="Syllabus completion, mock scores, study hours and consistency — read together for an honest AIR range and the gap to AIIMS."
+        actions={
+          <button className={`pl-btn ${analysis ? "" : "pl-btn-rx"}`} onClick={runPrediction} disabled={loading}>
+            {loading ? (
+              <><RefreshCw size={16} style={{ animation: "spin-slow 1s linear infinite" }} /> Analysing…</>
+            ) : (
+              <><TrendingUp size={16} /> {analysis ? "Re-run analysis" : "Predict my rank"}</>
+            )}
+          </button>
+        }
+      />
 
       {error && (
         <div className="glass-card" style={{ padding: 20, borderColor: "rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)", marginBottom: 20 }}>
@@ -120,7 +115,7 @@ export default function RankPredictorPage() {
           <div style={{ width: 72, height: 72, background: "var(--physics-dim)", border: "1px solid rgba(79,156,249,0.3)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
             <TrendingUp size={32} color="var(--physics)" />
           </div>
-          <h2 style={{ font: "700 22px 'Playfair Display'", color: "var(--text-primary)", marginBottom: 8 }}>
+          <h2 style={{ font: "750 26px/1.1 var(--font-display)", letterSpacing: "-0.03em", color: "var(--text-primary)", marginBottom: 8 }}>
             Know Where You Stand
           </h2>
           <p style={{ color: "var(--text-secondary)", fontSize: 15, maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 }}>
