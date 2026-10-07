@@ -3,7 +3,7 @@ import "server-only";
 import { buildAIContext } from "@/lib/ai-context-builder";
 import { db } from "@/lib/db";
 import { MISTI_PREVIOUS_ATTEMPTS } from "@/lib/neet-rank-calibration";
-import { buildChapterRankIntelligence } from "@/lib/neet-rank-intelligence";
+import { buildChapterRankIntelligence, examTopicWeights } from "@/lib/neet-rank-intelligence";
 import { computeReadiness, type Readiness, type SyllabusCompletion, type SyllabusTopic } from "@/lib/readiness";
 import { SEAT_TARGETS, scoreForRank, type SeatInputs, type SeatLevers, type SubjectKey } from "@/lib/seat-model";
 
@@ -279,20 +279,29 @@ export async function getPulseInsights(): Promise<PulseInsights> {
     risks.push({ id: "stress", severity: "medium", title: "Stress is running high", detail: `Average stress ${context.moodSummary.avgStress}/10 in recent check-ins. Protect sleep before adding hours.`, href: "/mood" });
   }
   /* ── Syllabus completion & readiness today ──────────────────────── */
+  // Every topic carries the exam marks of the chapter it covers (PYQ-weighted,
+  // NMC-deleted chapters excluded) — recomputed from the live topic list.
+  const weights = examTopicWeights(topicRevisions.map((t) => ({ subject: t.subject.name, chapter: t.chapter ?? "", name: t.name })));
   const revisedBy = new Map<string, number>();
   const itemsBy = new Map<string, SyllabusTopic[]>();
   let fresh = 0;
-  for (const t of topicRevisions) {
+  let marksDone = 0;
+  let marksRevised = 0;
+  topicRevisions.forEach((t, i) => {
     const last = t.revisions[0]?.revisedAt;
     const isFresh = !!last && last.getTime() >= now.getTime() - 14 * DAY;
+    const marks = Math.round(weights.marks[i] * 10) / 10;
     itemsBy.set(t.subject.name, [
       ...(itemsBy.get(t.subject.name) ?? []),
-      { name: t.name, chapter: (t.chapter ?? "").replace(/^\d+\s*/, ""), done: t.isCompleted, revised: !!last, fresh: isFresh, questions: t.questionsSolved },
+      { name: t.name, chapter: (t.chapter ?? "").replace(/^\d+\s*/, ""), done: t.isCompleted, revised: !!last, fresh: isFresh, questions: t.questionsSolved, marks },
     ]);
-    if (!last) continue;
+    if (t.isCompleted) marksDone += weights.marks[i];
+    if (!last) return;
+    marksRevised += weights.marks[i];
     revisedBy.set(t.subject.name, (revisedBy.get(t.subject.name) ?? 0) + 1);
     if (isFresh) fresh += 1;
-  }
+  });
+  const sumMarks = (items: SyllabusTopic[], doneOnly: boolean) => items.reduce((n, x) => n + (doneOnly && !x.done ? 0 : x.marks), 0);
   const syllabus: SyllabusCompletion = {
     topics: subjects.reduce((n, x) => n + x.topics, 0),
     done: completedTopics,
@@ -300,7 +309,15 @@ export async function getPulseInsights(): Promise<PulseInsights> {
     fresh,
     completion: 0,
     revisedShare: 0,
-    subjects: subjects.map((x) => ({ key: x.key, slug: x.slug, topics: x.topics, done: x.done, revised: revisedBy.get(x.key) ?? 0, items: itemsBy.get(x.key) ?? [] })),
+    marksDone,
+    marksRevised,
+    marksShare: marksDone / 720,
+    gaps: weights.gaps,
+    subjects: subjects.map((x) => {
+      const items = itemsBy.get(x.key) ?? [];
+      const gapMarks = weights.gaps.filter((g) => g.subject === x.key).reduce((n, g) => n + g.marks, 0);
+      return { key: x.key, slug: x.slug, topics: x.topics, done: x.done, revised: revisedBy.get(x.key) ?? 0, marksTotal: sumMarks(items, false) + gapMarks, marksDone: sumMarks(items, true), items };
+    }),
   };
   syllabus.completion = syllabus.topics ? syllabus.done / syllabus.topics : 0;
   syllabus.revisedShare = syllabus.topics ? syllabus.revised / syllabus.topics : 0;
@@ -314,9 +331,12 @@ export async function getPulseInsights(): Promise<PulseInsights> {
   const loggedDays28 = Array.from({ length: 28 }, (_, d) => byDay.get(shiftKey(today, -d))).filter((d) => d && d.hours > 0).length;
   const readiness = computeReadiness({
     syllabus,
+    daysToExam,
     mockLevel: tw ? tv / tw : null,
     testCount: pulseTests.length,
-    govtThreshold: scoreForRank(SEAT_TARGETS[0].air),
+    targetScore: scoreForRank(SEAT_TARGETS.find((t) => t.key === "rishikesh")!.air),
+    aiimsScore: scoreForRank(SEAT_TARGETS.find((t) => t.key === "aiims")!.air),
+    floorScore: scoreForRank(SEAT_TARGETS.find((t) => t.key === "govt")!.air),
     accuracy: observedAccuracy,
     questionsPerDay28: w28.q,
     mocks28,

@@ -480,3 +480,8 @@ html[data-theme="light"] .sd-rim-2 { stop-color: rgba(255, 255, 255, 0.9); }
 .sd-sub-bar i { display: block; height: 100%; width: max(3px, calc(var(--p) * 100%)); border-radius: inherit; background: var(--c); }
 
 @media (prefers-reduced-motion: reduce) { .sd-cell, .sd-halo, .sd-nucleus { animation: none !important; } }
+.sd-core-sub { color: var(--pl-ink-4) !important; font-size: 10.5px !important; }
+.sd-lc-tags .t-marks { color: var(--pl-ink); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.is-todo .sd-cell.is-base { stroke-dasharray: 2 2; fill: transparent; }
+.sd-gaps { margin: 0; color: var(--pl-warn); font-size: 12px; line-height: 1.5; }
+.sd-gaps.is-ok { color: var(--pl-ink-4); }

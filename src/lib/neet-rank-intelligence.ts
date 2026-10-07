@@ -12,6 +12,8 @@ type ChapterPrior = {
   scoringEase: 1 | 2 | 3 | 4 | 5;
   volatility: 1 | 2 | 3 | 4 | 5;
   priorityCap?: Priority;
+  /** Removed from the syllabus by NMC — carries no marks. */
+  deleted?: boolean;
   note: string;
 };
 
@@ -68,17 +70,18 @@ export const RANK_INTELLIGENCE_SOURCE_NOTES = [
   "NMC UGMEB public notice dated 22-12-2025 finalized the updated NEET UG 2026 syllabus.",
   "Chapter weights are probabilistic PYQ priors, not official guarantees; NTA publishes subject pattern, not chapter-wise future weightage.",
   "PYQ priors blend 2015-2025/2020-2025 public analyses from Super Tutor, Collegedunia, Careers360, Testbook, and Resonance 2016 paper analysis.",
+  "Transport in Plants, Mineral Nutrition and Digestion & Absorption are deleted in the NMC syllabus (2024 onward) and carry no marks; their weight is shared across the remaining chapters.",
 ];
 
 const CHAPTER_PRIORS: ChapterPrior[] = [
   // Physics
   { subject: "Physics", chapter: "Physics and Measurement", aliases: ["Units and Measurements", "Units & SI System", "Dimensional Analysis"], expectedQuestions: 2.0, timeCost: 1, scoringEase: 4, volatility: 2, note: "Frequent low-time dimensional-analysis and error questions." },
-  { subject: "Physics", chapter: "Kinematics", aliases: ["Motion in a Straight Line", "Motion in a Plane", "Vectors", "Projectile Motion"], expectedQuestions: 2.5, timeCost: 2, scoringEase: 3, volatility: 3, note: "Foundation mechanics; moderate scoring after formula and graph practice." },
+  { subject: "Physics", chapter: "Kinematics", aliases: ["Motion in a Straight Line", "Motion in a Plane", "Vectors", "Projectile Motion", "1D", "2D", "Motion in One Dimension", "Relative Motion"], expectedQuestions: 2.5, timeCost: 2, scoringEase: 3, volatility: 3, note: "Foundation mechanics; moderate scoring after formula and graph practice." },
   { subject: "Physics", chapter: "Laws of Motion", aliases: ["NLM", "Newton's Laws", "Friction"], expectedQuestions: 2.2, timeCost: 2, scoringEase: 3, volatility: 3, note: "Increasing recent weight; friction and circular-motion applications recur." },
   { subject: "Physics", chapter: "Work, Energy and Power", aliases: ["WEP", "Work Energy Power"], expectedQuestions: 1.8, timeCost: 2, scoringEase: 3, volatility: 3, note: "Reliable mechanics chapter with manageable time demand." },
   { subject: "Physics", chapter: "Rotational Motion", aliases: ["System of Particles and Rotational Motion", "Rotation"], expectedQuestions: 2.0, timeCost: 5, scoringEase: 2, volatility: 4, priorityCap: "MEDIUM", note: "Important but time-heavy; capped at medium priority for time-benefit ratio." },
   { subject: "Physics", chapter: "Gravitation", aliases: ["Universal Law of Gravitation", "Satellites"], expectedQuestions: 2.3, timeCost: 2, scoringEase: 4, volatility: 3, note: "Good ROI formulas with repeated satellite and g-variation patterns." },
-  { subject: "Physics", chapter: "Properties of Solids and Liquids", aliases: ["Mechanical Properties of Solids", "Mechanical Properties of Fluids", "Bulk Matter", "Fluids", "Solids"], expectedQuestions: 2.5, timeCost: 3, scoringEase: 3, volatility: 3, note: "Fluid and elasticity questions are regular but split across subtopics." },
+  { subject: "Physics", chapter: "Properties of Solids and Liquids", aliases: ["Mechanical Properties of Solids", "Mechanical Properties of Fluids", "Bulk Matter", "Fluids", "Solids", "Thermal Properties of Matter", "Thermal prop", "Calorimetry", "Heat Transfer"], expectedQuestions: 2.5, timeCost: 3, scoringEase: 3, volatility: 3, note: "Fluid and elasticity questions are regular but split across subtopics." },
   { subject: "Physics", chapter: "Thermodynamics", aliases: ["Thermal Physics", "Heat and Thermodynamics"], expectedQuestions: 2.2, timeCost: 2, scoringEase: 4, volatility: 3, note: "High-return conceptual/formula area when processes are clear." },
   { subject: "Physics", chapter: "Kinetic Theory of Gases", aliases: ["KTG", "Behaviour of Perfect Gas and Kinetic Theory"], expectedQuestions: 1.5, timeCost: 1, scoringEase: 4, volatility: 3, note: "Small chapter, quick marks from RMS speed and degrees of freedom." },
   { subject: "Physics", chapter: "Oscillations and Waves", aliases: ["SHM", "Waves", "Oscillations"], expectedQuestions: 2.5, timeCost: 3, scoringEase: 3, volatility: 3, note: "Moderate yield; formula fluency matters." },
@@ -119,7 +122,7 @@ const CHAPTER_PRIORS: ChapterPrior[] = [
   { subject: "Botany", chapter: "Diversity in Living World (Plant Portion)", aliases: ["Living World", "Biological Classification", "Plant Kingdom"], expectedQuestions: 4.0, timeCost: 3, scoringEase: 4, volatility: 2, note: "NCERT factual repetition from classification and plant kingdom." },
   { subject: "Botany", chapter: "Structural Organisation in Plants", aliases: ["Morphology of Flowering Plants", "Anatomy of Flowering Plants"], expectedQuestions: 4.5, timeCost: 3, scoringEase: 4, volatility: 2, note: "High biology ROI through diagrams and NCERT examples." },
   { subject: "Botany", chapter: "Cell Structure and Function (Plant Focus)", aliases: ["Cell The Unit of Life", "Cell Cycle", "Biomolecules"], expectedQuestions: 5.0, timeCost: 3, scoringEase: 4, volatility: 2, note: "Cell and biomolecules are repeatedly tested." },
-  { subject: "Botany", chapter: "Plant Physiology - Transport", aliases: ["Transport in Plants", "Mineral Nutrition"], expectedQuestions: 2.5, timeCost: 2, scoringEase: 4, volatility: 3, note: "Medium yield, mostly NCERT concept lines." },
+  { subject: "Botany", chapter: "Plant Physiology - Transport", deleted: true, aliases: ["Transport in Plants", "Mineral Nutrition"], expectedQuestions: 2.5, timeCost: 2, scoringEase: 4, volatility: 3, note: "Medium yield, mostly NCERT concept lines." },
   { subject: "Botany", chapter: "Plant Physiology - Photosynthesis", aliases: ["Photosynthesis", "C3", "C4"], expectedQuestions: 3.0, timeCost: 2, scoringEase: 4, volatility: 2, note: "Consistent, scoring plant physiology." },
   { subject: "Botany", chapter: "Plant Physiology - Respiration & Growth", aliases: ["Respiration in Plants", "Plant Growth", "Plant Hormones"], expectedQuestions: 4.0, timeCost: 2, scoringEase: 4, volatility: 2, note: "Growth regulators and respiration recur." },
   { subject: "Botany", chapter: "Reproduction in Plants", aliases: ["Sexual Reproduction in Flowering Plants", "Pollination", "Double Fertilization"], expectedQuestions: 4.5, timeCost: 2, scoringEase: 5, volatility: 2, note: "High ROI, diagram and event sequence based." },
@@ -130,7 +133,7 @@ const CHAPTER_PRIORS: ChapterPrior[] = [
   // Zoology
   { subject: "Zoology", chapter: "Diversity in Living World (Animal Portion)", aliases: ["Animal Kingdom", "Chordates", "Non-Chordates"], expectedQuestions: 5.0, timeCost: 3, scoringEase: 4, volatility: 2, note: "Animal kingdom is consistently high-yield." },
   { subject: "Zoology", chapter: "Structural Organisation in Animals", aliases: ["Animal Tissues", "Cockroach", "Frog"], expectedQuestions: 4.0, timeCost: 2, scoringEase: 5, volatility: 2, note: "Compact NCERT fact and diagram scoring." },
-  { subject: "Zoology", chapter: "Human Physiology - Digestion", aliases: ["Digestion and Absorption"], expectedQuestions: 1.5, timeCost: 1, scoringEase: 4, volatility: 3, note: "Small physiology unit; enzymes are quick marks." },
+  { subject: "Zoology", chapter: "Human Physiology - Digestion", deleted: true, aliases: ["Digestion and Absorption"], expectedQuestions: 1.5, timeCost: 1, scoringEase: 4, volatility: 3, note: "Small physiology unit; enzymes are quick marks." },
   { subject: "Zoology", chapter: "Human Physiology - Breathing", aliases: ["Breathing and Exchange of Gases"], expectedQuestions: 1.5, timeCost: 1, scoringEase: 4, volatility: 3, note: "Compact physiology chapter." },
   { subject: "Zoology", chapter: "Human Physiology - Circulation", aliases: ["Body Fluids and Circulation"], expectedQuestions: 1.5, timeCost: 2, scoringEase: 4, volatility: 3, note: "Cardiac cycle and blood groups recur." },
   { subject: "Zoology", chapter: "Human Physiology - Excretion", aliases: ["Excretory Products and Their Elimination"], expectedQuestions: 1.5, timeCost: 2, scoringEase: 4, volatility: 3, note: "Manageable but detail-sensitive." },
@@ -175,7 +178,7 @@ function similarity(a: string, b: string) {
 }
 
 function matchPrior(subject: SubjectName, chapter: string) {
-  const candidates = CHAPTER_PRIORS.filter((prior) => prior.subject === subject);
+  const candidates = CHAPTER_PRIORS.filter((prior) => prior.subject === subject && !prior.deleted);
   let best = candidates[0];
   let bestScore = 0;
 
@@ -266,9 +269,70 @@ function priorityFromDamage(damageMarks: number, roiScore: number, mastery: numb
 
 function scaleExpectedQuestions(subject: SubjectName, expectedQuestions: number) {
   const totalForSubject = CHAPTER_PRIORS
-    .filter((prior) => prior.subject === subject)
+    .filter((prior) => prior.subject === subject && !prior.deleted)
     .reduce((sum, prior) => sum + prior.expectedQuestions, 0);
   return expectedQuestions * (SUBJECT_MAX_QUESTIONS[subject] / Math.max(totalForSubject, 1));
+}
+
+const BIOLOGY: SubjectName[] = ["Botany", "Zoology"];
+const priorMarks = (prior: ChapterPrior) => scaleExpectedQuestions(prior.subject, prior.expectedQuestions) * 4;
+
+function bestPrior(candidates: ChapterPrior[], chapter: string, floor: number) {
+  let best: ChapterPrior | null = null;
+  let bestScore = 0;
+  for (const prior of candidates) {
+    const score = Math.max(...[prior.chapter, ...(prior.aliases || [])].map((name) => similarity(chapter, name)));
+    if (score > bestScore) {
+      best = prior;
+      bestScore = score;
+    }
+  }
+  return bestScore >= floor ? best : null;
+}
+
+export type ExamTopicWeights = {
+  /** Exam marks each topic carries (same order as the input); 0 = foundation, not examined directly. */
+  marks: number[];
+  /** Official-syllabus chapters with no topic in the tracker yet. */
+  gaps: Array<{ subject: string; chapter: string; marks: number }>;
+};
+
+/**
+ * Exam marks each tracker topic is worth in the 720-mark paper. Every
+ * official chapter's PYQ marks (scaled so each subject sums to 180, chapters
+ * NMC deleted excluded) are shared equally among the tracker topics that
+ * cover it. Biology chapters are matched across Botany and Zoology because
+ * trackers split units differently (ecology, biotech). Recomputed on every
+ * load, so adding, renaming or deleting topics re-weights immediately.
+ */
+export function examTopicWeights(topics: Array<{ subject: string; chapter: string; name?: string }>): ExamTopicWeights {
+  const live = CHAPTER_PRIORS.filter((p) => !p.deleted);
+  const assigned = new Map<ChapterPrior, number[]>();
+  const labelOf = (t: { chapter: string; name?: string }) => (t.chapter || t.name || "").replace(/^\d+\s*/, "");
+
+  topics.forEach((topic, i) => {
+    const subject = topic.subject as SubjectName;
+    if (!SUBJECT_MAX_MARKS[subject]) return;
+    const pool = BIOLOGY.includes(subject) ? live.filter((p) => BIOLOGY.includes(p.subject)) : live.filter((p) => p.subject === subject);
+    const prior = bestPrior(pool, labelOf(topic), 0.34);
+    if (prior) assigned.set(prior, [...(assigned.get(prior) ?? []), i]);
+  });
+
+  // A chapter nobody claimed may still be covered by a neighbouring topic
+  // (e.g. "Biotechnology & applications" covers plant and human biotech).
+  const gaps: ExamTopicWeights["gaps"] = [];
+  for (const prior of live) {
+    if (assigned.has(prior)) continue;
+    const owners = topics
+      .map((t, i) => ({ i, score: Math.max(...[prior.chapter, ...(prior.aliases || [])].map((n) => similarity(labelOf(t), n))) }))
+      .filter(({ i, score }) => score >= 0.5 && (BIOLOGY.includes(prior.subject) ? BIOLOGY.includes(topics[i].subject as SubjectName) : topics[i].subject === prior.subject));
+    if (owners.length) assigned.set(prior, owners.map((o) => o.i));
+    else gaps.push({ subject: prior.subject, chapter: prior.chapter, marks: Math.round(priorMarks(prior) * 10) / 10 });
+  }
+
+  const marks = topics.map(() => 0);
+  for (const [prior, idx] of assigned) for (const i of idx) marks[i] += priorMarks(prior) / idx.length;
+  return { marks, gaps };
 }
 
 export function buildChapterRankIntelligence(context: AIContext): RankIntelligence {

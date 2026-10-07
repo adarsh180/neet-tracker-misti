@@ -228,15 +228,42 @@ export const NEET_RANK_CALIBRATION: RankCalibrationYear[] = [
       { score: 322, rank: 383681 },
     ],
   },
+  {
+    year: 2026,
+    source: "Careers360 Re-NEET 2026 marks vs rank (official NTA result data, updated 17 Jul 2026)",
+    sourceUrl: "https://medicine.careers360.com/articles/re-neet-2026-marks-vs-rank",
+    sourceQuality: "published-analysis",
+    notes: "High-scoring year (600 ≈ AIR 10.5k vs ≈ 1.4k in 2025) — weighted equal to 2025 so neither extreme dominates the 2027 estimate.",
+    anchors: [
+      { score: 715, rank: 1 },
+      { score: 700, rank: 19 },
+      { score: 690, rank: 138 },
+      { score: 681, rank: 250 },
+      { score: 660, rank: 900 },
+      { score: 650, rank: 1492 },
+      { score: 640, rank: 2200 },
+      { score: 620, rank: 4700 },
+      { score: 600, rank: 10469 },
+      { score: 575, rank: 20000 },
+      { score: 560, rank: 29500 },
+      { score: 535, rank: 50000 },
+      { score: 400, rank: 270000 },
+      { score: 300, rank: 600000 },
+      { score: 202, rank: 1050000 },
+    ],
+  },
 ];
 
+// The two latest papers swung hard in opposite directions (2025 tough, 2026
+// high-scoring), so they share the weight; older years steady the blend.
 const CURRENT_YEAR_WEIGHTS: Record<number, number> = {
-  2025: 0.4,
-  2024: 0.12,
-  2023: 0.28,
-  2022: 0.1,
-  2021: 0.06,
-  2020: 0.04,
+  2026: 0.3,
+  2025: 0.3,
+  2024: 0.08,
+  2023: 0.18,
+  2022: 0.08,
+  2021: 0.04,
+  2020: 0.02,
 };
 
 function interpolateRank(score: number, anchors: RankAnchor[]) {

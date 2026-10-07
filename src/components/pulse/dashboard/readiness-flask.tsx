@@ -90,7 +90,7 @@ export function ReadinessFlask({ readiness, syllabus }: { readiness: Readiness; 
             <span key={b} className={b === readiness.band ? "is-on" : ""}>{b}</span>
           ))}
         </div>
-        <p className="rf-note">Where you stand now — not a forecast. Eight signals, each weighted by how much it decides the paper.</p>
+        <p className="rf-note">Where you stand now — not a forecast. {readiness.basis}</p>
       </div>
 
       <div className="rf-ledger">

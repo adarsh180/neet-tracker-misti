@@ -54,8 +54,11 @@ export type SeatResult = {
   subjects: Record<SubjectKey, number>;
 };
 
+// General category. The goal is AIIMS Delhi / AIIMS Rishikesh; the govt seat
+// is only the safety floor = last AIQ govt MBBS allotment (MCC 2025 round 3:
+// AIR 26,178 for General).
 export const SEAT_TARGETS = [
-  { key: "govt" as const, label: "Govt MBBS seat", air: 22000 },
+  { key: "govt" as const, label: "Govt MBBS (floor)", air: 26000 },
   { key: "rishikesh" as const, label: "AIIMS Rishikesh tier", air: 900 },
   { key: "aiims" as const, label: "AIIMS Delhi", air: 50 },
 ];

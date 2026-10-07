@@ -21,7 +21,7 @@ const HOLE = 50; // clear centre for the readout
 const OUTER = 134; // outermost colony centre
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 
-type Colony = SyllabusTopic & { x: number; y: number; r: number; subject: string; slug: string; order: number };
+type Colony = SyllabusTopic & { x: number; y: number; r: number; size: number; subject: string; slug: string; order: number };
 
 /**
  * The syllabus as a culture in a petri dish. Every topic is a colony laid on a
@@ -47,6 +47,9 @@ function useColonies(syllabus: SyllabusCompletion) {
 
     const colonies: Colony[] = [];
     const cuts: Array<{ subject: string; from: number; to: number }> = [];
+    // Colony size follows the exam marks a topic carries (area ∝ marks).
+    const maxMarks = Math.max(1, ...subjects.flatMap((s) => s.items.map((t) => t.marks)));
+    const sizeOf = (marks: number) => (marks > 0 ? 0.62 + 0.68 * Math.sqrt(marks / maxMarks) : 0.5);
     let k = 0;
     for (const s of subjects) {
       const slice = pts.slice(k, k + s.items.length).sort((p, q) => p.rad - q.rad);
@@ -54,7 +57,9 @@ function useColonies(syllabus: SyllabusCompletion) {
       k += s.items.length;
       const to = pts[k - 1]?.a ?? from;
       cuts.push({ subject: s.key, from, to });
-      slice.forEach((p, i) => colonies.push({ ...s.items[i], x: p.x, y: p.y, r: p.rad, subject: s.key, slug: s.slug, order: Math.round(((p.rad - HOLE) / (OUTER - HOLE)) * 20) }));
+      slice.forEach((p, i) =>
+        colonies.push({ ...s.items[i], x: p.x, y: p.y, r: p.rad, size: sizeOf(s.items[i].marks), subject: s.key, slug: s.slug, order: Math.round(((p.rad - HOLE) / (OUTER - HOLE)) * 20) }),
+      );
     }
     return { colonies, dot, cuts };
   }, [syllabus]);
@@ -66,7 +71,7 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
   const { colonies, dot, cuts } = useColonies(syllabus);
   const [hover, setHover] = useState<Colony | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
-  const pct = Math.round(syllabus.completion * 100);
+  const pct = Math.round(syllabus.marksShare * 100);
 
   // Divider angles sit halfway between neighbouring subjects' outermost points.
   const dividers = cuts.map((c, i) => {
@@ -84,11 +89,11 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
     <div className="sd">
       <div className="sd-top">
         <span className="rf-k">Syllabus completion</span>
-        <span className="sd-hint">each dot is one topic</span>
+        <span className="sd-hint">each dot is a topic · size = exam marks</span>
       </div>
 
       <div className="sd-stage" onMouseLeave={() => setHover(null)}>
-        <svg viewBox={`-38 -22 ${SIZE + 76} ${SIZE + 44}`} className="sd-dish" role="img" aria-label={`${pct}% of the NEET syllabus complete: ${syllabus.done} of ${syllabus.topics} topics, ${syllabus.revised} revised`}>
+        <svg viewBox={`-38 -22 ${SIZE + 76} ${SIZE + 44}`} className="sd-dish" role="img" aria-label={`${pct}% of NEET exam marks covered by finished chapters: ${syllabus.done} of ${syllabus.topics} topics, ${syllabus.revised} revised`}>
           <defs>
             <radialGradient id="sd-agar" cx="50%" cy="45%" r="60%">
               <stop offset="0%" className="sd-agar-0" />
@@ -121,10 +126,10 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
                 transform={`translate(${c.x.toFixed(2)} ${c.y.toFixed(2)})`}
                 onMouseEnter={() => setHover(c)}
               >
-                <circle className="sd-hit" r={dot + 4} />
-                {c.revised ? <circle className="sd-halo" r={dot + 3.2} /> : null}
-                <circle className="sd-cell" r={c.done ? dot : dot * 0.55} />
-                {c.done ? <circle className="sd-nucleus" r={dot * 0.32} cx={-dot * 0.22} cy={-dot * 0.22} /> : null}
+                <circle className="sd-hit" r={dot * c.size + 4} />
+                {c.revised ? <circle className="sd-halo" r={dot * c.size + 3} /> : null}
+                <circle className={`sd-cell ${c.marks ? "" : "is-base"}`} r={dot * c.size * (c.done ? 1 : 0.62)} />
+                {c.done ? <circle className="sd-nucleus" r={dot * c.size * 0.32} cx={-dot * c.size * 0.22} cy={-dot * c.size * 0.22} /> : null}
               </g>
             ))}
           </g>
@@ -148,7 +153,8 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
             <Roll value={pct} />
             <small>%</small>
           </strong>
-          <span>{syllabus.done}/{syllabus.topics} topics</span>
+          <span>of exam marks</span>
+          <span className="sd-core-sub">{syllabus.done}/{syllabus.topics} topics</span>
         </div>
       </div>
 
@@ -163,6 +169,7 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
             <span className="sd-lc-tags">
               <em className={hover.done ? "t-done" : "t-todo"}>{hover.done ? "Done" : "Not yet"}</em>
               {hover.revised ? <em className="t-rev">{hover.fresh ? "Revised · last 14 days" : "Revised"}</em> : null}
+              <em className="t-marks">{hover.marks ? `~${hover.marks} of 720 marks` : "foundation · not examined directly"}</em>
               {hover.questions ? <em>{hover.questions} MCQs</em> : null}
             </span>
           </>
@@ -176,6 +183,7 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
               <em className="t-done">● lit = done</em>
               <em className="t-rev">◎ halo = revised</em>
               <em>· faint = to do</em>
+              <em className="t-marks">bigger = more marks</em>
             </span>
           </>
         )}
@@ -183,7 +191,7 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
 
       <div className="sd-subjects">
         {syllabus.subjects.map((s) => {
-          const p = s.topics ? s.done / s.topics : 0;
+          const p = s.marksTotal ? s.marksDone / s.marksTotal : 0;
           return (
             <SmoothLink
               key={s.key}
@@ -197,12 +205,19 @@ export function SyllabusDish({ syllabus }: { syllabus: SyllabusCompletion }) {
             >
               <span className="sd-sub-name">{s.key}</span>
               <b>{Math.round(p * 100)}%</b>
-              <span className="sd-sub-meta">{s.done}/{s.topics} · {s.revised} revised</span>
+              <span className="sd-sub-meta">~{Math.round(s.marksDone)}/{Math.round(s.marksTotal)} marks · {s.done}/{s.topics} topics</span>
               <span className="sd-sub-bar" aria-hidden="true"><i /></span>
             </SmoothLink>
           );
         })}
       </div>
+      {syllabus.gaps.length ? (
+        <p className="sd-gaps">
+          Not in your tracker yet: {syllabus.gaps.map((g) => `${g.chapter} (~${Math.round(g.marks)} marks)`).join(", ")}. Add them so the dish counts them.
+        </p>
+      ) : (
+        <p className="sd-gaps is-ok">Every chapter of the NMC syllabus is in your tracker.</p>
+      )}
     </div>
   );
 }

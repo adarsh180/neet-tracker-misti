@@ -17,8 +17,9 @@ const LEVERS: Array<{ key: LeverKey; label: string; min: number; max: number; st
 
 const PRESETS: Array<{ id: string; label: string; levers: SeatLevers | null }> = [
   { id: "you", label: "Your pace", levers: null },
-  { id: "steady", label: "Steady", levers: { hoursPerDay: 8, questionsPerDay: 150, mocksPerWeek: 1, accuracy: 0.9, revision: 0.7 } },
-  { id: "aiims", label: "AIIMS routine", levers: { hoursPerDay: 11, questionsPerDay: 260, mocksPerWeek: 2, accuracy: 0.96, revision: 0.95 } },
+  // Push-hard benchmarks: 12h a day for both, every other lever +20% (accuracy and revision capped near 100%).
+  { id: "steady", label: "Steady", levers: { hoursPerDay: 12, questionsPerDay: 180, mocksPerWeek: 1.5, accuracy: 0.97, revision: 0.84 } },
+  { id: "aiims", label: "AIIMS routine", levers: { hoursPerDay: 12, questionsPerDay: 310, mocksPerWeek: 2.5, accuracy: 0.99, revision: 1 } },
 ];
 
 const fmtAir = (n: number) => (n >= 100000 ? `${(n / 100000).toFixed(1)}L` : n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`);
