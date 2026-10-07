@@ -4,7 +4,8 @@ import { buildAIContext } from "@/lib/ai-context-builder";
 import { db } from "@/lib/db";
 import { MISTI_PREVIOUS_ATTEMPTS } from "@/lib/neet-rank-calibration";
 import { buildChapterRankIntelligence } from "@/lib/neet-rank-intelligence";
-import type { SeatInputs, SeatLevers, SubjectKey } from "@/lib/seat-model";
+import { computeReadiness, type Readiness, type SyllabusCompletion } from "@/lib/readiness";
+import { SEAT_TARGETS, scoreForRank, type SeatInputs, type SeatLevers, type SubjectKey } from "@/lib/seat-model";
 
 /**
  * Everything the Pulse dashboard draws, computed from live records. Plain JSON
@@ -46,6 +47,8 @@ export type PulseInsights = {
   totals: { hours: number; questions: number; loggedDays: number; avgHours28: number; avgQuestions28: number };
   subjects: Array<{ key: SubjectKey; slug: string; completion: number; expected: number; damage: number; pendingRevisions: number; topics: number; done: number }>;
   chapters: PulseChapter[];
+  syllabus: SyllabusCompletion;
+  readiness: Readiness;
   risks: PulseRisk[];
   wins: string[];
   dataHealthy: boolean;
@@ -65,10 +68,13 @@ function shiftKey(key: string, days: number) {
 
 export async function getPulseInsights(): Promise<PulseInsights> {
   const now = new Date();
-  const [context, goals, tests] = await Promise.all([
+  const [context, goals, tests, topicRevisions] = await Promise.all([
     buildAIContext("misti"),
     db.dailyGoal.findMany({ select: { date: true, hoursStudied: true, questionsSolved: true, disciplineScore: true }, orderBy: { date: "asc" } }),
     db.testRecord.findMany({ orderBy: { takenAt: "asc" } }),
+    db.topic.findMany({
+      select: { subject: { select: { name: true } }, revisions: { select: { revisedAt: true }, orderBy: { revisedAt: "desc" }, take: 1 } },
+    }),
   ]);
   const intel = buildChapterRankIntelligence(context);
   const daysToExam = Math.max(0, Math.ceil((new Date(EXAM).getTime() - now.getTime()) / DAY));
@@ -264,6 +270,51 @@ export async function getPulseInsights(): Promise<PulseInsights> {
   if (context.moodSummary.avgStress >= 7) {
     risks.push({ id: "stress", severity: "medium", title: "Stress is running high", detail: `Average stress ${context.moodSummary.avgStress}/10 in recent check-ins. Protect sleep before adding hours.`, href: "/mood" });
   }
+  /* ── Syllabus completion & readiness today ──────────────────────── */
+  const revisedBy = new Map<string, number>();
+  let fresh = 0;
+  for (const t of topicRevisions) {
+    const last = t.revisions[0]?.revisedAt;
+    if (!last) continue;
+    revisedBy.set(t.subject.name, (revisedBy.get(t.subject.name) ?? 0) + 1);
+    if (last.getTime() >= now.getTime() - 14 * DAY) fresh += 1;
+  }
+  const syllabus: SyllabusCompletion = {
+    topics: subjects.reduce((n, x) => n + x.topics, 0),
+    done: completedTopics,
+    revised: [...revisedBy.values()].reduce((n, x) => n + x, 0),
+    fresh,
+    completion: 0,
+    revisedShare: 0,
+    subjects: subjects.map((x) => ({ key: x.key, slug: x.slug, topics: x.topics, done: x.done, revised: revisedBy.get(x.key) ?? 0 })),
+  };
+  syllabus.completion = syllabus.topics ? syllabus.done / syllabus.topics : 0;
+  syllabus.revisedShare = syllabus.topics ? syllabus.revised / syllabus.topics : 0;
+  let tw = 0;
+  let tv = 0;
+  pulseTests.forEach((t, i) => {
+    const w = Math.pow(0.75, pulseTests.length - 1 - i);
+    tw += w;
+    tv += w * t.score720;
+  });
+  const loggedDays28 = Array.from({ length: 28 }, (_, d) => byDay.get(shiftKey(today, -d))).filter((d) => d && d.hours > 0).length;
+  const readiness = computeReadiness({
+    syllabus,
+    mockLevel: tw ? tv / tw : null,
+    testCount: pulseTests.length,
+    govtThreshold: scoreForRank(SEAT_TARGETS[0].air),
+    accuracy: observedAccuracy,
+    questionsPerDay28: w28.q,
+    mocks28,
+    chapterMarks: subjects.reduce((n, x) => n + x.expected, 0),
+    weakestSlug: ([...subjects].sort((a, b) => a.expected - b.expected)[0] ?? subjects[0]).slug,
+    hoursPerDay28: w28.h,
+    loggedDays28,
+    mood: context.recentMoods.length
+      ? { energy: context.moodSummary.avgEnergy, focus: context.moodSummary.avgFocus, stress: context.moodSummary.avgStress }
+      : null,
+  });
+
   const order = { high: 0, medium: 1, low: 2 } as const;
   risks.sort((a, b) => order[a.severity] - order[b.severity]);
 
@@ -303,6 +354,8 @@ export async function getPulseInsights(): Promise<PulseInsights> {
       completion: c.completionPct,
       priority: c.priority,
     })),
+    syllabus,
+    readiness,
     risks,
     wins,
     dataHealthy: context.dataHealth?.databaseAvailable !== false,

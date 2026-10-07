@@ -7,6 +7,7 @@ import SmoothLink from "@/components/layout/smooth-link";
 import { HeartLoader } from "@/components/pulse/heart-loader";
 import { HologramWidget } from "@/components/hologram/hologram-widget";
 import { CountdownGlass } from "@/components/pulse/dashboard/countdown-glass";
+import { ReadinessFlask } from "@/components/pulse/dashboard/readiness-flask";
 import { ScoreHistory } from "@/components/pulse/dashboard/score-history";
 import { SeatOdds } from "@/components/pulse/dashboard/seat-odds";
 import { StudyRhythm } from "@/components/pulse/dashboard/study-rhythm";
@@ -132,6 +133,15 @@ export default function DashboardPage() {
             <Fill level={v.level} />
           </div>
         ))}
+      </section>
+
+      <section className="pl-sect" id="standing">
+        <div className="pl-sect-head">
+          <span />
+          <h2>Where you <em>stand</em></h2>
+          <p>How much of the syllabus is done, and how ready you are for the paper today — from topics, revision, mocks, accuracy, MCQs, chapter mastery, consistency and mood. Hover a part to see what it adds.</p>
+        </div>
+        <ReadinessFlask readiness={data.readiness} syllabus={data.syllabus} />
       </section>
 
       <section className="pl-sect" id="seat">
