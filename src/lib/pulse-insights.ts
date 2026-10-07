@@ -4,7 +4,7 @@ import { buildAIContext } from "@/lib/ai-context-builder";
 import { db } from "@/lib/db";
 import { MISTI_PREVIOUS_ATTEMPTS } from "@/lib/neet-rank-calibration";
 import { buildChapterRankIntelligence } from "@/lib/neet-rank-intelligence";
-import { computeReadiness, type Readiness, type SyllabusCompletion } from "@/lib/readiness";
+import { computeReadiness, type Readiness, type SyllabusCompletion, type SyllabusTopic } from "@/lib/readiness";
 import { SEAT_TARGETS, scoreForRank, type SeatInputs, type SeatLevers, type SubjectKey } from "@/lib/seat-model";
 
 /**
@@ -73,7 +73,15 @@ export async function getPulseInsights(): Promise<PulseInsights> {
     db.dailyGoal.findMany({ select: { date: true, hoursStudied: true, questionsSolved: true, disciplineScore: true }, orderBy: { date: "asc" } }),
     db.testRecord.findMany({ orderBy: { takenAt: "asc" } }),
     db.topic.findMany({
-      select: { subject: { select: { name: true } }, revisions: { select: { revisedAt: true }, orderBy: { revisedAt: "desc" }, take: 1 } },
+      select: {
+        name: true,
+        chapter: true,
+        isCompleted: true,
+        questionsSolved: true,
+        subject: { select: { name: true } },
+        revisions: { select: { revisedAt: true }, orderBy: { revisedAt: "desc" }, take: 1 },
+      },
+      orderBy: [{ classLevel: "asc" }, { chapterOrder: "asc" }, { topicOrder: "asc" }],
     }),
   ]);
   const intel = buildChapterRankIntelligence(context);
@@ -272,12 +280,18 @@ export async function getPulseInsights(): Promise<PulseInsights> {
   }
   /* ── Syllabus completion & readiness today ──────────────────────── */
   const revisedBy = new Map<string, number>();
+  const itemsBy = new Map<string, SyllabusTopic[]>();
   let fresh = 0;
   for (const t of topicRevisions) {
     const last = t.revisions[0]?.revisedAt;
+    const isFresh = !!last && last.getTime() >= now.getTime() - 14 * DAY;
+    itemsBy.set(t.subject.name, [
+      ...(itemsBy.get(t.subject.name) ?? []),
+      { name: t.name, chapter: (t.chapter ?? "").replace(/^\d+\s*/, ""), done: t.isCompleted, revised: !!last, fresh: isFresh, questions: t.questionsSolved },
+    ]);
     if (!last) continue;
     revisedBy.set(t.subject.name, (revisedBy.get(t.subject.name) ?? 0) + 1);
-    if (last.getTime() >= now.getTime() - 14 * DAY) fresh += 1;
+    if (isFresh) fresh += 1;
   }
   const syllabus: SyllabusCompletion = {
     topics: subjects.reduce((n, x) => n + x.topics, 0),
@@ -286,7 +300,7 @@ export async function getPulseInsights(): Promise<PulseInsights> {
     fresh,
     completion: 0,
     revisedShare: 0,
-    subjects: subjects.map((x) => ({ key: x.key, slug: x.slug, topics: x.topics, done: x.done, revised: revisedBy.get(x.key) ?? 0 })),
+    subjects: subjects.map((x) => ({ key: x.key, slug: x.slug, topics: x.topics, done: x.done, revised: revisedBy.get(x.key) ?? 0, items: itemsBy.get(x.key) ?? [] })),
   };
   syllabus.completion = syllabus.topics ? syllabus.done / syllabus.topics : 0;
   syllabus.revisedShare = syllabus.topics ? syllabus.revised / syllabus.topics : 0;

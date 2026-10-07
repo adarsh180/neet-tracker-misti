@@ -5,14 +5,9 @@ import { ArrowUpRight } from "lucide-react";
 
 import SmoothLink from "@/components/layout/smooth-link";
 import { Roll } from "@/components/pulse/roll";
+import { SyllabusDish } from "@/components/pulse/dashboard/syllabus-dish";
 import type { Readiness, SyllabusCompletion } from "@/lib/readiness";
 
-const SUBJECT_COLOR: Record<string, string> = {
-  Physics: "var(--physics)",
-  Chemistry: "var(--chemistry)",
-  Botany: "var(--botany)",
-  Zoology: "var(--zoology)",
-};
 const toneOf = (s: number) => (s >= 0.7 ? "good" : s >= 0.4 ? "warn" : "bad");
 const BANDS = ["Foundation", "Building", "Competitive", "Strong", "Exam-ready"];
 
@@ -61,44 +56,8 @@ export function ReadinessFlask({ readiness, syllabus }: { readiness: Readiness; 
 
   return (
     <div className="rf">
-      {/* Syllabus completion: one burette, four subject chambers sized by their topic count. */}
       <div className="rf-syl pl-glass">
-        <span className="rf-k">Syllabus completion</span>
-        <strong className="rf-big">
-          <Roll value={Math.round(syllabus.completion * 100)} />
-          <small>%</small>
-        </strong>
-        <span className="rf-sub">
-          {syllabus.done} of {syllabus.topics} topics done · {syllabus.revised} revised at least once
-        </span>
-        <div className="rf-burette" role="img" aria-label={`${Math.round(syllabus.completion * 100)}% of the NEET syllabus complete`}>
-          {syllabus.subjects.map((s, i) => (
-            <SmoothLink
-              key={s.key}
-              href={`/subjects/${s.slug}`}
-              className="rf-chamber"
-              style={{ "--w": s.topics, "--p": s.topics ? s.done / s.topics : 0, "--r": s.topics ? s.revised / s.topics : 0, "--c": SUBJECT_COLOR[s.key], "--i": i } as CSSProperties}
-              title={`${s.key}: ${s.done}/${s.topics} done, ${s.revised} revised`}
-            >
-              <i className="rf-done" />
-              <i className="rf-rev" />
-            </SmoothLink>
-          ))}
-        </div>
-        <ul className="rf-subjects">
-          {syllabus.subjects.map((s) => (
-            <li key={s.key} style={{ "--c": SUBJECT_COLOR[s.key] } as CSSProperties}>
-              <i />
-              <span>{s.key}</span>
-              <b>{s.topics ? Math.round((s.done / s.topics) * 100) : 0}%</b>
-              <em>{s.done}/{s.topics}</em>
-            </li>
-          ))}
-        </ul>
-        <p className="rf-legend">
-          <span><i className="k-done" /> done</span>
-          <span><i className="k-rev" /> revised at least once</span>
-        </p>
+        <SyllabusDish syllabus={syllabus} />
       </div>
 
       {/* Readiness today. */}

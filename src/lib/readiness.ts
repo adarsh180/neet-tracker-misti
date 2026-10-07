@@ -22,7 +22,9 @@ export type Readiness = {
   lever: { key: string; label: string; points: number } | null;
 };
 
-export type SyllabusSubject = { key: string; slug: string; topics: number; done: number; revised: number };
+/** One syllabus topic, as a colony in the dish: done, revised, revised recently. */
+export type SyllabusTopic = { name: string; chapter: string; done: boolean; revised: boolean; fresh: boolean; questions: number };
+export type SyllabusSubject = { key: string; slug: string; topics: number; done: number; revised: number; items: SyllabusTopic[] };
 export type SyllabusCompletion = {
   topics: number;
   done: number;
