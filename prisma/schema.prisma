@@ -1208,3 +1208,90 @@ model LoginRateLimit {
   @@index([lockedUntil])
   @@map("login_rate_limits")
 }
+
+// ── NEET PG / NEET SS workspaces ──────────────────────────────────────────
+// Separate from NEET UG: UG keeps its own tables untouched; every row here is
+// scoped by `exam` ("pg" | "ss"). Syllabi are static data (src/data/exams);
+// these tables hold only progress, logs, tests, errors and preferences.
+
+model ExamPreference {
+  exam      String   @id @db.VarChar(8)
+  json      Json
+  updatedAt DateTime @updatedAt
+
+  @@map("exam_preferences")
+}
+
+model ExamProgress {
+  id            String    @id @default(cuid())
+  exam          String    @db.VarChar(8)
+  itemKey       String    @db.VarChar(191)
+  status        String    @default("todo") @db.VarChar(12)
+  revisions     Int       @default(0)
+  lastRevisedAt DateTime?
+  questions     Int       @default(0)
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([exam, itemKey])
+  @@index([exam])
+  @@map("exam_progress")
+}
+
+model ExamStudyLog {
+  id         String   @id @default(cuid())
+  exam       String   @db.VarChar(8)
+  logDate    DateTime @db.Date
+  subjectKey String   @db.VarChar(96)
+  minutes    Int      @default(0)
+  questions  Int      @default(0)
+  correct    Int?
+  note       String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([exam, logDate])
+  @@map("exam_study_logs")
+}
+
+model ExamTest {
+  id            String   @id @default(cuid())
+  exam          String   @db.VarChar(8)
+  name          String   @db.VarChar(160)
+  kind          String   @default("grand") @db.VarChar(16)
+  takenAt       DateTime @db.Date
+  score         Float
+  maxScore      Float
+  correct       Int?
+  wrong         Int?
+  skipped       Int?
+  subjectScores Json?
+  note          String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([exam, takenAt])
+  @@map("exam_tests")
+}
+
+model ExamErrorEntry {
+  id         String   @id @default(cuid())
+  exam       String   @db.VarChar(8)
+  subjectKey String   @db.VarChar(96)
+  topic      String   @db.VarChar(200)
+  reason     String   @db.VarChar(16)
+  note       String?  @db.Text
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([exam, createdAt])
+  @@map("exam_error_entries")
+}
+
+model ExamAnalysis {
+  id        String   @id @default(cuid())
+  exam      String   @db.VarChar(8)
+  model     String?  @db.VarChar(80)
+  text      String   @db.LongText
+  createdAt DateTime @default(now())
+
+  @@index([exam, createdAt])
+  @@map("exam_analyses")
+}

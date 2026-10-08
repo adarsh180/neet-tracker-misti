@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getStoredAuth, setAuth } from "@/lib/auth";
 import QuickNav from "@/components/layout/quick-nav";
 import { NotificationCenter } from "@/components/notifications/notification-center";
@@ -34,7 +34,10 @@ const PREFETCH_ROUTES = [
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  // PG and SS bring their own chrome; the UG search, voice assistant and menu stay in UG.
+  const inWorkspace = /^\/(pg|ss)(\/|$)/.test(pathname);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,9 +87,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       <VitalRail />
       <RouteTransition className="protected-route-frame">{children}</RouteTransition>
       <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" partnerLabel="Adarsh's UPSC phone" />
-      <GlobalSearch />
-      <SiteVoiceAssistant />
-      <QuickNav />
+      {inWorkspace ? null : <GlobalSearch />}
+      {inWorkspace ? null : <SiteVoiceAssistant />}
+      {inWorkspace ? null : <QuickNav />}
     </div>
   );
 }

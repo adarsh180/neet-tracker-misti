@@ -40,7 +40,10 @@ export async function POST(req: NextRequest) {
 
     await recordSuccessfulLogin(email, req);
     await setPrivateSession(session.userId, req);
-    return NextResponse.json({ ok: true, userId: session.userId });
+    const res = NextResponse.json({ ok: true, userId: session.userId });
+    // Every sign-in asks which exam to open (UG, PG or SS).
+    res.cookies.delete("neet-exam");
+    return res;
   } catch (error) {
     console.error("[auth/login] failed:", error);
     return NextResponse.json({ error: "Could not create a private session" }, { status: 500 });

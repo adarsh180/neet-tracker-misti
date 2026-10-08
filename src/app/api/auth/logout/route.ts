@@ -3,5 +3,7 @@ import { clearPrivateSession } from "@/lib/server-auth";
 
 export async function POST() {
   await clearPrivateSession();
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  res.cookies.delete("neet-exam");
+  return res;
 }

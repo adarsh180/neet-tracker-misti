@@ -1,11 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
+  ArrowLeftRight,
   Atom,
   BarChart2,
+  BookOpenCheck,
   Brain,
+  FlaskConical,
+  GitBranch,
+  HeartPulse,
+  NotebookPen,
   LayoutDashboard,
   Leaf,
   Microscope,
@@ -35,9 +41,33 @@ const SUBJECTS = [
   { href: "/subjects/chemistry", label: "Chemistry", icon: Atom, color: "var(--chemistry)" },
 ];
 
+// PG and SS are separate workspaces with their own destinations; mood and the
+// cycle planner are the only pages all three exams share.
+const WORKSPACE = (base: "pg" | "ss") => [
+  { href: `/${base}`, label: base === "pg" ? "PG dashboard" : "SS dashboard", icon: LayoutDashboard },
+  { href: `/${base}/syllabus`, label: "Syllabus", icon: BookOpenCheck },
+  { href: `/${base}/tests`, label: "Tests", icon: BarChart2 },
+  { href: `/${base}/log`, label: "Log & errors", icon: NotebookPen },
+  { href: `/${base}/what-if`, label: "What-if", icon: GitBranch },
+];
+const SHARED = [
+  { href: "/mood", label: "Mood (shared)", icon: SmilePlus },
+  { href: "/ai-insights/cycle-planner", label: "Cycle (shared)", icon: HeartPulse },
+];
+
+function openedExam(pathname: string) {
+  if (pathname === "/pg" || pathname.startsWith("/pg/")) return "pg";
+  if (pathname === "/ss" || pathname.startsWith("/ss/")) return "ss";
+  if (typeof document === "undefined") return "ug";
+  const m = document.cookie.match(/(?:^|; )neet-exam=(ug|pg|ss)/);
+  return m?.[1] ?? "ug";
+}
+
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function isActive(pathname: string, href: string) {
+  // Workspace homes match exactly, so /pg does not light up on /pg/syllabus.
+  if (href === "/pg" || href === "/ss") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -47,6 +77,8 @@ function isActive(pathname: string, href: string) {
  */
 export function VitalRail() {
   const pathname = usePathname();
+  const [exam, setExam] = useState<string>(() => (pathname.startsWith("/pg") ? "pg" : pathname.startsWith("/ss") ? "ss" : "ug"));
+  useEffect(() => setExam(openedExam(pathname)), [pathname]);
   const ref = useRef<HTMLElement | null>(null);
 
   const place = useCallback(() => {
@@ -63,7 +95,7 @@ export function VitalRail() {
 
   useIsoLayoutEffect(() => {
     place();
-  }, [pathname, place]);
+  }, [pathname, place, exam]);
 
   useEffect(() => {
     const host = ref.current;
@@ -97,12 +129,24 @@ export function VitalRail() {
   return (
     <nav className="pl-rail pl-glass" aria-label="Primary" ref={ref as React.RefObject<HTMLElement>}>
       <span className="pl-rail-drop" aria-hidden="true" />
-      <SmoothLink href="/dashboard" className="pl-rail-logo" aria-label="NEET DOCTOR — dashboard">
-        <NeetLogoMark size={30} />
+      <SmoothLink href={exam === "ug" ? "/dashboard" : `/${exam}`} className="pl-rail-logo" aria-label="Home of the open exam">
+        {exam === "ug" ? <NeetLogoMark size={30} /> : <FlaskConical size={22} />}
       </SmoothLink>
-      {MAIN.map((m) => item(m.href, m.label, m.icon))}
+      {exam === "ug" ? (
+        <>
+          {MAIN.map((m) => item(m.href, m.label, m.icon))}
+          <span className="pl-rail-sep" aria-hidden="true" />
+          {SUBJECTS.map((s) => item(s.href, s.label, s.icon, s.color))}
+        </>
+      ) : (
+        <>
+          {WORKSPACE(exam as "pg" | "ss").map((m) => item(m.href, m.label, m.icon))}
+          <span className="pl-rail-sep" aria-hidden="true" />
+          {SHARED.map((m) => item(m.href, m.label, m.icon))}
+        </>
+      )}
       <span className="pl-rail-sep" aria-hidden="true" />
-      {SUBJECTS.map((s) => item(s.href, s.label, s.icon, s.color))}
+      {item("/exam", `Switch exam (open: ${exam.toUpperCase()})`, ArrowLeftRight)}
     </nav>
   );
 }
