@@ -1,0 +1,199 @@
+/* ==========================================================================
+   PAGE DIAL + IRIS — the rotary page menu and the circular page transition.
+   Identical in both repos. Colours follow the living palette of each site
+   (UPSC --nv-a*, NEET --pl-a*); motion is transform / clip-path / mask only.
+   ========================================================================== */
+
+@property --iris-hole { syntax: "<length>"; inherits: false; initial-value: 0px; }
+
+.pd-trigger, .pd-layer, .iris {
+  --pd-a: var(--nv-a1, var(--pl-a1, #8b7cf6));
+  --pd-b: var(--nv-a2, var(--pl-a2, #3ddbb4));
+  --pd-c: var(--nv-a3, var(--pl-a3, #f07ab0));
+  --pd-ink: #eef0f8;
+  --pd-ink-3: rgba(214, 220, 244, 0.62);
+  --pd-glass: rgba(255, 255, 255, 0.07);
+  --pd-disc: rgba(16, 19, 32, 0.66);
+  --pd-wedge: rgba(255, 255, 255, 0.045);
+  --pd-edge: rgba(255, 255, 255, 0.14);
+  --pd-hi: rgba(255, 255, 255, 0.3);
+  --pd-scrim: rgba(4, 6, 14, 0.5);
+  --pd-canvas: var(--su-bg, var(--pl-bg, #0a0c14));
+}
+html[data-theme="light"] :is(.pd-trigger, .pd-layer, .iris) {
+  --pd-ink: #121528;
+  --pd-ink-3: rgba(18, 21, 40, 0.58);
+  --pd-glass: rgba(255, 255, 255, 0.62);
+  --pd-disc: rgba(255, 255, 255, 0.72);
+  --pd-wedge: rgba(20, 30, 80, 0.035);
+  --pd-edge: rgba(20, 30, 80, 0.12);
+  --pd-hi: rgba(255, 255, 255, 0.95);
+  --pd-scrim: rgba(236, 240, 250, 0.52);
+}
+
+/* ── Trigger coin ───────────────────────────────────────────────────── */
+.pd-trigger {
+  position: relative; display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--pd-glass); color: var(--pd-ink); cursor: pointer; isolation: isolate; -webkit-tap-highlight-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--pd-edge), inset 0 1px 1px var(--pd-hi), 0 8px 22px -12px rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
+  transition: transform 0.45s cubic-bezier(0.25, 1.3, 0.4, 1), box-shadow 0.3s;
+}
+.pd-trigger-glass { position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: radial-gradient(120% 90% at 30% 15%, rgba(255, 255, 255, 0.26), transparent 46%), conic-gradient(from 0deg, color-mix(in srgb, var(--pd-a) 30%, transparent), transparent 30%, color-mix(in srgb, var(--pd-b) 24%, transparent) 55%, transparent 80%, color-mix(in srgb, var(--pd-a) 30%, transparent)); }
+.pd-glyph { transition: transform 0.6s cubic-bezier(0.25, 1.3, 0.4, 1); }
+.pd-glyph circle:first-child { fill: var(--pd-a); }
+.pd-trigger:hover { transform: translateY(-1px) scale(1.05); box-shadow: inset 0 0 0 1px var(--pd-edge), inset 0 1px 1px var(--pd-hi), 0 0 0 4px color-mix(in srgb, var(--pd-a) 18%, transparent), 0 10px 26px -12px rgba(0, 0, 0, 0.6); }
+.pd-trigger:hover .pd-glyph { transform: rotate(60deg); }
+.pd-trigger:active { transform: scale(0.93); }
+.pd-trigger:focus-visible { outline: 2px solid var(--pd-a); outline-offset: 3px; }
+.pd-trigger.is-open { z-index: 2147482990; }
+.pd-trigger.is-open .pd-glyph { transform: rotate(180deg) scale(0.86); }
+/* Dock variant: icon over a small word, for bottom bars. */
+.pd-trigger.is-dock { width: auto; height: auto; min-width: 52px; padding: 6px 8px 5px; border-radius: 16px; gap: 2px; background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.pd-trigger.is-dock .pd-trigger-glass { display: none; }
+.pd-trigger-text { font-size: 10.5px; font-weight: 650; letter-spacing: 0.01em; color: var(--pd-ink-3); }
+
+/* ── Rotary dial: layer, plate, finger holes, stop, readout ─────────── */
+.pd-layer {
+  position: fixed; inset: 0; z-index: 2147482995; color: var(--pd-ink); touch-action: none; user-select: none; -webkit-user-select: none;
+  font-family: var(--font-body, var(--font-sans, system-ui)), system-ui, sans-serif;
+  background: radial-gradient(circle at var(--cx) var(--cy), rgba(3, 5, 12, 0.78) 0, rgba(3, 5, 12, 0.6) calc(var(--bo) + 30px), rgba(3, 5, 12, 0.28) calc(var(--bo) * 2.1), rgba(3, 5, 12, 0.12) 100%);
+  animation: pd-fade 0.3s ease-out;
+}
+html[data-theme="light"] .pd-layer { background: radial-gradient(circle at var(--cx) var(--cy), rgba(238, 240, 247, 0.82) 0, rgba(238, 240, 247, 0.64) calc(var(--bo) + 30px), rgba(238, 240, 247, 0.3) calc(var(--bo) * 2.1), rgba(238, 240, 247, 0.12) 100%); }
+.pd-layer.is-closing { animation: pd-fade-out 0.32s ease-in forwards; }
+@keyframes pd-fade { from { opacity: 0; } }
+@keyframes pd-fade-out { to { opacity: 0; } }
+
+.pd-dial { position: absolute; width: 0; height: 0; transform-origin: 0 0; animation: pd-in 0.75s cubic-bezier(0.2, 1.15, 0.3, 1); }
+.pd-layer.is-closing .pd-dial { animation: pd-out 0.32s cubic-bezier(0.55, 0, 0.8, 0.3) forwards; }
+@keyframes pd-in { from { transform: scale(0.22); opacity: 0; } 40% { opacity: 1; } }
+@keyframes pd-out { to { transform: scale(0.3); opacity: 0; } }
+
+/* The face inside the rim: a soft light in the live accent and fine engraved circles. */
+.pd-core {
+  position: absolute; left: calc(var(--bi) * -1); top: calc(var(--bi) * -1); width: calc(var(--bi) * 2); height: calc(var(--bi) * 2); border-radius: 50%; pointer-events: none;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--pd-a) 22%, transparent) 0, color-mix(in srgb, var(--pd-b) 8%, transparent) 45%, transparent 72%),
+    repeating-radial-gradient(circle, transparent 0 27px, color-mix(in srgb, var(--pd-ink) 6%, transparent) 27px 28px),
+    color-mix(in srgb, var(--pd-disc) 72%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(150%); backdrop-filter: blur(16px) saturate(150%);
+}
+/* The rim: liquid glass, lit from the top-left, with the holes carved in. */
+.pd-band {
+  position: absolute; left: calc(var(--bo) * -1); top: calc(var(--bo) * -1); width: calc(var(--bo) * 2); height: calc(var(--bo) * 2); border-radius: 50%; pointer-events: none;
+  background:
+    conic-gradient(from 210deg, rgba(255, 255, 255, 0.16), transparent 14%, transparent 40%, rgba(255, 255, 255, 0.07) 52%, transparent 64%, color-mix(in srgb, var(--pd-a) 16%, transparent) 80%, rgba(255, 255, 255, 0.16)),
+    radial-gradient(circle, color-mix(in srgb, var(--pd-disc) 85%, var(--pd-a)) calc(var(--bi) + 2px), var(--pd-disc) 70%, color-mix(in srgb, var(--pd-disc) 70%, var(--pd-b)) 100%);
+  -webkit-mask: radial-gradient(circle, transparent calc(var(--bi) - 0.5px), #000 var(--bi)); mask: radial-gradient(circle, transparent calc(var(--bi) - 0.5px), #000 var(--bi));
+  box-shadow: inset 0 0 0 1px var(--pd-edge), inset 0 2px 0 var(--pd-hi), 0 40px 90px -30px rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Bezel: ticks turn with the plate. */
+.pd-plate { position: absolute; left: 0; top: 0; width: 0; height: 0; transform: rotate(var(--rot, 0deg)); pointer-events: none; }
+.pd-plate svg { position: absolute; left: calc(var(--bo) * -1); top: calc(var(--bo) * -1); overflow: visible; }
+.pd-plate line { stroke: color-mix(in srgb, var(--pd-ink) 26%, transparent); stroke-width: 1; stroke-linecap: round; }
+.pd-plate line.major { stroke: color-mix(in srgb, var(--pd-a) 75%, var(--pd-ink)); stroke-width: 1.6; }
+.pd-endstop { fill: color-mix(in srgb, var(--pd-ink) 45%, transparent); }
+
+/* The slot at the finger stop glows in the live accent. */
+.pd-spot {
+  position: absolute; left: 0; top: 0; width: calc(var(--hole) * 2.1); height: calc(var(--hole) * 2.1); margin: calc(var(--hole) * -1.05); border-radius: 50%; pointer-events: none;
+  transform: rotate(var(--focus)) translateX(var(--R));
+  background: radial-gradient(circle, color-mix(in srgb, var(--pd-a) 42%, transparent) 0, color-mix(in srgb, var(--pd-a) 12%, transparent) 45%, transparent 70%);
+  animation: pd-breathe 3.2s ease-in-out infinite;
+}
+@keyframes pd-breathe { 50% { opacity: 0.6; } }
+
+/* Finger holes */
+.pd-dial nav { position: absolute; left: 0; top: 0; }
+.pd-hole {
+  --a: calc(var(--focus) + var(--i) * var(--step) + var(--rot, 0deg));
+  --d: min(max(var(--i) - var(--f, 0), var(--f, 0) - var(--i)), 5);
+  position: absolute; left: 0; top: 0; display: grid; place-items: center; width: var(--hole); height: var(--hole); margin: calc(var(--hole) / -2); border-radius: 50%;
+  color: var(--pd-ink); text-decoration: none; -webkit-tap-highlight-color: transparent; will-change: transform;
+  transform: rotate(var(--a)) translateX(var(--R)) rotate(calc(var(--a) * -1)) scale(calc(1.1 - min(var(--d), 3) * 0.075));
+  opacity: calc(1 - var(--d) * 0.13);
+  background: radial-gradient(circle at 50% 28%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.2) 62%, rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 3px 7px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.07), 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: background 0.35s, box-shadow 0.35s, color 0.25s;
+}
+html[data-theme="light"] .pd-hole { background: radial-gradient(circle at 50% 28%, rgba(20, 30, 70, 0.14), rgba(20, 30, 70, 0.05) 62%, rgba(255, 255, 255, 0.6)); box-shadow: inset 0 3px 7px rgba(20, 30, 70, 0.22), inset 0 -1px 0 #fff, 0 0 0 1px rgba(20, 30, 70, 0.08); }
+.pd-hole-in { display: grid; justify-items: center; gap: 2px; pointer-events: none; }
+.pd-hole-in small { max-width: calc(var(--hole) - 8px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; font-weight: 700; letter-spacing: 0.01em; color: var(--pd-ink-3); }
+.pd-dial.is-compact .pd-hole-in small { display: none; }
+.pd-hole.is-here { box-shadow: inset 0 3px 7px rgba(0, 0, 0, 0.5), inset 0 0 0 1.5px color-mix(in srgb, var(--pd-b) 75%, transparent), 0 0 0 1px rgba(255, 255, 255, 0.07); }
+.pd-hole.is-here .pd-hole-in svg { color: var(--pd-b); }
+.pd-hole.is-focus {
+  color: #0d0f16;
+  background: radial-gradient(circle at 34% 24%, color-mix(in srgb, var(--pd-a) 55%, #fff), var(--pd-a) 52%, color-mix(in srgb, var(--pd-a) 62%, #000));
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -4px 10px rgba(0, 0, 0, 0.25), 0 0 0 4px color-mix(in srgb, var(--pd-a) 22%, transparent), 0 10px 28px -6px color-mix(in srgb, var(--pd-a) 75%, transparent);
+}
+.pd-hole.is-focus .pd-hole-in small, .pd-hole.is-focus .pd-hole-in svg { color: #0d0f16; }
+.pd-hole:not(.is-focus):hover { box-shadow: inset 0 3px 7px rgba(0, 0, 0, 0.5), 0 0 0 2px color-mix(in srgb, var(--pd-a) 65%, transparent), 0 0 18px -2px color-mix(in srgb, var(--pd-a) 50%, transparent); }
+.pd-hole:focus-visible { outline: none; }
+.pd-hole:focus-visible.is-focus { box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 0 0 3px var(--pd-ink), 0 10px 28px -6px color-mix(in srgb, var(--pd-a) 75%, transparent); }
+
+/* Group names, engraved inside the rim, turning with it. */
+.pd-group {
+  --a: calc(var(--focus) + var(--i) * var(--step) + var(--rot, 0deg));
+  --d: min(max(var(--i) - var(--f, 0), var(--f, 0) - var(--i)), 6);
+  position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none;
+  transform: rotate(var(--a)) translateX(calc(var(--bi) + 9px)) rotate(calc(var(--a) * -1));
+  opacity: calc(0.9 - var(--d) * 0.14);
+}
+.pd-group i { position: absolute; left: 0; top: 0; translate: -50% -50%; padding: 2px 6px; border-radius: 6px; background: var(--pd-disc); font: 800 8px / 1 var(--font-body, system-ui), system-ui; font-style: normal; letter-spacing: 0.16em; text-transform: uppercase; color: color-mix(in srgb, var(--pd-a) 70%, var(--pd-ink)); white-space: nowrap; box-shadow: inset 0 0 0 1px var(--pd-edge); }
+
+/* Finger stop: a small metal bar just outside the rim. */
+.pd-stop-arm { position: absolute; left: 0; top: 0; width: 0; height: 0; transform: rotate(var(--focus)) translateX(calc(var(--bo) + 3px)); pointer-events: none; }
+.pd-stop { position: absolute; left: 0; top: -4px; width: 20px; height: 8px; border-radius: 4px; background: linear-gradient(180deg, #f6f7fb, #9aa0b4 55%, #5d6378); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 12px color-mix(in srgb, var(--pd-a) 55%, transparent); }
+
+/* Hub: the pivot, where the coin was. */
+.pd-hub {
+  position: fixed; z-index: 2; display: grid; place-items: center; width: 46px; height: 46px; translate: -50% -50%; padding: 0; border: 0; border-radius: 50%; cursor: pointer; color: var(--pd-ink);
+  background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.3), transparent 55%), var(--pd-disc);
+  box-shadow: inset 0 0 0 1px var(--pd-edge), inset 0 1px 0 var(--pd-hi), 0 0 0 6px color-mix(in srgb, var(--pd-a) 14%, transparent), 0 10px 26px -10px rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  animation: pd-hub 0.6s cubic-bezier(0.2, 1.3, 0.35, 1);
+}
+@keyframes pd-hub { from { transform: rotate(-90deg) scale(0.6); } }
+.pd-hub:hover { color: var(--pd-a); }
+
+/* Readout: what the finger stop is on. */
+.pd-readout { position: fixed; z-index: 2; display: grid; gap: 7px; width: min(260px, calc(100vw - 24px)); text-align: center; justify-items: center; animation: pd-ro 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.18s backwards; }
+.pd-readout.is-out { padding: 14px 16px; border-radius: 22px; background: var(--pd-disc); box-shadow: inset 0 0 0 1px var(--pd-edge), inset 0 1px 0 var(--pd-hi), 0 24px 50px -24px rgba(0, 0, 0, 0.7); -webkit-backdrop-filter: blur(18px) saturate(170%); backdrop-filter: blur(18px) saturate(170%); }
+@keyframes pd-ro { from { opacity: 0; transform: translateY(8px); } }
+.pd-layer.is-closing .pd-readout { opacity: 0; transition: opacity 0.15s; }
+.pd-ro-meta { display: inline-flex; align-items: baseline; gap: 10px; font-size: 10px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: color-mix(in srgb, var(--pd-a) 75%, var(--pd-ink)); }
+.pd-ro-idx { font-family: var(--font-mono, ui-monospace), ui-monospace, monospace; letter-spacing: 0; color: var(--pd-ink); font-size: 12px; }
+.pd-ro-idx i { font-style: normal; color: var(--pd-ink-3); }
+.pd-ro-name { display: inline-flex; align-items: center; gap: 9px; font: 750 clamp(21px, 2.4vw, 28px) / 1.08 var(--font-display, var(--font-body, system-ui)), system-ui, sans-serif; letter-spacing: -0.035em; animation: pd-name 0.38s cubic-bezier(0.22, 1, 0.36, 1); }
+.pd-ro-name svg { flex: none; color: var(--pd-a); }
+@keyframes pd-name { from { opacity: 0; transform: translateY(10px) rotate(-3deg); filter: blur(4px); } }
+.pd-ro-hint { font-size: 11.5px; font-weight: 600; color: var(--pd-ink-3); }
+.pd-ro-nav { display: flex; gap: 6px; }
+.pd-ro-nav button, .pd-action { display: inline-flex; align-items: center; gap: 5px; max-width: 120px; padding: 6px 11px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--pd-ink) 7%, transparent); color: var(--pd-ink); font: inherit; font-size: 11.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: inset 0 0 0 1px var(--pd-edge); transition: box-shadow 0.2s, opacity 0.2s; }
+.pd-ro-nav button:hover:not(:disabled), .pd-action:hover { box-shadow: inset 0 0 0 1.5px var(--pd-a); }
+.pd-ro-nav button:disabled { opacity: 0.3; cursor: default; }
+.pd-ro-actions { display: flex; gap: 6px; margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) { .pd-layer, .pd-dial, .pd-hub, .pd-readout, .pd-ro-name, .pd-spot { animation: none !important; } .pd-glyph, .pd-trigger { transition: none !important; } }
+
+/* ── Iris: the circular page transition ─────────────────────────────── */
+.iris {
+  position: fixed; inset: 0; z-index: 2147483100; pointer-events: all; overflow: hidden;
+  background:
+    radial-gradient(circle at var(--ix) var(--iy), color-mix(in srgb, var(--pd-a) 34%, var(--pd-canvas)) 0, color-mix(in srgb, var(--pd-b) 12%, var(--pd-canvas)) 34%, var(--pd-canvas) 72%);
+  clip-path: circle(0px at var(--ix) var(--iy));
+}
+.iris.is-revealing {
+  pointer-events: none;
+  -webkit-mask: radial-gradient(circle at var(--ix) var(--iy), transparent var(--iris-hole), #000 calc(var(--iris-hole) + 1px));
+  mask: radial-gradient(circle at var(--ix) var(--iy), transparent var(--iris-hole), #000 calc(var(--iris-hole) + 1px));
+}
+.iris-wave { position: absolute; border-radius: 50%; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pd-a) 80%, #fff), inset 0 0 40px -6px color-mix(in srgb, var(--pd-a) 60%, transparent); transform: scale(0); }
+.iris-label { position: absolute; left: 50%; top: 50%; translate: -50% -50%; color: color-mix(in srgb, var(--pd-a) 50%, #fff); font: 700 clamp(22px, 4vw, 34px) / 1.1 var(--font-display, var(--font-body, system-ui)), system-ui, sans-serif; letter-spacing: -0.03em; white-space: nowrap; animation: iris-label 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s backwards; }
+html[data-theme="light"] .iris-label { color: color-mix(in srgb, var(--pd-a) 70%, #000); }
+.iris.is-revealing .iris-label { transition: opacity 0.2s; opacity: 0; }
+@keyframes iris-label { from { opacity: 0; transform: translateY(8px) scale(0.96); filter: blur(4px); } }

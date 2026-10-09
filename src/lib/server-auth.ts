@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -50,22 +50,6 @@ function signUserId(userId: string) {
 
 function makeLegacyCookieValue(userId: string) {
   return `${userId}.${signUserId(userId)}`;
-}
-
-function verifyLegacyCookieValue(value?: string): PrivateSession | null {
-  if (!value) return null;
-
-  const [userId, signature] = value.split(".");
-  if (!userId || !signature || !KNOWN_USERS.has(userId)) return null;
-
-  const expected = signUserId(userId);
-  const actualBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-
-  if (actualBuffer.length !== expectedBuffer.length) return null;
-  if (!timingSafeEqual(actualBuffer, expectedBuffer)) return null;
-
-  return { userId: canonicalizeUserId(), legacy: true };
 }
 
 function parseTrustedCookieValue(value?: string) {
@@ -189,21 +173,17 @@ async function verifyTrustedSession(value?: string): Promise<PrivateSession | nu
   }
 }
 
+// Only revocable, expiring trusted-device sessions count. The old signed
+// "user.signature" cookie never expired and could not be revoked, so it is no
+// longer accepted — a device still holding one simply signs in again.
 export async function getPrivateSession(): Promise<PrivateSession | null> {
-  const value = await getCookieValue();
-  return (await verifyTrustedSession(value)) || verifyLegacyCookieValue(value);
+  return verifyTrustedSession(await getCookieValue());
 }
 
 export async function ensureTrustedDeviceSession(request?: NextRequest) {
   const value = await getCookieValue();
-  const trusted = await verifyTrustedSession(value);
-  if (trusted) return trusted;
-
-  const legacy = verifyLegacyCookieValue(value);
-  if (!legacy) return null;
-
-  await setPrivateSession(legacy.userId, request, { legacyMigrated: true });
-  return { userId: CANONICAL_USER_ID };
+  void request;
+  return verifyTrustedSession(value);
 }
 
 export async function clearPrivateSession() {

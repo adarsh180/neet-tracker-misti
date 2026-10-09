@@ -51,27 +51,23 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         return;
       }
 
-      try {
-        const res = await fetch("/api/auth/session", { cache: "no-store" });
-        if (cancelled) return;
+      const res = await fetch("/api/auth/session", { cache: "no-store" }).catch(() => null);
+      if (cancelled) return;
 
-        if (!res.ok) {
-          clearAuth();
-          router.replace("/signin");
-          return;
-        }
-
-        setAuth();
-        PREFETCH_ROUTES.forEach((route) => {
-          router.prefetch(route);
-        });
-        setReady(true);
-      } catch {
-        if (!cancelled) {
-          clearAuth();
-          router.replace("/signin");
-        }
+      // Only a definite "no session" signs out. A network blip, an aborted
+      // request or a server hiccup must not log her out and revoke this
+      // device's session; every data API still checks the session itself.
+      if (res?.status === 401) {
+        clearAuth();
+        router.replace("/signin");
+        return;
       }
+
+      setAuth();
+      PREFETCH_ROUTES.forEach((route) => {
+        router.prefetch(route);
+      });
+      setReady(true);
     }
 
     verifyPrivateSession();

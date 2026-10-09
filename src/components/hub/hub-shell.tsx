@@ -7,6 +7,7 @@ import { CalendarDays, CalendarHeart, Goal, LayoutGrid, Lock, PiggyBank, Sparkle
 
 import { useHub } from "./hub-context";
 import { SheetHost } from "./sheet";
+import { PageDial } from "../page-dial";
 import { PEOPLE, type View } from "../../lib/hub/metrics";
 
 const TABS = [
@@ -143,6 +144,7 @@ export function HubShell({ children, switcher }: { children: ReactNode; switcher
           <button type="button" className="sth-iconbtn" onClick={() => void hub.lock()} aria-label="Lock the personal dashboard">
             <Lock size={15} /> <span>Lock</span>
           </button>
+          <PageDial items={TABS.map((t) => ({ href: href(t.path), label: t.label, icon: t.icon }))} title="Saath" label="All Saath pages" />
           {switcher}
         </div>
       </header>

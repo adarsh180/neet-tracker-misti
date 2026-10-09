@@ -5,6 +5,7 @@ import LaunchSplash from "@/components/launch-splash";
 import PwaRegister from "@/components/pwa-register";
 import ThemeToggle from "@/components/theme-toggle";
 import { PulseCycler } from "@/components/pulse/pulse-cycler";
+import { DAYCYCLE_SCRIPT } from "@/lib/daycycle";
 import "./globals.css";
 import "./pulse.css";
 import "./pulse-dash.css";
@@ -14,6 +15,8 @@ import "./exams.css";
 import "./hub.css";
 import "./notify.css";
 import "./orbit.css";
+import "./dial.css";
+import "./daycycle.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -98,8 +101,8 @@ export default function RootLayout({
                     ? stored
                     : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
                   document.documentElement.dataset.theme = theme;
-                  var P = ["iodine","aorta","saline","chloro","plasma","lotus"];
-                  document.documentElement.dataset.pulse = P[Math.floor(Date.now() / 60000) % P.length];
+                  var d = document.documentElement;
+                  ${DAYCYCLE_SCRIPT}
                   document.documentElement.style.colorScheme = theme;
                   var meta = document.querySelector('meta[name="theme-color"]');
                   if (meta) meta.setAttribute("content", theme === "light" ? "#f8f1e7" : "#050508");

@@ -115,6 +115,7 @@ export function VitalRail() {
       <SmoothLink
         key={href}
         href={href}
+        iris
         className={`pl-rail-item${active ? " active" : ""}`}
         data-active={active}
         aria-label={label}

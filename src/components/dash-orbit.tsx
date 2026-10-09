@@ -4,6 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { createPortal } from "react-dom";
 import { Lock, X } from "lucide-react";
 
+import { irisGo } from "@/components/iris";
+
 export type OrbitItem = { key: string; label: string; sub?: string; logo: string; current?: boolean; locked?: boolean; onPick: () => void | Promise<void> };
 
 const COIN = 64;
@@ -148,15 +150,23 @@ export function DashOrbit({ items, label = "Switch dashboard" }: { items: OrbitI
                       e.currentTarget.style.setProperty("--tx", "0px");
                       e.currentTarget.style.setProperty("--ty", "0px");
                     }}
-                    onClick={async () => {
+                    onClick={(e) => {
                       if (it.current) return hide();
+                      // The switch plays the circular iris from the chosen logo into the other dashboard.
+                      const r = e.currentTarget.querySelector(".do-coin-face")?.getBoundingClientRect();
                       setBusy(it.key);
-                      try {
-                        await it.onPick();
-                      } finally {
-                        setBusy(null);
-                        hide();
-                      }
+                      irisGo(
+                        async () => {
+                          try {
+                            await it.onPick();
+                          } finally {
+                            setBusy(null);
+                          }
+                        },
+                        r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : undefined,
+                        it.label,
+                      );
+                      window.setTimeout(hide, 480);
                     }}
                   >
                     <span className="do-coin-face">

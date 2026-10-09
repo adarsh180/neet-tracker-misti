@@ -1,8 +1,10 @@
 "use client";
 
 import Link, { type LinkProps } from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
+
+import { irisGo } from "@/components/iris";
 
 type TransitionDirection = "forward" | "back" | "auto";
 
@@ -10,6 +12,8 @@ type SmoothLinkProps = LinkProps &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
     children: ReactNode;
     direction?: TransitionDirection;
+    /** Open the page through the circular iris (rail and menus). */
+    iris?: boolean;
   };
 
 function normalizePath(value: string) {
@@ -32,9 +36,12 @@ export default function SmoothLink({
   children,
   direction = "auto",
   prefetch,
+  iris,
+  onClick,
   ...props
 }: SmoothLinkProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const targetPath = normalizePath(typeof href === "string" ? href : href.pathname || "/");
 
   const transitionType =
@@ -50,6 +57,12 @@ export default function SmoothLink({
       prefetch={prefetch ?? true}
       transitionTypes={transitionType ? [transitionType] : undefined}
       {...props}
+      onClick={(e) => {
+        onClick?.(e);
+        if (!iris || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || typeof href !== "string" || targetPath === pathname) return;
+        e.preventDefault();
+        irisGo(() => router.push(href), { x: e.clientX, y: e.clientY }, props["aria-label"]?.replace(/ \(.*\)$/, ""));
+      }}
     >
       {children}
     </Link>

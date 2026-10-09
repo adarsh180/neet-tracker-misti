@@ -241,12 +241,19 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
     if (!clientId) return;
     void fetchItems();
     const timer = window.setInterval(() => document.visibilityState === "visible" && void fetchItems(), POLL_MS);
-    const onVisible = () => document.visibilityState === "visible" && void fetchItems();
-    window.addEventListener("online", fetchItems);
+    // Coming back to the tab (or online) refreshes at most every 15 s, so tab-hopping never floods the API.
+    let last = Date.now();
+    const wake = () => {
+      if (document.visibilityState !== "visible" || Date.now() - last < 15000) return;
+      last = Date.now();
+      void fetchItems();
+    };
+    const onVisible = wake;
+    window.addEventListener("online", wake);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.clearInterval(timer);
-      window.removeEventListener("online", fetchItems);
+      window.removeEventListener("online", wake);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [clientId, fetchItems]);

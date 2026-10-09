@@ -7,6 +7,7 @@ import { ArrowLeftRight, BarChart2, BookOpenCheck, Check, ChevronDown, GitBranch
 
 import { WorkspaceProvider, useWorkspace } from "@/components/exams/workspace-context";
 import { NeetOrbit } from "@/components/pulse/neet-orbit";
+import { PageDial } from "@/components/page-dial";
 import type { ExamKey } from "@/lib/exams/syllabus";
 
 const TABS = (base: ExamKey) => [
@@ -48,6 +49,11 @@ function Frame({ exam, children }: { exam: ExamKey; children: React.ReactNode })
           </nav>
           <div className="xw-top-end">
             <SubjectMenu />
+            <PageDial
+              items={[...tabs, { href: "/mood", label: "Mood (shared)", short: "Mood", icon: HeartPulse }, { href: "/ai-insights/cycle-planner", label: "Cycle planner (shared)", short: "Cycle", icon: Layers }, { href: "/exam", label: "Switch exam", short: "Switch", icon: ArrowLeftRight }]}
+              title={exam === "pg" ? "NEET PG" : "NEET SS"}
+              label="All workspace pages"
+            />
             <NeetOrbit />
             <Link href="/exam" className="xw-btn is-sm" aria-label="Switch exam">
               <ArrowLeftRight size={14} /> Switch exam
