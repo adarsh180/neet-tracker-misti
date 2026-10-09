@@ -1,5 +1,5 @@
 import { NEET_PG_RANK_ANCHORS, NEET_PG_TARGETS } from "@/data/exams/neet-pg";
-import { zoneTree, type Customisations, type ExamKey, type ExamTree, type TreeSubject } from "@/lib/exams/syllabus";
+import { zoneTree, type ExamSyllabus, type ExamKey, type ExamTree, type TreeSubject } from "@/lib/exams/syllabus";
 
 /**
  * Readiness, coverage, time, revision and projections for the PG / SS
@@ -14,7 +14,7 @@ export type TestRow = { id: string; name: string; kind: string; subjectKey: stri
 export type ErrorRow = { id: string; subjectKey: string; topic: string; reason: string; note: string | null; resolved: boolean; createdAt: string };
 export type RevisionRow = { id: string; itemKey: string; subjectKey: string; revisedOn: string; minutes: number; confidence: number | null; note: string | null };
 export type MoodRow = { energy: number; focus: number; stress: number };
-export type Records = { progress: ProgressRow[]; logs: LogRow[]; tests: TestRow[]; errors: ErrorRow[]; revisions: RevisionRow[]; moods: MoodRow[]; custom: Customisations };
+export type Records = { progress: ProgressRow[]; logs: LogRow[]; tests: TestRow[]; errors: ErrorRow[]; revisions: RevisionRow[]; moods: MoodRow[]; syllabus: ExamSyllabus };
 
 export type Part = { key: string; label: string; weight: number; score: number; value: string; note: string; evidence: boolean };
 

@@ -1,0 +1,119 @@
+== paediatric.paper
+@ Growth, development and preventive pediatrics
+! Official DNB Paediatrics syllabus — growth and development, behaviour, social and community paediatrics.
++ Growth and development stages: fetal, infant, preschool, school and adolescent growth; bio-psychological models of development; sexual maturation and its disturbances; failure to thrive; short stature
++ Behavioural and psychological disorders: rumination, pica, enuresis, encopresis; habit disorders; anxiety disorders and suicide; ADHD; autism spectrum disorder; poor scholastic performance; mood disorders; childhood psychosis
++ Social paediatrics: adoption; street children; child abuse and neglect; child labour; media and children; foster care; juvenile delinquency; rights of the child
++ Children with special needs: developmental disabilities; intellectual disability evaluation; learning disabilities; rehabilitation
++ Community paediatrics: national child health programmes; IMNCI; RCH programme; school health; nutrition programmes; prevention of blindness; outbreak investigation; adverse events following immunisation
++ Adolescent health: SMR staging; adolescent pregnancy and contraception; menstrual problems; eating disorders; depression and suicide; substance abuse; STIs in adolescents
+@ Newborn and perinatal medicine
+! Official DNB Paediatrics syllabus — perinatology and neonatology.
++ Antenatal and fetal care: fetal growth; fetal distress; maternal medications and teratogens; antenatal diagnosis and fetal therapy; high-risk pregnancy
++ Labour room and newborn care: neonatal resuscitation (NALS); normal newborn examination; dysmorphology; low birth weight and preterm care; thermoregulation and hypothermia; developmentally supportive care
++ Sick newborn: respiratory distress; apnoea; neonatal jaundice; neonatal anaemia and bleeding; HIE and birth asphyxia; neonatal seizures; neonatal emergencies; neonatal infections
++ Neonatal ventilation: CPAP; invasive and non-invasive ventilation; ECMO; transport of sick neonates
+@ Electrolytes, acid-base and nutrition
+! Official DNB Paediatrics syllabus — nutrition.
++ Infant and young child feeding: breastfeeding and lactation management; BFHI and IYCF; complementary feeding; feeding in the first two years; feeding preterm infants
++ Malnutrition and micronutrients: protein-energy malnutrition (underweight, wasting, stunting); vitamin D and vitamin A deficiency and excess; micronutrient deficiencies; obesity; adolescent nutrition
++ Therapeutic nutrition: parenteral and enteral nutrition; nutrition in coeliac disease, liver disease and nephrotic syndrome
+@ Pediatric endocrine and metabolic genetics
++ Inborn errors of metabolism: disorders of amino acids; carbohydrate disorders; lipid and storage disorders; hyperammonaemia; lactic acidosis; metabolic emergencies
++ Paediatric endocrinology: hypopituitarism; diabetes insipidus; precocious and delayed puberty; hypothyroidism and hyperthyroidism; adrenal insufficiency and Cushing syndrome; congenital adrenal hyperplasia; type 1 diabetes and DKA; hypoglycaemia; disorders of sex development
+@ Pediatric infection, immunology and rheumatology
++ Immunodeficiency: approach to immunodeficiency; primary B-cell and T-cell disorders; complement and phagocyte defects; chronic granulomatous disease; Chediak-Higashi syndrome; leukocyte adhesion defects; paediatric HIV
++ Allergy: allergic rhinitis; asthma; atopic dermatitis; urticaria and angioedema; anaphylaxis; serum sickness; food and drug reactions
++ Childhood infections: fever without focus; sepsis and shock; CNS infections; pneumonia; gastroenteritis; osteomyelitis and septic arthritis; tuberculosis; rickettsial infections; nosocomial infections; travel advice
++ Immunisation: principles; national and IAP schedules; optional vaccines; controversies; recent vaccines
++ Paediatric rheumatology: juvenile idiopathic arthritis; SLE and neonatal lupus; vasculitis; Kawasaki disease; MAS and HLH; scleroderma and MCTD; pain syndromes
+@ Pediatric cardiology
++ Paediatric cardiac problems: transitional circulation; ECG, echo and catheterisation; cyanotic and acyanotic congenital heart disease; rheumatic fever and RHD; infective endocarditis; arrhythmia; myocarditis and cardiomyopathy; pericardial disease; systemic hypertension; hyperlipidaemia in children
+@ Pediatric respiratory and airway disorders
++ Paediatric airway and lung disease: congenital nasal and airway anomalies; upper respiratory infection; obstructive sleep apnoea; foreign body aspiration; bronchiolitis; acute and recurrent pneumonia; interstitial lung disease; bronchiectasis; cystic fibrosis; asthma; pleural effusion and empyema; mediastinal mass
+@ Pediatric gastroenterology and hepatology
++ Paediatric GI and liver disease: oral cavity disease; swallowing and oesophageal disorders; peptic ulcer and H. pylori; pyloric stenosis; intestinal obstruction; malabsorption; acute and chronic diarrhoea; IBD; Hirschsprung disease; hepatitis and liver failure; autoimmune hepatitis; Wilson disease; Budd-Chiari syndrome; portal hypertension; pancreatitis
+@ Pediatric nephrology and urinary disease
++ Paediatric kidney and urology: renal function tests; acute glomerulonephritis; nephrotic syndrome; haemolytic uraemic syndrome; UTI, VUR and renal scarring; renal tubular disorders; renal failure and RRT; congenital renal disorders; stones; posterior urethral valves; hydronephrosis and voiding dysfunction; neurogenic bladder; Wilms tumour
+@ Pediatric neurology and neurodevelopment
++ Paediatric neurology: localisation; seizures and epilepsy syndromes; febrile seizures; meningitis and brain abscess; encephalitis including autoimmune; GBS and AFP surveillance; neurocysticercosis; SSPE; cerebral palsy; neurometabolic and neurodegenerative disorders; muscular dystrophies; ataxias; movement disorders; CNS tumours; neuronal migration disorders; brain death; Bell palsy
+@ Pediatric hematology-oncology
++ Paediatric haematology: deficiency anaemias; haemolytic anaemias; aplastic anaemia; thrombocytopenia; haemophilia and bleeding disorders; hypercoagulable states; blood components; transfusion-transmitted infections; stem cell transplant
++ Paediatric oncology: acute and chronic leukaemia; myelodysplastic syndrome; Hodgkin and non-Hodgkin lymphoma; neuroblastoma; retinoblastoma; bone tumours; soft tissue sarcoma; germ cell tumours; histiocytosis; HLH; oncological emergencies; lymphadenopathy and spleen
+@ Pediatric emergency and intensive care
++ Paediatric emergencies: PALS; shock and cardiorespiratory arrest; status epilepticus; acute severe asthma; DKA and adrenal crisis; hypertensive crisis; heart failure; acute kidney injury; severe malaria; sickle cell crisis; GI bleeding; poisoning (lead, organophosphate, kerosene, iron, phenobarbitone); snake and scorpion bite; near drowning; burns and electrocution; physical and sexual abuse
++ PICU and NICU organisation: equipment; sedation and analgesia; transport of sick children; post-operative care
+@ Paediatric subspecialty problems
+! New chapter — official DNB Paediatrics syllabus: ENT, skin, eye and orthopaedic problems in children.
++ ENT in children: otitis externa and media; hearing loss and newborn hearing screening (BAER); tonsillitis and adenoids; allergic rhinitis and sinusitis; post-diphtheritic palsy
++ Skin in children: exanthematous illness; vascular and pigmentary lesions; vesiculobullous disorders; Stevens-Johnson syndrome; eczema; ichthyosis
++ Eye in children: refraction; assessment of vision in infants; cataract; vitamin A deficiency; strabismus; retinopathy of prematurity; retinoblastoma; papilloedema and optic atrophy
++ Orthopaedics in children: congenital deformities; bone and joint infection; common bone tumours
++ Paediatric pharmacology: rational drug therapy; pharmacokinetics in children; pharmacogenomics
+
+== obg.paper
+@ Antenatal care and fetal assessment
+! Official DNB Obstetrics & Gynaecology syllabus — basic sciences, antenatal care, diagnostic procedures.
++ Basic sciences: development of the female urogenital tract; gametogenesis, fertilisation and implantation; placenta, cord and amniotic fluid; fetal growth and circulation; physiological changes of pregnancy; drugs in pregnancy and lactation; immunology and genetics in OBG
++ Antenatal care: examination; nutrition; immunisation; counselling; pre-pregnancy counselling
++ Fetal surveillance: ultrasound and Doppler; biophysical profile; non-stress test; electronic fetal monitoring; CVS and amniocentesis; prenatal screening and diagnosis; fetal therapy
+@ High-risk obstetrics and maternal medicine
++ Complications of early pregnancy: abortion; ectopic pregnancy; gestational trophoblastic disease; hyperemesis gravidarum
++ Infections in pregnancy: malaria; toxoplasmosis; rubella; CMV; herpes; HIV and PPTCT; hepatitis B and C; STIs; COVID-19 and Zika in pregnancy
++ Medical and surgical disorders: anaemia and haematological disease; heart disease; neurological, dermatological and immune disorders; acute abdomen in pregnancy; contracted pelvis and CPD
++ Environment and pregnancy: climate change; air pollution; heat waves
+@ Labor, delivery and puerperium
+! Official DNB Obstetrics & Gynaecology syllabus — intrapartum, postpartum, operative obstetrics.
++ Intrapartum care: mechanism of normal labour; partograph; induction and augmentation; malpositions and malpresentations; cord presentation and prolapse; third-stage complications; obstetric analgesia and anaesthesia
++ Postpartum: genital tract trauma (perineal, cervical, vaginal tears); rupture uterus; postpartum shock, sepsis and psychosis; thrombophlebitis and DVT; mastitis and breast abscess; breastfeeding counselling; postpartum contraception
++ Operative obstetrics: episiotomy; vacuum and forceps; caesarean section; obstetric hysterectomy; surgical management of PPH (uterine and internal iliac ligation, balloon tamponade); ECV and internal podalic version; manual removal of placenta; cervical cerclage; destructive operations; reposition of inverted uterus
++ Critical care obstetrics: management of the critically ill woman; obstetric shock; blood and blood components; coagulation disorders in obstetrics
+@ Benign gynecology and pelvic disease
+! Official DNB Obstetrics & Gynaecology syllabus — clinical and operative gynaecology.
++ Benign gynaecology: fibroid uterus; endometriosis and adenomyosis; genital prolapse; cervicitis and cervical polyp; congenital malformations of the genital tract; intersex and chromosomal abnormalities; reproductive tract infections
++ Urogynaecology: urinary tract infection; urogenital fistulae; urinary incontinence and its operations
++ Menopause and adolescence: hormone replacement therapy; postmenopausal health; adolescent gynaecology
++ Gynaecological procedures: Pap smear, VIA and VILI; colposcopy and LEEP; endometrial sampling; D&C; hysterosalpingography; diagnostic and operative laparoscopy and hysteroscopy; vaginal and abdominal hysterectomy; myomectomy; repair of fistulae
+@ Reproductive endocrinology and infertility
++ Reproductive endocrinology: primary and secondary amenorrhoea; abnormal uterine bleeding; hyperprolactinaemia; hyperandrogenism and hirsutism; PCOS and chronic anovulation; thyroid-pituitary-adrenal disorders
++ Infertility: evaluation of the infertile couple; follicular and endometrial study; intrauterine insemination; tuboplasty; basics of ART
+@ Gynecological cancer and prevention
++ Gynaecological oncology: premalignant and malignant lesions of vulva, vagina, cervix, uterus, tubes and ovaries; preventive oncology and screening; principles of radiotherapy and chemotherapy; radical operations
+@ Family welfare and demography
+! New chapter — official DNB Obstetrics & Gynaecology syllabus §9.
++ Contraception: male and female methods; IUCD insertion; postpartum and interval sterilisation; recent contraceptives
++ MTP and law: MTP Act; first and second trimester MTP (medical and surgical); PCPNDT Act; sterilisation law; sexual assault examination
++ Vital statistics and programmes: maternal mortality; perinatal mortality; birth and fertility rates; RCH and MCH programmes; population dynamics
+
+== orthopaedics.paper
+@ Musculoskeletal anatomy and biomechanics
+! Official DNB Orthopaedics syllabus §1 (basic sciences).
++ Bone and soft tissue science: skeletal development and mineralisation; cartilage, meniscus, tendon, ligament and nerve repair; fracture healing; delayed union and non-union; bone grafts and bone bank
++ Orthopaedic tools: biomaterials and implants; plaster of Paris; orthoses; surgical approaches; minimal access and computer-assisted navigation; electrodiagnosis
++ Orthopaedic investigations: synovial fluid analysis; tissue diagnosis; molecular diagnostics; USG, CT, MRI and nuclear medicine in orthopaedics
+@ Musculoskeletal tumors and infection
++ Bone and joint infection: acute and chronic osteomyelitis; septic arthritis; implant and prosthetic infection; necrotising fasciitis and gas gangrene; tuberculosis of spine, hip and knee; fungal, salmonella and brucella osteomyelitis
++ Metabolic bone disease: calcium, phosphate and vitamin D; rickets and osteomalacia; renal osteodystrophy; hyperparathyroidism; scurvy; osteoporosis; osteopetrosis; Paget disease; storage disorders
++ Musculoskeletal oncology: evaluation and staging; benign and malignant bone and soft tissue tumours; biopsy principles; limb salvage; chemotherapy and radiotherapy; metastatic bone disease
+@ Joint reconstruction and arthritis
++ Arthritis: osteoarthritis; rheumatoid arthritis; ankylosing spondylitis; seronegative spondyloarthropathy; gout and pseudogout; neuropathic joints; haemophilic arthropathy
++ Reconstruction: corrective osteotomies; arthrodesis; total hip, knee and shoulder arthroplasty; tribology; partial and surface replacement
++ Non-traumatic disorders: avascular necrosis of femoral head; transient osteoporosis of hip; protrusio acetabuli; muscle contractures; snapping syndromes; tendinitis and bursitis
+@ Sports medicine, arthroscopy and soft tissue
++ Sports injuries: shoulder instability; rotator cuff tear and impingement; epicondylitis; ACL, PCL and multiligament knee injury; meniscal tear; recurrent patellar dislocation; osteochondral defects; ankle ligament injury; tendo Achilles and quadriceps rupture; stress fracture
+@ Fractures, trauma and fixation
+! Official DNB Orthopaedics syllabus §10 (traumatology).
++ Trauma care: polytrauma; ATLS; splintage and transport; complications of fractures (compartment syndrome, fat embolism, crush, myositis ossificans, CRPS); open fractures and flaps; pathological fractures; amputations and prosthetics
++ Upper limb fractures: clavicle; proximal, shaft and distal humerus; supracondylar fracture in children; Monteggia and Galeazzi; olecranon, radial head and capitellum; distal radius; scaphoid; metacarpals and phalanges
++ Lower limb and pelvic fractures: pelvic, acetabular and sacral fractures; hip fractures; femoral shaft; tibial plateau and shaft; calcaneus and talus; Lisfranc and Chopart injuries
++ Dislocations and malunion: shoulder, elbow and hip dislocation; terrible triad; chronic unreduced dislocation; cubitus varus and valgus; infected non-union
+@ Spine and neural orthopaedics
++ Spine: spinal fractures and instrumentation; Pott spine and paraplegia care; upper cervical anomalies and Klippel-Feil; scoliosis; Scheuermann disease; spondylolysis and spondylolisthesis; disc prolapse and canal stenosis; spine in AS and RA; spinal tumours
+@ Pediatric orthopaedics and deformity
++ Paediatric orthopaedics: congenital disorders of hip, knee, spine and foot; osteogenesis imperfecta, Marfan and Ehlers-Danlos; neurofibromatosis and skeletal dysplasias; cerebral palsy, myelomeningocele and post-polio deformity; Perthes disease and SCFE; angular deformities and limb-length discrepancy; obstetric brachial plexus palsy; battered baby syndrome
+@ Hand, microsurgery and peripheral nerve
++ Hand and wrist: microsurgery basics; flexor and extensor tendon injury; hand fractures; scaphoid non-union and perilunate instability; Kienböck disease; Volkmann contracture; carpal tunnel and compression neuropathies; rheumatoid hand; Dupuytren disease; De Quervain and trigger finger; hand infections and tumours; congenital hand anomalies
++ Nerve injury and reconstruction: brachial plexus; radial, ulnar and median nerve palsy and tendon transfers; sciatic and peroneal nerve injury
+@ Foot and ankle
+! New chapter — official DNB Orthopaedics syllabus §13.
++ Foot and ankle disorders: flat foot and tarsal coalition; pes cavus; hallux valgus and lesser toe deformities; diabetic and neuropathic foot; tarsal tunnel syndrome and Morton metatarsalgia; plantar fasciitis and painful heel; Achilles and tibialis tendinitis

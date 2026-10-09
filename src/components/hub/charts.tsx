@@ -7,35 +7,19 @@ import { PEOPLE, rupees, type HubMetrics } from "../../lib/hub/metrics";
 const tone = (s: number) => (s >= 0.7 ? "good" : s >= 0.4 ? "warn" : "bad");
 const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", timeZone: "UTC" });
 
-/** Together index: six arcs around two orbiting planets (the two of you). */
+/**
+ * Together index as a skyline: one glass column per part, its width the
+ * part's weight and its fill the score against the benchmark. Hover or focus a
+ * column to read that part; the headline is the whole index.
+ */
 export function IndexOrbit({ m }: { m: HubMetrics }) {
   const [hot, setHot] = useState<string | null>(null);
-  const total = m.parts.reduce((s, p) => s + p.weight, 0);
-  let cursor = 0;
+  const total = m.parts.reduce((s, p) => s + p.weight, 0) || 1;
   const h = m.parts.find((p) => p.key === hot) ?? null;
+  const short = (key: string, label: string) => ({ savings: "Savings", emergency: "Cover", budget: "Budgets", goals: "Goals", tasks: "Tasks", funds: "Funds" } as Record<string, string>)[key] ?? label.split(" ")[0];
   return (
-    <div className="sth-orbit" onMouseLeave={() => setHot(null)}>
-      <svg viewBox="0 0 240 240" aria-hidden="true">
-        <circle className="trail" cx="120" cy="120" r="64" />
-        <g className="planets">
-          <circle className="p-a" cx="184" cy="120" r="6" />
-          <circle className="p-m" cx="56" cy="120" r="6" />
-        </g>
-        <g transform="rotate(-90 120 120)">
-          {m.parts.map((p, i) => {
-            const len = (p.weight / total) * 100 - 1.2;
-            const start = cursor;
-            cursor += (p.weight / total) * 100;
-            return (
-              <g key={p.key} className={`arc tone-${tone(p.score)} ${hot && hot !== p.key ? "is-dim" : ""}`} onMouseEnter={() => setHot(p.key)} style={{ "--i": i } as CSSProperties}>
-                <circle className="trk" cx="120" cy="120" r="100" pathLength={100} strokeDasharray={`${len} ${100 - len}`} strokeDashoffset={-start} />
-                <circle className="fil" cx="120" cy="120" r="100" pathLength={100} strokeDasharray={`${Math.max(0.3, len * p.score)} ${100}`} strokeDashoffset={-start} />
-              </g>
-            );
-          })}
-        </g>
-      </svg>
-      <div className="sth-orbit-read">
+    <div className="sth-tower" onMouseLeave={() => setHot(null)}>
+      <div className="sth-tower-read" aria-live="polite">
         {h ? (
           <>
             <strong>{Math.round(h.score * h.weight)}<small>/{h.weight}</small></strong>
@@ -49,6 +33,25 @@ export function IndexOrbit({ m }: { m: HubMetrics }) {
             <em>{m.band}</em>
           </>
         )}
+      </div>
+      <div className="sth-tower-cols" role="list" aria-label="Together index by part">
+        {m.parts.map((p, i) => (
+          <button
+            key={p.key}
+            type="button"
+            role="listitem"
+            className={`col tone-${tone(p.score)} ${hot === p.key ? "is-hot" : hot ? "is-dim" : ""}`}
+            style={{ "--w": p.weight / total, "--f": Math.max(0.02, p.score), "--i": i } as CSSProperties}
+            onMouseEnter={() => setHot(p.key)}
+            onFocus={() => setHot(p.key)}
+            onBlur={() => setHot(null)}
+            aria-label={`${p.label}: ${Math.round(p.score * p.weight)} of ${p.weight}`}
+          >
+            <span className="glass"><i className="fill" /><i className="cap" /></span>
+            <b>{Math.round(p.score * p.weight)}<small>/{p.weight}</small></b>
+            <small>{short(p.key, p.label)}</small>
+          </button>
+        ))}
       </div>
     </div>
   );

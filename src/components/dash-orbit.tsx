@@ -122,10 +122,9 @@ export function DashOrbit({ items, label = "Switch dashboard" }: { items: OrbitI
       {mounted && open && geo
         ? createPortal(
             <div className={`do-layer ${closing ? "is-closing" : ""}`} onPointerDown={(e) => e.target === e.currentTarget && hide()}>
-              <div className="do-dial" style={{ left: geo.x, top: geo.y, "--dr": `${geo.r + 62}px` } as CSSProperties} aria-hidden="true"><i className="sweep" /></div>
+              <div className="do-dial" style={{ left: geo.x, top: geo.y, "--dr": `${geo.r + 62}px` } as CSSProperties} aria-hidden="true" />
               <svg className="do-track" aria-hidden="true">
                 <circle cx={geo.x} cy={geo.y} r={geo.r} />
-                <circle className="glow" cx={geo.x} cy={geo.y} r={geo.r} />
               </svg>
               <nav aria-label={label} onPointerDown={(e) => e.target === e.currentTarget && hide()}>
                 {items.map((it, i) => (

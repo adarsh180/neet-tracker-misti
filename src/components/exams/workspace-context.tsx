@@ -92,7 +92,7 @@ export function WorkspaceProvider({ exam, children }: { exam: ExamKey; children:
     [exam, load],
   );
 
-  const tree = useMemo(() => buildTree(exam, state?.prefs ?? {}, state?.records.custom), [exam, state?.prefs, state?.records.custom]);
+  const tree = useMemo(() => buildTree(exam, state?.prefs ?? {}, state?.records.syllabus), [exam, state?.prefs, state?.records.syllabus]);
   const focus = state ? focusOf(tree, state.prefs) : null;
   const subject = tree.subjects.find((s) => s.key === focus) ?? null;
 

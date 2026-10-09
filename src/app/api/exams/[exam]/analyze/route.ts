@@ -21,7 +21,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ ex
   const g = await guardExam((await params).exam);
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status });
   const [prefs, records] = await Promise.all([loadPrefs(g.exam), loadRecords(g.exam)]);
-  const tree = buildTree(g.exam, prefs, records.custom);
+  const tree = buildTree(g.exam, prefs, records.syllabus);
   const focus = focusOf(tree, prefs);
   const m = computeWorkspace({ tree, records, focus, targetDate: prefs.targetDate, hoursTarget: prefs.hoursTarget });
   const weakest = [...m.subjects].sort((a, b) => b.marks - b.done - (a.marks - a.done)).slice(0, 5);

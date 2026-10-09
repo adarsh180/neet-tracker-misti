@@ -56,7 +56,7 @@ export function WorkspaceDashboard({ exam }: { exam: ExamKey }) {
             ? `Every figure on this page is ${ws.subject.name} only — its topics, sessions, revisions, tests and mistakes. ~${Math.round(ws.subject.marks)} of ${ws.tree.totalMarks} marks. Change the subject from the menu at the top.`
             : exam === "pg"
               ? "NEET PG on its own: 19 subjects weighted by the paper, grand tests against MD/MS closing ranks. Pick one subject from the menu at the top to see only that subject."
-              : "NEET SS on its own: your group's feeder syllabus and the super-specialties you chose, weighted 40/60 the way the paper is set."}
+              : "NEET SS on its own: your group's question paper as NBEMS sets it — the feeder PG-exit curriculum (or Critical Care / Medical Oncology topics) — plus the courses you are aiming at, for depth."}
         </p>
         <div className="xw-head-tools">
           <button type="button" className="xw-btn is-sm" aria-expanded={settings} onClick={() => setSettings((s) => !s)}><Settings2 size={14} /> Exam date &amp; daily target</button>

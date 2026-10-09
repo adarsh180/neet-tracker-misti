@@ -1,0 +1,167 @@
+== anaesthesia.paper
+@ Anesthesia physiology, pharmacology and preassessment
+! Official DNB Anaesthesiology syllabus — first- and second-year theory.
++ Applied anatomy for anaesthesia: heart and coronary circulation; bronchopulmonary segments; larynx and airway; diaphragm; vertebral column and spinal canal; nerve plexuses
++ Applied biochemistry: perioperative fluid therapy; blood transfusion and artificial blood; acid-base and electrolytes
++ Anaesthesia history and practice: history of anaesthesia in India; documentation and medicolegal aspects; informed consent and record keeping; PCPNDT rules for ultrasound use
+@ Anesthetic techniques and monitoring
++ Anaesthesia machine and equipment: workstation check; vaporisers; breathing systems and valves; flowmeters and pressure-reducing valves; humidifiers; medical gas pipeline and scavenging; ventilator principles; sterilisation of equipment
++ Monitoring standards: minimum monitoring standards; cardiac output and pressure monitoring; depth of anaesthesia; neuromuscular monitoring; equipment safety
++ Neuraxial anaesthesia: spinal (midline, paramedian, lumbosacral); epidural (interlaminar, caudal, thoracic); combined spinal-epidural; complications and conversion to GA
++ Peripheral and fascial plane blocks: brachial plexus (all approaches); cervical plexus; stellate ganglion; intercostal and paravertebral; PECS I and II; erector spinae; quadratus lumborum; TAP and rectus sheath; ilioinguinal; sciatic and femoral (3-in-1); IVRA; nerve stimulator and ultrasound guidance
++ Point-of-care ultrasound: regional anaesthesia; FAST and lung ultrasound; vascular access; airway ultrasound
++ Positioning and theatre safety: positioning injuries; diathermy burns; induced hypotension
+@ Anesthesia for major specialties
++ Anaesthesia outside the theatre: day-care anaesthesia; MRI and radiology suite; ECT; endoscopy and ERCP; IVF; dental; remote locations and high altitude; monitored anaesthesia care
++ Special patient groups: cardiac, respiratory, renal, hepatic and endocrine disease for non-cardiac surgery; one-lung anaesthesia; bariatric anaesthesia; transplant anaesthesia; burns and plastic surgery; geriatric anaesthesia; robotic surgery
+@ Anesthesia intensive care and resuscitation
++ Resuscitation and recovery: BLS and ACLS; cardiac vs thoracic pump theory; delayed recovery from anaesthesia; PACU care; shock management
++ Pulmonary function testing: bedside PFT; laboratory PFT interpretation
+@ Anaesthesia non-technical skills
+! New chapter — official DNB Anaesthesiology syllabus, non-technical skills.
++ Professional skills: crisis resource management; communication and conflict resolution; medical audit; human resource and material management; health policy
+
+== radiodiagnosis.paper
+@ Imaging physics, contrast and radiation safety
+! Official DNB Radiodiagnosis syllabus — physics and radiography.
++ X-ray physics: production of X-rays; X-ray generator; interaction of X-rays with matter and patient; measurement of radiation; image receptors; image quality and quality assurance
++ Modality physics: CT; ultrasound and Doppler; MRI; radionuclide imaging (gamma camera, SPECT, PET); PACS and RIS
++ Radiographic technique: skull, spine, chest, abdomen and extremity radiography; contrast studies of GI, biliary, urinary, CNS and vascular systems; paediatric, portable, dental and emergency radiography
++ Contrast media: types and formulation; mechanism and dosing; contrast reactions and their management; contrast nephropathy
+@ Abdominal, pelvic and thoracic radiology
++ Chest imaging: normal chest radiograph; mediastinum; diffuse and occupational lung disease; chest trauma; pulmonary thromboembolism; the chest in the ICU
++ Cardiovascular imaging: congenital and acquired heart disease; valvular disease; cardiomyopathy and pericardial disease; aortic dissection, aneurysm and aortoarteritis; cardiac CT and MRI; arteriography and phlebography
++ GI and hepatobiliary imaging: barium and water-soluble studies; enteroclysis and CT colonography; fistulogram and T-tube cholangiography; liver, biliary and pancreatic imaging (USG, CT, MRI, MRCP); acute abdomen and pneumoperitoneum; GI bleeding and mesenteric ischaemia; GI manifestations of AIDS; post-operative abdomen and transplant imaging
++ Uro-gynaecological imaging: IVU, MCU and retrograde studies; renal masses and staging; obstruction and hydronephrosis; renal failure and transplant kidney; paediatric uroradiology and VUR; obstetric ultrasound (TIFFA, NT, Doppler); MRI of the female pelvis; HSG in infertility
++ Endocrine imaging: pituitary; thyroid and parathyroid; adrenal; pancreatic and GI neuroendocrine tumours
+@ Musculoskeletal, breast and pediatric imaging
++ Musculoskeletal imaging: skeletal trauma; bone and joint infection; metabolic and endocrine bone disease; bone tumours; MSK CT and MRI; MSK ultrasound
++ Head, neck, eye and dental imaging: ENT and orbit imaging; dental radiography; soft-tissue imaging
++ Neonatal and paediatric imaging: neonatal intestinal obstruction and atresias; role of imaging in fetal medicine
+@ Image-guided intervention and emergency radiology
++ Interventional radiology: percutaneous nephrostomy; renal cyst puncture; ureteric stenting; FNAC and biopsy; vascular intervention basics; emergency and trauma radiology
+
+== respiratory.paper
+@ Pulmonary physiology and diagnostics
+! Official DNB Respiratory Medicine syllabus — structure, function and investigations.
++ Lung biology: lung development; surfactant and its disorders; mucociliary clearance; respiratory mechanics; endocrine aspects of the lung; sleep physiology
++ Respiratory investigations: pulmonary function tests; arterial blood gases and acid-base; bronchoscopy; thoracoscopy; polysomnography
+@ Advanced pulmonary and interventional respiratory medicine
++ Interventional pulmonology: EBUS; medical thoracoscopy; airway stenting; whole-lung lavage
++ Pulmonary rehabilitation and home care: pulmonary rehabilitation; long-term oxygen therapy; home ventilation
+
+== microbiology.paper
+@ Clinical microbiology and laboratory operations
+! Official DNB Microbiology syllabus — general microbiology and practicals.
++ General microbiology: history of microbiology; microscopy; biosafety and universal precautions; sterilisation and disinfection; bacterial genetics
++ Laboratory techniques: Gram, Albert, Ziehl-Neelsen and special stains; culture media; anaerobic methods; tissue culture; buffers; pyrogen testing
+@ Bacteriology and resistance
++ Systematic bacteriology: staphylococci and micrococci; streptococci and enterococci; Neisseria and Moraxella; Enterobacterales; Vibrio; Pseudomonas and non-fermenters; anaerobes (Clostridia, Bacteroides, Fusobacterium); spirochaetes; Rickettsia and Chlamydia
++ Mycobacteriology: classification; conventional and molecular identification; culture techniques; drug susceptibility testing; skin-slit smears for leprosy
+@ Mycology and parasitology
++ Medical entomology: mosquitoes; sandfly; ticks and mites; cyclops; lice; myiasis
++ Mycology practice: specimen collection and transport; direct examination and culture; antifungal agents and susceptibility testing
++ Parasitology practice: stool examination; blood parasites; tissue parasites; serology for parasitic infection
+@ Virology, molecular diagnostics and viral immunology
++ General virology: classification; virus structure and replication; viral genetics; cell culture; viral serology; antiviral agents
+@ Cellular, molecular and systemic mechanisms
++ Immunology: components of the immune system; innate and acquired immunity; antigen-antibody reactions; hypersensitivity; autoimmunity; immunodeficiency; transplant and tumour immunology
+@ Infection control, epidemiology and public health microbiology
++ Applied microbiology: epidemiology of infectious diseases; syndromic approach to infection; economics of disease management; ethics and medico-legal aspects
+
+== pathology.paper
+@ Cellular, molecular and systemic mechanisms
+! Official DNB Pathology syllabus — general pathology.
++ Cell injury: mechanisms and morphology; necrosis and apoptosis; adaptations; intracellular accumulations; pathological calcification; cell ageing
++ Inflammation and repair: vascular and cellular events; chemical mediators; granulomatous inflammation; systemic effects; regeneration, healing and fibrosis; extracellular matrix
++ Haemodynamic disorders: oedema and congestion; haemorrhage; normal haemostasis; thrombosis; DIC; embolism; infarction; shock
++ Genetic disorders: karyotyping; Mendelian disorders; multifactorial inheritance; cytogenetic disorders; non-classic inheritance; molecular diagnosis of genetic disease
++ Immunopathology: innate and adaptive immunity; cytokines; HLA and disease; hypersensitivity; SLE, RA, Sjögren and systemic sclerosis; AIDS; amyloidosis; transplant rejection and GVHD
++ Environmental, nutritional and paediatric pathology: environmental and occupational disease; nutritional deficiency and obesity; congenital anomalies; birth injury; inborn errors; childhood tumours
+@ Systemic organ pathology
+! Official DNB Pathology syllabus — systemic pathology.
++ Cardiovascular pathology: atherosclerosis; hypertensive vascular disease; vasculitis; ischaemic, valvular and congenital heart disease; cardiomyopathy; pericardial disease; cardiac tumours
++ Lung, pleura and mediastinum: obstructive and restrictive disease; pulmonary infections; lung tumours; pleural disease; thymus disorders and tumours; lung transplant pathology
++ Head and neck: oral premalignant lesions and tumours; odontogenic disease; upper airway and ear; salivary gland disease
++ GI tract and peritoneum: oesophagus, stomach and bowel disease; peritoneum, omentum and retroperitoneum
++ Liver, biliary and pancreas: viral, autoimmune, drug-induced and metabolic liver disease; liver in pregnancy and transplantation; liver tumours; gallbladder and bile duct disease; pancreatitis and pancreatic neoplasms
++ Kidney and urinary tract: glomerular, tubular, interstitial and vascular disease; cystic kidney disease; renal tumours; transplant pathology; lower urinary tract and male genital tract
++ Female genital tract and breast: cervix, uterus, ovary and tube lesions; gestational and placental disorders; breast lesions; male breast
++ Endocrine and skin: pituitary, thyroid, parathyroid, adrenal and pancreatic islets; neuroendocrine tumours; pigmentary, vesiculobullous and inflammatory skin disease; skin tumours
++ Bone, soft tissue, nerve and muscle: bone growth and metabolic disease; arthritis; bone and soft tissue tumours; neuropathies; myopathies and dystrophies; neuromuscular junction disease
++ CNS and eye: degenerative, metabolic, demyelinating and infectious CNS disease; CNS tumours; eye and orbit disease
+
+== psychiatry.paper
+@ Psychiatric assessment and foundational science
+! Official DNB Psychiatry syllabus — basic sciences.
++ Basic behavioural sciences: learning and memory; theories of personality; intelligence and aptitude; normal and abnormal psychology; social behaviour; aggression and violence
++ Neurosciences for psychiatry: neuroanatomy; neurophysiology; neurochemistry; genetics; brain models of mind; experimental animal research
++ Assessment tools: classification (ICD-11, DSM-5-TR); clinical psychology and psychological testing; neuropsychology; epidemiology
+@ Mood, psychotic and anxiety disorders
+! Official DNB Psychiatry syllabus — clinical psychiatry (ICD-11 groupings).
++ ICD-11 disorder groups: schizophrenia and primary psychotic disorders; catatonia; mood disorders; anxiety and fear-related disorders; obsessive-compulsive and related disorders; disorders associated with stress; dissociative disorders
++ Other adult disorders: feeding and eating disorders; elimination disorders; bodily distress disorders; impulse control disorders; disruptive and dissocial disorders; personality disorders; paraphilic disorders; factitious disorders
+@ Psychiatric treatments, consultation and law
++ Treatment modalities: pharmacological management and complications; psychological management; psychosocial management; other physical treatments (ECT, rTMS)
++ Services and law: psychiatric emergencies; consultation-liaison psychiatry; community psychiatry and the National Mental Health Programme; psychiatric rehabilitation; forensic psychiatry and mental health laws; bioethics and human rights
+@ Climate, environment and mental health
+! New chapter — official DNB Psychiatry syllabus §3–4.
++ Climate and mental health: eco-anxiety, eco-grief and eco-fear; heat waves and psychotropic drugs; vulnerable groups (migrants, children, elderly); resilience and health-system preparedness
++ Air pollution and mental health: effects in children, pregnancy and old age
+
+== pharmacology.paper
+@ Clinical pharmacology, trials and safety
+! Official DNB Pharmacology syllabus — clinical pharmacology and practicals.
++ Clinical trials in India: phases of drug development; New Drugs and Clinical Trials Rules (Schedule Y); ICH-GCP and ICMR guidelines; protocol, patient information sheet and informed consent; bioavailability and bioequivalence studies
++ Drug information and economics: therapeutic drug monitoring; evaluation of promotional literature; drug information sheets; fixed-dose combinations; pharmacoeconomics; pharmacoepidemiology
++ Drug delivery: sustained release; enteric coating; liposomes and novel delivery systems
+@ Pharmacokinetics, dynamics and experimental pharmacology
++ Experimental pharmacology: isolated tissue preparations; bioassays; dose-response curves and pA2/EC50; Langendorff heart; animal models of epilepsy, analgesia and inflammation; laboratory animal handling and ethics
++ Biochemical pharmacology: colorimetry and spectrophotometry; HPLC and ELISA; toxicological identification of drugs
+
+== ent.paper
+@ Otology and audiovestibular medicine
+! Official DNB ENT syllabus — otology and paediatric ENT.
++ Paediatric otology: hearing screening and tests in children; the deaf child and cochlear implantation; otitis media with effusion; acute and chronic otitis media in childhood; congenital ear deformities; vertigo and facial palsy in children
++ Inner ear and systemic disease: autoimmune inner ear disease; otolaryngology in the elderly; meatoplasty and otoplasty
+@ Rhinology, allergy and anterior skull base
++ Rhinology topics: physiology of olfaction; objective nasal function tests; non-allergic rhinitis; fungal rhinosinusitis; benign sinonasal tumours; primary and revision endoscopic sinus surgery; frontal sinus; CSF rhinorrhoea; endoscopic DCR; nasal fractures; septoplasty and rhinoplasty
+@ Laryngology and head-neck disease
++ Laryngology and voice: voice evaluation and therapy; the professional voice; benign vocal fold lesions; laryngitis; neurological disorders of the larynx; thyroplasty and laryngeal reinnervation; chronic aspiration; laryngotracheal trauma and stenosis
++ Head and neck oncology: HPV and head-neck cancer epidemiology; oral cavity, oropharynx, nasopharynx, hypopharynx and larynx cancers; early glottic cancer; conservation laryngeal surgery; total laryngectomy and voice rehabilitation; salivary gland neoplasms; neck masses; chemotherapy and targeted agents
++ Oral and dental disease: oral mucosal lesions; odontogenic cysts and tumours; TMJ disorders; reconstruction of the mandible
++ Basic sciences for ENT: molecular biology and genetics; immunology and allergy tests; HIV and otolaryngology; haemostasis; pituitary, thyroid and parathyroid; corticosteroids and drug therapy in ENT
+@ Pediatric ENT, sleep and facial plastic surgery
++ Facial plastic and trauma: aesthetic facial analysis; scar revision and keloid; facial soft-tissue injury; maxillofacial trauma; reconstruction of facial defects
++ Paediatric airway: stridor; acute laryngeal infections; congenital airway anomalies; cleft lip and palate; craniofacial anomalies; speech and language disorders
+
+== critical-care.paper
+@ Critical care organisation, quality and ethics
+! New chapter — official DrNB Critical Care Medicine curriculum, domains and competencies.
++ Transport of the critically ill: intra-hospital transport; inter-hospital ground and air transport; contagious patients; handover
++ Quality and patient safety: structure, process and outcome indicators; root-cause analysis of near misses; medication safety; audit and benchmarking; infection control
++ ICU administration: staffing, design and equipment; budgeting; outreach team; follow-up clinic; admission and discharge policies; protocols
++ Ethics and end of life: prognostic scoring systems; withholding and withdrawing life support; palliative care in ICU; communication with families
++ Medico-legal and organ donation: medical negligence and indemnity; informed consent; brain-death certification; donor management and organ transport
++ Disaster and mass casualty: triage; mass casualty management; resuscitation in obstetric and paediatric patients
+@ Perioperative critical care
+! New chapter — official DrNB Critical Care Medicine curriculum, perioperative care domain.
++ Perioperative care: high-risk surgical patient; cardiac surgery; neurosurgery; transplant surgery; thoracic surgery; trauma surgery; post-operative analgesia; DVT prophylaxis
+@ Critical care monitoring and circulatory support
+! Official DrNB Critical Care Medicine aggregated syllabus — cardiovascular system.
++ Applied cardiovascular physiology: oxygen delivery and consumption; oxygen debt; Starling curve; preload, afterload and transmural pressure; heart-lung interaction; Guytonian circulation; microcirculation; circulatory changes on ECMO and bypass
+
+== medical-oncology.paper
+@ General oncology principles
+! Official DrNB Medical Oncology curriculum — sections 1–5.
++ Hallmarks and biology of cancer: hallmarks of cancer; growth factors and signal transduction; cell cycle and apoptosis; invasion and metastasis; cancer immunology; cytogenetics
++ Etiology and epidemiology: epidemiologic methods; smoking and cancer; oncogenic viruses; chemical carcinogens; radiation; diet, obesity and physical activity
++ Population health: national cancer control plans; vaccination (HPV, HBV); chemoprevention; population screening; familial cancer syndromes and genetic counselling
++ Practice of oncology: multidisciplinary care; principles of surgical and radiation oncology; clinical pharmacology of anticancer drugs; design of clinical trials; ethics; health economics of cancer therapy
+@ Solid tumor oncology
++ Site-specific oncology: head and neck cancer (staging, organ preservation); oesophageal and gastric cancer; colon and rectal cancer; pancreatic and hepatobiliary cancer; breast cancer; gynaecological cancers; genitourinary cancers; small-cell and non-small-cell lung cancer; thymic tumours; pleural and peritoneal mesothelioma; melanoma and non-melanoma skin cancer; soft tissue sarcoma; CNS tumours; eye and orbit; endocrine cancers; cancer of unknown primary; childhood cancers
+@ Oncology emergencies and survivorship
++ Complications and support: SVC syndrome; spinal cord compression; metabolic emergencies; urological emergencies; metastatic disease of brain, lung, bone and liver; malignant effusions and ascites; infections and neutropenia; growth factors; fertility preservation
++ Supportive and palliative care: WHO pain ladder; nausea and vomiting; nutrition; treatment toxicities (cardiac, pulmonary, oral, gonadal, second cancers); psychological care; rehabilitation; survivorship; end-of-life and hospice care
+@ Modern cancer therapeutics and trial design
++ Newer therapies: immunotherapy; cancer vaccines; gene and molecular therapy; biologic response modifiers (interferons, interleukins); differentiating agents; antihormonal therapy; vascular access and drug delivery

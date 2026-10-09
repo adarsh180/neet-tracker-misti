@@ -1,0 +1,343 @@
+# NEET PG para-clinical depth: high-yield subtopics for topics that had none (NMC CBME UG scope).
+== pathology
+@ Cell injury & adaptation
++ Necrosis & apoptosis: coagulative necrosis; liquefactive necrosis; caseous necrosis; fat necrosis; fibrinoid necrosis; intrinsic vs extrinsic apoptosis; BCL-2 family and caspases
++ Cellular adaptations: hypertrophy; hyperplasia; atrophy; metaplasia (Barrett, squamous)
++ Intracellular accumulations: fatty change; cholesterol and cholesterol esters; hyaline change; glycogen; lipofuscin; haemosiderin
++ Calcification: dystrophic calcification; metastatic calcification; psammoma bodies
++ Free radical injury: reactive oxygen species; ischaemia-reperfusion injury; antioxidant defences; chemical (CCl4) injury
++ Reversible vs irreversible injury: cell swelling; mitochondrial damage; membrane damage; point of no return
++ Autophagy: mechanism; role in disease
++ Cellular ageing: telomere shortening; replicative senescence; progeria
+@ Inflammation & repair
++ Acute inflammation & mediators: vascular changes; outcomes of acute inflammation; morphological patterns (serous, fibrinous, purulent, ulcer)
++ Chronic & granulomatous inflammation: macrophages and lymphocytes; epithelioid granuloma; caseating vs non-caseating; causes of granulomas
++ Wound healing: healing by first and second intention; growth factors; keloid and hypertrophic scar; factors affecting healing
++ Leukocyte recruitment: margination and rolling (selectins); adhesion (integrins); transmigration (PECAM-1); chemotaxis; leukocyte adhesion deficiency
++ Chemical mediators: histamine and serotonin; arachidonic acid metabolites; cytokines (TNF, IL-1); complement; bradykinin; nitric oxide
++ Systemic effects of inflammation: fever; acute-phase reactants; leukocytosis; sepsis and SIRS
++ Fibrosis: TGF-β; scar remodelling; cirrhosis and pulmonary fibrosis as examples
+@ Haemodynamics
++ Oedema & thrombosis: transudate vs exudate; Virchow triad; arterial vs venous thrombi; lines of Zahn; fate of thrombus
++ Embolism & infarction: pulmonary embolism; fat embolism; amniotic fluid embolism; air embolism; red vs white infarcts
++ Shock: hypovolaemic; cardiogenic; septic; stages of shock; morphology of shock
++ Hyperaemia & congestion: nutmeg liver; heart failure cells; congestion of lung and spleen
++ DIC: triggers; consumptive coagulopathy; laboratory profile
++ Haemorrhage: petechiae, purpura and ecchymosis; haematoma
+@ Immunopathology
++ Hypersensitivity reactions: type I (anaphylaxis); type II (antibody-mediated); type III (immune complex); type IV (delayed); examples of each
++ Autoimmune diseases: mechanisms of tolerance loss; autoantibodies (ANA, anti-dsDNA, anti-CCP); organ-specific vs systemic
++ Amyloidosis: AL and AA amyloid; Congo red with apple-green birefringence; organ involvement; dialysis-related and familial amyloid
++ Transplant rejection: hyperacute; acute cellular and humoral; chronic rejection
++ Immunodeficiency: Bruton agammaglobulinaemia; DiGeorge syndrome; SCID; Wiskott-Aldrich; common variable immunodeficiency
++ MHC & HLA: class I and II; HLA disease associations (B27, DR3, DR4)
++ Graft-versus-host disease: acute and chronic GVHD; target organs
++ AIDS pathology: HIV life cycle; CD4 depletion; opportunistic infections; AIDS-related tumours
++ SLE pathology: lupus nephritis classes; LE cells; libman-Sacks endocarditis; skin lesions
+@ Neoplasia
++ Hallmarks & oncogenes: hallmarks of cancer; RAS; MYC; growth factor receptor genes (HER2, EGFR); translocations (BCR-ABL)
++ Tumour suppressors: RB gene; TP53; APC; BRCA1 and BRCA2; Knudson two-hit hypothesis
++ Carcinogenesis: chemical carcinogens; radiation carcinogenesis; multistep carcinogenesis; field effect
++ Paraneoplastic syndromes: hypercalcaemia; Cushing syndrome; SIADH; polycythaemia; Lambert-Eaton syndrome; Trousseau sign
++ Grading, staging & markers: TNM staging; grading by differentiation; AFP, CEA, CA-125, PSA, beta-hCG
++ Tumour spread & metastasis: local invasion; lymphatic spread; haematogenous spread; seeding of body cavities
++ Tumour immunity: tumour antigens; immune evasion; immune checkpoints
++ Viral carcinogenesis: HPV; EBV; HBV and HCV; HTLV-1; KSHV/HHV-8
++ Molecular diagnosis of cancer: immunohistochemistry; FISH; PCR; next-generation sequencing; liquid biopsy
++ Epidemiology of cancer: incidence in India; age and environmental factors; precancerous conditions
+@ Haematology
++ Anaemias: classification by MCV; peripheral smear; reticulocyte count; anaemia of chronic disease
++ Haemolytic anaemias: hereditary spherocytosis; G6PD deficiency; autoimmune haemolytic anaemia; PNH; microangiopathic haemolysis
++ Bleeding disorders: platelet vs coagulation disorders; ITP; haemophilia A and B; von Willebrand disease; PT, aPTT and bleeding time
++ Plasma cell dyscrasias: multiple myeloma; M spike; Bence Jones protein; MGUS; Waldenström macroglobulinaemia
++ Iron deficiency & ACD: iron studies; ferritin and TIBC; microcytic hypochromic smear
++ Megaloblastic anaemia: B12 vs folate deficiency; hypersegmented neutrophils; pernicious anaemia
++ Thalassaemia & sickle cell: beta-thalassaemia major and trait; HbA2 and HPLC; sickle cell crisis; target cells
++ Myeloproliferative neoplasms: CML; polycythaemia vera; essential thrombocythaemia; myelofibrosis; JAK2 mutation
++ Hodgkin lymphoma: Reed-Sternberg cells; subtypes; staging; CD15 and CD30
+@ CVS & respiratory pathology
++ Atherosclerosis & IHD: pathogenesis; plaque morphology; myocardial infarction timeline; complications of MI
++ Rheumatic & infective endocarditis: Aschoff bodies; MacCallum plaques; vegetations; Jones criteria
++ Lung tumours: adenocarcinoma; squamous cell carcinoma; small cell carcinoma; carcinoid; mesothelioma
++ Pneumonias & TB: lobar vs bronchopneumonia; stages of lobar pneumonia; primary vs secondary TB; Ghon complex
++ Obstructive & restrictive disease: emphysema types; chronic bronchitis; asthma pathology; interstitial lung disease
++ Cardiomyopathies: dilated; hypertrophic; restrictive; myocarditis
++ Congenital heart disease: ASD; VSD; PDA; tetralogy of Fallot; coarctation
++ Vasculitis: large, medium and small vessel vasculitis; giant cell arteritis; Takayasu; PAN; Kawasaki; ANCA-associated vasculitis
++ Bronchiectasis: causes; morphology; cystic fibrosis; Kartagener syndrome
++ Pneumoconioses: coal workers pneumoconiosis; silicosis; asbestosis; berylliosis
+@ GI & hepatobiliary
++ Oesophagus & stomach: Barrett oesophagus; achalasia; oesophageal carcinoma; gastritis; peptic ulcer
++ IBD & colorectal neoplasia: Crohn disease vs ulcerative colitis; adenoma-carcinoma sequence; colorectal carcinoma
++ Hepatitis & cirrhosis: viral hepatitis morphology; chronic hepatitis grading; cirrhosis types; portal hypertension
++ Liver tumours: hepatocellular carcinoma; hepatic adenoma; haemangioma; metastases
++ Pancreas: acute pancreatitis; chronic pancreatitis; pancreatic adenocarcinoma; neuroendocrine tumours
++ Coeliac disease: villous atrophy; anti-tTG antibodies; dermatitis herpetiformis
++ Gastric tumours: gastric adenocarcinoma (Lauren types); MALT lymphoma; GIST; Krukenberg tumour
++ Polyps & polyposis: hyperplastic and hamartomatous polyps; FAP; Peutz-Jeghers; Lynch syndrome
++ Alcoholic liver disease: steatosis; alcoholic hepatitis and Mallory bodies; cirrhosis
++ Gallbladder pathology: cholelithiasis; cholecystitis; gallbladder carcinoma
+@ Renal & genitourinary
++ Glomerulonephritis: post-streptococcal GN; RPGN types; IgA nephropathy; immunofluorescence patterns
++ Nephrotic syndrome: minimal change disease; FSGS; membranous nephropathy; MPGN; diabetic nephropathy
++ Renal tumours: renal cell carcinoma subtypes; Wilms tumour; oncocytoma
++ Testis & prostate: seminoma and non-seminomatous germ cell tumours; BPH; prostatic adenocarcinoma and Gleason score
++ Bladder tumours: urothelial carcinoma; carcinoma in situ; squamous carcinoma with schistosomiasis
++ Acute tubular necrosis: ischaemic vs toxic ATN; phases
++ Cystic kidney diseases: ADPKD; ARPKD; medullary sponge kidney
++ Pyelonephritis: acute and chronic pyelonephritis; reflux nephropathy; xanthogranulomatous pyelonephritis
++ Urolithiasis pathology: calcium oxalate; struvite; uric acid; cystine stones
+@ Other systems
++ Breast pathology: fibroadenoma; fibrocystic change; ductal and lobular carcinoma; phyllodes tumour; receptor status
++ Female genital tract: CIN and cervical carcinoma; endometrial hyperplasia and carcinoma; ovarian tumours (surface, germ cell, sex cord); leiomyoma
++ Endocrine pathology: pituitary adenoma; adrenal tumours (pheochromocytoma); MEN syndromes; diabetes pathology
++ Bone & soft tissue tumours: osteosarcoma; Ewing sarcoma; giant cell tumour; osteochondroma; chondrosarcoma
++ CNS tumours: glioblastoma; meningioma; medulloblastoma; schwannoma; WHO grading
++ Skin pathology: basal cell carcinoma; squamous cell carcinoma; melanoma; naevi; psoriasis histology
++ Thyroid pathology: Hashimoto thyroiditis; Graves disease; papillary carcinoma (Orphan Annie nuclei); follicular, medullary and anaplastic carcinoma
++ Bone pathology: osteomyelitis; osteoporosis; Paget disease; rickets and osteomalacia
++ Lymph node pathology: reactive hyperplasia; non-Hodgkin lymphoma classification; tuberculous lymphadenitis
++ Soft tissue tumours: lipoma and liposarcoma; rhabdomyosarcoma; synovial sarcoma
+
+== pharmacology
+@ General pharmacology
++ Pharmacokinetics: absorption; distribution and volume of distribution; metabolism (phase I, phase II, CYP450); excretion; first-order vs zero-order kinetics
++ Pharmacodynamics & receptors: receptor types; agonists, antagonists and inverse agonists; spare receptors; second messengers
++ Drug interactions: pharmacokinetic interactions; pharmacodynamic interactions; enzyme inducers and inhibitors
++ Routes of administration: oral; parenteral routes; transdermal; inhalational; novel drug delivery
++ Bioavailability & half-life: first-pass metabolism; loading and maintenance dose; steady state; clearance
++ Dose-response & therapeutic index: graded and quantal dose-response; potency vs efficacy; ED50 and LD50; therapeutic window
++ Pharmacogenetics: acetylator status; G6PD deficiency; pseudocholinesterase deficiency; CYP2C19 and CYP2D6 polymorphisms; HLA-B*5701
++ Drug development: preclinical studies; phases of clinical trials; orphan drugs; essential medicines
+@ Autonomic
++ Cholinergic & anticholinergic: direct and indirect cholinergic agonists; organophosphate poisoning and pralidoxime; atropine and its uses; anticholinergic toxicity
++ Adrenergic agonists: adrenaline in anaphylaxis; noradrenaline; dopamine and dobutamine; beta-2 agonists; alpha-2 agonists
++ Alpha & beta blockers: prazosin and tamsulosin; phenoxybenzamine; selective vs non-selective beta blockers; beta blockers with ISA; adverse effects
++ Ganglionic blockers: hexamethonium; trimethaphan; nicotine
++ Skeletal muscle relaxants: depolarising (succinylcholine); non-depolarising (rocuronium, vecuronium); reversal (neostigmine, sugammadex); centrally acting relaxants; dantrolene
++ Drugs for glaucoma: prostaglandin analogues; beta blockers (timolol); carbonic anhydrase inhibitors; alpha agonists; miotics
++ Myasthenia gravis treatment: pyridostigmine; edrophonium test; immunosuppression; myasthenic vs cholinergic crisis
+@ Cardiovascular & renal
++ Antihypertensives: ACE inhibitors and ARBs; calcium channel blockers; thiazides; beta blockers; hypertensive emergency drugs
++ Antianginals: nitrates and tolerance; beta blockers; calcium channel blockers; ranolazine; nicorandil; ivabradine
++ Heart failure drugs: ARNI (sacubitril-valsartan); beta blockers in HF; spironolactone; SGLT2 inhibitors; digoxin and its toxicity
++ Antiarrhythmics: class I to IV; amiodarone; adenosine; drug-induced QT prolongation
++ Diuretics: loop diuretics; thiazides; potassium-sparing diuretics; carbonic anhydrase inhibitors; osmotic diuretics
++ Lipid-lowering drugs: statins; ezetimibe; fibrates; PCSK9 inhibitors; niacin; statin myopathy
++ Shock & vasopressors: noradrenaline; vasopressin; dopamine; inotropes
++ Pulmonary hypertension drugs: endothelin antagonists; PDE-5 inhibitors; prostacyclin analogues
++ Drugs in pregnancy hypertension: labetalol; nifedipine; methyldopa; magnesium sulphate
+@ CNS
++ Sedatives & hypnotics: benzodiazepines; Z-drugs; barbiturates; flumazenil
++ Antiepileptics: phenytoin; valproate; carbamazepine; lamotrigine and levetiracetam; drugs in status epilepticus; antiepileptics in pregnancy
++ Antipsychotics: typical vs atypical; extrapyramidal side effects; neuroleptic malignant syndrome; clozapine and agranulocytosis
++ Antidepressants & mood stabilisers: SSRIs; TCAs; MAO inhibitors; serotonin syndrome; lithium and its toxicity
++ Opioids: morphine; opioid receptors; opioid poisoning and naloxone; tramadol, fentanyl and methadone
++ Anti-parkinsonian drugs: levodopa-carbidopa; dopamine agonists; MAO-B inhibitors; COMT inhibitors; anticholinergics
++ General & local anaesthetics: inhalational agents and MAC; intravenous induction agents (propofol, ketamine); local anaesthetics and toxicity; adrenaline with LA
++ Drugs for dementia: donepezil; rivastigmine; memantine
++ Alcohol & disulfiram: alcohol pharmacokinetics; disulfiram reaction; acamprosate and naltrexone; methanol poisoning and fomepizole
++ CNS stimulants: amphetamine; methylphenidate; caffeine; modafinil
++ Drug dependence: tolerance and withdrawal; opioid substitution; nicotine replacement
+@ Autacoids & respiratory
++ NSAIDs: COX-1 vs COX-2; aspirin and Reye syndrome; paracetamol poisoning and N-acetylcysteine; NSAID adverse effects
++ Antihistamines: first vs second generation; H2 blockers
++ Asthma & COPD drugs: beta-2 agonists; inhaled corticosteroids; LAMA; montelukast; theophylline; biologics (omalizumab)
++ Gout & RA drugs: colchicine; allopurinol and febuxostat; uricosurics; methotrexate; DMARDs and biologics
++ Serotonin & 5-HT drugs: 5-HT receptors; ondansetron; buspirone; ergot alkaloids
++ Migraine drugs: triptans; prophylaxis (propranolol, flunarizine, topiramate); CGRP antagonists
++ Prostaglandin analogues: misoprostol; latanoprost; alprostadil; dinoprostone
++ Drugs for cough: antitussives (codeine, dextromethorphan); expectorants; mucolytics
+@ Endocrine
++ Insulin & oral antidiabetics: insulin types; metformin; sulfonylureas; DPP-4 inhibitors; thiazolidinediones; hypoglycaemia
++ Thyroid drugs: levothyroxine; carbimazole and propylthiouracil; radioactive iodine; thyroid storm treatment
++ Corticosteroids: glucocorticoid actions; relative potencies; adverse effects; steroid withdrawal
++ Sex hormones & contraceptives: combined oral contraceptives; progestin-only pills; emergency contraception; SERMs; anti-androgens
++ Bone mineral drugs: bisphosphonates; denosumab; teriparatide; calcitriol
++ Oxytocics & tocolytics: oxytocin; methylergometrine; carboprost; nifedipine and atosiban as tocolytics
++ Drugs for infertility: clomiphene; letrozole; gonadotropins
++ Pituitary hormones: GnRH analogues; somatostatin and octreotide; vasopressin and desmopressin
++ SGLT2 & GLP-1 drugs: empagliflozin and dapagliflozin; liraglutide and semaglutide; cardiorenal benefits
+@ Chemotherapy
++ Beta-lactams: penicillins; cephalosporin generations; carbapenems; beta-lactamase inhibitors; penicillin allergy
++ Aminoglycosides & macrolides: aminoglycoside toxicity; once-daily dosing; macrolides and QT; azithromycin uses
++ Fluoroquinolones & others: fluoroquinolone adverse effects; nitrofurantoin; metronidazole; clindamycin
++ Anti-tubercular & anti-leprosy: first-line ATT and adverse effects; MDR-TB drugs (bedaquiline, delamanid); NTEP regimens; dapsone, rifampicin and clofazimine (MDT)
++ Antifungals: amphotericin B; azoles; echinocandins; griseofulvin and terbinafine
++ Antivirals & ART: acyclovir and ganciclovir; oseltamivir; NRTIs, NNRTIs, PIs and integrase inhibitors; PEP and PrEP; hepatitis B and C antivirals
++ Antimalarials & anthelminthics: chloroquine; artemisinin combination therapy; primaquine; albendazole; ivermectin; praziquantel
++ Antibiotic mechanisms & resistance: cell-wall, protein-synthesis and DNA inhibitors; resistance mechanisms; antimicrobial stewardship
++ Glycopeptides & oxazolidinones: vancomycin and red man syndrome; teicoplanin; linezolid
++ Tetracyclines & chloramphenicol: doxycycline uses; tetracycline adverse effects; grey baby syndrome
++ Sulfonamides: cotrimoxazole; sulfonamide adverse effects
++ Anti-leishmanial & anti-amoebic: miltefosine; liposomal amphotericin; metronidazole and diloxanide
+@ Anticancer & immunomodulators
++ Targeted therapy & monoclonals: imatinib; EGFR inhibitors; trastuzumab; rituximab; bevacizumab
++ Immunosuppressants: calcineurin inhibitors; mTOR inhibitors; mycophenolate; azathioprine
++ Chemotherapy toxicities: myelosuppression; cardiotoxicity (doxorubicin); pulmonary toxicity (bleomycin); haemorrhagic cystitis and mesna; nephrotoxicity (cisplatin)
++ Hormonal anticancer drugs: tamoxifen; aromatase inhibitors; GnRH analogues; anti-androgens
++ Immune checkpoint inhibitors: PD-1 and PD-L1 inhibitors; CTLA-4 inhibitors; immune-related adverse events
+@ Blood & GI
++ Anticoagulants & antiplatelets: heparin and LMWH; warfarin and INR; DOACs; aspirin, clopidogrel and ticagrelor; reversal agents
++ Fibrinolytics: streptokinase; alteplase and tenecteplase; tranexamic acid
++ Haematinics: oral and parenteral iron; vitamin B12 and folic acid; erythropoietin
++ Peptic ulcer drugs: proton pump inhibitors; H2 blockers; H. pylori regimens; antacids and sucralfate
++ Antiemetics & laxatives: ondansetron; metoclopramide and domperidone; aprepitant; osmotic and stimulant laxatives
++ Plasma expanders: crystalloids vs colloids; albumin; dextran and hydroxyethyl starch
++ Drugs for IBD: 5-ASA compounds; steroids; thiopurines; anti-TNF agents
++ Drugs for haemostasis: vitamin K; tranexamic acid; desmopressin; fresh frozen plasma and clotting factors
++ Drugs for diarrhoea: ORS; loperamide; racecadotril; zinc supplementation
+
+== microbiology
+@ General microbiology
++ Sterilisation & disinfection: autoclave; hot air oven; filtration; ionising radiation; chemical disinfectants; spaulding classification
++ Bacterial growth curve: lag, log, stationary and decline phases; generation time
++ Microscopy & stains: Gram stain; Ziehl-Neelsen stain; Albert stain; dark-ground and fluorescence microscopy
++ Bacterial toxins: exotoxins vs endotoxins; AB toxins; superantigens
++ Normal flora: skin, gut and vaginal flora; role in disease
+@ Immunology
++ Innate & adaptive immunity: physical barriers; phagocytes and NK cells; humoral and cell-mediated immunity
++ Antigen-antibody reactions: precipitation; agglutination; ELISA; immunofluorescence; western blot
++ Complement: classical, alternative and lectin pathways; complement deficiencies
++ Hypersensitivity & immunodeficiency: types I–IV hypersensitivity; primary and secondary immunodeficiency
++ Vaccines: live attenuated vs killed; toxoids; subunit and conjugate vaccines; cold chain; national schedule
++ MHC & antigen presentation: MHC class I and II; antigen processing; T-cell activation
++ Cytokines: interleukins; interferons; TNF; colony-stimulating factors
++ Transplant & tumour immunology: graft rejection; HLA typing; tumour antigens; immune surveillance
++ Immunoglobulin classes: IgG, IgA, IgM, IgE and IgD; structure and functions
+@ Gram-positive bacteria
++ Staphylococcus: coagulase test; toxins (TSST, enterotoxin); MRSA; Staph. epidermidis and saprophyticus
++ Streptococcus & pneumococcus: Lancefield grouping; Strep. pyogenes and post-streptococcal sequelae; Strep. agalactiae; pneumococcus (optochin, bile solubility)
++ Clostridium: Cl. tetani; Cl. botulinum; Cl. perfringens (gas gangrene); Cl. difficile
++ Corynebacterium & Bacillus: diphtheria toxin and Elek test; Bacillus anthracis; Bacillus cereus food poisoning
++ Enterococcus: vancomycin-resistant enterococcus; urinary and endocarditis infections
++ Listeria: tumbling motility; neonatal and pregnancy infection
++ Actinomyces & Nocardia: sulphur granules; acid-fast Nocardia; mycetoma
+@ Gram-negative bacteria
++ Enterobacteriaceae: E. coli pathotypes; Klebsiella; Proteus; lactose fermentation
++ Vibrio: cholera toxin; El Tor vs classical; TCBS agar
++ Pseudomonas: pigments; nosocomial infections; multidrug resistance
++ Neisseria: meningococcus; gonococcus; oxidase test
++ Haemophilus & Bordetella: H. influenzae type b; satellitism; whooping cough
++ Salmonella: typhoid fever; Widal test; blood and stool culture; carrier state
++ Shigella: bacillary dysentery; Shiga toxin
++ Brucella: undulant fever; zoonotic transmission
++ Campylobacter & H. pylori: Campylobacter and Guillain-Barré; H. pylori urease tests; peptic ulcer and gastric cancer
+@ Mycobacteria, spirochaetes & others
++ Mycobacterium tuberculosis: ZN staining; culture (LJ medium, MGIT); CBNAAT/GeneXpert; IGRA and Mantoux
++ Leprosy: lepromatous vs tuberculoid; slit-skin smear; lepromin test
++ Syphilis & Leptospira: stages of syphilis; VDRL and TPHA; Weil disease
++ Rickettsia & Chlamydia: scrub typhus and eschar; Weil-Felix test; Chlamydia trachomatis; trachoma
++ Atypical mycobacteria: Runyon classification; MAC in HIV
++ Borrelia: Lyme disease; relapsing fever
++ Mycoplasma: atypical pneumonia; cold agglutinins
+@ Virology
++ Herpesviruses: HSV-1 and 2; VZV; CMV; EBV; HHV-8
++ Hepatitis viruses: HAV and HEV; HBV serological markers; HCV; HDV
++ HIV: structure and replication; window period; ELISA and western blot; viral load and CD4 count
++ Respiratory viruses: influenza (antigenic drift and shift); RSV; measles and mumps; rubella
++ Arboviruses: dengue; chikungunya; Japanese encephalitis; KFD
++ Rabies & polio: Negri bodies; post-exposure prophylaxis; polio vaccines (OPV, IPV); AFP surveillance
++ Picornaviruses: enteroviruses; coxsackie; rhinovirus
++ Rotavirus & enteric viruses: rotavirus diarrhoea and vaccine; norovirus
++ Oncogenic viruses: HPV; EBV; HBV; HTLV-1
++ COVID-19 & coronaviruses: SARS-CoV-2; RT-PCR and antigen tests; variants; vaccines
++ Prions: CJD; kuru; prion properties
+@ Mycology
++ Superficial & subcutaneous mycoses: tinea; pityriasis versicolor; mycetoma; sporotrichosis; chromoblastomycosis
++ Systemic mycoses: histoplasmosis; blastomycosis; coccidioidomycosis; paracoccidioidomycosis
++ Candida: germ tube test; mucocutaneous and invasive candidiasis; Candida auris
++ Aspergillus & Mucor: aspergilloma and ABPA; invasive aspergillosis; mucormycosis and diabetes
++ Cryptococcus: India ink; capsule; cryptococcal meningitis
++ Dermatophytes: Trichophyton, Microsporum and Epidermophyton; KOH mount
+@ Parasitology
++ Malaria: life cycle; P. falciparum vs vivax; peripheral smear; rapid diagnostic tests
++ Amoebae & flagellates: Entamoeba histolytica; Giardia; Trichomonas
++ Cestodes & trematodes: Taenia solium and neurocysticercosis; Echinococcus (hydatid cyst); Schistosoma
++ Nematodes: Ascaris; hookworm; Strongyloides; Enterobius; Trichuris
++ Leishmania: kala-azar; LD bodies; PKDL
++ Toxoplasma: congenital toxoplasmosis; toxoplasmosis in HIV
++ Trypanosoma: sleeping sickness; Chagas disease
++ Filaria: Wuchereria bancrofti; Brugia; nocturnal periodicity; DEC
+@ Applied microbiology
++ Hospital infection control: hand hygiene; standard and transmission precautions; HAI surveillance (CAUTI, CLABSI, VAP)
++ Biomedical waste: colour coding; BMW Rules 2016; sharps disposal
++ Infective syndromes approach: fever with rash; pyrexia of unknown origin; sepsis
++ Specimen collection: blood culture technique; urine collection; CSF transport
++ Diarrhoea & food poisoning: bacterial causes; viral causes; preformed toxin food poisoning
++ Meningitis approach: CSF findings in bacterial, viral, TB and fungal meningitis
++ UTI approach: significant bacteriuria; urine culture; common organisms
++ Zoonoses: anthrax; plague; leptospirosis; rabies; brucellosis
+
+== obg
+@ Anatomy & physiology
++ Female pelvis & genitalia: pelvic types; pelvic diameters; uterine supports; blood supply and lymphatics
++ Menstrual cycle: HPO axis; follicular and luteal phases; endometrial changes
++ Physiology of pregnancy: cardiovascular changes; haematological changes; renal and respiratory changes; endocrine changes
++ Fetal skull: sutures and fontanelles; diameters; moulding
++ Placenta & amniotic fluid: placental development and functions; placental abnormalities; oligohydramnios and polyhydramnios
++ Fetal circulation: shunts; changes at birth
+@ Antenatal care
++ Diagnosis of pregnancy: symptoms and signs; urine and serum hCG; ultrasound confirmation
++ Antenatal screening: booking investigations; screening schedule; danger signs
++ Prenatal diagnosis: dual and quadruple marker; NIPT; CVS and amniocentesis
++ Fetal monitoring & NST: kick count; NST; biophysical profile; Doppler
++ Ultrasound in obstetrics: dating scan; NT scan; anomaly scan; growth scans
++ IUGR: symmetric vs asymmetric; causes; Doppler surveillance; timing of delivery
+@ Labour
++ Normal labour: stages of labour; mechanism of labour; active management of third stage
++ Abnormal labour & malpresentations: occipito-posterior position; face and brow presentation; obstructed labour; prolonged labour
++ Operative obstetrics: forceps; vacuum; caesarean section; episiotomy
++ Puerperium: normal puerperium; puerperal sepsis; lactation
++ Partograph: alert and action lines; WHO labour care guide
++ Induction of labour: Bishop score; prostaglandins; oxytocin; mechanical methods
++ Breech & transverse lie: types of breech; assisted breech delivery; ECV
++ Shoulder dystocia: risk factors; HELPERR manoeuvres
++ Caesarean section: indications; techniques; VBAC
+@ Complications of pregnancy
++ Antepartum haemorrhage: placenta praevia; abruptio placentae; vasa praevia
++ Postpartum haemorrhage: four Ts; uterotonics; surgical steps; balloon tamponade
++ Preterm labour & PROM: tocolysis; antenatal corticosteroids; magnesium for neuroprotection; PPROM management
++ Multiple pregnancy: chorionicity; TTTS; delivery of twins
++ Rh isoimmunisation: anti-D prophylaxis; Kleihauer test; fetal anaemia and MCA Doppler
++ Eclampsia management: magnesium sulphate regimen; antihypertensives; delivery planning
++ Obstetric shock: hypovolaemic; septic; inversion of uterus; amniotic fluid embolism
++ Post-term pregnancy: definition; induction; fetal risks
++ Intrauterine fetal death: causes; diagnosis; management
+@ Medical disorders in pregnancy
++ Diabetes in pregnancy: GDM screening (DIPSI, OGTT); insulin and metformin; fetal complications
++ Anaemia: iron deficiency in pregnancy; parenteral iron; national guidelines
++ Heart disease: NYHA in pregnancy; rheumatic heart disease; management in labour
++ Infections: TORCH; malaria in pregnancy; urinary tract infection; GBS
++ Thyroid disease in pregnancy: hypothyroidism; hyperthyroidism
++ Jaundice in pregnancy: intrahepatic cholestasis of pregnancy; acute fatty liver; HELLP syndrome; viral hepatitis
++ Drugs in pregnancy: teratogens; FDA categories; safe drugs
++ HIV in pregnancy: PPTCT; ART in pregnancy; infant prophylaxis
+@ Early pregnancy
++ Abortion: types of abortion; septic abortion; medical vs surgical evacuation
++ Ectopic pregnancy: sites; diagnosis (beta-hCG, TVS); methotrexate; surgical management
++ Gestational trophoblastic disease: complete vs partial mole; invasive mole; choriocarcinoma; follow-up with hCG
++ Recurrent pregnancy loss: causes; APS; cervical incompetence and cerclage
++ MTP Act: 2021 amendments; gestational limits; consent
++ Hyperemesis gravidarum: Wernicke encephalopathy risk; management
+@ Gynaecology
++ Menstrual disorders & AUB: PALM-COEIN; menorrhagia; dysmenorrhoea
++ PCOS & infertility: Rotterdam criteria; ovulation induction; male factor infertility
++ Contraception: IUCD; combined pills; injectables; sterilisation
++ Menopause: symptoms; HRT; osteoporosis
++ Genital tract infections: bacterial vaginosis; candidiasis; trichomoniasis; PID; genital TB
++ Pelvic organ prolapse: POP-Q; pessaries; vaginal hysterectomy and repair
++ Amenorrhoea: primary vs secondary; MRKH; Turner syndrome; Sheehan syndrome; Asherman syndrome
++ Endometriosis: sites; chocolate cyst; medical vs surgical management
++ Urinary incontinence: stress vs urge incontinence; urodynamics; surgery
++ Genital fistulae: VVF causes and repair; RVF
++ Intersex & DSD: CAH; AIS; Turner and Klinefelter
+@ Gynaecological oncology
++ Cervical cancer & screening: Pap smear and VIA; HPV testing; FIGO staging; Wertheim hysterectomy and chemoradiation
++ Endometrial cancer: risk factors; types I and II; FIGO staging
++ Ovarian tumours: epithelial, germ cell and sex cord tumours; tumour markers; RMI
++ Fibroids: types; complications; myomectomy and hysterectomy; medical therapy
++ CIN & HPV vaccination: CIN grading; colposcopy; LEEP; HPV vaccines
++ Vulval cancer: VIN; squamous carcinoma; radical vulvectomy
++ Ovarian cancer staging: FIGO staging; cytoreduction; chemotherapy
++ Gynaecological surgeries: abdominal and vaginal hysterectomy; laparoscopy; hysteroscopy

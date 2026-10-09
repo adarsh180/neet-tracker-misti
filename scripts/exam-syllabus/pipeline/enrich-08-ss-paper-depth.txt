@@ -1,0 +1,491 @@
+# NEET-SS paper subjects: subtopics for topics carried over without detail (PG-exit depth).
+== medical.paper
+@ Heart failure and cardiomyopathy
++ Arrhythmias: atrial fibrillation and flutter; SVT and pre-excitation; ventricular tachycardia; bradyarrhythmias and blocks; antiarrhythmic choice
++ Valvular disease: rheumatic mitral stenosis; mitral regurgitation; aortic stenosis; aortic regurgitation; timing of intervention
++ Infective endocarditis: Duke criteria; microbiology by setting; antibiotic regimens; surgical indications
++ Hypertension & emergencies: secondary hypertension; resistant hypertension; hypertensive emergency drugs; target-organ damage
++ ECG interpretation: axis and intervals; ischaemia patterns; electrolyte effects; chamber enlargement
+@ Obstructive airway disease
++ Pleural effusion: Light criteria; ADA and cytology; malignant effusion and pleurodesis; empyema drainage
++ Sleep apnoea: polysomnography; CPAP titration; obesity hypoventilation
+@ Interstitial, vascular and occupational lung disease
++ Pulmonary vascular disease: pulmonary embolism; pulmonary hypertension groups; CTEPH
+@ Hepatology and liver failure
++ Cirrhosis complications: ascites and SBP; variceal bleeding; hepatic encephalopathy; hepatorenal syndrome; HCC surveillance
+@ Acute and chronic kidney disease
++ Hyponatraemia & hyperkalaemia: hypotonic hyponatraemia work-up; SIADH; correction limits; hyperkalaemia emergency treatment
+@ Diabetes and metabolic disease
++ Endocrine emergencies: DKA; HHS; thyroid storm; myxoedema coma; adrenal crisis; hypercalcaemic crisis
++ Lipid disorders: familial hypercholesterolaemia; hypertriglyceridaemia; statin intensity; LDL targets
++ Obesity: assessment; pharmacotherapy; bariatric surgery indications
+@ Adrenal, reproductive and bone endocrinology
++ Adrenal & pituitary: Cushing syndrome; primary aldosteronism; pheochromocytoma; adrenal insufficiency; pituitary tumours
+@ Hematopoiesis and laboratory hematology
++ Transfusion medicine: component therapy; transfusion reactions; massive transfusion
+@ Anemia, hemostasis and thrombosis
++ Haematological malignancy: acute leukaemias; chronic leukaemias; lymphomas; myeloma
++ Thrombosis & anticoagulation: VTE management; DOACs; heparin-induced thrombocytopenia; antiphospholipid syndrome
++ Myeloproliferative neoplasms: polycythaemia vera; essential thrombocythaemia; myelofibrosis; JAK2, CALR and MPL
+@ Rheumatology and clinical immunology
++ Arthritides: inflammatory vs mechanical arthritis; synovial fluid analysis; RA; spondyloarthritis
++ Gout & crystal disease: acute gout; urate-lowering therapy; CPPD
+@ Infectious diseases and antimicrobial stewardship
++ Tropical infections: malaria; dengue; scrub typhus; leptospirosis; kala-azar
++ Antimicrobial therapy: empirical therapy; de-escalation; antibiotic resistance
++ Vaccination: adult immunisation schedule; vaccines in immunocompromised
++ Fever of unknown origin: classic, nosocomial, neutropenic and HIV-associated PUO; diagnostic approach
+@ Chronic neurological disease
++ Headache: primary headaches; secondary headache red flags; IIH
++ CNS infections: bacterial meningitis; TB meningitis; viral encephalitis; brain abscess
+@ Toxicology, emergency and intensive medicine
++ Ventilation: invasive ventilation modes; NIV; weaning
++ ARDS: Berlin definition; low tidal volume; prone ventilation; ECMO
++ Snake bite & envenomation: neurotoxic and haemotoxic envenomation; ASV dosing; anaphylaxis to ASV
++ Organophosphate poisoning: atropinisation; pralidoxime; intermediate syndrome
+@ Geriatrics and palliative care
++ Drug therapy: prescribing in elderly; Beers criteria; deprescribing
+@ General oncology principles
++ Solid tumours: lung; breast; colorectal; prostate; head and neck
++ Chemotherapy toxicity: myelosuppression; mucositis; cardiotoxicity; neuropathy
++ Tumour markers: AFP; CEA; CA-125; PSA; beta-hCG
+
+== surgical.paper
+@ Operative principles and perioperative care
++ Wound healing: phases; factors affecting healing; abnormal scars
++ Shock & fluids: classes of shock; resuscitation fluids; endpoints
++ Fluid & nutrition: maintenance fluids; enteral vs parenteral nutrition; refeeding syndrome
++ Haemorrhage & transfusion: classification of haemorrhage; massive transfusion; coagulopathy of trauma
+@ Trauma, shock and acute surgical care
++ Abdominal & chest trauma: FAST and DPL; solid organ injury; tension pneumothorax; cardiac tamponade
++ ATLS primary survey: ABCDE; adjuncts; secondary survey
++ Burns assessment: rule of nines; depth; Parkland formula; inhalation injury
+@ Esophagogastric, intestinal and colorectal surgery
++ Oesophagus: achalasia; GERD and hiatal hernia; carcinoma oesophagus
++ Stomach: peptic ulcer complications; gastric outlet obstruction
++ Gastric cancer: staging; D2 gastrectomy; perioperative chemotherapy
++ Oesophageal disorders: corrosive injury; perforation; diverticula
++ Intestinal obstruction: causes; imaging; conservative vs operative management
+@ Hepatopancreatobiliary surgery
++ Gall bladder: acute cholecystitis; gallbladder carcinoma
++ Gallstones: types; complications; cholecystectomy
++ Obstructive jaundice: work-up; ERCP; periampullary tumours
++ Liver abscess: amoebic vs pyogenic; aspiration and drainage
+@ Breast, endocrine and soft-tissue surgery
++ Salivary glands: sialadenitis; sialolithiasis
++ Thyroid swellings: solitary nodule; multinodular goitre; FNAC
++ Salivary tumours: pleomorphic adenoma; mucoepidermoid carcinoma; parotidectomy
++ Neck lumps: congenital neck swellings; lymphadenopathy; occult primary
++ Breast cancer: staging; breast-conserving surgery; sentinel node; adjuvant therapy
++ Breast lumps: triple assessment; fibroadenoma
++ Benign breast disease: ANDI; mastalgia; breast abscess
+@ Urological and pelvic surgery
++ Urological cancers: renal cell carcinoma; bladder cancer; prostate cancer; testicular tumours
++ Urolithiasis: metabolic evaluation; ESWL; PCNL; URS
++ BPH: medical therapy; TURP; HoLEP
++ Renal tumours: RCC staging; partial vs radical nephrectomy
++ Scrotal swellings: hydrocele; varicocele; torsion; epididymo-orchitis
+@ General pediatric surgical disease
++ Grafts & flaps: split vs full-thickness grafts; flap classification
++ Skin grafts & flaps: graft take; donor site care
++ Cleft lip: classification; repair timing
+@ Surgical oncology techniques
++ Surgical oncology principles: margins; en bloc resection; lymphadenectomy
++ Cancer staging: TNM; clinical vs pathological staging
++ Sentinel node biopsy: technique; indications; false-negative rate
+@ Hernia & abdominal wall
++ Groin hernia: inguinal vs femoral; differential diagnosis
++ Ventral hernia: incisional hernia; component separation
++ Inguinal hernia: Lichtenstein; TEP and TAPP; recurrence
++ Mesh repair: mesh types; mesh infection
+
+== orthopaedics.paper
+@ Fractures, trauma and fixation
++ Fracture healing: primary vs secondary healing; delayed and non-union
++ Hip fractures: intracapsular vs extracapsular; hemiarthroplasty; DHS and PFN
++ Polytrauma: damage control orthopaedics; early total care
++ Nerve injuries: Seddon classification; nerve repair; tendon transfers
+@ Joint reconstruction and arthritis
++ Rheumatoid hand: deformities; surgical options
++ Hip & knee replacement: indications; complications; implant choices
+@ Spine and neural orthopaedics
++ Spinal injuries: classification; spinal shock; stabilisation
++ Disc prolapse: clinical features; MRI; discectomy
++ Lumbar canal stenosis: neurogenic claudication; decompression
++ Disc herniation surgery: microdiscectomy; endoscopic discectomy
++ Adolescent idiopathic scoliosis: Cobb angle; bracing; fusion
++ Kyphosis: Scheuermann; post-tubercular kyphosis
++ Spondylolisthesis: Meyerding grading; fusion
++ Thoracolumbar injury classification: TLICS; AO spine classification
++ Cervical spine injury: NEXUS and Canadian rules; immobilisation
++ Spinal cord injury care: ASIA scale; bladder and bowel care; rehabilitation
+@ Sports medicine, arthroscopy and soft tissue
++ ACL injury: Lachman test; reconstruction graft choices
++ Meniscal tears: McMurray test; repair vs meniscectomy
++ Shoulder dislocation: Bankart lesion; Hill-Sachs lesion; stabilisation
+@ Pediatric orthopaedics and deformity
++ CTEV: Pirani score; Ponseti casting; tenotomy and bracing
+@ Hand, microsurgery and peripheral nerve
++ Tendon injuries: flexor zones; repair techniques; rehabilitation
++ Elbow fractures: supracondylar; lateral condyle; radial head
+@ Musculoskeletal tumors and infection
++ Giant cell tumour: Campanacci grading; curettage; denosumab
++ Pott's spine: clinical features; ATT; surgical indications
++ Spinal metastases: Tokuhashi score; SINS; radiotherapy and surgery
+
+== paediatric.paper
+@ Growth, development and preventive pediatrics
++ Growth monitoring: WHO charts; growth velocity; mid-parental height
++ Developmental milestones: gross motor; fine motor; language; social; red flags
++ Severe acute malnutrition: criteria; stabilisation phase; rehabilitation phase; RUTF
++ Micronutrient deficiencies: iron; vitamin A; zinc; iodine
++ Breastfeeding & complementary feeding: exclusive breastfeeding; complementary feeding principles
+@ Newborn and perinatal medicine
++ Neonatal jaundice: physiological vs pathological; phototherapy thresholds; exchange transfusion
+@ Pediatric cardiology
++ Congenital heart disease: acyanotic and cyanotic lesions; duct-dependent lesions; surgical timing
++ Rheumatic fever: Jones criteria; secondary prophylaxis
++ Heart failure in children: causes by age; management
+@ Pediatric respiratory and airway disorders
++ Childhood asthma: GINA steps; inhaler technique; acute exacerbation
+@ Pediatric gastroenterology and hepatology
++ Acute diarrhoea & ORS: dehydration assessment; low-osmolarity ORS; zinc
++ Chronic liver disease: Wilson disease; autoimmune hepatitis; portal hypertension
++ Malabsorption: coeliac disease; cow milk protein allergy
+@ Pediatric nephrology and urinary disease
++ AGN: post-streptococcal GN; complications
++ UTI in children: diagnosis; imaging; VUR
+@ Pediatric hematology-oncology
++ Anaemia: iron deficiency; thalassaemia; aplastic anaemia
++ Solid tumours: Wilms tumour; neuroblastoma; retinoblastoma
+@ Pediatric infection, immunology and rheumatology
++ National immunisation schedule: UIP vaccines; schedule; catch-up
++ Measles & dengue: measles complications; dengue warning signs
++ Enteric fever: diagnosis; treatment; resistance
++ Childhood TB: diagnostic algorithm; paediatric regimens
+@ Pediatric emergency and intensive care
++ Status epilepticus: time-based algorithm; refractory status
+@ Pediatric endocrine and metabolic genetics
++ Down syndrome: karyotype; associated anomalies; health supervision
+
+== obg.paper
+@ Antenatal care and fetal assessment
++ Antenatal screening: booking investigations; aneuploidy screening; GDM screening
++ Normal labour: stages; mechanism; active management of third stage
++ Partograph: WHO labour care guide; action line
++ Heart disease in pregnancy: modified WHO classification; anticoagulation; labour management
++ Epilepsy & pregnancy: antiepileptic choice; folic acid; valproate risk
++ Liver disease of pregnancy: ICP; AFLP; HELLP
++ Doppler surveillance: umbilical artery Doppler; MCA Doppler; ductus venosus
+@ High-risk obstetrics and maternal medicine
++ GDM: diagnosis; insulin and metformin; fetal surveillance
++ Anaemia in pregnancy: iron deficiency; IV iron; transfusion thresholds
++ Antepartum haemorrhage: placenta praevia; abruption; placenta accreta spectrum
+@ Labor, delivery and puerperium
++ Caesarean section: indications; techniques; complications; VBAC
++ Instrumental delivery: vacuum vs forceps; prerequisites; complications
+@ Benign gynecology and pelvic disease
++ Urinary incontinence: stress; urge; mixed; urodynamics
++ Fistulae: VVF; RVF; repair principles
+@ Gynecological cancer and prevention
++ Cervical screening: Pap; HPV DNA testing; VIA; colposcopy
++ Ovarian tumours: classification; tumour markers; RMI
++ Endometrial cancer: risk factors; staging; molecular classification
+@ Reproductive endocrinology and infertility
++ Menstrual cycle: HPO axis; phases
++ Puberty: Tanner staging; precocious and delayed puberty
++ Placental physiology: hormones; transfer; placental insufficiency
++ Abnormal uterine bleeding: PALM-COEIN; management
++ Ovulation induction: letrozole; clomiphene; gonadotropins; OHSS
+@ Contraception & family planning
++ Hormonal contraception: COCs; POPs; injectables; implants; MEC criteria
++ IUCDs: Cu-T; LNG-IUS; insertion timing
++ Sterilisation: tubectomy methods; vasectomy
++ MTP Act: 2021 amendment; limits; providers
+@ Fetal imaging & diagnosis
++ Fetal echocardiography: indications; views
++ Aneuploidy screening: NT; serum markers; NIPT
+@ Fetal therapy
++ Intrauterine transfusion: indications; technique
++ Fetal shunts: vesicoamniotic shunt; thoracoamniotic shunt
++ TTTS laser: Quintero staging; fetoscopic laser
+@ Twin pregnancy
++ Chorionicity: lambda vs T sign; timing of determination
++ Complications of monochorionic twins: TTTS; TAPS; selective growth restriction
+
+== anaesthesia.paper
+@ Anesthesia physiology, pharmacology and preassessment
++ Inhalational agents: MAC; blood-gas partition coefficient; individual agents
++ IV induction agents: propofol; ketamine; etomidate; thiopentone
++ Muscle relaxants & reversal: succinylcholine; rocuronium; sugammadex; neostigmine
+@ Airway management and ventilation
++ Rapid sequence induction: indications; cricoid pressure; drugs
+@ Anesthetic techniques and monitoring
++ Invasive monitoring: arterial line; CVP; pulmonary artery catheter
++ Spinal & epidural: level; complications; drugs
++ LA toxicity: signs; lipid emulsion therapy
+@ Anesthesia for major specialties
++ Obstetric anaesthesia: labour analgesia; caesarean anaesthesia; pre-eclampsia
++ Paediatric anaesthesia: airway differences; fasting; dosing
++ Cardiac anaesthesia basics: CPB; inotropes; TEE
++ Major resections: blood loss management; fluid strategy
++ Airway tumours: shared airway; jet ventilation
++ Chemotherapy effects: bleomycin lung; anthracycline cardiotoxicity
+@ Acute/chronic pain and postoperative care
++ Acute pain services: multimodal analgesia; PCA; epidural analgesia
++ WHO ladder: steps; adjuvants
++ Opioid rotation: equianalgesic doses; indications
++ Interventional pain: nerve blocks; neurolysis; spinal cord stimulation
+@ Anesthesia intensive care and resuscitation
++ CPR & ACLS: algorithms; post-resuscitation care
+@ Palliative care
++ Breathlessness: palliative management; opioids for dyspnoea
++ Communication & goals of care: breaking bad news; family meetings
++ End-of-life care: symptom control; withdrawal of treatment
+
+== radiodiagnosis.paper
+@ Imaging physics, contrast and radiation safety
++ CT physics: Hounsfield units; helical and multidetector CT; dose
++ MRI physics: T1 and T2; sequences; safety
++ Radiation protection: ALARA; dose limits; shielding
+@ Neuroradiology
++ Stroke imaging: CT; CTA; perfusion; DWI
++ Brain tumours: intra- vs extra-axial; MR spectroscopy
++ Head trauma: EDH; SDH; DAI
+@ Abdominal, pelvic and thoracic radiology
++ Chest X-ray patterns: consolidation; collapse; interstitial patterns
++ HRCT: patterns of ILD; nodules
++ Liver lesions: haemangioma; FNH; HCC; metastasis
++ Bowel obstruction: X-ray signs; CT transition point
+@ Musculoskeletal, breast and pediatric imaging
++ Bone tumours: periosteal reaction; matrix; zone of transition
++ Joint MRI: ligament tears; meniscal tears
++ Trauma imaging: CT protocols; FAST
++ Neonatal chest: RDS; TTN; meconium aspiration
++ Intussusception: target sign; reduction
++ Skeletal survey: non-accidental injury
+@ Image-guided intervention and emergency radiology
++ Seldinger technique: steps; complications
++ Drainage procedures: abscess drainage; PCN
+
+== respiratory.paper
+@ Pulmonary infections
++ TB & MDR-TB: diagnosis; regimens; drug resistance testing
++ Fungal infections: ABPA; aspergilloma; invasive aspergillosis; mucormycosis
+@ Interstitial, vascular and occupational lung disease
++ Sarcoidosis: staging; treatment
+@ Pleural, mediastinal and sleep disorders
++ Obstructive sleep apnoea: diagnosis; CPAP
+@ General oncology principles
++ Diagnosis & staging: lung cancer staging; EBUS; PET
+
+== microbiology.paper
+@ Cellular, molecular and systemic mechanisms
++ Hypersensitivity: types I–IV
++ Serological tests: ELISA; agglutination; immunofluorescence
+@ Clinical microbiology and laboratory operations
++ CBNAAT: principle; rifampicin resistance
++ Blood culture: technique; automated systems
++ Antimicrobial susceptibility testing: disc diffusion; MIC; CLSI and EUCAST
++ Rapid diagnostics: MALDI-TOF; multiplex PCR
+@ Bacteriology and resistance
++ Anaerobes: anaerobic culture; Clostridia; Bacteroides
++ ESBL & carbapenemases: detection; treatment options
++ MRSA & VRE: detection; infection control
++ Stewardship programmes: core elements; antibiograms
+@ Mycology and parasitology
++ Mucorales: diagnosis; treatment
++ Intestinal helminths: nematodes; cestodes
++ Tissue parasites: filaria; Toxoplasma; hydatid
+@ Infection control, epidemiology and public health microbiology
++ Sterilisation: methods; monitoring
++ Biomedical waste: categories; BMW Rules 2016
++ Isolation precautions: standard; contact; droplet; airborne
+@ Tropical infections
++ Scrub typhus: eschar; Weil-Felix; IgM ELISA
++ Melioidosis: Burkholderia pseudomallei; diagnosis; treatment
+
+== pathology.paper
+@ Hematopathology and blood banking
++ Blood grouping: ABO; Rh; cross-matching
++ Component therapy: PRBC; platelets; FFP; cryoprecipitate
+@ Systemic organ pathology
++ Renal pathology: glomerular diseases; renal biopsy interpretation
++ Liver pathology: hepatitis; cirrhosis; liver tumours
++ CNS pathology: tumours; infections; degenerative disease
++ Marrow aspirate & biopsy: indications; interpretation
++ Myelodysplastic syndromes: WHO classification; IPSS-R
++ Marrow infiltration: metastases; myelofibrosis
+@ Cytopathology, molecular pathology and quality
++ FNAC: technique; interpretation; limitations
++ Pap smear (Bethesda): Bethesda categories; HPV correlation
++ Fluid cytology: effusion cytology; CSF cytology
++ PCR & FISH: principles; applications
++ NGS in pathology: panels; interpretation
+@ Hematopoiesis and laboratory hematology
++ Immunophenotyping panels: flow cytometry markers; leukaemia panels
++ PNH testing: FLAER; CD55 and CD59
+@ Hematologic malignancies
++ B-cell lymphomas: DLBCL; follicular; mantle cell; Burkitt
++ Hodgkin lymphoma: classical vs nodular lymphocyte predominant
+@ Leukaemia diagnostics
++ MRD assessment: flow cytometry; PCR
+@ Molecular haematology
++ BCR-ABL & JAK2: detection; clinical significance
++ FLT3 & NPM1: AML prognosis
+@ CNS tumours (WHO classification)
++ Integrated diagnosis: histology plus molecular
++ IDH & 1p/19q: oligodendroglioma; astrocytoma
++ Medulloblastoma subgroups: WNT; SHH; groups 3 and 4
+@ Neurodegenerative disease
++ Tauopathies: Alzheimer disease; frontotemporal dementia
++ Synucleinopathies: Parkinson disease; Lewy body dementia
++ Prion disease: CJD; spongiform change
+@ Neuromuscular pathology
++ Muscle biopsy: myopathic vs neurogenic changes
++ Nerve biopsy: axonal vs demyelinating
+
+== psychiatry.paper
+@ Psychiatric assessment and foundational science
++ ICD-11 & DSM-5: structure; key changes
++ Mental status examination: appearance; mood; thought; perception; cognition; insight
++ Defence mechanisms: mature; neurotic; immature
+@ Mood, psychotic and anxiety disorders
++ Delusional disorder: types; management
+@ Addiction, child and neurodevelopmental psychiatry
++ Alcohol withdrawal: CIWA-Ar; benzodiazepine regimens
++ Opioid dependence: withdrawal; OST
++ Cannabis: acute and chronic effects; cannabis-induced psychosis
++ Withdrawal & delirium tremens: features; management
++ Wernicke-Korsakoff: triad; thiamine dosing
++ Relapse prevention drugs: naltrexone; acamprosate; disulfiram
++ Opioid substitution therapy: methadone; buprenorphine
++ Overdose & naloxone: recognition; naloxone dosing
+@ Psychiatric treatments, consultation and law
++ Mood stabilisers: lithium; valproate; lamotrigine
++ Psychodynamic therapy: principles; indications
++ Family therapy: systemic approaches; indications
++ Mental Healthcare Act 2017: rights; advance directive; supported admission
++ Capacity & consent: assessment of capacity
++ Forensic assessment: fitness to stand trial; criminal responsibility
+@ Behavioural addictions
++ Gambling disorder: criteria; treatment
++ Internet gaming disorder: criteria; management
+@ Pharmacotherapy of addiction
++ Naltrexone: mechanism; indications
++ Buprenorphine: partial agonism; induction
++ Nicotine replacement: forms; varenicline; bupropion
+
+== pharmacology.paper
+@ Pharmacokinetics, dynamics and experimental pharmacology
++ Pharmacokinetics: compartment models; clearance; half-life
++ Pharmacodynamics: receptor theory; dose-response
+@ Systemic and organ pharmacology
++ Autonomic drugs: cholinergic; adrenergic
++ CVS drugs: antihypertensives; antiarrhythmics; heart failure drugs
++ Antimicrobials: classes; resistance
++ Anticancer drugs: classes; toxicities
+@ Clinical pharmacology, trials and safety
++ Trial phases: phase 0 to IV
++ New Drugs & Clinical Trials Rules: 2019 rules; ethics committees
++ ADR reporting: PvPI; reporting forms
++ Causality assessment: WHO-UMC scale; Naranjo scale
+@ Medical genetics and genomics
++ CYP polymorphisms: CYP2D6; CYP2C19; CYP2C9
++ HLA & drug reactions: HLA-B*1502; HLA-B*5801; HLA-B*5701
+
+== ent.paper
+@ Otology and audiovestibular medicine
++ Chronic otitis media: mucosal vs squamous; tympanoplasty; mastoidectomy
++ Facial nerve palsy: Bell palsy; traumatic palsy; facial nerve decompression
++ Vertigo: peripheral vs central; vestibular testing
++ BPPV: Dix-Hallpike; Epley manoeuvre
++ Vestibular neuritis: features; vestibular rehabilitation
++ Auditory brainstem implant: indications
++ Sudden SNHL: causes; steroids
+@ Rhinology, allergy and anterior skull base
++ Sinusitis & FESS: indications; complications
++ Vestibular schwannoma: NF2; MRI; surgery vs radiosurgery
++ Glomus tumours: glomus tympanicum and jugulare; embolisation
++ Lateral skull base approaches: translabyrinthine; middle fossa; retrosigmoid
+@ Laryngology and head-neck disease
++ Vocal cord lesions: nodules; polyps; cysts
++ Laryngeal paralysis: RLN palsy; medialisation
++ Stridor: causes by age; evaluation
++ Oral cavity cancer: staging; surgery; reconstruction
++ Laryngeal cancer: staging; organ preservation; laryngectomy
++ Nasopharyngeal carcinoma: EBV; chemoradiation
+@ Pediatric ENT, sleep and facial plastic surgery
++ Adenotonsillectomy: indications; complications
++ Congenital hearing loss: newborn hearing screening; cochlear implantation
+
+== critical-care.paper
+@ Critical care monitoring and circulatory support
++ Vasopressors & inotropes: noradrenaline; vasopressin; dobutamine; milrinone
+@ Multiorgan failure, infections and ethics
++ Sepsis-3 definitions: SOFA; septic shock criteria
++ Surviving Sepsis bundles: hour-1 bundle; lactate; cultures
++ Steroids in sepsis: hydrocortisone indications
++ Withdrawal of support: ethical principles; process
+@ Mechanical ventilation and respiratory failure
++ Modes of ventilation: volume control; pressure control; PSV; APRV
++ NIV & HFNC: indications; failure criteria
+@ Toxicology, emergency and intensive medicine
++ Paracetamol poisoning: Rumack-Matthew nomogram; NAC
++ Snake envenomation: ASV; ventilation for neurotoxicity
++ Toxic alcohols: methanol; ethylene glycol; fomepizole
+@ Renal replacement and transplantation
++ Indications & timing: AEIOU indications; early vs late RRT
++ CRRT modes: CVVH; CVVHD; CVVHDF
++ Anticoagulation in CRRT: heparin; regional citrate
+@ Neurocritical care
++ Raised ICP: tiered management; osmotherapy
++ Brain death: preconditions; tests; apnoea test
++ Targeted temperature management: indications; protocol
+@ Trauma & burns
++ Damage control resuscitation: permissive hypotension; haemostatic resuscitation
++ Burns fluid management: Parkland formula; resuscitation endpoints
++ Traumatic brain injury: Brain Trauma Foundation guidelines
+
+== medical-oncology.paper
+@ General oncology principles
++ Hallmarks of cancer: proliferation; evasion; angiogenesis; metastasis
++ Oncogenes & tumour suppressors: RAS; MYC; TP53; RB
++ Cell cycle: checkpoints; CDK inhibitors
++ Tumour microenvironment: stroma; immune cells
++ Drug classes: alkylating agents; antimetabolites; anthracyclines; taxanes; platinum
++ Dose intensity: dose density; dose modifications
++ Drug resistance: mechanisms
++ TKIs: imatinib; osimertinib; sunitinib
++ Monoclonal antibodies: trastuzumab; rituximab; bevacizumab
++ Immune-related adverse events: colitis; pneumonitis; endocrinopathies
+@ Solid tumor oncology
++ Adjuvant therapy: principles; breast; colon
++ HER2-targeted therapy: trastuzumab; pertuzumab; T-DM1
++ Metastatic breast cancer: endocrine therapy; CDK4/6 inhibitors
++ Colorectal cancer: FOLFOX; RAS testing; MSI
++ Gastric cancer: FLOT; HER2-positive gastric cancer
++ Pancreatic cancer: FOLFIRINOX; gemcitabine
++ Hepatocellular carcinoma: BCLC; sorafenib and atezolizumab-bevacizumab
++ Prostate cancer: ADT; abiraterone; enzalutamide
++ Bladder cancer: cisplatin-based chemotherapy; immunotherapy
+@ Hematologic malignancies
++ Lymphoma regimens: R-CHOP; ABVD
++ Myeloma therapy: VRd; ASCT; daratumumab
+@ Geriatrics and palliative care
++ Antiemetics: emetogenic risk; 5-HT3 antagonists; NK1 antagonists
++ Cancer pain: opioids; adjuvants
+@ Lung cancer
++ NSCLC staging: TNM 8th edition
++ Driver mutations (EGFR, ALK): testing; targeted therapy
++ Small cell lung cancer: limited vs extensive stage; chemoradiation
++ Immunotherapy in lung cancer: PD-L1; pembrolizumab
+@ Genitourinary cancers
++ Renal cell carcinoma: VEGF TKIs; immunotherapy
++ Germ cell tumours: BEP; tumour markers
+
+== pathology.paper
+@ CNS infections
++ Viral encephalitis: HSV encephalitis; JE; rabies (Negri bodies); PML
++ Fungal infections: cryptococcosis; mucormycosis; aspergillosis
++ Parasitic infections: neurocysticercosis; cerebral malaria; toxoplasmosis

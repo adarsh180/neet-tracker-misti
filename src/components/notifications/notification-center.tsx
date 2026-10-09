@@ -15,7 +15,8 @@ type AppNotification = { id: string; title: string; body: string; tone: "focus" 
 type PersistentNotificationOptions = NotificationOptions & { actions?: Array<{ action: string; title: string }>; renotify?: boolean; requireInteraction?: boolean; vibrate?: number[] };
 type Kind = "mine" | "theirs" | "alert";
 
-const POLL_MS = 5000;
+// Push alerts arrive instantly; this poll is only the fallback, and only while the tab is visible.
+const POLL_MS = 30000;
 const DESKTOP_ALERT_QUERY = "(min-width: 900px) and (hover: hover) and (pointer: fine)";
 const TONES = [
   { key: "focus", label: "Focus" },
@@ -74,6 +75,7 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
   const [desktop, setDesktop] = useState(false);
   const [mounted, setMounted] = useState(false);
   const known = useRef<Set<string> | null>(null);
+  const tag = useRef<string | null>(null);
   const alerted = useRef<Set<string>>(new Set());
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -135,8 +137,9 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
   }, [desktop, pushSupported]);
 
   const fetchItems = useCallback(async () => {
-    const res = await fetch("/api/notifications", { cache: "no-store" }).catch(() => null);
-    if (!res?.ok) return;
+    const res = await fetch("/api/notifications", { cache: "no-store", headers: tag.current ? { "x-notify-tag": tag.current } : {} }).catch(() => null);
+    if (!res?.ok || res.status === 204) return;
+    tag.current = res.headers.get("x-notify-tag");
     const data = (await res.json().catch(() => ({}))) as { notifications?: AppNotification[] };
     const next = data.notifications ?? [];
     setItems(next);
@@ -237,7 +240,7 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
   useEffect(() => {
     if (!clientId) return;
     void fetchItems();
-    const timer = window.setInterval(fetchItems, POLL_MS);
+    const timer = window.setInterval(() => document.visibilityState === "visible" && void fetchItems(), POLL_MS);
     const onVisible = () => document.visibilityState === "visible" && void fetchItems();
     window.addEventListener("online", fetchItems);
     document.addEventListener("visibilitychange", onVisible);

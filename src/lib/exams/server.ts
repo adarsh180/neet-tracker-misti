@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getPrivateSession } from "@/lib/server-auth";
 import { GATE_COOKIE, verifyGateToken } from "@/lib/exams/gate-token";
 import { dayKey, type Records } from "@/lib/exams/metrics";
-import type { Customisations, ExamKey, ExamPrefs } from "@/lib/exams/syllabus";
+import { ssScope, type ExamKey, type ExamPrefs, type ExamSyllabus, type NodeRole, type SyllabusNode } from "@/lib/exams/syllabus";
 
 export const EXAM_COOKIE = "neet-exam";
 export const EXAMS = ["ug", "pg", "ss", "hub"] as const;
@@ -27,28 +27,44 @@ export async function loadPrefs(exam: ExamKey): Promise<ExamPrefs> {
   return (row?.json as ExamPrefs | undefined) ?? {};
 }
 
-/** Your own chapters/topics, renames and hides for this exam. */
-export async function loadCustom(exam: ExamKey): Promise<Customisations> {
-  const [items, overrides] = await Promise.all([
-    db.examCustomItem.findMany({ where: { exam }, orderBy: { createdAt: "asc" } }),
-    db.examItemOverride.findMany({ where: { exam } }),
-  ]);
+type NodeMeta = { weight?: number; hue?: number; group?: string; role?: NodeRole; ss?: string };
+type NodeRow = { key: string; parentKey: string | null; level: number; name: string; detail: string | null; ord: number; meta: unknown; origin: string; hidden: boolean };
+export const toNode = (r: NodeRow): SyllabusNode => {
+  const m = (r.meta ?? {}) as NodeMeta;
   return {
-    items: items.map((i) => ({ id: i.id, subjectKey: i.subjectKey, chapterKey: i.chapterKey, kind: i.kind === "chapter" ? "chapter" : "topic", name: i.name })),
-    overrides: overrides.map((o) => ({ itemKey: o.itemKey, hidden: o.hidden, rename: o.rename })),
+    key: r.key, parent: r.parentKey, level: Math.min(4, Math.max(1, r.level)) as SyllabusNode["level"], name: r.name, detail: r.detail, ord: r.ord, hidden: r.hidden, user: r.origin === "user",
+    ...(r.level === 1 ? { weight: m.weight ?? 0, hue: m.hue, group: m.ss ?? m.group, role: m.role } : {}),
   };
+};
+
+/**
+ * The syllabus for a workspace: subjects, chapters and topics (hidden ones
+ * included so they can be restored) plus how many subtopics each topic has.
+ * NEET SS loads only the chosen group's paper and courses.
+ */
+export async function loadSyllabus(exam: ExamKey, prefs?: ExamPrefs): Promise<ExamSyllabus> {
+  const p = prefs ?? (await loadPrefs(exam));
+  const scope = exam === "ss" ? ssScope(p) : null;
+  const inScope = scope ? { OR: [...scope.subjectKeys.map((k) => ({ key: { startsWith: `${k}.` } })), { key: { in: scope.subjectKeys } }, { key: { startsWith: `${scope.group.key}.u` } }] } : {};
+  const [rows, subs] = await Promise.all([
+    db.examNode.findMany({ where: { exam, level: { lte: 3 }, ...inScope }, select: { key: true, parentKey: true, level: true, name: true, detail: true, ord: true, meta: true, origin: true, hidden: true } }),
+    db.examNode.groupBy({ by: ["parentKey"], where: { exam, level: 4, hidden: false, ...inScope }, _count: { _all: true } }),
+  ]);
+  const subCounts: Record<string, number> = {};
+  for (const g of subs) if (g.parentKey) subCounts[g.parentKey] = g._count._all;
+  return { nodes: rows.map(toNode), subCounts };
 }
 
 /** Exam-scoped records only — plus the shared mood log, the one thing all three exams share. */
-export async function loadRecords(exam: ExamKey): Promise<Records> {
-  const [progress, logs, tests, errors, revisions, moods, custom] = await Promise.all([
+export async function loadRecords(exam: ExamKey, prefs?: ExamPrefs): Promise<Records> {
+  const [progress, logs, tests, errors, revisions, moods, syllabus] = await Promise.all([
     db.examProgress.findMany({ where: { exam } }),
     db.examStudyLog.findMany({ where: { exam }, orderBy: { logDate: "desc" }, take: 3000 }),
     db.examTest.findMany({ where: { exam }, orderBy: { takenAt: "asc" }, take: 500 }),
     db.examErrorEntry.findMany({ where: { exam }, orderBy: { createdAt: "desc" }, take: 1500 }),
     db.examRevisionLog.findMany({ where: { exam }, orderBy: { revisedOn: "desc" }, take: 3000 }),
     db.moodEntry.findMany({ orderBy: { date: "desc" }, take: 10, select: { energy: true, focus: true, stress: true } }),
-    loadCustom(exam),
+    loadSyllabus(exam, prefs),
   ]);
   return {
     progress: progress.map((r) => ({ itemKey: r.itemKey, status: r.status, revisions: r.revisions, lastRevisedAt: r.lastRevisedAt?.toISOString() ?? null, questions: r.questions })),
@@ -57,6 +73,6 @@ export async function loadRecords(exam: ExamKey): Promise<Records> {
     errors: errors.map((e) => ({ id: e.id, subjectKey: e.subjectKey, topic: e.topic, reason: e.reason, note: e.note, resolved: e.resolved, createdAt: e.createdAt.toISOString() })),
     revisions: revisions.map((r) => ({ id: r.id, itemKey: r.itemKey, subjectKey: r.subjectKey, revisedOn: dayKey(r.revisedOn), minutes: r.minutes, confidence: r.confidence, note: r.note })),
     moods,
-    custom,
+    syllabus,
   };
 }

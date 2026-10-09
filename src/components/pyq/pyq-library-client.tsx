@@ -135,9 +135,10 @@ export default function PyqLibraryClient({ jeeCatalog }: Props) {
   useEffect(() => {
     void loadProgress();
 
+    // Focus/visibility already resync instantly; the timer is a slow fallback for visible tabs only.
     const intervalId = window.setInterval(() => {
-      void loadProgress(true);
-    }, 5000);
+      if (document.visibilityState === "visible") void loadProgress(true);
+    }, 30000);
     const handleFocus = () => void loadProgress(true);
     const handleVisibility = () => {
       if (document.visibilityState === "visible") void loadProgress(true);

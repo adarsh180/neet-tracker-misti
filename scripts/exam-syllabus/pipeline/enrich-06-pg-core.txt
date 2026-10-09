@@ -1,0 +1,505 @@
+# NEET PG depth for the remaining high-weight subjects (NMC CBME UG scope; high-yield points).
+== medicine
+@ Cardiology
++ Arrhythmias: atrial fibrillation (rate vs rhythm, CHA2DS2-VASc); SVT and WPW; ventricular tachycardia and fibrillation; heart blocks; long QT
++ Valvular heart disease: mitral stenosis; mitral regurgitation; aortic stenosis; aortic regurgitation; murmurs and manoeuvres
++ Hypertension: JNC/ESC staging; secondary hypertension work-up; hypertensive emergency vs urgency; target-organ damage
++ Infective endocarditis: modified Duke criteria; organisms by setting; empirical therapy; peripheral stigmata
++ Rheumatic fever: revised Jones criteria; secondary prophylaxis; RHD in India
++ Congenital heart disease in adults: ASD; VSD; PDA; Eisenmenger syndrome; tetralogy of Fallot repaired
++ ECG patterns: STEMI localisation; hyperkalaemia; pericarditis; Brugada; LVH criteria
++ Aortic dissection: Stanford A vs B; presentation; imaging; management
+@ Respiratory
++ Pulmonary embolism: Wells score; D-dimer; CTPA; thrombolysis vs anticoagulation
++ Pleural effusion: Light criteria; tuberculous effusion; malignant effusion; empyema
++ Lung cancer: histological types; paraneoplastic syndromes; staging; driver mutations
++ Bronchiectasis: causes; HRCT; management; cystic fibrosis
++ Sleep apnoea: STOP-BANG; polysomnography; CPAP
++ ARDS: Berlin definition; lung-protective ventilation; prone positioning
++ Sarcoidosis: hilar lymphadenopathy; ACE level; Löfgren syndrome; steroids
+@ Gastroenterology & hepatology
++ Malabsorption: coeliac disease; tropical sprue; lactose intolerance; D-xylose test
++ Cirrhosis & complications: Child-Pugh and MELD; ascites and SAAG; SBP; variceal bleed; hepatorenal syndrome
++ Peptic ulcer disease: H. pylori; NSAID ulcer; complications; Zollinger-Ellison syndrome
++ Hepatic encephalopathy: grading; precipitants; lactulose and rifaximin
++ Wilson's & haemochromatosis: KF ring and ceruloplasmin; penicillamine; HFE gene; phlebotomy
++ Autoimmune liver disease: autoimmune hepatitis; primary biliary cholangitis; primary sclerosing cholangitis
+@ Nephrology
++ Glomerular disease: nephritic vs nephrotic; RPGN; IgA nephropathy; lupus nephritis
++ Electrolyte disorders: hypernatraemia; hypokalaemia; hypercalcaemia; hypomagnesaemia
++ Renal tubular acidosis: type 1, 2 and 4 RTA; urinary anion gap
++ Dialysis: indications for dialysis; haemodialysis vs peritoneal dialysis; complications
++ Hyponatraemia & hyperkalaemia: SIADH; osmotic demyelination; ECG in hyperkalaemia; emergency treatment
+@ Endocrinology
++ Diabetes mellitus: diagnostic criteria; type 1 vs type 2; complications; drug choice
++ Pituitary disorders: prolactinoma; acromegaly; hypopituitarism; diabetes insipidus
++ Diabetic emergencies: DKA protocol; HHS; hypoglycaemia management
++ Cushing's syndrome: screening tests; ACTH-dependent vs independent; dexamethasone suppression
++ Pheochromocytoma: plasma metanephrines; alpha before beta blockade; rule of 10
++ MEN syndromes: MEN 1; MEN 2A; MEN 2B; RET proto-oncogene
++ Hypoglycaemia: Whipple triad; insulinoma; factitious hypoglycaemia
+@ Haematology & oncology
++ Haematological malignancies: AML (APL and ATRA); ALL; CML; CLL; lymphoma staging
++ Oncological emergencies: tumour lysis syndrome; SVC syndrome; cord compression; febrile neutropenia; hypercalcaemia
++ Thalassaemia: beta-thalassaemia major; HbA2 and HbF; transfusion and chelation
++ Myeloma: CRAB features; serum protein electrophoresis; free light chains; treatment
++ ITP & TTP: ITP management; TTP pentad; ADAMTS13; plasma exchange; HUS
+@ Neurology
++ Headache: migraine; tension headache; cluster headache; red flags; idiopathic intracranial hypertension
++ Neuropathies & myopathies: diabetic neuropathy; CIDP; muscular dystrophies; inflammatory myopathy
++ Demyelinating disease: multiple sclerosis (McDonald criteria); NMOSD; ADEM
++ Myasthenia gravis: anti-AChR antibody; thymoma; myasthenic crisis; Lambert-Eaton syndrome
++ GBS: ascending paralysis; albuminocytological dissociation; IVIG and plasmapheresis
++ Meningitis & encephalitis: CSF patterns; empirical therapy; HSV encephalitis; Japanese encephalitis
++ Dementia: Alzheimer disease; vascular dementia; Lewy body dementia; reversible causes
++ Motor neurone disease: ALS features; riluzole; bulbar palsy
+@ Rheumatology
++ Rheumatoid arthritis: ACR/EULAR criteria; anti-CCP; DMARDs; extra-articular features
++ SLE & connective tissue disease: SLICC criteria; ANA and anti-dsDNA; drug-induced lupus; APS
++ Spondyloarthritis & gout: ankylosing spondylitis; HLA-B27; acute gout; urate crystals
++ Polymyositis & scleroderma: anti-Jo-1; CREST syndrome; scleroderma renal crisis
++ Sjögren's syndrome: anti-Ro and anti-La; Schirmer test; lymphoma risk
++ Septic arthritis: organisms; joint aspiration; gonococcal arthritis
+@ Infectious diseases
++ Fever approach: acute undifferentiated fever; PUO; fever with rash
++ Tropical infections: kala-azar; filariasis; KFD; melioidosis
++ Sepsis: qSOFA and SOFA; sepsis bundles; septic shock
++ Malaria: complicated falciparum malaria; artesunate; vivax relapse and primaquine
++ Dengue: warning signs; dengue shock syndrome; fluid management; NS1 and IgM
++ Typhoid: blood culture; Widal limitations; complications; drug resistance
++ Leptospirosis & scrub typhus: Weil disease; eschar; doxycycline
++ COVID-19: clinical stages; steroids and anticoagulation; long COVID
+@ Critical care, poisoning & geriatrics
++ ICU basics & ventilation: modes of ventilation; ABG interpretation; weaning
++ Common poisonings: paracetamol; methanol; kerosene; aluminium phosphide; antidotes
++ Snake bite: neurotoxic vs vasculotoxic; 20-minute WBCT; anti-snake venom
++ Organophosphate poisoning: muscarinic and nicotinic features; atropine; pralidoxime; intermediate syndrome
++ Heat stroke: classic vs exertional; rapid cooling
++ Fluids & shock in ICU: crystalloids; fluid responsiveness; vasopressors
+
+== surgery
+@ General surgery principles
++ Wound healing & infections: phases of healing; wound classification; cellulitis and abscess; necrotising fasciitis
++ Shock & fluids: classes of haemorrhagic shock; crystalloid resuscitation; maintenance fluids
++ Trauma (ATLS): primary survey (ABCDE); secondary survey; FAST; golden hour
++ Haemorrhage & transfusion: types of haemorrhage; blood components; massive transfusion protocol; transfusion reactions
++ Surgical site infection: risk factors; prophylactic antibiotics; wound care bundles
++ Ulcers & sinuses: types of ulcer; Marjolin ulcer; diabetic foot ulcer; pilonidal sinus
++ Cysts & lumps: sebaceous cyst; dermoid cyst; lipoma; ganglion; neurofibroma
++ Skin tumours: BCC; SCC; melanoma (Breslow depth); keratoacanthoma
+@ Head, neck & endocrine
++ Thyroid: solitary thyroid nodule; FNAC (Bethesda); thyroidectomy complications; retrosternal goitre
++ Parathyroid & adrenal: primary hyperparathyroidism; parathyroidectomy; adrenal incidentaloma; Conn syndrome
++ Salivary glands: pleomorphic adenoma; Warthin tumour; parotidectomy and facial nerve; sialolithiasis
++ Oral cancers: risk factors; leukoplakia and erythroplakia; staging; neck dissection
++ Neck swellings: midline vs lateral swellings; thyroglossal cyst; lymph node levels
++ Thyroid cancer: papillary; follicular; medullary; anaplastic; radioiodine
++ Cleft lip & palate: rule of 10; timing of repair; associated problems
++ Branchial cyst: origin; site; branchial fistula
+@ Breast
++ Breast cancer: risk factors; triple assessment; TNM staging; molecular subtypes; surgery and adjuvant therapy
++ Breast imaging: mammography and BIRADS; ultrasound; MRI
++ Gynaecomastia: causes; grading; surgery
++ Nipple discharge: duct papilloma; duct ectasia; bloody discharge evaluation
+@ Vascular & lymphatic
++ Varicose veins & DVT: Trendelenburg and Perthes tests; venous Doppler; endovenous ablation; DVT prophylaxis
++ Lymphoedema: primary and secondary; filarial lymphoedema; management
++ Aneurysms: AAA screening; rupture; EVAR
++ Acute limb ischaemia: 6 Ps; embolism vs thrombosis; embolectomy; compartment syndrome
++ Buerger's disease: smokers; Shionoya criteria; management
+@ Gastrointestinal surgery
++ Oesophagus: achalasia; GERD and hiatus hernia; oesophageal carcinoma; corrosive injury
++ Stomach & duodenum: peptic perforation; gastric outlet obstruction; bariatric surgery basics
++ Anal canal: fistula-in-ano (Goodsall rule); perianal abscess; anal carcinoma
++ Intestinal obstruction: small vs large bowel obstruction; volvulus; adhesive obstruction
++ GI bleeding: upper vs lower GI bleed; Rockall and Blatchford scores; endoscopic therapy
++ Gastric cancer: risk factors; Lauren classification; D2 gastrectomy
++ Haemorrhoids & fissure: grading of haemorrhoids; haemorrhoidectomy and stapling; chronic fissure and sphincterotomy
+@ Hepatobiliary & pancreas
++ Gall stones & cholecystitis: types of stones; acute cholecystitis; Mirizzi syndrome; laparoscopic cholecystectomy
++ Obstructive jaundice: Courvoisier law; ERCP and MRCP; periampullary carcinoma
++ Liver abscess & tumours: amoebic vs pyogenic abscess; HCC; hepatic haemangioma
++ Pancreatitis & pancreatic tumours: Ranson and BISAP; pseudocyst; carcinoma head of pancreas; Whipple operation
++ Spleen: splenic injury grading; splenectomy indications; OPSI
++ Choledochal cyst: Todani classification; excision and hepaticojejunostomy
++ Portal hypertension: causes; varices; shunt surgery; TIPS
++ Cholangiocarcinoma: Klatskin tumour; Bismuth classification
++ Hydatid cyst: Echinococcus; serology; PAIR; surgery
+@ Hernia & abdominal wall
++ Inguinal & femoral hernia: direct vs indirect; Lichtenstein repair; laparoscopic TEP and TAPP; femoral hernia risk
++ Ventral hernias: rectus divarication; Spigelian hernia
++ Umbilical & epigastric hernia: paraumbilical hernia; repair
++ Incisional hernia: risk factors; mesh repair
++ Hernia complications: obstruction; strangulation; Richter hernia
+@ Urology
++ Urolithiasis: types of stones; renal colic; ESWL; PCNL and URS
++ BPH & prostate cancer: IPSS; alpha blockers and 5-ARI; TURP; PSA and Gleason
++ Renal & bladder tumours: RCC triad; Wilms tumour; urothelial carcinoma; haematuria evaluation
++ Testis & scrotum: hydrocele; varicocele; torsion testis; testicular tumours
++ Hydronephrosis: PUJ obstruction; DTPA scan; pyeloplasty
++ Hypospadias & undescended testis: types of hypospadias; orchidopexy timing
++ Urethral stricture: causes; urethrogram; urethroplasty
++ Bladder injuries: intraperitoneal vs extraperitoneal rupture; cystogram
+@ Neuro, cardiothoracic & paediatric surgery
++ Head injury: GCS; EDH vs SDH; raised ICP; Cushing reflex
++ Chest trauma: tension pneumothorax; haemothorax; flail chest; cardiac tamponade
++ Congenital surgical conditions: TEF; CDH; anorectal malformations; exomphalos and gastroschisis
++ Spinal cord compression: causes; metastatic compression; decompression
++ Cardiac surgery basics: CABG; valve replacement; CPB
++ Pyloric stenosis & intussusception: olive mass; Ramstedt pyloromyotomy; red currant jelly stool; air enema reduction
++ Hirschsprung disease: aganglionosis; rectal biopsy; pull-through
+@ Orthopaedics & anaesthesia basics in surgery
++ Day-care & minimal access surgery: patient selection; discharge criteria
++ Laparoscopy principles: pneumoperitoneum; port placement; complications
++ Surgical sutures & instruments: absorbable vs non-absorbable sutures; suture sizes; common instruments
+
+== physiology
+@ General & cell physiology
++ Resting & action potential: Nernst and Goldman equations; ion channels; refractory periods
++ Body fluid compartments: ICF and ECF; measurement by indicator dilution; edema
++ Cell junctions: tight junctions; gap junctions; desmosomes
++ Signal transduction: G-protein coupled receptors; cAMP and IP3-DAG; tyrosine kinase receptors
++ Osmosis & tonicity: osmolarity; tonicity; colloid osmotic pressure
++ Apoptosis physiology: programmed cell death; physiological roles
+@ Nerve & muscle
++ Nerve fibre types & conduction: Erlanger-Gasser classification; saltatory conduction; susceptibility to block
++ Excitation-contraction coupling: DHP and ryanodine receptors; sliding filament; calcium handling
++ Motor unit & recruitment: size principle; tetanus; summation
++ Muscle fatigue & rigor: fatigue mechanisms; rigor mortis
++ Nerve injury & regeneration: Seddon classification; Wallerian degeneration
+@ Blood
++ Haemopoiesis: sites by age; stem cells; erythropoietin
++ Haemoglobin & RBC indices: Hb types; MCV, MCH and MCHC; RBC lifespan
++ Immunity basics: innate vs adaptive; lymphocyte subsets
++ Plasma proteins: albumin; globulins; functions
++ WBC functions: neutrophils; eosinophils; monocytes and macrophages
++ Platelets: platelet plug formation; aggregation; bleeding time
++ Lymph & tissue fluid: Starling forces; lymph flow
++ Anticoagulants mechanism: heparin; warfarin; EDTA and citrate
+@ Cardiovascular
++ Blood pressure regulation: short-term (baroreflex); intermediate; long-term (RAAS, renal)
++ Regional circulations: coronary; cerebral; splanchnic; cutaneous; pulmonary
++ Shock physiology: compensatory mechanisms; irreversible shock
++ Cardiac action potentials: ventricular action potential phases; pacemaker potential
++ Starling's law: length-tension relation; venous return curves
++ Coronary circulation: phasic flow; autoregulation; coronary reserve
++ Baroreceptors & chemoreceptors: carotid sinus; aortic bodies; Bainbridge reflex
++ Haemodynamics & Poiseuille's law: resistance; laminar vs turbulent flow; Reynolds number
+@ Respiratory
++ Gas transport & O2 dissociation curve: shifts of the curve (Bohr, 2,3-BPG); CO2 transport; Haldane effect
++ Regulation of respiration: respiratory centres; central and peripheral chemoreceptors; Hering-Breuer reflex
++ Hypoxia & high altitude: types of hypoxia; acclimatisation; acute mountain sickness
++ Dead space: anatomical vs physiological; Bohr equation
++ Periodic breathing: Cheyne-Stokes breathing; Biot breathing
++ Diving & space physiology: decompression sickness; nitrogen narcosis; weightlessness
+@ Renal & acid-base
++ GFR & clearance: inulin and creatinine clearance; PAH clearance; filtration fraction
++ Acid-base balance: buffers; respiratory and renal compensation; anion gap
++ Micturition: micturition reflex; neurogenic bladder
++ Juxtaglomerular apparatus: macula densa; tubuloglomerular feedback
++ RAAS: renin release; angiotensin II actions; aldosterone
++ Diuretic physiology: site of action of diuretics
+@ Gastrointestinal
++ GI hormones: gastrin; CCK; secretin; GIP; motilin
++ Pancreatic & bile secretion: phases of pancreatic secretion; bile salts and enterohepatic circulation
++ Salivary secretion: composition; regulation
++ Swallowing: oral, pharyngeal and oesophageal phases
++ Vomiting reflex: chemoreceptor trigger zone; vomiting centre
++ Enteric nervous system: myenteric and submucosal plexus; migrating motor complex
++ Liver functions: metabolic, synthetic and excretory functions
+@ Endocrine & reproduction
++ Hypothalamo-pituitary axis: releasing hormones; feedback loops; portal system
++ Calcium homeostasis: PTH; vitamin D; calcitonin
++ Pancreatic hormones: insulin secretion; glucagon; somatostatin
++ Male & female reproduction: spermatogenesis; ovulation; hormonal control
++ Growth hormone: actions; IGF-1; regulation
++ Hormone receptors & second messengers: membrane vs nuclear receptors; second messengers
++ Pineal & melatonin: circadian rhythm; melatonin actions
++ Insulin & glucagon actions: actions on carbohydrate, fat and protein metabolism
++ Placental hormones: hCG; hPL; oestrogen and progesterone in pregnancy
+@ Nervous system
++ Pain: pain pathways; gate control theory; referred pain; endogenous opioids
++ Cerebellum & basal ganglia: cerebellar circuits; cerebellar signs; direct and indirect pathways; Parkinson disease
++ Sleep & EEG: NREM and REM sleep; EEG waves; sleep regulation
++ Learning & memory: short-term and long-term memory; long-term potentiation; amnesia
++ Hypothalamus & temperature: thermoregulatory centre; fever; hypothalamic functions
++ Synaptic transmission: EPSP and IPSP; synaptic properties; presynaptic inhibition
++ Neurotransmitters: acetylcholine; catecholamines; GABA and glutamate; serotonin and dopamine
++ Reticular activating system: arousal; consciousness
++ Limbic system & emotion: Papez circuit; amygdala; Klüver-Bucy syndrome
++ CSF & blood-brain barrier: CSF formation and circulation; BBB properties
+@ Special senses
++ Photoreceptors & phototransduction: rods vs cones; rhodopsin cycle; dark adaptation
++ Colour vision: trichromatic theory; colour blindness
++ Accommodation & pupillary reflexes: near response; light reflex pathway; Argyll Robertson pupil
++ Visual pathway: lesions and field defects
++ Auditory pathway: organ of Corti; auditory pathway; tests of hearing
+
+== community
+@ Concepts of health & disease
++ Iceberg phenomenon: clinical vs subclinical cases; screening implications
++ Disease causation models: epidemiological triad; web of causation; wheel model
++ Health indicators: mortality indicators; morbidity indicators; HDI and PQLI; DALY
+@ Epidemiology
++ Study designs: descriptive; case-control; cohort; cross-sectional; ecological
++ Screening tests: sensitivity and specificity; predictive values; ROC curve; lead-time bias
++ RCTs: randomisation; blinding; intention-to-treat; phases of trials
+@ Biostatistics
++ Measures of central tendency & dispersion: mean, median and mode; standard deviation; range and IQR
++ Tests of significance: p value; type I and type II errors; power
++ Sample size: factors affecting sample size
++ Normal distribution: properties; standard normal curve; skewness
++ Chi-square & t-test: when to use each; paired vs unpaired t-test
++ Data presentation: histogram; frequency polygon; pie chart; line diagram
+@ Communicable diseases
++ Vaccine-preventable diseases: diphtheria; pertussis; tetanus; measles; hepatitis B
++ TB & NTEP: case definitions; diagnostic algorithm; treatment regimens; Ni-kshay
++ Malaria & vector-borne: NVBDCP; vector control; malaria indices
++ HIV & STIs: NACP; syndromic management; PPTCT
++ Diarrhoeal diseases: ORS; zinc; cholera control; rotavirus
++ Emerging infections: Nipah; Zika; COVID-19; One Health
++ Leprosy & NLEP: classification; MDT regimens; disability prevention
++ Measles & polio: measles-rubella campaign; polio eradication; AFP surveillance
++ Dengue & chikungunya: Aedes control; case management
++ Zoonoses: rabies; plague; leptospirosis; brucellosis
++ Hospital-acquired infections: surveillance; hand hygiene; BMW management
+@ Non-communicable diseases
++ Cardiovascular & diabetes: risk factors; NPCDCS; screening
++ Cancer screening: cervical; breast; oral cancer screening
++ Blindness & accidents: NPCB; causes of blindness; road traffic accidents
++ Obesity: BMI; waist circumference; prevention
++ Rheumatic heart disease: primary and secondary prevention
++ Stroke: risk factors; prevention
++ Tobacco control: COTPA; NTCP; cessation
+@ Maternal & child health
++ Antenatal & natal care: ANC visits; high-risk pregnancy; clean delivery
++ Growth monitoring: growth charts; WHO standards
++ MMR & IMR: definitions; current rates; causes
++ JSY & JSSK: eligibility; entitlements
++ IMNCI: age groups; colour coding; classification
+@ Nutrition
++ Nutritional requirements: RDA; energy and protein requirements
++ Nutrition programmes: mid-day meal; ICDS; Poshan Abhiyaan
++ Food fortification: iodised salt; double-fortified salt; fortified rice
++ Food adulteration: common adulterants; FSSA
++ Anaemia Mukt Bharat: 6x6x6 strategy; IFA supplementation
++ ICDS & POSHAN: services; anganwadi
+@ Environment & occupational health
++ Occupational diseases: pneumoconioses; occupational cancers; lead poisoning
++ Housing & noise: housing standards; noise-induced hearing loss
++ Medical entomology: mosquitoes; sandflies; fleas; insecticides
++ ESI Act: benefits; eligibility
+@ Health programmes & care delivery
++ National health programmes: RMNCH+A; NPCDCS; NMHP; NPCB
++ Health care delivery in India: sub-centre; PHC; CHC; IPHS norms
++ International health: WHO; UNICEF; IHR
++ Ayushman Bharat: health and wellness centres; PM-JAY
++ NHM: NRHM and NUHM; ASHA
++ Disaster management: disaster cycle; triage; NDMA
+
+== anatomy
+@ General anatomy & histology
++ Epithelia & glands: types of epithelium; exocrine vs endocrine glands; modes of secretion
++ Connective tissue & cartilage: connective tissue fibres; cells; types
++ Muscle tissue: skeletal; cardiac; smooth
++ Cartilage types: hyaline; elastic; fibrocartilage
++ Synovial joint classification: plane; hinge; pivot; condylar; ball and socket
++ Skin & appendages histology: thick vs thin skin; hair follicle; sweat glands
+@ Embryology
++ Germ layers & derivatives: ectoderm; mesoderm; endoderm derivatives
++ Pharyngeal arches & pouches: arch nerves and muscles; pouch derivatives; DiGeorge syndrome
++ Heart & great vessels development: septation; aortic arches; congenital heart defects
++ Gut rotation & anomalies: midgut rotation; malrotation; Meckel diverticulum
++ Urogenital development: pronephros to metanephros; horseshoe kidney; genital duct development
++ Neural tube & neural crest: neural tube defects; neural crest derivatives
++ Teratogens & critical periods: embryonic period; common teratogens
+@ Upper limb
++ Shoulder & axilla: boundaries of axilla; axillary artery parts; lymph nodes
++ Joints of upper limb: shoulder joint; elbow joint; wrist joint
++ Rotator cuff: SITS muscles; rotator cuff tear
++ Cubital fossa & carpal tunnel: contents of cubital fossa; carpal tunnel contents; carpal tunnel syndrome
++ Anatomical snuffbox: boundaries; contents; scaphoid fracture
++ Nerve injuries (radial, ulnar, median): wrist drop; claw hand; ape thumb; Erb and Klumpke palsy
++ Dermatomes of upper limb: C5 to T1 dermatomes
+@ Lower limb
++ Lumbosacral plexus: femoral; obturator; sciatic nerve
++ Arches of foot & gait: medial and lateral arches; gait cycle
++ Femoral triangle & canal: boundaries; contents; femoral hernia
++ Popliteal fossa: boundaries; contents; Baker cyst
++ Adductor canal: boundaries; contents
++ Venous drainage & varicosities: great and small saphenous veins; perforators
++ Nerve injuries (sciatic, peroneal): foot drop; sciatic nerve injury
+@ Thorax
++ Heart: chambers & conducting system: chambers; SA and AV node; bundle of His
++ Intercostal spaces & nerves: intercostal muscles; neurovascular bundle; chest drain site
++ Thoracic duct & azygos system: course of thoracic duct; azygos vein
++ Bronchopulmonary segments: segments; clinical importance
++ Oesophagus constrictions: sites of constriction; clinical importance
+@ Abdomen & pelvis
++ Kidney, ureter & adrenal: relations of kidney; ureteric constrictions; adrenal blood supply
++ Portal-systemic anastomoses: sites; clinical significance
++ Blood supply of gut: coeliac trunk; SMA; IMA; watershed areas
++ Posterior abdominal wall: muscles; lumbar plexus
+@ Head & neck
++ Cranial cavity & dural sinuses: dural folds; cavernous sinus; venous drainage
++ Pterygopalatine fossa: boundaries; communications; contents
++ Infratemporal fossa & TMJ: contents; mandibular nerve; TMJ movements
++ Thyroid & parathyroid: blood supply; recurrent laryngeal nerve; development
++ Cervical fascia & spaces: layers of cervical fascia; retropharyngeal space; Ludwig angina
+@ Neuroanatomy
++ Brainstem & cranial nerve nuclei: motor and sensory nuclei; brainstem syndromes
++ Cerebellum & basal ganglia: cerebellar connections; basal ganglia circuits
++ Thalamus & internal capsule: thalamic nuclei; internal capsule parts and lesions
++ Blood supply of brain: circle of Willis; arterial territories
++ Ventricles & CSF: ventricular system; CSF circulation; hydrocephalus
++ Hypothalamus: nuclei; functions
++ Limbic system: hippocampus; amygdala; Papez circuit
++ Cortical areas: Brodmann areas; motor and sensory cortex; speech areas
++ Visual pathway lesions: optic chiasma lesion; optic tract; Meyer loop
+@ Genetics
++ Karyotyping & FISH: banding techniques; FISH uses
++ Mutations & polymorphisms: point mutations; frameshift; SNPs
++ Genomic imprinting: Prader-Willi syndrome; Angelman syndrome
++ Mitochondrial inheritance: maternal inheritance; heteroplasmy; LHON
++ Genetic counselling: pedigree analysis; recurrence risk
+
+== biochemistry
+@ Enzymes
++ Kinetics & Km/Vmax: Michaelis-Menten equation; Lineweaver-Burk plot; significance of Km
++ Inhibition types: competitive; non-competitive; uncompetitive; suicide inhibition
++ Clinical enzymology: cardiac markers; liver enzymes; amylase and lipase
++ Isoenzymes: LDH isoenzymes; CK isoenzymes; ALP isoenzymes
++ Coenzymes & cofactors: vitamin-derived coenzymes; metal cofactors
++ Enzyme regulation: allosteric regulation; covalent modification; induction and repression
++ Enzyme classification: six IUBMB classes
++ Ribozymes & abzymes: catalytic RNA; abzymes
+@ Carbohydrate metabolism
++ HMP shunt & G6PD: oxidative and non-oxidative phases; NADPH functions; G6PD deficiency
++ Galactose & fructose disorders: galactosaemia; essential fructosuria; hereditary fructose intolerance
++ Uncouplers & inhibitors: 2,4-DNP; thermogenin; ETC inhibitors (cyanide, rotenone)
++ Mucopolysaccharidoses: Hurler; Hunter; enzyme defects
++ Insulin & glucose regulation: insulin signalling; GLUT transporters
+@ Lipid metabolism
++ Fatty acid oxidation: beta-oxidation; carnitine shuttle; MCAD deficiency
++ Cholesterol & lipoproteins: HMG-CoA reductase; LDL receptor; lipoprotein classes
++ Lipid storage disorders: Gaucher; Niemann-Pick; Tay-Sachs; Fabry
++ Phospholipids & sphingolipids: lecithin; surfactant; sphingomyelin
++ Prostaglandins & eicosanoids: COX pathway; lipoxygenase pathway
+@ Amino acids & proteins
++ Aminoacidopathies: phenylketonuria; alkaptonuria; maple syrup urine disease; homocystinuria
++ Protein structure & folding: primary to quaternary structure; chaperones; prion disease
++ Haem synthesis & porphyrias: ALA synthase; acute intermittent porphyria; lead poisoning
++ Bilirubin metabolism: conjugation; types of jaundice; Gilbert and Crigler-Najjar
++ Transamination & deamination: ALT and AST; oxidative deamination
++ Ammonia metabolism: ammonia toxicity; glutamine transport
++ One-carbon metabolism: folate and SAM; methyl group transfer
++ Collagen synthesis & defects: hydroxylation and vitamin C; scurvy; Ehlers-Danlos; osteogenesis imperfecta
+@ Molecular biology
++ PCR, blotting & sequencing: PCR principle; Southern, Northern and Western blot; Sanger sequencing; NGS
++ Recombinant DNA & CRISPR: restriction enzymes; vectors; CRISPR-Cas9
++ Mutations & DNA damage: DNA repair defects; xeroderma pigmentosum
++ Post-translational modifications: glycosylation; phosphorylation; ubiquitination
++ Oncogenes & tumour suppressor genes: proto-oncogene activation; p53
++ Gene therapy: vectors; approved therapies
+@ Vitamins & minerals
++ Vitamin A & vision: Wald visual cycle; deficiency signs; toxicity
++ Vitamin D metabolism: hydroxylation steps; rickets and osteomalacia
++ Vitamin K & coagulation: gamma-carboxylation; newborn prophylaxis
++ Thiamine & niacin deficiency: beriberi; Wernicke encephalopathy; pellagra; Hartnup disease
++ Folate & B12: methyl folate trap; megaloblastic anaemia; neural tube defects
+@ Nutrition & integration
++ Energy metabolism & BMR: BMR factors; respiratory quotient; specific dynamic action
++ Fed-fast cycle: well-fed state; early fasting; prolonged starvation
++ Dietary fibre: soluble and insoluble fibre; health effects
++ Glycaemic index: definition; glycaemic load
++ Starvation metabolism: ketone bodies; protein sparing
++ Obesity biochemistry: leptin; adiponectin; insulin resistance
+@ Clinical biochemistry
++ Liver & renal function tests: bilirubin, enzymes and proteins; urea, creatinine and eGFR
++ Tumour markers: AFP; CEA; CA-125; PSA
++ Lysosomal storage diseases: I-cell disease; enzyme replacement therapy
++ Plasma proteins & electrophoresis: electrophoresis bands; M band
++ Xenobiotic metabolism: phase I and phase II reactions; cytochrome P450
++ Purine & pyrimidine metabolism: gout; Lesch-Nyhan syndrome; orotic aciduria; SCID (ADA deficiency)
+
+== paediatrics
+@ Growth & development
++ Milestones: gross motor; fine motor; language; social milestones
++ Growth charts: WHO growth standards; mid-parental height
++ Adolescent health: puberty staging; adolescent problems
++ Short stature: familial vs constitutional; growth hormone deficiency; hypothyroidism
++ Puberty disorders: precocious puberty; delayed puberty
++ Developmental delay: global developmental delay; red flags
++ Behavioural problems: ADHD; autism; enuresis
+@ Neonatology
++ Neonatal jaundice: physiological vs pathological; phototherapy; exchange transfusion
++ Respiratory distress: RDS and surfactant; TTN; meconium aspiration
++ Low birth weight & preterm: kangaroo mother care; feeding; complications
++ Neonatal hypoglycaemia: definition; risk groups; management
++ Birth asphyxia: APGAR; HIE staging; therapeutic hypothermia
++ NEC: Bell staging; management
++ Neonatal reflexes: Moro; rooting; grasp; disappearance age
+@ Nutrition & immunisation
++ Breastfeeding: benefits; colostrum; problems
++ SAM & malnutrition: WHO criteria; F-75 and F-100; RUTF
++ Immunisation schedule: national schedule; catch-up; contraindications
++ Vitamin deficiencies in children: vitamin A; vitamin D (rickets); vitamin B12
++ Complementary feeding: age of start; principles
++ Obesity in children: BMI charts; complications
+@ Systemic paediatrics
++ Congenital heart disease: VSD; ASD; TOF; TGA; Eisenmenger
++ Nephrotic & nephritic syndromes: minimal change disease; steroid regimen; PSGN
++ Paediatric neurology: febrile seizures; epilepsy syndromes; hydrocephalus
++ Inborn errors: approach to IEM; newborn screening
++ Paediatric respiratory infections: pneumonia; bronchiolitis; croup
++ Childhood leukaemia: ALL; prognostic factors
++ Thalassaemia: transfusion; chelation
++ Cerebral palsy: types; causes; management
++ Paediatric endocrinology: congenital hypothyroidism; type 1 diabetes; CAH
+@ Paediatric emergencies
++ Dehydration: assessment; WHO plans A, B and C
++ Seizures: approach; febrile seizures
++ PALS & shock: paediatric BLS; shock management
++ Status epilepticus: drug protocol
++ Foreign body aspiration: signs; bronchoscopy
++ Burns in children: fluid resuscitation; Lund-Browder chart
+
+== forensic
+@ Legal procedures & medical law
++ Dying declaration: procedure; legal value; dying deposition
++ Medical certificates: sickness and fitness certificates; death certificate
++ Professional misconduct: infamous conduct; NMC regulations
++ Evidence & witnesses: types of evidence; expert witness; conduct in court
+@ Identification
++ Sex determination: skull; pelvis; sex chromatin
++ Anthropometry: Bertillon system; stature estimation
++ Teeth & forensic odontology: Gustafson method; bite marks
++ Superimposition: photographic superimposition
+@ Thanatology
++ Signs of death: somatic and molecular death; early signs
++ Rigor mortis: onset and sequence; cadaveric spasm; heat stiffening
++ Putrefaction: order of changes; factors
++ Adipocere & mummification: conditions for formation; medicolegal importance
++ Exhumation: procedure; legal requirements
+@ Injuries
++ Mechanical injuries: blunt vs sharp; classification
++ Regional injuries: head injuries; chest and abdominal injuries
++ Abrasion, bruise & laceration: types; age of injury; patterned injuries
++ Head injury in forensics: skull fractures; intracranial haemorrhage; coup and contrecoup
++ Road traffic injuries: pedestrian injuries; occupant injuries; seatbelt injury
++ Blast injuries: primary, secondary and tertiary blast injury
+@ Asphyxial deaths
++ Traumatic asphyxia: features; causes
++ Ligature mark analysis: hanging vs strangulation marks
+@ Sexual offences & infant deaths
++ Infanticide & child abuse: battered baby syndrome; shaken baby
++ Virginity & pregnancy: signs; medicolegal aspects
++ Unnatural sexual offences: sodomy; examination
++ Sudden infant death: SIDS risk factors
+@ Toxicology
++ General toxicology & antidotes: universal antidote; specific antidotes; gastric lavage
++ Snake bite & animal poisons: scorpion sting; dog bite
++ Arsenic & lead: acute and chronic arsenic poisoning; lead poisoning (burtonian line); chelation
++ Cyanide: mechanism; bitter almond smell; antidote kit
++ Carbon monoxide: carboxyhaemoglobin; cherry-red lividity; hyperbaric oxygen
++ Datura & cannabis: anticholinergic toxidrome; cannabis effects

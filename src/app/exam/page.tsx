@@ -24,7 +24,7 @@ const EXAMS = [
     title: "NEET SS",
     logo: "/brand/neet-ss-512.webp",
     line: "DM/MCh entrance — pick your group and super-specialties; every metric follows that choice.",
-    facts: ["150 Qs · 600 marks", "13 groups · 50+ courses", "Password"],
+    facts: ["150 Qs · 600 marks", "15 groups · 49 courses", "Password"],
   },
   {
     key: "hub",

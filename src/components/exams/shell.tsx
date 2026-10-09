@@ -29,14 +29,6 @@ export function WorkspaceShell({ exam, children }: { exam: ExamKey; children: Re
 function Frame({ exam, children }: { exam: ExamKey; children: React.ReactNode }) {
   const pathname = usePathname();
   const root = useRef<HTMLDivElement>(null);
-  // Living colour: nudge the hue drift every few seconds (a slow two-minute swing of ±26°) — one cheap style update, not a per-frame animation.
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const tick = () => root.current?.style.setProperty("--x-drift", (26 * Math.sin((2 * Math.PI * Date.now()) / 120_000)).toFixed(1));
-    tick();
-    const t = window.setInterval(tick, 2500);
-    return () => window.clearInterval(t);
-  }, []);
   const tabs = TABS(exam);
   const active = (href: string) => (href === `/${exam}` ? pathname === href : pathname.startsWith(href));
   return (

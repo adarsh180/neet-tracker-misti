@@ -1354,3 +1354,26 @@ model GateSecret {
 
   @@map("gate_secrets")
 }
+
+// The PG / SS syllabus itself: subject → chapter → topic → subtopic, every
+// level editable (rename, note, add, remove/restore). Seeded nodes are only
+// hidden when removed so they can be restored; your own nodes are deleted.
+model ExamNode {
+  id        String   @id @default(cuid())
+  exam      String   @db.VarChar(8)
+  key       String   @db.VarChar(191)
+  parentKey String?  @db.VarChar(191)
+  level     Int
+  name      String   @db.VarChar(200)
+  detail    String?  @db.Text
+  ord       Int      @default(0)
+  meta      Json?
+  origin    String   @default("seed") @db.VarChar(8)
+  hidden    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@unique([exam, key])
+  @@index([exam, level])
+  @@index([exam, parentKey])
+  @@map("exam_nodes")
+}

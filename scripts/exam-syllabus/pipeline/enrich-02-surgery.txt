@@ -1,0 +1,52 @@
+== surgical.paper
+@ Operative principles and perioperative care
+! Official DNB General Surgery syllabus — basic sciences, pre-operative management, theatre problems.
++ Basic sciences for surgeons: history of surgery; molecular and cell biology; mediators of the inflammatory response; regenerative medicine; molecular biology and genetics
++ Pre-operative assessment: fitness for anaesthesia and surgery; respiratory, cardiac and renal function tests; diabetes, anaemia and malnutrition; patients on steroids, anticoagulants and immunosuppressants
++ Asepsis and surgical infection: sterilisation; asepsis and antisepsis; skin preparation; antibiotic prophylaxis; surgically important organisms; surgery in hepatitis and HIV carriers
++ Theatre technology and safety: diathermy; lasers; tourniquets; prevention of nerve injury under anaesthesia; explosion hazards; suture and ligature materials
++ Basic procedures: excision of cysts and benign skin tumours; biopsy techniques; drainage of superficial abscess; bowel anastomosis principles
++ Wounds and scars: classification of surgical wounds; incisions and closure; wound dehiscence; scars and contractures; dressings
++ Blood and haemostasis: coagulation disorders; thromboembolism prophylaxis; blood transfusion and plasma substitutes; haemolytic disorders of surgical importance
++ Post-operative care: post-operative complications; pain control; ventilatory support; surgery in the immunocompromised; diabetes and renal failure in surgery
++ Imaging in surgery: X-ray and angiography; ultrasound; CT; MRI; PET; image-guided intervention
+@ Trauma, shock and acute surgical care
+! Official DNB General Surgery syllabus — trauma, intensive care.
++ Chest, abdominal and pelvic trauma: penetrating chest injury and pneumothorax; rib fractures and flail chest; abdominal and pelvic injury; diagnostic peritoneal lavage; splenic repair; operation for ruptured liver
++ Neurotrauma for the general surgeon: head injury principles; intracranial haemorrhage; spinal cord injury and compression; paraplegia and quadriplegia care
++ Special trauma problems: pre-hospital care; triage; trauma scoring systems; gunshot and blast wounds; facial and orbital injuries
++ Limb injury principles: fracture healing; non-union and delayed union; bone grafting; compartment and crush syndromes; fat embolism; brachial plexus injury
++ Surgical intensive care: cardiac arrest and resuscitation; haemodynamic monitoring (CVP, wedge pressure); pulmonary oedema; ARDS; respiratory failure; tracheostomy and laryngotomy; multisystem failure; ICU scoring and admission
+@ Esophagogastric, intestinal and colorectal surgery
+! Official DNB General Surgery syllabus — abdomen and acute abdominal conditions.
++ Acute abdomen: assessment of the acute abdomen; peritonitis and intra-abdominal abscess; appendicitis and right iliac fossa pain; intestinal obstruction and pseudo-obstruction; paralytic ileus; intestinal ischaemia; toxic megacolon; swallowed foreign bodies; gynaecological causes of acute abdominal pain
++ Emergency operations: laparotomy for perforation; suture of bleeding peptic ulcer; gastrectomy for bleeding; Hartmann operation; subtotal colectomy; diagnostic laparoscopy
++ Colorectal operations: anterior and abdominoperineal resection; panproctocolectomy and ileoanal pouch; rectal prolapse surgery; incontinence and sphincter repair; recto-vaginal fistula; complex fistula-in-ano
++ Intestinal fistulae: high and low output fistula; nutrition and skin care; operation for intestinal fistula
+@ Vascular and endovascular surgery
+! Official DNB General Surgery syllabus — vascular.
++ Arterial disease: atherosclerosis; chronic obliterative arterial disease; acute and chronic limb ischaemia; gangrene and amputations; aneurysms and ruptured aortic aneurysm; carotid and cerebrovascular disease; mesenteric ischaemia; renovascular disease; Raynaud and vasospastic disorders; vasculitis
++ Vascular techniques: arteriography; continuous-wave Doppler; duplex ultrasound; angioplasty and stenting; thrombolysis; reconstructive arterial surgery; prosthetic grafts and graft surveillance; reperfusion injury
++ Venous disease: varicose veins; deep vein thrombosis; post-phlebitic limb and venous ulceration; chronic leg ulcer; hypercoagulable states
++ Lymphatics and spleen: lymphoedema; lymph node disease; splenectomy and hypersplenism; surgical aspects of haematological and autoimmune disease
+@ Breast, endocrine and soft-tissue surgery
+! Official DNB General Surgery syllabus — head, neck and endocrine; breast.
++ Breast: acute infections; benign breast disorders; nipple discharge; mastalgia; mammography and screening; carcinoma breast management; genetics of breast cancer
++ Endocrine surgery: solitary thyroid nodule; multinodular goitre; Graves disease; complications of thyroidectomy; hyperparathyroidism and hypercalcaemia; adrenal cortex and medulla; secondary hypertension; endocrine pancreas; carcinoid syndrome; familial endocrine disease screening
++ Head and neck for the general surgeon: common neck swellings; salivary gland disease; laryngeal disease and airway; tracheostomy; epistaxis; ENT foreign bodies
+@ General pediatric surgical disease
+! Official DNB General Surgery syllabus — paediatric surgical disorders.
++ Neonatal surgery: neonatal physiology and fluids; tracheo-oesophageal fistula; congenital small bowel obstruction; malrotation; anorectal anomalies; Hirschsprung disease; spina bifida; hydrocephalus
++ Common paediatric surgery: cleft lip and palate; pyloric stenosis; intussusception; inguinal hernia and hydrocele; undescended testis; testicular torsion; foreskin disorders; paediatric trauma and burns; paediatric oncology
+@ Urological and pelvic surgery
++ Urological operations for general surgeons: nephrectomy; pyelolithotomy and ureterolithotomy; pyeloplasty; exploration of scrotum for torsion; reduction of paraphimosis; acute urological presentations
+@ Musculoskeletal surgery for the general surgeon
+! New chapter — official DNB General Surgery syllabus, locomotor system.
++ Locomotor problems: common fractures and joint injuries; degenerative and rheumatoid arthritis; bone and joint infection including implants; low back pain and sciatica; metabolic bone disease; nerve injuries and paralytic disorders; common hand disorders and infections; amputations and prostheses
+@ Surgical oncology techniques
++ Oncology for surgeons: cancer registries and epidemiology; clinicopathological staging; tumour biology and markers; screening; multimodality treatment; terminal care and pain relief; rehabilitation
++ Reconstructive techniques: skin grafts and flaps; myocutaneous flaps; tissue expanders; block dissection of the groin
+@ Surgical audit, ethics and outcomes
+! New chapter — official DNB General Surgery syllabus, ethics and outcome of surgery.
++ Ethics and law: informed consent; medico-legal aspects of surgery; communication with patients and relatives
++ Outcomes and research: decision-making in surgery; clinical audit; statistics in surgery; design of clinical trials; evaluation of innovations; health-service economics

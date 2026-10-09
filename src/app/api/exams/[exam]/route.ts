@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
-import { guardExam, loadCustom, loadPrefs, loadRecords } from "@/lib/exams/server";
-import { buildTree, treeKeys, type ExamKey, type ExamPrefs, type ExamTree } from "@/lib/exams/syllabus";
+import { randomBytes } from "node:crypto";
+
+import { guardExam, loadPrefs, loadRecords, loadSyllabus, toNode } from "@/lib/exams/server";
+import { buildTree, ssScope, treeKeys, type ExamKey, type ExamPrefs, type ExamTree } from "@/lib/exams/syllabus";
 import { NEET_SS_GROUPS } from "@/data/exams/neet-ss";
 
 export const dynamic = "force-dynamic";
@@ -16,19 +18,41 @@ const date = (v: unknown) => (typeof v === "string" && DATE.test(v) ? new Date(`
 const optInt = (v: unknown, max: number) => (v === "" || v === null || v === undefined ? null : int(v, max));
 const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
 
-/** The tree as it stands now — with your own chapters and topics. `raw` ignores hides, so hidden items can be restored. */
+/** The tree as it stands now (from the database). `raw` keeps hidden nodes, so they can be restored. */
 async function treeFor(exam: ExamKey, opts: { raw?: boolean } = {}) {
-  const [prefs, custom] = await Promise.all([loadPrefs(exam), loadCustom(exam)]);
-  return buildTree(exam, prefs, opts.raw ? { items: custom.items, overrides: [] } : custom);
+  const prefs = await loadPrefs(exam);
+  return buildTree(exam, prefs, await loadSyllabus(exam, prefs), opts);
+}
+const LEVEL_NAME = ["", "subject", "chapter", "topic", "subtopic"];
+const newKey = (prefix: string | null) => `${prefix ? `${prefix}.` : ""}u${randomBytes(4).toString("hex")}`;
+/** A node the client may act on: in this exam and, for SS, inside the chosen group's subjects. */
+async function nodeInScope(exam: ExamKey, key: string) {
+  if (!key || key.length > 191) return null;
+  const node = await db.examNode.findUnique({ where: { exam_key: { exam, key } } });
+  if (!node) return null;
+  if (exam === "ss") {
+    const { group, subjectKeys } = ssScope(await loadPrefs(exam));
+    const ok = subjectKeys.some((k) => key === k || key.startsWith(`${k}.`)) || key.startsWith(`${group.key}.u`);
+    if (!ok) return null;
+  }
+  return node;
 }
 const subjectOf = (tree: ExamTree, key: string) => tree.subjects.find((s) => key === s.key || key.startsWith(`${s.key}.`))?.key ?? null;
 
 /** Everything a workspace page needs: its preferences and its own records. */
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ exam: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ exam: string }> }) {
   const g = await guardExam((await params).exam);
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status });
   try {
-    const [prefs, records] = await Promise.all([loadPrefs(g.exam), loadRecords(g.exam)]);
+    // One chapter's subtopics (loaded when the chapter opens).
+    const chapter = req.nextUrl.searchParams.get("subtopics");
+    if (chapter) {
+      if (!(await nodeInScope(g.exam, chapter))) return NextResponse.json({ error: "Unknown chapter" }, { status: 404 });
+      const rows = await db.examNode.findMany({ where: { exam: g.exam, level: 4, key: { startsWith: `${chapter}.` } }, select: { key: true, parentKey: true, level: true, name: true, detail: true, ord: true, meta: true, origin: true, hidden: true } });
+      return NextResponse.json({ nodes: rows.map(toNode) });
+    }
+    const prefs = await loadPrefs(g.exam);
+    const records = await loadRecords(g.exam, prefs);
     return NextResponse.json({ prefs, records });
   } catch (error) {
     console.error("[exams] load failed", error);
@@ -46,6 +70,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ exa
 
   try {
     switch (action) {
+      case "subtick": {
+        const key = String(body.key ?? "");
+        const node = await nodeInScope(exam, key);
+        if (!node || node.level !== 4 || node.hidden || !node.parentKey) return bad("Unknown subtopic");
+        const done = body.done !== false;
+        await db.examProgress.upsert({ where: { exam_itemKey: { exam, itemKey: key } }, create: { exam, itemKey: key, status: done ? "done" : "todo" }, update: { status: done ? "done" : "todo" } });
+        // The topic follows its checklist upward (all ticked → done, some → reading); it is never demoted.
+        const topicKey = node.parentKey;
+        const siblings = await db.examNode.findMany({ where: { exam, parentKey: topicKey, level: 4, hidden: false }, select: { key: true } });
+        const doneCount = await db.examProgress.count({ where: { exam, status: "done", itemKey: { in: siblings.map((x) => x.key) } } });
+        const topic = await db.examProgress.findUnique({ where: { exam_itemKey: { exam, itemKey: topicKey } } });
+        const before = topic?.status ?? "todo";
+        let after = before;
+        if (siblings.length && doneCount === siblings.length) after = "done";
+        else if (doneCount > 0 && before === "todo") after = "reading";
+        if (after !== before) await db.examProgress.upsert({ where: { exam_itemKey: { exam, itemKey: topicKey } }, create: { exam, itemKey: topicKey, status: after }, update: { status: after } });
+        return NextResponse.json({ ok: true, topic: { itemKey: topicKey, status: after }, done: doneCount, of: siblings.length });
+      }
       case "progress": {
         const keys = treeKeys(await treeFor(exam));
         const itemKey = String(body.itemKey ?? "");
@@ -86,51 +128,80 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ exa
         return NextResponse.json({ ok: true });
       }
 
-      /* ── Your own syllabus: add, rename, hide, restore, delete ──────── */
-      case "addChapter": {
-        const tree = await treeFor(exam);
-        const subjectKey = String(body.subjectKey ?? "");
+      /* ── The syllabus itself: every level can be added, edited, removed, restored ── */
+      case "node.add": {
         const name = str(body.name, 200);
-        if (!tree.subjects.some((s) => s.key === subjectKey)) return bad("Pick a subject");
-        if (!name) return bad("Give the chapter a name");
-        const count = await db.examCustomItem.count({ where: { exam } });
-        if (count >= 2000) return bad("That is a lot of custom items — tidy up some first");
-        const row = await db.examCustomItem.create({ data: { exam, subjectKey, kind: "chapter", name } });
-        return NextResponse.json({ ok: true, key: `${subjectKey}.x${row.id}` });
+        if (!name) return bad("Give it a name");
+        const parentKey = typeof body.parentKey === "string" && body.parentKey ? body.parentKey : null;
+        const count = await db.examNode.count({ where: { exam, origin: "user" } });
+        if (count >= 5000) return bad("That is a lot of your own items — tidy up some first");
+        const prefs = await loadPrefs(exam);
+        let level = 1;
+        let meta: Record<string, unknown> | undefined;
+        if (parentKey) {
+          const parent = await nodeInScope(exam, parentKey);
+          if (!parent || parent.hidden) return bad("That parent no longer exists");
+          if (parent.level >= 4) return bad("Subtopics are the deepest level — add a note instead");
+          level = parent.level + 1;
+        } else {
+          const w = Number(body.weight);
+          meta = exam === "ss"
+            ? { role: "custom", ss: ssScope(prefs).group.key, weight: 0, hue: 300 }
+            : { role: "custom", weight: Number.isFinite(w) && w >= 0 && w <= 100 ? w : 0, hue: Math.floor(Math.random() * 360), group: "Your subjects" };
+        }
+        const prefix = parentKey ?? (exam === "ss" ? ssScope(prefs).group.key : null);
+        const last = await db.examNode.findFirst({ where: { exam, parentKey }, orderBy: { ord: "desc" }, select: { ord: true } });
+        const key = newKey(prefix);
+        await db.examNode.create({ data: { exam, key, parentKey, level, name, detail: str(body.detail, 4000), ord: (last?.ord ?? 0) + 1, origin: "user", ...(meta ? { meta: meta as object } : {}) } });
+        return NextResponse.json({ ok: true, key, level: LEVEL_NAME[level] });
       }
-      case "addTopic": {
-        const tree = await treeFor(exam);
-        const chapterKey = String(body.chapterKey ?? "");
-        const name = str(body.name, 200);
-        if (!treeKeys(tree).chapters.has(chapterKey)) return bad("Pick a chapter");
-        if (!name) return bad("Give the topic a name");
-        const subjectKey = subjectOf(tree, chapterKey);
-        if (!subjectKey) return bad("Pick a chapter");
-        const count = await db.examCustomItem.count({ where: { exam } });
-        if (count >= 2000) return bad("That is a lot of custom items — tidy up some first");
-        const row = await db.examCustomItem.create({ data: { exam, subjectKey, chapterKey, kind: "topic", name } });
-        return NextResponse.json({ ok: true, key: `${chapterKey}.x${row.id}` });
-      }
-      case "rename":
-      case "hide":
-      case "unhide": {
-        const keys = treeKeys(await treeFor(exam, { raw: true }));
-        const itemKey = String(body.itemKey ?? "");
-        if (!keys.items.has(itemKey) && !keys.chapters.has(itemKey)) return bad("Unknown chapter or topic");
-        const data = action === "rename" ? { rename: str(body.name, 200) } : { hidden: action === "hide" };
-        await db.examItemOverride.upsert({ where: { exam_itemKey: { exam, itemKey } }, create: { exam, itemKey, ...data }, update: data });
+      case "node.edit": {
+        const node = await nodeInScope(exam, String(body.key ?? ""));
+        if (!node) return bad("Unknown item");
+        const data: { name?: string; detail?: string | null; meta?: object } = {};
+        if (body.name !== undefined) {
+          const name = str(body.name, 200);
+          if (!name) return bad("A name cannot be empty");
+          data.name = name;
+        }
+        if (body.detail !== undefined) data.detail = str(body.detail, 4000);
+        if (node.level === 1 && body.weight !== undefined && exam === "pg") {
+          const w = Number(body.weight);
+          if (!Number.isFinite(w) || w < 0 || w > 100) return bad("Weight is 0–100");
+          data.meta = { ...((node.meta as object) ?? {}), weight: w };
+        }
+        await db.examNode.update({ where: { id: node.id }, data });
         return NextResponse.json({ ok: true });
       }
-      case "deleteCustom": {
-        const row = await db.examCustomItem.findFirst({ where: { exam, id: String(body.id) } });
-        if (!row) return NextResponse.json({ ok: true });
-        const key = row.kind === "chapter" ? `${row.subjectKey}.x${row.id}` : `${row.chapterKey}.x${row.id}`;
-        await db.$transaction([
-          db.examCustomItem.deleteMany({ where: { exam, OR: [{ id: row.id }, { chapterKey: key }] } }),
-          db.examProgress.deleteMany({ where: { exam, OR: [{ itemKey: key }, { itemKey: { startsWith: `${key}.` } }] } }),
-          db.examRevisionLog.deleteMany({ where: { exam, OR: [{ itemKey: key }, { itemKey: { startsWith: `${key}.` } }] } }),
-          db.examItemOverride.deleteMany({ where: { exam, OR: [{ itemKey: key }, { itemKey: { startsWith: `${key}.` } }] } }),
-        ]);
+      case "node.remove": {
+        const node = await nodeInScope(exam, String(body.key ?? ""));
+        if (!node) return NextResponse.json({ ok: true });
+        if (node.origin !== "user") {
+          await db.examNode.update({ where: { id: node.id }, data: { hidden: true } });
+          return NextResponse.json({ ok: true, restorable: true });
+        }
+        // Your own item: gone for good, with everything under it and its progress.
+        const under = { exam, OR: [{ key: node.key }, { key: { startsWith: `${node.key}.` } }] };
+        const progressUnder = { exam, OR: [{ itemKey: node.key }, { itemKey: { startsWith: `${node.key}.` } }] };
+        await db.$transaction([db.examNode.deleteMany({ where: under }), db.examProgress.deleteMany({ where: progressUnder }), db.examRevisionLog.deleteMany({ where: progressUnder })]);
+        return NextResponse.json({ ok: true, restorable: false });
+      }
+      case "node.restore": {
+        const node = await nodeInScope(exam, String(body.key ?? ""));
+        if (!node) return bad("Unknown item");
+        await db.examNode.update({ where: { id: node.id }, data: { hidden: false } });
+        return NextResponse.json({ ok: true });
+      }
+      case "node.move": {
+        const node = await nodeInScope(exam, String(body.key ?? ""));
+        if (!node) return bad("Unknown item");
+        const dir = body.dir === "up" ? -1 : 1;
+        const sibs = await db.examNode.findMany({ where: { exam, parentKey: node.parentKey, level: node.level }, orderBy: [{ ord: "asc" }, { name: "asc" }], select: { id: true, key: true } });
+        const i = sibs.findIndex((x) => x.key === node.key);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= sibs.length) return NextResponse.json({ ok: true });
+        [sibs[i], sibs[j]] = [sibs[j], sibs[i]];
+        await db.$transaction(sibs.map((x, k) => db.examNode.update({ where: { id: x.id }, data: { ord: k + 1 } })));
         return NextResponse.json({ ok: true });
       }
 
@@ -203,13 +274,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ exa
         if (exam === "ss" && body.ss && typeof body.ss === "object") {
           const group = NEET_SS_GROUPS.find((x) => x.key === body.ss.group);
           if (!group) return bad("Unknown SS group");
-          const specialties = (Array.isArray(body.ss.specialties) ? body.ss.specialties : []).filter((k: unknown) => group.specialties.some((s) => s.key === k)).slice(0, 4);
-          next.ss = { group: group.key, specialties: specialties.length ? specialties : [group.specialties[0].key] };
+          const specialties = (Array.isArray(body.ss.specialties) ? body.ss.specialties : []).filter((k: unknown) => group.courses.some((c) => c.key === k && c.subject)).slice(0, 4);
+          next.ss = { group: group.key, specialties };
         }
         if ("focus" in body) {
           if (body.focus === null) next.focus = null;
           else {
-            const tree = buildTree(exam, next);
+            const tree = buildTree(exam, next, await loadSyllabus(exam, next));
             if (!tree.subjects.some((s) => s.key === body.focus)) return bad("Unknown subject");
             next.focus = body.focus;
           }

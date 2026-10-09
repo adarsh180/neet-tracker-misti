@@ -1,0 +1,149 @@
+# Additions taken from the official NBEMS curricula (DNB broad specialties = the NEET-SS
+# feeder PG-exit curriculum; DrNB Critical Care Medicine and Medical Oncology).
+# "== subject key", "@ chapter", "+ topic: sub; sub", "! note" (note on the line above).
+
+== medical.paper
+@ Cardiovascular anatomy and physiology
+! Official DNB General Medicine syllabus §2 (Cardiology) — theory and practical skills.
++ Bedside and laboratory cardiac investigations: 12-lead ECG interpretation; 24-hour Holter; treadmill test (TMT); dobutamine stress test; thallium perfusion scan; chest X-ray in heart disease
++ Cardiac procedures to know: central line and CVP measurement; arterial line; temporary pacing (TPI) and external pacing; thrombolysis; coronary angiography and angioplasty
+@ Heart failure and cardiomyopathy
++ Myocardial and pericardial disease: myocarditis; infective endocarditis (Duke criteria, prophylaxis); cor pulmonale; constrictive pericarditis; cardiac tamponade
++ Advanced heart failure: cardiac transplantation (indications, rejection); LVAD; cardiac rehabilitation
+@ Valvular, pericardial and aortic disease
++ Valve surgery and prosthetic valves: choice of mechanical vs bioprosthetic valve; anticoagulation with prosthetic valves; prosthetic valve endocarditis
++ Heart disease in pregnancy: congenital heart disease in adult life and pregnancy; valvular disease in pregnancy; peripartum cardiomyopathy
+@ Electrophysiology and rhythm disorders
++ Syncope: reflex syncope; orthostatic hypotension; cardiac syncope; tilt-table testing
++ Antiarrhythmic and cardioactive drugs: Vaughan-Williams classes; digoxin; amiodarone toxicity; drug-induced QT prolongation
+@ Neurologic localization and diagnostics
+! Official DNB General Medicine syllabus §3 (Neurology).
++ Neurological investigations: lumbar puncture and CSF analysis; CT and MRI of brain and spine; MR and CT angiography; EEG; EMG and nerve conduction studies; evoked potentials; digital subtraction angiography
++ Bedside neurology: Glasgow coma scale; mental status examination; lesion localisation; coma and brain-death assessment
+@ Cerebrovascular and neurocritical disorders
++ Stroke spectrum: TIA; ischaemic stroke; subarachnoid haemorrhage; subdural haematoma; cerebral venous thrombosis
++ Neurological emergencies: coma; raised intracranial pressure; status epilepticus; spinal cord compression; neuromuscular respiratory failure (GBS, myasthenic crisis); Wernicke-Korsakoff encephalopathy; giant cell arteritis with visual loss
+@ Chronic neurological disease
++ Headache and demyelination: migraine; multiple sclerosis; neuromyelitis optica
++ Neuromuscular and motor neuron disease: myopathies; neuropathies; myasthenia gravis; motor neuron disease
++ CNS infections and tumours: meningitis; encephalitis; brain abscess; CNS neoplasms; neurocysticercosis
++ Developmental and congenital neurology: Arnold-Chiari malformation; meningomyelocele; cortical malformations; microcephaly and macrocephaly; learning disability and autism (adult presentation)
++ Nutritional and metabolic neurology: vitamin B12 and thiamine deficiency; hepatic and uraemic encephalopathy; autonomic disorders; sleep disorders
+@ Obstructive airway disease
+! Official DNB General Medicine syllabus §5 (Respiratory medicine).
++ Respiratory emergencies: acute severe asthma; pneumothorax; acute upper airway obstruction; acute respiratory failure
++ Suppurative and genetic lung disease: bronchiectasis; cystic fibrosis; lung abscess
+@ Pulmonary infections
++ Pleural infection and special infections: empyema; parapneumonic effusion; non-tuberculous mycobacteria; fungal lung disease; HIV-related pulmonary disease
+@ Interstitial, vascular and occupational lung disease
++ Lung tumours and pleura: primary lung cancer staging; secondary lung tumours; mesothelioma; mediastinal tumours
++ Sleep and ventilatory failure: obstructive sleep apnoea; central sleep apnoea; obesity hypoventilation; neuromuscular ventilatory failure
++ Systemic disease and the lung: sarcoidosis; connective-tissue-disease lung; lung transplantation selection and follow-up
++ Respiratory procedures: pleural aspiration and biopsy; intercostal drain; spirometry; bronchoscopy; thoracoscopy
+@ Renal physiology and investigation
+! Official DNB General Medicine syllabus §6 (Nephrology).
++ Renal work-up: urinalysis and urine microscopy; proteinuria, haematuria, oliguria and polyuria; renal imaging; renal biopsy indications and complications
+@ Glomerular and tubular disease
++ Tubulointerstitial and inherited disease: analgesic nephropathy; reflux nephropathy; polycystic kidney disease; Alport syndrome; diabetic nephropathy
++ Stones, infection and obstruction: urinary tract infection; nephrolithiasis (metabolic work-up, prevention); obstructive uropathy and emergency nephrostomy
+@ Acute and chronic kidney disease
++ Renal replacement therapy: haemodialysis; peritoneal dialysis; CRRT; dialysis complications; drug dosing in renal failure
++ Renal transplantation: donor and recipient screening; immunosuppressive regimens; cellular and vascular rejection
++ Hypertensive renal disease: hypertensive nephrosclerosis; renovascular hypertension
+@ Endocrine physiology and testing
+! Official DNB General Medicine syllabus §7 (Endocrinology and metabolism).
++ Pituitary disorders: functioning and non-functioning pituitary tumours; hyperprolactinaemia; acromegaly; hypopituitarism; diabetes insipidus; SIADH
++ Thyroid disorders: thyrotoxicosis; hypothyroidism; thyroid storm; myxoedema coma; iodine deficiency disorders; thyroid nodule and carcinoma
+@ Adrenal, reproductive and bone endocrinology
++ Gonadal and androgen disorders: hypogonadism; male sexual dysfunction; hirsutism and androgen excess; polycystic ovary syndrome; hormone replacement therapy
++ Metabolic bone disease: hypercalcaemia and hyperparathyroidism of malignancy; vitamin D deficiency; post-menopausal osteoporosis and BMD interpretation; osteomalacia; Paget disease
++ Obesity and metabolic syndrome: obesity evaluation; metabolic syndrome; dyslipidaemia management
+@ Allergy and clinical immunology
+! New chapter — official DNB General Medicine syllabus §8 (Allergy and immunology).
++ Immune system: cellular and humoral immunity; cytokines and complement; HLA system and disease association; hypersensitivity reactions
++ Immunodeficiency: primary immunodeficiency; secondary immunodeficiency
++ Allergic disorders: allergic rhinitis; urticaria and angioedema; anaphylaxis and laryngeal oedema; food allergy; drug allergy; skin and challenge testing
++ Immune-complex and infiltrative disorders: amyloidosis; sarcoidosis; immune-complex disease; monoclonal antibodies in diagnosis and therapy
+@ Esophageal and gastroduodenal disorders
+! Official DNB General Medicine syllabus §9 (Gastroenterology and hepatology).
++ Symptom-based gastroenterology: dysphagia; heartburn and dyspepsia; persistent vomiting; acute and chronic abdominal pain
++ Peptic disease: peptic ulcer; Helicobacter pylori detection and eradication; oesophageal dysmotility; oesophageal infections
+@ Small bowel and colorectal diseases
++ Malabsorption: coeliac disease; tropical sprue; tests of malabsorption
++ GI malignancy: oesophageal cancer; gastric cancer; pancreatic cancer; colorectal cancer
++ Diarrhoea and infection: acute infectious diarrhoea; chronic diarrhoea; GI disease in AIDS; irritable bowel syndrome
+@ Hepatology and liver failure
++ Liver disease spectrum: liver abscess; haemochromatosis; hepatocellular carcinoma and other liver tumours; immunologic liver disease
++ GI procedures: abdominal paracentesis; upper and lower GI endoscopy; capsule endoscopy; Sengstaken-Blakemore tube; liver biopsy; endoscopic ultrasound and FibroScan
+@ Anemia, hemostasis and thrombosis
+! Official DNB General Medicine syllabus §10 (Haematology and oncology).
++ Red cell disorders: anaemias; polycythaemia; thalassaemias; haemoglobinopathies; porphyrias; bone marrow failure
++ Platelet and coagulation disorders: thrombocytopenia; thrombocytosis; DIC; haemophilia; von Willebrand disease; thrombophilia
++ Transfusion medicine: red cell, platelet and plasma transfusion; cryoprecipitate and albumin; cross-matching; transfusion reactions
+@ Hematologic malignancies
++ Myeloproliferative and plasma cell disorders: myeloproliferative neoplasms; multiple myeloma; plasma cell disorders
++ Stem cell transplantation: autologous and allogeneic HSCT; tissue typing; high-dose therapy; graft-versus-host disease
+@ General oncology principles
++ Oncological emergencies: hypercalcaemia; superior vena cava obstruction; spinal cord compression; cardiac tamponade; neutropenic sepsis; tumour lysis
++ Chemotherapy-curable and adjuvant settings: testicular cancer; lymphomas; adjuvant therapy in breast, colon, lung, head-neck and ovarian cancer; paraneoplastic syndromes
+@ Rheumatology and clinical immunology
+! Official DNB General Medicine syllabus §11 (Immune-mediated inflammatory and rheumatological disorders).
++ Arthritis spectrum: rheumatoid arthritis; infectious arthritis; osteoarthritis; ankylosing spondylitis; reactive arthritis; psoriatic arthritis; enteropathic arthritis
++ Connective tissue disease: SLE; Sjögren syndrome; Behçet syndrome; polymyositis and dermatomyositis; inclusion body myositis; systemic sclerosis; MCTD
++ Vasculitis and PMR: polyarteritis nodosa; Takayasu arteritis; temporal arteritis; polymyalgia rheumatica
++ Crystal and metabolic bone disease: gout; pseudogout and chondrocalcinosis; osteoporosis; osteomalacia
++ Rheumatological emergencies and monitoring: red hot joint; acute low back pain; cervical myelopathy in RA; DMARD and immunosuppressant monitoring; disease activity scores
+@ Geriatrics and palliative care
+! Official DNB General Medicine syllabus §12 (Geriatric medicine) and §22 (Palliative care).
++ Geriatric syndromes: falls; cognitive impairment; delirium; urinary and faecal incontinence; constipation; gait disorders; pressure ulcers
++ Prescribing in old age: pharmacokinetic changes with age; polypharmacy; iatrogenic disease; comprehensive geriatric assessment scales
++ Palliative care: pain syndromes (neuropathic, bone, visceral); palliative emergencies; symptom control (dyspnoea, nausea, constipation, malignant effusions); end-of-life ethics and certification of death
+@ Adolescent health
+! New chapter — official DNB General Medicine syllabus §13.
++ Adolescent growth and puberty: stages of adolescence; short and tall stature; precocious and delayed puberty; delayed menarche
++ Adolescent problems: acne; obesity; eating disorders; substance use; sexual health and pregnancy; learning disorders; medicolegal issues
+@ Psychiatry in medical practice
+! New chapter — official DNB General Medicine syllabus §14.
++ Psychiatric disorders for physicians: biology of psychiatric disorders; depression and anxiety in medical illness; alcohol and alcoholism; substance abuse
+@ Medical dermatology
+! Official DNB General Medicine syllabus §15 (Dermatology).
++ Cutaneous disease with systemic links: eczema; psoriasis; rosacea; urticaria; photosensitivity; pemphigus and pemphigoid; vitiligo; cutaneous lupus
++ Skin infections and infestations: herpes zoster and simplex; molluscum; impetigo and cellulitis; cutaneous TB; leprosy; syphilis; dermatophytes; scabies
++ Drug reactions and emergencies: erythema multiforme; Stevens-Johnson syndrome and TEN; erythroderma; pustular psoriasis
++ Skin tumours and systemic markers: BCC; SCC; melanoma; Kaposi sarcoma; acanthosis nigricans; pyoderma gangrenosum; erythema nodosum
+@ Medical genetics and genomics
+! Official DNB General Medicine syllabus §16 (Clinical genetics).
++ Cytogenetics: aneuploidy; deletion and duplication; balanced and Robertsonian translocation; FISH
++ Inheritance phenomena: penetrance and expressivity; mosaicism; genomic imprinting; triplet-repeat disorders and anticipation; mitochondrial inheritance
++ Applied genetics: cancer genetics and family history; predictive testing; pharmacogenetics (pseudocholinesterase, acetylator status, G6PD); genetic counselling and consent; OMIM
+@ Infectious diseases and antimicrobial stewardship
+! Official DNB General Medicine syllabus §17 (Infectious diseases).
++ Bacterial and atypical infections: Gram-positive infections; Gram-negative infections; spirochaetal disease; rickettsial disease; mycoplasma and chlamydia
++ Febrile illness: pyrexia of unknown origin; enteric fever; falciparum malaria; kala-azar; septicaemia; the febrile traveller
++ Infection in special hosts: neutropenic fever; transplant recipients; diabetes and alcohol use; ICU-acquired infection
++ HIV medicine: staging; antiretroviral therapy; opportunistic infections and prophylaxis; HIV-associated tuberculosis; counselling and post-exposure prophylaxis
++ Sexually transmitted infections: urethral and vaginal discharge; cystitis and prostatitis; epididymitis; proctitis
++ Immunisation and infection control: adult immunisation; antibiotic prophylaxis; hospital-acquired infection; community infection control
+@ Toxicology, emergency and intensive medicine
+! Official DNB General Medicine syllabus §4 (Intensive care), §18 (Poisoning) and §25 (Critical care and emergency).
++ Poisoning and envenomation: common poisonings; drug overdose; snake bite; scorpion, marine and arthropod envenomation; mammalian bites; bioterrorism
++ Critical care: ARDS and ventilation modes; shock and inotropes; multi-organ failure; sedation and analgesia in ICU; renal replacement therapy in ICU
++ ICU procedures: airway management and intubation; needle thoracostomy and chest drain; central venous access; arterial line; pericardiocentesis; peritoneal tap; plasmapheresis
+@ Environmental and climate-related illness
+! New chapter — official DNB General Medicine syllabus §19.
++ Environmental exposure: altitude illness; hypothermia and frostbite; heat-related illness; drowning; electrical injury; climate change and health
+@ Clinical pharmacology and rational drug use
+! New chapter — official DNB General Medicine syllabus §20.
++ Principles: pharmacokinetics (clearance, half-life, volume of distribution, bioavailability); pharmacodynamics; cytochrome P450 and interactions; therapeutic drug monitoring
++ Systematic clinical pharmacology: cardiovascular drugs; respiratory drugs; endocrine drugs; antimicrobials; CNS drugs; GI drugs; rheumatology drugs; anticancer drugs; IVIG and biologics
++ Safe prescribing: medication review; adverse drug reactions; management of anaphylaxis; drug overdose
+@ Nuclear medicine in internal medicine
+! New chapter — official DNB General Medicine syllabus §21.
++ Diagnostic scans: myocardial perfusion and viability imaging; ventilation-perfusion scan; bone scan; renal scans and GFR; gastric emptying and GI bleeding scans; thyroid, parathyroid and MIBG scans; cerebral perfusion imaging
++ Therapeutic radionuclides: I-131 for thyrotoxicosis and thyroid cancer; P-32 in polycythaemia; radiopharmaceuticals for bone pain
+@ Pregnancy-related medical disorders
+! New chapter — official DNB General Medicine syllabus §24.
++ Medical disorders in pregnancy: hypertension and pre-eclampsia; gestational diabetes; thyroid disease in pregnancy; heart disease in pregnancy; liver disease of pregnancy; epilepsy and pregnancy; prescribing in pregnancy
+@ Regenerative medicine
+! New chapter — official DNB General Medicine syllabus §23.
++ Regenerative medicine: stem cell biology; cell-based therapy; tissue engineering; ethical issues

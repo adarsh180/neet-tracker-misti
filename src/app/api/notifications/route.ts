@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
@@ -36,7 +37,10 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
     take: 60,
   });
-  return NextResponse.json({ notifications });
+  // A fingerprint of what the panel shows: when the client already has it, answer with an empty 204.
+  const tag = createHash("sha1").update(notifications.map((n) => `${n.id}:${n.readAt?.getTime() ?? 0}`).join("|")).digest("base64url").slice(0, 16);
+  if (request.headers.get("x-notify-tag") === tag) return new NextResponse(null, { status: 204, headers: { "x-notify-tag": tag } });
+  return NextResponse.json({ notifications }, { headers: { "x-notify-tag": tag } });
 }
 
 export async function POST(request: NextRequest) {

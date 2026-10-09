@@ -613,7 +613,7 @@ export default function DailyGoalsPage() {
   }, [syncOfflineGoals]);
 
   useEffect(() => {
-    const id = window.setInterval(() => fetchData(true), LIVE_REFRESH_MS);
+    const id = window.setInterval(() => document.visibilityState === "visible" && fetchData(true), LIVE_REFRESH_MS);
     return () => window.clearInterval(id);
   }, [fetchData]);
 

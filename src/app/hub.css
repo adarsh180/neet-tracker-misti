@@ -756,3 +756,37 @@ html[data-theme="light"] :is(.sth-card, .sth-fig)::after { background: radial-gr
 .sth-agenda.is-upcoming li { grid-template-columns: 54px minmax(0, 1fr); }
 .sth-agenda .when { display: grid; justify-items: start; gap: 1px; padding-left: 10px; border-left: 2px solid var(--k); }
 .sth-agenda .when b { font-size: 13px; }
+
+/* ── Together index skyline (replaces the ring) ───────────────────────── */
+.sth-tower { display: grid; gap: 18px; width: 100%; max-width: 340px; align-content: center; }
+.sth-tower-read { display: grid; gap: 3px; min-height: 92px; align-content: end; }
+.sth-tower-read strong { color: var(--sx-ink); font: 800 3.4rem/0.95 var(--sx-display); letter-spacing: -0.05em; }
+.sth-tower-read strong small { margin-left: 3px; color: var(--sx-ink-3); font-size: 0.34em; letter-spacing: 0; }
+.sth-tower-read span { color: var(--sx-ink-2); font-size: 12.5px; font-weight: 650; }
+.sth-tower-read em { color: var(--sx-j); font-size: 12px; font-style: normal; }
+.sth-tower-cols { display: flex; align-items: flex-end; gap: 6px; height: 196px; }
+.sth-tower .col { position: relative; display: grid; grid-template-rows: 1fr auto auto; justify-items: center; gap: 4px; flex: var(--w) 1 0; min-width: 34px; height: 100%; padding: 0; border: 0; background: none; color: var(--sx-ink); cursor: default; transition: opacity 0.25s, transform 0.35s var(--sx-ease); }
+.sth-tower .col:focus-visible { outline: 2px solid var(--sx-j); outline-offset: 3px; border-radius: 12px; }
+.sth-tower .col.is-dim { opacity: 0.35; }
+.sth-tower .col.is-hot { transform: translateY(-3px); }
+.sth-tower .glass {
+  position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 12px 12px 8px 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sx-ink) 5%, transparent), color-mix(in srgb, var(--sx-ink) 2%, transparent));
+  box-shadow: inset 0 0 0 1px var(--sx-line-2), inset 0 1px 0 color-mix(in srgb, #fff 18%, transparent);
+}
+.sth-tower .glass::after { content: ""; position: absolute; inset: 0 auto 0 12%; width: 18%; background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 14%, transparent), transparent); pointer-events: none; }
+.sth-tower .fill {
+  position: absolute; inset: auto 0 0; height: calc(var(--f) * 100%); border-radius: 6px 6px 8px 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--k) 92%, #fff 8%), color-mix(in srgb, var(--k) 70%, transparent));
+  box-shadow: 0 -8px 22px -8px var(--k);
+  transform-origin: bottom; animation: sth-rise 1.1s var(--sx-ease) calc(0.15s + var(--i) * 0.07s) backwards;
+}
+.sth-tower .cap { position: absolute; left: 10%; right: 10%; bottom: calc(var(--f) * 100% - 1px); height: 2px; border-radius: 2px; background: color-mix(in srgb, #fff 70%, var(--k)); opacity: 0.7; animation: sth-rise-cap 1.1s var(--sx-ease) calc(0.15s + var(--i) * 0.07s) backwards; }
+@keyframes sth-rise { from { transform: scaleY(0); } }
+@keyframes sth-rise-cap { from { bottom: 0; opacity: 0; } }
+.sth-tower .tone-good { --k: var(--sx-good); } .sth-tower .tone-warn { --k: var(--sx-warn); } .sth-tower .tone-bad { --k: var(--sx-bad); }
+.sth-tower .col > b { font: 750 12.5px/1 var(--sx-display); letter-spacing: -0.02em; }
+.sth-tower .col > b small { color: var(--sx-ink-3); font-size: 0.78em; font-weight: 600; }
+.sth-tower .col > small { max-width: 100%; overflow: hidden; color: var(--sx-ink-3); font-size: 10.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 520px) { .sth-tower { max-width: none; } .sth-tower-cols { height: 160px; gap: 4px; } .sth-tower .col { min-width: 0; } .sth-tower .col > small { font-size: 9.5px; } }
+@media (prefers-reduced-motion: reduce) { .sth-tower .fill, .sth-tower .cap { animation: none; } }

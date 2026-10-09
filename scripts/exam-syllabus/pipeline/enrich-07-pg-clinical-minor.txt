@@ -1,0 +1,133 @@
+# NEET PG depth for the short clinical subjects.
+== ophthalmology
+@ Anatomy & optics
++ Refraction errors: myopia; hypermetropia; astigmatism; anisometropia; correction with lenses
++ Visual acuity testing: Snellen chart; LogMAR; near vision; pinhole test
+@ Anterior segment
++ Conjunctiva: bacterial, viral and allergic conjunctivitis; trachoma (SAFE strategy); pterygium; vernal keratoconjunctivitis
++ Cornea: bacterial keratitis; fungal keratitis; Acanthamoeba keratitis; keratoconus; corneal transplant
++ Uvea: anterior uveitis; posterior uveitis; HLA-B27 uveitis; sympathetic ophthalmia
++ Dry eye: Schirmer test; tear break-up time; Sjögren syndrome
+@ Glaucoma
++ Secondary glaucoma: neovascular; phacomorphic and phacolytic; steroid-induced; uveitic glaucoma
++ Anti-glaucoma drugs: prostaglandin analogues; beta blockers; carbonic anhydrase inhibitors; alpha agonists; pilocarpine; mannitol in acute angle closure
++ Glaucoma surgery: laser peripheral iridotomy; trabeculectomy; glaucoma drainage devices
+@ Retina & optic nerve
++ Retinoblastoma: leukocoria; RB1 gene; management
++ Retinitis pigmentosa: night blindness; bone-spicule pigmentation; ring scotoma
++ ARMD: dry vs wet AMD; drusen; anti-VEGF therapy
++ Retinopathy of prematurity: risk factors; zones and stages; screening criteria; laser and anti-VEGF
+@ Squint, orbit & community
++ Blindness programmes: NPCB&VI; definitions of blindness; Vision 2020; common causes in India
++ Neuro-ophthalmology: optic neuritis; papilloedema; cranial nerve palsies (III, IV, VI); pupillary abnormalities
++ Ocular trauma: blunt trauma and hyphaema; penetrating injury; chemical injury; sympathetic ophthalmia
++ Eye in systemic disease: diabetic retinopathy; hypertensive retinopathy; thyroid eye disease; eye in HIV
+
+== ent
+@ Ear
++ Otitis media & complications: acute otitis media; CSOM (mucosal vs squamous); intratemporal complications; intracranial complications
++ Hearing loss & tests: tuning fork tests (Rinne, Weber); pure tone audiometry; impedance audiometry; BERA and OAE
++ Vertigo: BPPV and Dix-Hallpike; Ménière disease; vestibular neuritis; central vs peripheral vertigo
++ Otosclerosis: Schwartze sign; Carhart notch; stapedectomy
++ Facial nerve palsy: Bell palsy; Ramsay Hunt syndrome; House-Brackmann grading
++ Cholesteatoma: pathogenesis; attic perforation; mastoidectomy
++ Cochlear implants: candidacy; components; outcomes
+@ Nose & sinuses
++ Epistaxis: Little area; anterior vs posterior epistaxis; nasal packing; SPA ligation
++ Sinusitis: acute and chronic rhinosinusitis; complications; FESS
++ Nasal polyps & tumours: ethmoidal vs antrochoanal polyp; inverted papilloma; sinonasal malignancy
++ DNS & rhinitis: deviated nasal septum and septoplasty; allergic rhinitis; atrophic rhinitis
++ Fungal sinusitis: allergic fungal sinusitis; invasive mucormycosis
++ Juvenile nasopharyngeal angiofibroma: adolescent males; Holman-Miller sign; embolisation and surgery
++ CSF rhinorrhoea: beta-2 transferrin; endoscopic repair
+@ Pharynx & larynx
++ Tonsils & adenoids: tonsillitis; peritonsillar abscess (quinsy); adenoid hypertrophy; tonsillectomy indications
++ Laryngeal disorders: vocal nodules and polyps; laryngeal papillomatosis; laryngeal carcinoma
++ Tracheostomy: indications; types; complications; care
++ Stridor: laryngomalacia; subglottic stenosis; acute epiglottitis; croup
++ Vocal cord palsy: recurrent laryngeal nerve palsy; positions of the cord; management
++ Deep neck space infections: retropharyngeal abscess; parapharyngeal abscess; Ludwig angina
++ Oesophageal foreign bodies: coin vs button battery; oesophagoscopy
+
+== orthopaedics
+@ Trauma
++ Fracture principles: fracture healing; classification; reduction and fixation; complications
++ Dislocations: shoulder dislocation; elbow dislocation; hip dislocation; reduction techniques
++ Pelvic fractures: Young-Burgess classification; haemorrhage control; urethral injury
++ Hand injuries: Bennett and Rolando fractures; boxer fracture; mallet finger
++ Compartment syndrome: 5 Ps; compartment pressure; fasciotomy
+@ Infections & tumours
++ Osteomyelitis & bone TB: acute haematogenous osteomyelitis; chronic osteomyelitis and sequestrum; Brodie abscess; tuberculous arthritis
++ Bone tumours: benign vs malignant features; staging; biopsy principles
++ Septic arthritis: organisms; Kocher criteria; arthrotomy
++ Spinal TB: Pott spine; cold abscess; Pott paraplegia
++ Osteosarcoma & Ewing's: Codman triangle; sunburst appearance; onion-peel periosteal reaction; chemotherapy
++ Giant cell tumour: epiphyseal location; soap-bubble appearance; curettage and bone grafting
+@ Regional & paediatric orthopaedics
++ Peripheral nerve injuries: Seddon and Sunderland grading; nerve repair; tendon transfers
++ Metabolic bone disease: rickets; osteomalacia; renal osteodystrophy; Paget disease
++ Sports injuries: ACL tear; meniscal tear; ankle sprain; shoulder dislocation
++ Osteoarthritis & RA: OA radiology; RA deformities; arthroplasty
++ Low back pain: disc prolapse; lumbar canal stenosis; red flags
++ Perthes & SCFE: Catterall and Herring classification; Trethowan sign; fixation in situ
++ Rickets & osteoporosis: radiological signs of rickets; DEXA T-score; fragility fractures
++ Amputations & prosthetics: levels of amputation; prosthetic fitting
+
+== dermatology
+@ Basics & infections
++ Leprosy: Ridley-Jopling classification; lepra reactions; MDT regimens; slit-skin smear
++ STIs: syphilis stages; chancroid; LGV; donovanosis; gonorrhoea; syndromic management
++ Viral infections of skin: herpes simplex; herpes zoster; warts; molluscum contagiosum; HFMD
++ Skin biopsy & investigations: punch biopsy; Tzanck smear; KOH mount; Wood lamp; patch test
+@ Inflammatory & immunobullous
++ Vesiculobullous disorders: pemphigus vulgaris; bullous pemphigoid; dermatitis herpetiformis; Nikolsky sign
++ Pigmentary & hair disorders: vitiligo; melasma; alopecia areata; androgenetic alopecia
++ Cutaneous malignancies: BCC; SCC; melanoma (ABCDE); mycosis fungoides
+
+== psychiatry
+@ Major disorders
++ Schizophrenia: positive and negative symptoms; Schneider first-rank symptoms; subtypes; antipsychotic treatment
++ Anxiety & OCD: generalised anxiety disorder; panic disorder; phobias; OCD and SSRIs
++ Bipolar disorder: mania criteria; mood stabilisers; lithium monitoring
++ Somatoform & dissociative disorders: somatisation; conversion disorder; dissociative amnesia
++ Eating disorders: anorexia nervosa; bulimia nervosa; refeeding syndrome
++ Sleep disorders: insomnia; narcolepsy; sleep apnoea; parasomnias
++ Alcohol dependence: CAGE questionnaire; withdrawal and delirium tremens; Wernicke-Korsakoff syndrome
+@ Other topics
++ Personality disorders: cluster A, B and C; borderline personality disorder
++ Mental Healthcare Act: 2017 Act; advance directive; decriminalisation of suicide attempt
++ ECT: indications; contraindications; side effects
++ Defence mechanisms: mature; neurotic; immature defences
++ Delirium & dementia: delirium vs dementia; causes of delirium; management
+
+== radiology
+@ Physics & safety
++ Contrast media: iodinated contrast; gadolinium; contrast reactions; contrast nephropathy
++ Nuclear medicine: radionuclides; bone scan; thyroid scan; PET-CT
+@ Imaging signs
++ Chest X-ray signs: silhouette sign; air bronchogram; deep sulcus sign; golden S sign; cardiomegaly
++ Abdominal imaging: pneumoperitoneum; bowel obstruction; coffee bean sign; double bubble sign
++ Neuroimaging: CT in stroke; MRI sequences; ring-enhancing lesions
++ Radiotherapy basics: radiosensitivity; fractionation; brachytherapy vs teletherapy
++ Musculoskeletal imaging: periosteal reactions; bone tumour signs; fracture imaging
++ Paediatric radiology: intussusception; NEC; hypertrophic pyloric stenosis
++ Interventional radiology: angioplasty; embolisation; drainage procedures
++ Imaging in trauma: FAST; trauma CT; cervical spine imaging
+
+== anaesthesia
+@ General anaesthesia
++ Pre-op assessment: ASA grading; airway assessment (Mallampati); fasting guidelines
++ Airway management: bag-mask ventilation; LMA; intubation; difficult airway algorithm
++ Inhalational & IV agents: MAC; nitrous oxide; sevoflurane; propofol; ketamine; thiopentone
++ Muscle relaxants: succinylcholine; non-depolarising agents; reversal
++ Anaesthesia machine: safety features; colour coding of cylinders; breathing circuits
++ Malignant hyperthermia: triggers; RYR1 mutation; dantrolene
++ Post-operative nausea & pain: PONV risk scores; multimodal analgesia
+@ Regional & critical care
++ Spinal & epidural: differences; level of block; complications (PDPH, hypotension)
++ Local anaesthetics: amides vs esters; maximum doses; LAST and lipid emulsion
++ CPR & BLS/ACLS: chain of survival; compression-ventilation ratio; shockable rhythms; drugs in ACLS
++ Nerve blocks: brachial plexus block; femoral block; Bier block
++ Oxygen therapy: delivery devices; oxygen toxicity
++ Mechanical ventilation basics: modes; PEEP; ventilator settings
++ Fluid therapy: perioperative fluids; blood loss replacement
