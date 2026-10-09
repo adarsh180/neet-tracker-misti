@@ -40,6 +40,26 @@ export function DashOrbit({ items, label = "Switch dashboard" }: { items: OrbitI
     [items, n],
   );
 
+  const arcFrames = useCallback(
+    (g: { sx: number; sy: number; r: number }, p: { dx: number; dy: number; a: number }) => {
+      const frames: Keyframe[] = [];
+      const steps = 10;
+      for (let k = 0; k <= steps; k++) {
+        const f = k / steps;
+        const e = 1 - Math.pow(1 - f, 3); // ease-out along the path itself
+        const ang = p.a * e - (1 - e) * 1.1; // sweeps round from behind the coin
+        const rad = g.r * (0.1 + 0.9 * e);
+        frames.push({
+          transform: `translate(${(g.sx * Math.cos(ang) * rad - p.dx).toFixed(1)}px, ${(g.sy * Math.sin(ang) * rad - p.dy).toFixed(1)}px) scale(${(0.35 + 0.65 * e).toFixed(3)}) rotate(${((1 - e) * -40 * g.sx).toFixed(1)}deg)`,
+          opacity: Math.min(1, f * 2.4),
+          offset: f,
+        });
+      }
+      return frames;
+    },
+    [],
+  );
+
   const show = () => {
     const r = btn.current?.getBoundingClientRect();
     if (!r) return;
@@ -55,14 +75,17 @@ export function DashOrbit({ items, label = "Switch dashboard" }: { items: OrbitI
     if (!open || closing) return;
     setClosing(true);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pts = geo ? spots(geo) : [];
     const anims = coins.current.slice(0, n).map((el, i) =>
-      el?.animate([{ opacity: 1 }, { transform: "translate(0px, 0px) scale(0.4)", opacity: 0 }], { duration: reduce ? 1 : 200, delay: (n - 1 - i) * 22, easing: "cubic-bezier(0.5, 0, 0.75, 0)", fill: "forwards" }),
+      el && geo && pts[i] && !reduce
+        ? el.animate([...arcFrames(geo, pts[i])].reverse().map((k, j, all) => ({ ...k, offset: j / (all.length - 1) })), { duration: 340, delay: (n - 1 - i) * 30, easing: "cubic-bezier(0.55, 0, 0.8, 0.3)", fill: "forwards" })
+        : el?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1, fill: "forwards" }),
     );
     Promise.all(anims.map((a) => a?.finished.catch(() => null))).then(() => {
       setOpen(false);
       setClosing(false);
     });
-  }, [open, closing, n]);
+  }, [open, closing, n, geo, spots, arcFrames]);
 
   // Fly each coin out along the arc: sampled points on the circle, so the path is truly circular.
   useLayoutEffect(() => {
@@ -71,21 +94,10 @@ export function DashOrbit({ items, label = "Switch dashboard" }: { items: OrbitI
     spots(geo).forEach((p, i) => {
       const el = coins.current[i];
       if (!el) return;
-      const frames: Keyframe[] = [];
-      const steps = 8;
-      for (let k = 0; k <= steps; k++) {
-        const f = k / steps;
-        const ang = p.a * f - (1 - f) * 0.9; // sweeps round from behind the coin
-        const rad = geo.r * (0.12 + 0.88 * f);
-        frames.push({
-          transform: `translate(${(geo.sx * Math.cos(ang) * rad - p.dx).toFixed(1)}px, ${(geo.sy * Math.sin(ang) * rad - p.dy).toFixed(1)}px) scale(${(0.45 + 0.55 * f).toFixed(3)})`,
-          opacity: Math.min(1, f * 2.2),
-          offset: f,
-        });
-      }
-      el.animate(reduce ? [{ opacity: 0 }, { opacity: 1 }] : frames, { duration: reduce ? 120 : 540, delay: i * 50, easing: SPRING, fill: "backwards" });
+      el.animate(reduce ? [{ opacity: 0 }, { opacity: 1 }] : arcFrames(geo, p), { duration: reduce ? 120 : 620, delay: i * 60, easing: SPRING, fill: "backwards" });
+      el.style.setProperty("--land", `${reduce ? 0 : 420 + i * 60}ms`);
     });
-  }, [open, geo, closing, spots]);
+  }, [open, geo, closing, spots, arcFrames]);
 
   useEffect(() => {
     if (!open) return;
@@ -110,6 +122,7 @@ export function DashOrbit({ items, label = "Switch dashboard" }: { items: OrbitI
       {mounted && open && geo
         ? createPortal(
             <div className={`do-layer ${closing ? "is-closing" : ""}`} onPointerDown={(e) => e.target === e.currentTarget && hide()}>
+              <div className="do-dial" style={{ left: geo.x, top: geo.y, "--dr": `${geo.r + 62}px` } as CSSProperties} aria-hidden="true"><i className="sweep" /></div>
               <svg className="do-track" aria-hidden="true">
                 <circle cx={geo.x} cy={geo.y} r={geo.r} />
                 <circle className="glow" cx={geo.x} cy={geo.y} r={geo.r} />
@@ -126,6 +139,16 @@ export function DashOrbit({ items, label = "Switch dashboard" }: { items: OrbitI
                     style={{ left: geo.x + pts[i].dx - COIN / 2, top: geo.y + pts[i].dy - COIN / 2 } as CSSProperties}
                     disabled={busy !== null}
                     aria-current={it.current ? "page" : undefined}
+                    onPointerMove={(e) => {
+                      if (e.pointerType !== "mouse") return;
+                      const r = e.currentTarget.getBoundingClientRect();
+                      e.currentTarget.style.setProperty("--tx", `${((e.clientX - (r.left + r.width / 2)) * 0.18).toFixed(1)}px`);
+                      e.currentTarget.style.setProperty("--ty", `${((e.clientY - (r.top + 32)) * 0.18).toFixed(1)}px`);
+                    }}
+                    onPointerLeave={(e) => {
+                      e.currentTarget.style.setProperty("--tx", "0px");
+                      e.currentTarget.style.setProperty("--ty", "0px");
+                    }}
                     onClick={async () => {
                       if (it.current) return hide();
                       setBusy(it.key);

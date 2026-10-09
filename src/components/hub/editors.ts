@@ -195,3 +195,20 @@ export function editAccount(a: { id?: string; owner: Owner; name: string; kind: 
     danger: a?.id ? { label: "Delete", confirm: `Delete ${a.name}?`, onConfirm: () => act({ action: "account.delete", id: a.id }) } : undefined,
   };
 }
+
+export function newEvent(date: string, me: "adarsh" | "misti", act: Act): SheetSpec {
+  return {
+    title: "Add to the calendar",
+    subtitle: "Birthdays, exams, trips, family visits, anniversaries — anything with a date.",
+    fields: [
+      { name: "title", label: "What", type: "text", required: true, wide: true, placeholder: "e.g. Mock test series starts" },
+      { name: "eventDate", label: "Date", type: "date", value: date, required: true },
+      { name: "kind", label: "Kind", type: "select", value: "other", options: opts(EVENT_KINDS) },
+      { name: "owner", label: "Whose", type: "select", value: "joint", options: whose(me) },
+      { name: "budget", label: "Budget (₹)", type: "money", min: 0 },
+      { name: "note", label: "Note", type: "textarea" },
+    ],
+    submit: "Add",
+    onSubmit: (v) => act({ action: "event.add", ...v }),
+  };
+}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ChevronDown, Eye, EyeOff, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 
+import { ChapterSpiral } from "@/components/exams/chapter-spiral";
 import { useWorkspace } from "@/components/exams/workspace-context";
 import { HeartLoader } from "@/components/pulse/heart-loader";
 import { REVISION_GAPS, type RevisionRow } from "@/lib/exams/metrics";
@@ -129,6 +130,20 @@ export function WorkspaceSyllabus({ exam }: { exam: ExamKey }) {
         </div>
       </header>
       {error ? <p className="xw-error" role="alert">{error}</p> : null}
+
+      <section className="xw-card xw-sect">
+        <h2>Spiral of {subject.name}</h2>
+        <p className="xw-sub">Every chapter is a numbered stretch of one arm, every topic a dot along it: filled = done, half = reading, rings = revisions, a pulse = due now.</p>
+        <ChapterSpiral
+          subject={subject}
+          items={ws.m?.items ?? []}
+          onStatus={(k, st) => shared.setStatus(k, st)}
+          onOpen={(key) => {
+            setOpen((o) => ({ ...o, [key]: true }));
+            setTimeout(() => document.getElementById(`ch-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+          }}
+        />
+      </section>
 
       <section className="xw-card">
         {subject.chapters.map((c) => (

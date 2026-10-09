@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { constantTimeEquals } from "@/lib/secure-compare";
+import { storeSecret, verifyStoredSecret } from "@/lib/gate-secret";
 
 export const PRIVATE_SESSION_COOKIE = "neet_private_session";
 
@@ -218,6 +219,33 @@ export async function clearPrivateSession() {
   }
 
   cookieStore.delete(PRIVATE_SESSION_COOKIE);
+}
+
+/**
+ * Sign-in check that keeps passwords hashed: once a salted scrypt hash exists
+ * (gate_secrets, id login-<user>) only the hash is checked; the first
+ * successful sign-in against the env value stores that hash. The password
+ * itself never changes.
+ */
+export async function verifyCredentialUser(email: string, password: string): Promise<PrivateSession | null> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const candidates = [
+    { id: "login-misti", email: process.env.MISTI_EMAIL || "", password: process.env.MISTI_PWD || "" },
+    { id: "login-divyani", email: process.env.DIVYANI_EMAIL || "", password: process.env.DIVYANI_PWD || "" },
+  ];
+  for (const candidate of candidates) {
+    if (!candidate.email) continue;
+    if (!constantTimeEquals(normalizedEmail, candidate.email.toLowerCase().trim())) continue;
+    const stored = await verifyStoredSecret(candidate.id, password);
+    if (stored === true) return { userId: CANONICAL_USER_ID };
+    if (stored === false) return null;
+    if (candidate.password && constantTimeEquals(password, candidate.password)) {
+      await storeSecret(candidate.id, password).catch((error) => console.error("[auth] could not store password hash", error));
+      return { userId: CANONICAL_USER_ID };
+    }
+    return null;
+  }
+  return null;
 }
 
 export function resolveCredentialUser(email: string, password: string): PrivateSession | null {

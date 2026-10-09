@@ -1,4 +1,5 @@
-import type { SyllabusChapter } from "@/data/exams/neet-pg";
+import { deepen, type SyllabusChapter } from "@/data/exams/neet-pg";
+import { SS_DEPTH } from "./neet-ss-depth";
 
 /**
  * NEET SS (NBEMS) — group-wise papers for DM / MCh / DrNB admission.
@@ -18,7 +19,7 @@ const sp = (name: string, degree: "DM" | "MCh", list: Array<[string, string[]]>)
 
 export const NEET_SS_PAPER = { questions: 150, marks: 600, sections: 3, minutes: 150, plus: 4, minus: 1, feederShare: 0.4 };
 
-export const NEET_SS_GROUPS: SsGroup[] = [
+const SS_BASE: SsGroup[] = [
   {
     key: "medicine", name: "Medicine group", hue: 200,
     feeder: { name: "MD General Medicine", chapters: chs([
@@ -199,3 +200,11 @@ export const NEET_SS_GROUPS: SsGroup[] = [
     ],
   },
 ];
+
+const deepChapters = (prefix: string, list: SyllabusChapter[]) => list.map((c) => ({ ...c, topics: deepen(c.topics, SS_DEPTH[`${prefix}/${c.key}`]) }));
+
+export const NEET_SS_GROUPS: SsGroup[] = SS_BASE.map((g) => ({
+  ...g,
+  feeder: { ...g.feeder, chapters: deepChapters(`${g.key}-feeder`, g.feeder.chapters) },
+  specialties: g.specialties.map((s) => ({ ...s, chapters: deepChapters(s.key, s.chapters) })),
+}));

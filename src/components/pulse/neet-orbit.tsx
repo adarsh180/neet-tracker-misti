@@ -24,7 +24,7 @@ export function NeetOrbit() {
   return (
     <DashOrbit
       items={[
-        { key: "ug", label: "NEET UG", sub: "MBBS", logo: "/brand/neet-doctor-logo-mark.png", current: ug, onPick: () => open("ug") },
+        { key: "ug", label: "NEET UG", sub: "MBBS", logo: "/brand/neet-ug-160.webp", current: ug, onPick: () => open("ug") },
         { key: "pg", label: "NEET PG", logo: "/brand/neet-pg-160.webp", current: at("/pg"), locked: true, onPick: () => open("pg") },
         { key: "ss", label: "NEET SS", logo: "/brand/neet-ss-160.webp", current: at("/ss"), locked: true, onPick: () => open("ss") },
         { key: "hub", label: "Saath", logo: "/brand/saath-160.webp", current: at("/hub"), locked: true, onPick: () => open("hub") },

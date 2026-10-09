@@ -12,9 +12,11 @@
 export type SyllabusChapter = { key: string; name: string; topics: string[] };
 export type SyllabusSubject = { key: string; name: string; group: string; weight: number; hue: number; chapters: SyllabusChapter[] };
 
+import { PG_DEPTH } from "./neet-pg-depth";
+
 const ch = (key: string, name: string, topics: string[]): SyllabusChapter => ({ key, name, topics });
 
-export const NEET_PG_SUBJECTS: SyllabusSubject[] = [
+const PG_BASE: SyllabusSubject[] = [
   {
     key: "anatomy", name: "Anatomy", group: "Pre-clinical", weight: 17, hue: 12,
     chapters: [
@@ -234,6 +236,20 @@ export const NEET_PG_SUBJECTS: SyllabusSubject[] = [
     ],
   },
 ];
+
+/** Depth topics are appended after the originals (case-insensitive de-dupe). */
+const deepen = (base: string[], extra?: string): string[] => {
+  if (!extra) return base;
+  const seen = new Set(base.map((t) => t.toLowerCase()));
+  return [...base, ...extra.split("|").map((t) => t.trim()).filter((t) => t && !seen.has(t.toLowerCase()) && seen.add(t.toLowerCase()))];
+};
+
+export const NEET_PG_SUBJECTS: SyllabusSubject[] = PG_BASE.map((s) => ({
+  ...s,
+  chapters: s.chapters.map((c) => ({ ...c, topics: deepen(c.topics, PG_DEPTH[`${s.key}/${c.key}`]) })),
+}));
+
+export { deepen };
 
 export const NEET_PG_PAPER = { questions: 180, marks: 720, sections: 5, minutes: 210, plus: 4, minus: 1 };
 

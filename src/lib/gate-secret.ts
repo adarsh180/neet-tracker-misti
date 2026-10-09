@@ -40,3 +40,17 @@ export async function verifyGatePassword(id: string, password: string) {
   if (!row) return false;
   return matches(password, row.hash).catch(() => false);
 }
+
+/** Login passwords: `null` when no hash is stored yet (first sign-in after this change), else whether it matches. */
+export async function verifyStoredSecret(id: string, password: string): Promise<boolean | null> {
+  const row = await db.gateSecret.findUnique({ where: { id } }).catch(() => null);
+  if (!row) return null;
+  if (!password || password.length > 200) return false;
+  return matches(password, row.hash).catch(() => false);
+}
+
+/** Saves a salted scrypt hash for `id` (never the password itself). */
+export async function storeSecret(id: string, password: string) {
+  const hash = await hashGatePassword(password);
+  await db.gateSecret.upsert({ where: { id }, create: { id, hash }, update: { hash } });
+}

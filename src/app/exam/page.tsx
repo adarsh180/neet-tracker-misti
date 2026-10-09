@@ -8,7 +8,7 @@ const EXAMS = [
   {
     key: "ug",
     title: "NEET UG",
-    logo: "/brand/neet-doctor-logo-mark.png",
+    logo: "/brand/neet-ug-512.webp",
     line: "The MBBS entrance — syllabus, mocks, practice arena and seat odds for AIIMS.",
     facts: ["180 Qs · 720 marks", "Physics · Chemistry · Biology", "Your current workspace"],
   },

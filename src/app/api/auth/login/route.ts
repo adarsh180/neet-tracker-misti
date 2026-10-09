@@ -3,7 +3,7 @@ import {
   getLoginCooldown,
   recordFailedLogin,
   recordSuccessfulLogin,
-  resolveCredentialUser,
+  verifyCredentialUser,
   setPrivateSession,
 } from "@/lib/server-auth";
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const cooldown = await getLoginCooldown(email, req);
     if (cooldown) return cooldownResponse(cooldown.retryAfterSeconds);
 
-    const session = resolveCredentialUser(email, password);
+    const session = await verifyCredentialUser(email, password);
 
     if (!session) {
       const locked = await recordFailedLogin(email, req);

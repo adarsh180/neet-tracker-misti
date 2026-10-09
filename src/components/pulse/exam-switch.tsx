@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 
 const EXAMS = [
-  { key: "ug", label: "UG", name: "NEET UG", logo: "/brand/neet-doctor-logo-mark.png" },
+  { key: "ug", label: "UG", name: "NEET UG", logo: "/brand/neet-ug-160.webp" },
   { key: "pg", label: "PG", name: "NEET PG", logo: "/brand/neet-pg-160.webp" },
   { key: "ss", label: "SS", name: "NEET SS", logo: "/brand/neet-ss-160.webp" },
   { key: "hub", label: "Saath", name: "Saath, the personal dashboard", logo: "/brand/saath-160.webp" },

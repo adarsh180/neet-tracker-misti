@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
-import { CalendarHeart, Goal, LayoutGrid, Lock, PiggyBank, Sparkles, Wallet } from "lucide-react";
+import { CalendarDays, CalendarHeart, Goal, LayoutGrid, Lock, PiggyBank, Sparkles, Wallet } from "lucide-react";
 
 import { useHub } from "./hub-context";
 import { SheetHost } from "./sheet";
@@ -14,6 +14,7 @@ const TABS = [
   { path: "/money", label: "Money", icon: Wallet },
   { path: "/goals", label: "Goals", icon: Goal },
   { path: "/funds", label: "Funds", icon: PiggyBank },
+  { path: "/calendar", label: "Calendar", icon: CalendarDays },
   { path: "/plans", label: "Plans", icon: CalendarHeart },
   { path: "/insights", label: "Insights", icon: Sparkles },
 ];
@@ -72,16 +73,29 @@ export function HubShell({ children, switcher }: { children: ReactNode; switcher
       frame = requestAnimationFrame(() => {
         frame = 0;
         const card = (e.target as HTMLElement).closest<HTMLElement>(".sth-card, .sth-fig, .sth-fund");
-        if (last && last !== card) last.classList.remove("is-lit");
+        if (last && last !== card) {
+          last.classList.remove("is-lit");
+          last.style.setProperty("--rx", "0deg");
+          last.style.setProperty("--ry", "0deg");
+        }
         if (!card) return;
         const r = card.getBoundingClientRect();
         card.style.setProperty("--mx", `${e.clientX - r.left}px`);
         card.style.setProperty("--my", `${e.clientY - r.top}px`);
+        // Spatial tilt: at most ~1.6° toward the pointer, only on large cards.
+        if (r.width > 260) {
+          card.style.setProperty("--ry", `${(((e.clientX - r.left) / r.width - 0.5) * 3.2).toFixed(2)}deg`);
+          card.style.setProperty("--rx", `${(-((e.clientY - r.top) / r.height - 0.5) * 2.4).toFixed(2)}deg`);
+        }
         card.classList.add("is-lit");
         last = card;
       });
     };
-    const leave = () => last?.classList.remove("is-lit");
+    const leave = () => {
+      last?.classList.remove("is-lit");
+      last?.style.setProperty("--rx", "0deg");
+      last?.style.setProperty("--ry", "0deg");
+    };
     el.addEventListener("pointermove", move, { passive: true });
     el.addEventListener("pointerleave", leave);
     return () => {

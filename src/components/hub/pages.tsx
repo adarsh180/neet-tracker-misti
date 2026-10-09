@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowDownRight, ArrowUpRight, Check, Pencil, Plus, RefreshCw, Sparkles, Trash2, Wallet } from "lucide-react";
 
+import { HubCalendar } from "./calendar";
 import { addMoneyToGoal, addToFund, editAccount, editEvent, editFund, editGoal, editPlan, editTask, editTxn, payPlan } from "./editors";
 
 import { BudgetBars, CategoryDonut, CategoryPace, FundRings, GoalTrack, IndexOrbit, MoneyBars, PartsList, SpendStrip, TaskWeeks, TrendLine, WeekdaySpend } from "./charts";
@@ -847,5 +848,14 @@ function Split({ m }: { m: NonNullable<ReturnType<typeof useHub>["m"]> }) {
         );
       })}
     </ul>
+  );
+}
+
+/* ── Calendar ────────────────────────────────────────────────────────── */
+export function HubCalendarPage() {
+  return (
+    <Page kicker="Calendar · events, deadlines and exams" title="Every date," accent="in one place." lede="Events and exams, goal deadlines, tasks that are due, fund target dates, the marriage plan and the wedding — on one month view. Pick a day to see it in full or add something to it.">
+      <HubCalendar />
+    </Page>
   );
 }
