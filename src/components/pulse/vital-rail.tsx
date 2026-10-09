@@ -89,6 +89,9 @@ export function VitalRail() {
       return;
     }
     host.style.setProperty("--drop-y", `${active.offsetTop}px`);
+    // Size and x follow the active item too, so the ring stays centred when the rail compacts on short windows.
+    host.style.setProperty("--drop-x", `${active.offsetLeft}px`);
+    host.style.setProperty("--drop-s", `${active.offsetWidth}px`);
     host.style.setProperty("--drop-o", "1");
   }, []);
 
