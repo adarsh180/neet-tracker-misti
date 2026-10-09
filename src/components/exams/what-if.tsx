@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { TargetCards } from "@/components/exams/instruments";
-import { useWorkspace } from "@/components/exams/use-workspace";
+import { useWorkspace } from "@/components/exams/workspace-context";
 import { HeartLoader } from "@/components/pulse/heart-loader";
 import { computeWorkspace, runExamWhatIf, type Levers } from "@/lib/exams/metrics";
 import type { ExamKey } from "@/lib/exams/syllabus";
@@ -24,8 +24,9 @@ const PRESETS: Array<{ id: string; label: string; levers: Levers | null }> = [
 ];
 
 export function WorkspaceWhatIf({ exam }: { exam: ExamKey }) {
-  const ws = useWorkspace(exam);
-  const m = useMemo(() => (ws.state ? computeWorkspace({ tree: ws.tree, records: ws.state.records, targetDate: ws.state.prefs.targetDate }) : null), [ws.state, ws.tree]);
+  const ws = useWorkspace();
+  // Rank and seat odds are whole-paper outcomes, so this page always models the whole exam.
+  const m = useMemo(() => (ws.state ? computeWorkspace({ tree: ws.tree, records: ws.state.records, targetDate: ws.state.prefs.targetDate, hoursTarget: ws.state.prefs.hoursTarget }) : null), [ws.state, ws.tree]);
   const observed = useMemo<Levers | null>(
     () => (m ? { hoursPerDay: Math.round(m.hoursPerDay * 2) / 2, questionsPerDay: Math.round(m.questionsPerDay / 10) * 10, testsPerWeek: Math.round((m.tests28 / 4) * 2) / 2, accuracy: Math.round((m.accuracy ?? 0.65) * 100) / 100, revision: Math.round(m.revisedShare * 20) / 20 } : null),
     [m],
@@ -44,7 +45,7 @@ export function WorkspaceWhatIf({ exam }: { exam: ExamKey }) {
       <header className="xw-head">
         <span className="xw-kicker">{ws.tree.title} · what-if</span>
         <h1 className="xw-title">Move a habit, <em>watch the rank.</em></h1>
-        <p className="xw-lede">Starts from your real pace. Effort lifts your level toward the ceiling your accuracy allows; the targets never move. {m.daysToExam === null ? "Set the exam date on the dashboard for a sharper projection." : `${m.daysToExam} days to the exam.`}</p>
+        <p className="xw-lede">Starts from your real pace. Effort lifts your level toward the ceiling your accuracy allows; the targets never move. {m.daysToExam === null ? "Set the exam date on the dashboard for a sharper projection." : `${m.daysToExam} days to the exam.`}{ws.subject ? ` Rank is a whole-paper outcome, so this page models the whole exam even with ${ws.subject.name} in focus.` : ""}</p>
       </header>
       <section className="xw-grid g2">
         <div className="xw-card">

@@ -8,7 +8,7 @@ import { Sparkles } from "lucide-react";
 import type { ExamKey } from "@/lib/exams/syllabus";
 
 /** AI mentor for one workspace — runs only on click, cancellable, never blocks the page. */
-export function ExamAIPanel({ exam }: { exam: ExamKey }) {
+export function ExamAIPanel({ exam, scope = null }: { exam: ExamKey; scope?: string | null }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export function ExamAIPanel({ exam }: { exam: ExamKey }) {
           </button>
         </div>
       </div>
-      <p className="xw-sub">Runs only when you press the button, and reads this exam&apos;s data only.</p>
+      <p className="xw-sub">Runs only when you press the button, and reads this exam&apos;s data only{scope ? ` — focused on ${scope}, the subject in view` : ""}.</p>
       {error ? <p className="xw-error" role="alert">{error}</p> : null}
       <div className="xw-ai" aria-live="polite">
         {text ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown> : busy ? null : <p>No analysis yet — press “Analyse my prep” for a verdict, risks and a 7-day plan.</p>}

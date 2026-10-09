@@ -10,6 +10,7 @@ import GlobalSearch from "@/components/layout/global-search";
 import SiteVoiceAssistant from "@/components/voice-assistant/site-voice-assistant";
 import { HeartLoader } from "@/components/pulse/heart-loader";
 import { VitalRail } from "@/components/pulse/vital-rail";
+import { ExamSwitch } from "@/components/pulse/exam-switch";
 
 const PREFETCH_ROUTES = [
   "/dashboard",
@@ -90,6 +91,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       {inWorkspace ? null : <GlobalSearch />}
       {inWorkspace ? null : <SiteVoiceAssistant />}
       {inWorkspace ? null : <QuickNav />}
+      {inWorkspace ? null : <ExamSwitch />}
     </div>
   );
 }

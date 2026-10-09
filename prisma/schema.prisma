@@ -1242,6 +1242,9 @@ model ExamStudyLog {
   exam       String   @db.VarChar(8)
   logDate    DateTime @db.Date
   subjectKey String   @db.VarChar(96)
+  chapterKey String?  @db.VarChar(191)
+  itemKey    String?  @db.VarChar(191)
+  activity   String   @default("study") @db.VarChar(12)
   minutes    Int      @default(0)
   questions  Int      @default(0)
   correct    Int?
@@ -1257,6 +1260,8 @@ model ExamTest {
   exam          String   @db.VarChar(8)
   name          String   @db.VarChar(160)
   kind          String   @default("grand") @db.VarChar(16)
+  subjectKey    String?  @db.VarChar(96)
+  minutes       Int?
   takenAt       DateTime @db.Date
   score         Float
   maxScore      Float
@@ -1294,4 +1299,47 @@ model ExamAnalysis {
 
   @@index([exam, createdAt])
   @@map("exam_analyses")
+}
+
+// Own chapters/topics added on top of the built-in syllabus, and per-item
+// renames / hides — the tree is rebuilt from these on every load.
+model ExamCustomItem {
+  id         String   @id @default(cuid())
+  exam       String   @db.VarChar(8)
+  subjectKey String   @db.VarChar(96)
+  chapterKey String?  @db.VarChar(191)
+  kind       String   @db.VarChar(8)
+  name       String   @db.VarChar(200)
+  createdAt  DateTime @default(now())
+
+  @@index([exam])
+  @@map("exam_custom_items")
+}
+
+model ExamItemOverride {
+  id        String   @id @default(cuid())
+  exam      String   @db.VarChar(8)
+  itemKey   String   @db.VarChar(191)
+  hidden    Boolean  @default(false)
+  rename    String?  @db.VarChar(200)
+  updatedAt DateTime @updatedAt
+
+  @@unique([exam, itemKey])
+  @@map("exam_item_overrides")
+}
+
+// Every revision as its own event: when, how long, how confident.
+model ExamRevisionLog {
+  id         String   @id @default(cuid())
+  exam       String   @db.VarChar(8)
+  itemKey    String   @db.VarChar(191)
+  subjectKey String   @db.VarChar(96)
+  revisedOn  DateTime @db.Date
+  minutes    Int      @default(0)
+  confidence Int?
+  note       String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([exam, revisedOn])
+  @@map("exam_revision_logs")
 }

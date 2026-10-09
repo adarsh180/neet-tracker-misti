@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { computeWorkspace } from "@/lib/exams/metrics";
 import { guardExam, loadPrefs, loadRecords } from "@/lib/exams/server";
-import { buildTree } from "@/lib/exams/syllabus";
+import { buildTree, focusOf } from "@/lib/exams/syllabus";
 import { chatWithAI } from "@/lib/openrouter";
 
 export const dynamic = "force-dynamic";
@@ -21,11 +21,13 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ ex
   const g = await guardExam((await params).exam);
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status });
   const [prefs, records] = await Promise.all([loadPrefs(g.exam), loadRecords(g.exam)]);
-  const tree = buildTree(g.exam, prefs);
-  const m = computeWorkspace({ tree, records, targetDate: prefs.targetDate, hoursTarget: prefs.hoursTarget });
+  const tree = buildTree(g.exam, prefs, records.custom);
+  const focus = focusOf(tree, prefs);
+  const m = computeWorkspace({ tree, records, focus, targetDate: prefs.targetDate, hoursTarget: prefs.hoursTarget });
   const weakest = [...m.subjects].sort((a, b) => b.marks - b.done - (a.marks - a.done)).slice(0, 5);
   const summary = {
     exam: tree.title,
+    scope: m.focusName ? `Subject in focus: ${m.focusName} (all figures below are for this subject only)` : "Whole exam",
     paper: `${tree.questions} MCQs, ${tree.totalMarks} marks, +4/−1`,
     daysToExam: m.daysToExam,
     readiness: `${m.readiness}/100 (${m.band})`,
@@ -36,6 +38,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ ex
     targets: m.targets.map((t) => `${t.label} ≈ ${Math.round(t.share * 100)}% of max`),
     biggestGaps: weakest.map((s) => `${s.name}: ${Math.round(s.marks - s.done)} of ${Math.round(s.marks)} marks not done`),
     mistakeReasons: m.reasons.slice(0, 4).map(([r, n]) => `${r} ×${n}`),
+    timeSplit28d: Object.entries(m.byActivity).map(([k, v]) => `${k} ${Math.round(v / 60)}h`).join(", "),
+    revisionLadder: `never revised ${m.ladder[0]}, once ${m.ladder[1]}, twice ${m.ladder[2]}, 3+ ${m.ladder[3]} (finished topics)`,
+    revisionsDue: m.dueItems.slice(0, 8).map((i) => `${i.subject} › ${i.label}`),
+    avgConfidence: m.avgConfidence === null ? null : `${m.avgConfidence.toFixed(1)}/5`,
     hours: `${m.hoursPerDay.toFixed(1)}h/day, ${Math.round(m.questionsPerDay)} MCQs/day, ${m.loggedDays28}/28 days logged`,
   };
   try {
