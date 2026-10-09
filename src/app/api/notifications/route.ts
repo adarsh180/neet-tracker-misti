@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { notificationRetentionCutoff, pruneExpiredNotifications } from "@/lib/notification-retention";
+import { forwardToPartner, partnerProblem, pingPartner } from "@/lib/partner-notify";
 import { getPrivateSession } from "@/lib/server-auth";
 import { sendWebPushNotification } from "@/lib/web-push";
 
@@ -14,68 +15,26 @@ function clean(value: unknown, fallback = "") {
   return String(value ?? fallback).replace(/\s+/g, " ").trim();
 }
 
-async function forwardToPartner(input: {
-  title: string;
-  body: string;
-  tone: string;
-  senderLabel: string;
-  senderClientId: string | null;
-}) {
-  const endpoint = process.env.PARTNER_NOTIFY_ENDPOINT;
-  const secret = process.env.CROSS_APP_NOTIFY_SECRET;
-  if (!endpoint || !secret) {
-    console.error("[notifications] Cannot forward to partner: PARTNER_NOTIFY_ENDPOINT or CROSS_APP_NOTIFY_SECRET is not configured on the server.");
-    return { forwarded: false, reason: "missing-config" };
-  }
-
-  try {
-    console.log(`[notifications] Forwarding notification to partner endpoint: ${endpoint}`);
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-cross-app-secret": secret,
-      },
-      body: JSON.stringify(input),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      console.error(`[notifications] Partner forward failed with status: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json().catch(() => null);
-    return {
-      forwarded: response.ok,
-      status: response.status,
-      push: data?.push,
-    };
-  } catch (error) {
-    console.error("[notifications] Network/fetch error while forwarding to partner:", error);
-    return { forwarded: false, reason: "network" };
-  }
-}
-
 function defaultSender(userId: string) {
   return userId === "divyani" ? "Divyani" : "Misti";
 }
 
-export async function GET() {
+/** The last week of messages; `?partner=1` checks the link to the other site instead. */
+export async function GET(request: NextRequest) {
   const session = await getPrivateSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  if (request.nextUrl.searchParams.get("partner") === "1") {
+    const r = await pingPartner();
+    return NextResponse.json({ linked: r.forwarded, problem: partnerProblem(r) });
+  }
+
   await pruneExpiredNotifications();
-
   const notifications = await db.appNotification.findMany({
-    where: {
-      createdAt: {
-        gte: notificationRetentionCutoff(),
-      },
-    },
+    where: { createdAt: { gte: notificationRetentionCutoff() } },
     orderBy: { createdAt: "desc" },
-    take: 40,
+    take: 60,
   });
-
   return NextResponse.json({ notifications });
 }
 
@@ -97,29 +56,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Title and message are required" }, { status: 400 });
   }
 
-  let notification = null;
-  let push = null;
-
-  if (target === "local" || target === "both") {
-    notification = await db.appNotification.create({
-      data: {
-        title,
-        body,
-        tone,
-        senderLabel,
-        senderClientId,
-      },
-    });
-    push = await sendWebPushNotification(notification, senderClientId);
+  // Partner first: if it cannot be delivered, say exactly why and save nothing.
+  const partner = target === "partner" || target === "both" ? await forwardToPartner({ title, body, tone, senderLabel, senderClientId }) : null;
+  if (partner && !partner.forwarded) {
+    return NextResponse.json({ error: `Not delivered. ${partnerProblem(partner)}`, partner }, { status: 502 });
   }
 
-  const partner = target === "partner" || target === "both"
-    ? await forwardToPartner({ title, body, tone, senderLabel, senderClientId })
-    : { forwarded: false };
+  // Keep a copy here too, so the sender sees what went out (it never alerts the sender's own device).
+  const notification = await db.appNotification.create({ data: { title, body, tone, senderLabel, senderClientId } });
+  const push = target === "partner" ? null : await sendWebPushNotification(notification, senderClientId);
 
-  if (target === "partner" && !partner.forwarded) {
-    return NextResponse.json({ error: "Partner notification could not be delivered", partner }, { status: 502 });
-  }
-
-  return NextResponse.json({ notification, push, partner }, { status: 201 });
+  return NextResponse.json({ notification, push, partner, delivered: target === "local" ? null : true }, { status: 201 });
 }

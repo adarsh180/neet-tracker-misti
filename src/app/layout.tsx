@@ -11,6 +11,8 @@ import "./pulse-dash.css";
 import "./pulse-pages.css";
 import "./pulse-app.css";
 import "./exams.css";
+import "./hub.css";
+import "./notify.css";
 
 const inter = Inter({
   subsets: ["latin"],

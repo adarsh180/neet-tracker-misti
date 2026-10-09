@@ -14,8 +14,8 @@ function clean(value: unknown, fallback = "") {
 }
 
 function authorized(request: NextRequest) {
-  const secret = process.env.CROSS_APP_NOTIFY_SECRET;
-  const header = request.headers.get("x-cross-app-secret");
+  const secret = process.env.CROSS_APP_NOTIFY_SECRET?.trim();
+  const header = request.headers.get("x-cross-app-secret")?.trim();
   const isAuth = constantTimeEquals(header, secret);
   if (!isAuth) {
     console.error("[cross-app-notifications] Authorization failed.");
@@ -28,9 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await pruneExpiredNotifications();
-
   const payload = await request.json().catch(() => ({}));
+  // { ping: true } only checks the link and stores nothing.
+  if (payload?.ping === true) return NextResponse.json({ ok: true, pong: "neet" });
+
+  await pruneExpiredNotifications();
   const title = clean(payload.title).slice(0, 90);
   const body = clean(payload.body).slice(0, 420);
   const senderLabel = clean(payload.senderLabel, "Partner").slice(0, 42);

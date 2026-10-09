@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowLeftRight, BarChart2, BookOpenCheck, Check, ChevronDown, GitBranch, HeartPulse, Layers, LayoutDashboard, NotebookPen, Stethoscope } from "lucide-react";
 
 import { WorkspaceProvider, useWorkspace } from "@/components/exams/workspace-context";
+import { NeetOrbit } from "@/components/pulse/neet-orbit";
 import type { ExamKey } from "@/lib/exams/syllabus";
 
 const TABS = (base: ExamKey) => [
@@ -46,6 +47,7 @@ function Frame({ exam, children }: { exam: ExamKey; children: React.ReactNode })
           </nav>
           <div className="xw-top-end">
             <SubjectMenu />
+            <NeetOrbit />
             <Link href="/exam" className="xw-btn is-sm" aria-label="Switch exam">
               <ArrowLeftRight size={14} /> Switch exam
             </Link>

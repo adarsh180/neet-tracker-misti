@@ -1343,3 +1343,12 @@ model ExamRevisionLog {
   @@index([exam, revisedOn])
   @@map("exam_revision_logs")
 }
+
+// Dashboard-switch password, stored only as a salted scrypt hash.
+model GateSecret {
+  id        String   @id @db.VarChar(32)
+  hash      String   @db.VarChar(255)
+  updatedAt DateTime @updatedAt
+
+  @@map("gate_secrets")
+}

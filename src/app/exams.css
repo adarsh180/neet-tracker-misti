@@ -471,11 +471,39 @@ button.xw-alloc-row:hover { background: var(--pl-well-2); }
 .xs { position: fixed; top: calc(18px + env(safe-area-inset-top)); right: 84px; z-index: 9990; display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 5px 0 14px; border-radius: 999px; background: var(--pl-glass); box-shadow: var(--pl-glass-shadow); -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%); animation: xs-in 0.6s var(--pl-spring) 0.2s backwards; }
 @keyframes xs-in { from { opacity: 0; transform: translateY(-10px); } }
 .xs-label { color: var(--pl-ink-3); font: 600 12px/1 var(--font-sans); }
-.xs-track { position: relative; display: grid; grid-template-columns: repeat(3, 58px); padding: 3px; border-radius: 999px; background: var(--pl-well-2); box-shadow: inset 0 0 0 1px var(--pl-line); }
-.xs-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: 58px; border-radius: 999px; background: var(--pl-ink); transform: translateX(calc(var(--x) * 58px)); transition: transform 0.45s var(--pl-spring); }
+.xs-track { position: relative; display: grid; grid-template-columns: repeat(4, 64px); padding: 3px; border-radius: 999px; background: var(--pl-well-2); box-shadow: inset 0 0 0 1px var(--pl-line); }
+.xs-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: 64px; border-radius: 999px; background: var(--pl-ink); transform: translateX(calc(var(--x) * 64px)); transition: transform 0.45s var(--pl-spring); }
 .xs button { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 32px; border: 0; border-radius: 999px; background: none; color: var(--pl-ink-2); font: 700 12.5px/1 var(--font-sans); cursor: pointer; transition: color 0.3s; }
 .xs button[aria-pressed="true"] { color: var(--pl-bg); }
 .xs button:not([aria-pressed="true"]):hover { color: var(--pl-ink); }
 .xs button:disabled { cursor: progress; }
 .xs.is-error { box-shadow: var(--pl-glass-shadow), inset 0 0 0 1.5px var(--pl-bad); }
-@media (max-width: 760px) { .xs { top: auto; bottom: calc(16px + env(safe-area-inset-bottom)); left: 50%; right: auto; padding-left: 5px; transform: translateX(-50%); animation: none; } .xs-label { display: none; } .xs-track { grid-template-columns: repeat(3, 50px); } .xs-thumb { width: 50px; transform: translateX(calc(var(--x) * 50px)); } .xs button svg { display: none; } }
+@media (max-width: 760px) { .xs { display: none; } }
+/* Phones: the round dashboard switch sits in the free top-left corner. */
+.do-fixed { position: fixed; top: calc(14px + env(safe-area-inset-top)); left: 12px; z-index: 9990; display: none; }
+@media (max-width: 760px) { .do-fixed { display: block; } }
+
+/* Picker: four dashboards + the password step */
+.xp-grid.is-four { grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(1320px, 100%); }
+@media (max-width: 1180px) { .xp-grid.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .xp-grid.is-four { grid-template-columns: minmax(0, 1fr); } }
+.xp-card[data-exam="hub"] { --a: #5cb8ff; --b: #ff7aa8; }
+.xp-card.is-gating { box-shadow: var(--pl-glass-shadow), inset 0 0 0 2px var(--a); }
+.xp-facts span { display: inline-flex; align-items: center; gap: 4px; }
+.xp-gate { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: end; width: min(720px, 100%); padding: 18px; border-radius: 22px; background: var(--pl-glass); box-shadow: var(--pl-glass-shadow); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); animation: xw-deal 0.5s var(--pl-spring); }
+.xp-gate-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(135deg, #5cb8ff, #ff7aa8); color: #fff; }
+.xp-gate label { display: grid; gap: 4px; color: var(--pl-ink); }
+.xp-gate b { font: 700 15px/1.2 var(--font-display); }
+.xp-gate small { color: var(--pl-ink-3); font-size: 12px; }
+.xp-gate input { height: 42px; margin-top: 4px; padding: 0 12px; border: 0; border-radius: 12px; background: var(--pl-well-2); box-shadow: inset 0 0 0 1px var(--pl-line-2); color: var(--pl-ink); font: 500 14px/1 var(--font-sans); outline: 0; }
+.xp-gate input:focus { box-shadow: inset 0 0 0 1.5px #5cb8ff, 0 0 0 4px rgba(92, 184, 255, 0.15); }
+@media (max-width: 640px) { .xp-gate { grid-template-columns: minmax(0, 1fr); } .xp-gate-icon { display: none; } }
+
+/* PG, SS and Saath bring their own top bars — no room needed for the UG search bar. */
+.protected-route-frame:has(.xw, .sth) { padding-top: 6px !important; }
+
+/* The picker sits outside the workspace theme: give its password step its own colours. */
+.xp .xw-error { color: var(--pl-bad); text-align: center; }
+.xp-gate .xw-btn { height: 42px; color: var(--pl-ink); background: var(--pl-well-2); box-shadow: inset 0 0 0 1px var(--pl-line-2); }
+.xp-gate .xw-btn.is-primary { color: #fff; background: linear-gradient(135deg, #5cb8ff, #ff7aa8); box-shadow: 0 12px 26px -14px rgba(255, 122, 168, 0.8); }
+.xp-gate { align-items: center; }

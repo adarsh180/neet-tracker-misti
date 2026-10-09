@@ -11,6 +11,7 @@ import SiteVoiceAssistant from "@/components/voice-assistant/site-voice-assistan
 import { HeartLoader } from "@/components/pulse/heart-loader";
 import { VitalRail } from "@/components/pulse/vital-rail";
 import { ExamSwitch } from "@/components/pulse/exam-switch";
+import { NeetOrbit } from "@/components/pulse/neet-orbit";
 
 const PREFETCH_ROUTES = [
   "/dashboard",
@@ -37,8 +38,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
-  // PG and SS bring their own chrome; the UG search, voice assistant and menu stay in UG.
-  const inWorkspace = /^\/(pg|ss)(\/|$)/.test(pathname);
+  // PG, SS and Saath bring their own chrome; the UG search, voice assistant and menu stay in UG.
+  const inWorkspace = /^\/(pg|ss|hub)(\/|$)/.test(pathname);
+  const inHub = /^\/hub(\/|$)/.test(pathname);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,13 +87,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
-      <VitalRail />
+      {inHub ? null : <VitalRail />}
       <RouteTransition className="protected-route-frame">{children}</RouteTransition>
-      <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" partnerLabel="Adarsh's UPSC phone" />
+      <NotificationCenter appLabel="NEET Desk" defaultSender="Misti" partnerLabel="Adarsh's UPSC desk" floating />
       {inWorkspace ? null : <GlobalSearch />}
       {inWorkspace ? null : <SiteVoiceAssistant />}
       {inWorkspace ? null : <QuickNav />}
       {inWorkspace ? null : <ExamSwitch />}
+      {inWorkspace ? null : <div className="do-fixed"><NeetOrbit /></div>}
     </div>
   );
 }

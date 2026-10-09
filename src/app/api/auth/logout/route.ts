@@ -5,5 +5,6 @@ export async function POST() {
   await clearPrivateSession();
   const res = NextResponse.json({ ok: true });
   res.cookies.delete("neet-exam");
+  res.cookies.delete("neet-gate");
   return res;
 }

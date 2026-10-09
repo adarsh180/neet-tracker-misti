@@ -1,5 +1,5 @@
 // Bumped whenever caching rules change; activation clears every older cache.
-const CACHE_NAME = "neet-tracker-pwa-v12";
+const CACHE_NAME = "neet-tracker-pwa-v13";
 const IS_LOCAL = self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
 const OFFLINE_URL = "/offline";
 const APP_SHELL_ASSETS = [

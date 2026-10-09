@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ ok: true, userId: session.userId });
     // Every sign-in asks which exam to open (UG, PG or SS).
     res.cookies.delete("neet-exam");
+    res.cookies.delete("neet-gate");
     return res;
   } catch (error) {
     console.error("[auth/login] failed:", error);

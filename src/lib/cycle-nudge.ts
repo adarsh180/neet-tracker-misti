@@ -2,6 +2,7 @@ import { format, parseISO } from "date-fns";
 
 import { db } from "@/lib/db";
 import type { CycleIntelligence } from "@/lib/cycle-intelligence";
+import { forwardToPartner } from "@/lib/partner-notify";
 import { sendWebPushNotification } from "@/lib/web-push";
 
 // Label used to identify cycle-companion notifications so we never duplicate the
@@ -60,7 +61,7 @@ export async function maybeSendCyclePredictionNudge(intelligence: CycleIntellige
     const notification = await db.appNotification.create({
       data: {
         title: "Period likely soon",
-        body: `Her next period is predicted ${when} (around ${humanDate(predictedStart)}). A good moment to plan lighter study, rest, and anything she likes to have ready.`,
+        body: `Your next period is predicted ${when} (around ${humanDate(predictedStart)}). A good moment to plan lighter study, rest, and anything you like to have ready.`,
         tone: "care",
         senderLabel: NUDGE_SENDER_LABEL,
         senderClientId: null,
@@ -69,6 +70,15 @@ export async function maybeSendCyclePredictionNudge(intelligence: CycleIntellige
 
     // Reuse the existing fan-out (no-op when web push is not configured).
     await sendWebPushNotification(notification, null);
+
+    // And tell Adarsh on his UPSC desk (it pushes to his devices there too).
+    await forwardToPartner({
+      title: "Misti’s period likely soon",
+      body: `Misti’s next period is predicted ${when} (around ${humanDate(predictedStart)}). A good moment to check in, plan lighter days together, and keep what she likes ready.`,
+      tone: "care",
+      senderLabel: NUDGE_SENDER_LABEL,
+      senderClientId: null,
+    }).catch(() => null);
   } catch (error) {
     // A nudge must never break the cycle API response.
     console.error("[cycle-nudge] Failed to evaluate/send prediction nudge:", error);

@@ -1,20 +1,28 @@
 "use client";
 
-import { Bell, BellRing, Check, Send, Sparkles, X } from "lucide-react";
+import { Bell, BellRing, Check, CheckCheck, Link2, Link2Off, Send, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 
-type AppNotification = {
-  id: string;
-  title: string;
-  body: string;
-  tone: "focus" | "urgent" | "care" | "win" | string;
-  senderLabel: string;
-  senderClientId: string | null;
-  createdAt: string;
-};
+/**
+ * Messages between the UPSC desk and the NEET desk, plus each site's own
+ * alerts. Identical in both repos. Polls every 5 s, keeps a week, shows what
+ * you sent and whether it was delivered, checks the link to the other site,
+ * and arms OS push per device.
+ */
+
+type AppNotification = { id: string; title: string; body: string; tone: "focus" | "urgent" | "care" | "win" | string; senderLabel: string; senderClientId: string | null; createdAt: string };
+type PersistentNotificationOptions = NotificationOptions & { actions?: Array<{ action: string; title: string }>; renotify?: boolean; requireInteraction?: boolean; vibrate?: number[] };
 
 const POLL_MS = 5000;
-const DISMISS_LIMIT = 240;
+const DISMISS_LIMIT = 300;
+const DESKTOP_ALERT_QUERY = "(min-width: 900px) and (hover: hover) and (pointer: fine)";
+const TONES = [
+  { key: "focus", label: "Focus" },
+  { key: "care", label: "Care" },
+  { key: "win", label: "Win" },
+  { key: "urgent", label: "Urgent" },
+];
 
 function safeJson<T>(key: string, fallback: T): T {
   try {
@@ -23,1187 +31,379 @@ function safeJson<T>(key: string, fallback: T): T {
     return fallback;
   }
 }
-
-function toneLabel(tone: string) {
-  if (tone === "urgent") return "Urgent";
-  if (tone === "care") return "Care";
-  if (tone === "win") return "Win";
-  return "Focus";
-}
-
 function relativeTime(value: string) {
-  const delta = Date.now() - new Date(value).getTime();
-  const minutes = Math.max(0, Math.round(delta / 60000));
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
   if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.round(minutes / 60);
-  return hours < 24 ? `${hours}h` : `${Math.round(hours / 24)}d`;
+  if (hours < 24) return `${hours} h ago`;
+  return new Date(value).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 }
-
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; i += 1) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-
-  return outputArray;
+  const raw = window.atob((base64String + padding).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 }
+const permissionNow = (): NotificationPermission => ("Notification" in window ? Notification.permission : "default");
 
-function pushCountLabel(count: number) {
-  return `${count} device${count === 1 ? "" : "s"}`;
-}
-
-function NotificationRow({
-  item,
-  read,
-  onRead,
-  onDismiss,
-}: {
-  item: AppNotification;
-  read: boolean;
-  onRead: () => void;
-  onDismiss: () => void;
-}) {
-  const [dragX, setDragX] = useState(0);
-  const [isPressed, setIsPressed] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
-  const startXRef = useRef<number | null>(null);
-  const lastPointRef = useRef({ x: 0, time: 0 });
-  const velocityRef = useRef(0);
-  const movedRef = useRef(false);
-  const hapticRef = useRef(false);
-
-  const progress = Math.min(Math.abs(dragX) / 118, 1);
-  const side = dragX >= 0 ? 1 : -1;
-
-  const dismissWithMotion = useCallback(
-    (direction: number) => {
-      if (isExiting) return;
-      setIsExiting(true);
-      setDragX(direction * 460);
-      navigator.vibrate?.(18);
-      window.setTimeout(onDismiss, 190);
-    },
-    [isExiting, onDismiss],
-  );
-
-  function endDrag() {
-    if (startXRef.current === null || isExiting) return;
-    const shouldDismiss = Math.abs(dragX) > 92 || Math.abs(velocityRef.current) > 0.72;
-
-    if (shouldDismiss) {
-      dismissWithMotion(side);
-    } else {
-      setDragX(0);
-    }
-
-    setIsPressed(false);
-    startXRef.current = null;
-    hapticRef.current = false;
-  }
-
+function Row({ item, mine, read, partnerName, onRead, onDismiss }: { item: AppNotification; mine: boolean; read: boolean; partnerName: string; onRead: () => void; onDismiss: () => void }) {
+  const [dx, setDx] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const start = useRef<number | null>(null);
+  const moved = useRef(false);
+  const leave = (dir: number) => {
+    setLeaving(true);
+    setDx(dir * 420);
+    navigator.vibrate?.(14);
+    window.setTimeout(onDismiss, 180);
+  };
+  const end = () => {
+    if (start.current === null) return;
+    start.current = null;
+    if (Math.abs(dx) > 96) leave(Math.sign(dx));
+    else setDx(0);
+  };
   return (
-    <article
-      className={`notify-item tone-${item.tone} ${read ? "read" : ""} ${isPressed ? "dragging" : ""} ${isExiting ? "exiting" : ""}`}
-      style={
-        {
-          "--drag-x": `${dragX}px`,
-          "--drag-progress": progress,
-          "--drag-tilt": `${Math.max(-2.4, Math.min(2.4, dragX / 44))}deg`,
-          "--drag-scale": 1 - progress * 0.018,
-        } as CSSProperties
-      }
-    >
-      <div className="notify-dismiss-bg notify-dismiss-bg-left" aria-hidden="true">
-        <span>Clear</span>
-      </div>
-      <div className="notify-dismiss-bg notify-dismiss-bg-right" aria-hidden="true">
-        <span>Clear</span>
-      </div>
+    <li className={`nc-item t-${item.tone} ${read ? "is-read" : ""} ${mine ? "is-mine" : ""} ${leaving ? "is-leaving" : ""}`} style={{ "--dx": `${dx}px`, "--p": Math.min(1, Math.abs(dx) / 110) } as CSSProperties}>
       <button
         type="button"
-        className="notify-item-card"
-        onClick={() => {
-          if (!movedRef.current && !isExiting) onRead();
+        className="nc-item-card"
+        onClick={() => !moved.current && onRead()}
+        onPointerDown={(e) => {
+          start.current = e.clientX;
+          moved.current = false;
+          e.currentTarget.setPointerCapture(e.pointerId);
         }}
-        onPointerDown={(event) => {
-          if (isExiting) return;
-          startXRef.current = event.clientX;
-          lastPointRef.current = { x: event.clientX, time: event.timeStamp };
-          velocityRef.current = 0;
-          movedRef.current = false;
-          hapticRef.current = false;
-          setIsPressed(true);
-          event.currentTarget.setPointerCapture(event.pointerId);
+        onPointerMove={(e) => {
+          if (start.current === null) return;
+          const d = e.clientX - start.current;
+          if (Math.abs(d) > 5) moved.current = true;
+          setDx(Math.sign(d) * Math.min(Math.abs(d), 200));
         }}
-        onPointerMove={(event) => {
-          if (startXRef.current === null || isExiting) return;
-          const raw = event.clientX - startXRef.current;
-          const magnitude = Math.abs(raw);
-          const resistance = magnitude > 148 ? 148 + (magnitude - 148) * 0.24 : magnitude;
-          const next = Math.sign(raw || 1) * Math.min(resistance, 214);
-          const elapsed = Math.max(event.timeStamp - lastPointRef.current.time, 1);
-          velocityRef.current = (event.clientX - lastPointRef.current.x) / elapsed;
-          lastPointRef.current = { x: event.clientX, time: event.timeStamp };
-
-          if (Math.abs(next) > 4) movedRef.current = true;
-          if (Math.abs(next) > 74 && !hapticRef.current) {
-            navigator.vibrate?.(8);
-            hapticRef.current = true;
-          }
-          if (Math.abs(next) < 42) hapticRef.current = false;
-
-          setDragX(next);
-        }}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerUp={end}
+        onPointerCancel={end}
       >
-        <span className="notify-dot" />
-        <span className="notify-copy">
-          <span className="notify-row-head">
-            <strong>{item.title}</strong>
-            <span className="notify-tone">{toneLabel(item.tone)}</span>
+        <span className="nc-stripe" aria-hidden="true" />
+        <span className="nc-item-body">
+          <span className="nc-item-top">
+            <b>{item.title}</b>
+            {!read && !mine ? <i className="nc-unread" aria-label="unread" /> : null}
           </span>
-          <em>{item.body}</em>
-          <small>
-            <span>From {item.senderLabel}</span>
+          <span className="nc-text">{item.body}</span>
+          <span className="nc-meta">
+            {mine ? <span className="nc-sent"><CheckCheck size={13} /> You → {partnerName === "this desk" ? "this desk" : partnerName}</span> : <span>From {item.senderLabel}</span>}
+            <span>·</span>
             <span>{relativeTime(item.createdAt)}</span>
-          </small>
+            <span className="nc-tone">{TONES.find((t) => t.key === item.tone)?.label ?? "Focus"}</span>
+          </span>
         </span>
       </button>
-      <button type="button" className="notify-dismiss-btn" onClick={() => dismissWithMotion(-1)} aria-label={`Clear ${item.title}`}>
-        <X size={14} />
-      </button>
-    </article>
+      <button type="button" className="nc-x" onClick={() => leave(-1)} aria-label={`Clear ${item.title}`}><X size={14} /></button>
+    </li>
   );
 }
 
-export function NotificationCenter({
-  appLabel,
-  defaultSender,
-  partnerLabel = "Partner app",
-}: {
-  appLabel: string;
-  defaultSender: string;
-  partnerLabel?: string;
-}) {
-  const keyPrefix = useMemo(() => appLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-"), [appLabel]);
-  const clientIdKey = `${keyPrefix}-notification-client`;
-  const readKey = `${keyPrefix}-notification-read`;
-  const dismissedKey = `${keyPrefix}-notification-dismissed`;
-  const senderKey = `${keyPrefix}-notification-sender`;
+export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Partner app", floating = false }: { appLabel: string; defaultSender: string; partnerLabel?: string; floating?: boolean }) {
+  const prefix = useMemo(() => appLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-"), [appLabel]);
+  const keys = { client: `${prefix}-notification-client`, read: `${prefix}-notification-read`, dismissed: `${prefix}-notification-dismissed`, sender: `${prefix}-notification-sender` };
+  const partnerName = partnerLabel.split("’")[0].split("'")[0];
 
   const [clientId, setClientId] = useState("");
-  const [senderLabel, setSenderLabel] = useState(defaultSender);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [sender, setSender] = useState(defaultSender);
+  const [items, setItems] = useState<AppNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
-  const [composerOpen, setComposerOpen] = useState(false);
-  const [, setPermission] = useState<NotificationPermission>("default");
-  const [browserAlertsSupported, setBrowserAlertsSupported] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushStatus, setPushStatus] = useState("");
+  const [compose, setCompose] = useState(false);
+  const [target, setTarget] = useState<"partner" | "local" | "both">("partner");
+  const [tone, setTone] = useState("focus");
+  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [status, setStatus] = useState<{ tone: "good" | "bad" | "info"; text: string } | null>(null);
   const [sending, setSending] = useState(false);
+  const [arming, setArming] = useState(false);
   const [toast, setToast] = useState<AppNotification | null>(null);
-  const previousIdsRef = useRef<Set<string>>(new Set());
+  const [link, setLink] = useState<{ linked: boolean; problem: string | null } | null>(null);
+  const [desktop, setDesktop] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const known = useRef<Set<string> | null>(null);
+  const alerted = useRef<Set<string>>(new Set());
 
-  const visibleNotifications = notifications.filter((item) => !dismissedIds.has(item.id));
-  const unread = visibleNotifications.filter((item) => !readIds.has(item.id));
-  const isNeetDesk = appLabel.toLowerCase().includes("neet");
-  const copy = {
-    kicker: "Device alerts",
-    compose: isNeetDesk ? "Send a NEET nudge" : "Send a UPSC nudge",
-    titlePlaceholder: isNeetDesk ? "Bio revision sprint" : "Mains answer sprint",
-    bodyPlaceholder: isNeetDesk
-      ? "20 MCQs before dinner, then mark weak chapters."
-      : "Write one GS answer now, then log the gap.",
-    pushReady: isNeetDesk
-      ? "NEET device push is ready. Test notification sent to this device."
-      : "UPSC device push is ready. Test notification sent to this device.",
-  };
+  const visible = items.filter((i) => !dismissed.has(i.id));
+  const isMine = useCallback((i: AppNotification) => Boolean(clientId) && i.senderClientId === clientId, [clientId]);
+  const unread = visible.filter((i) => !readIds.has(i.id) && !isMine(i));
 
-  const persistRead = useCallback(
-    (next: Set<string>) => {
-      setReadIds(next);
-      localStorage.setItem(readKey, JSON.stringify(Array.from(next).slice(-160)));
-    },
-    [readKey],
-  );
+  const persistRead = useCallback((next: Set<string>) => {
+    setReadIds(next);
+    localStorage.setItem(keys.read, JSON.stringify([...next].slice(-300)));
+  }, [keys.read]);
+  const persistDismissed = useCallback((next: Set<string>) => {
+    setDismissed(next);
+    localStorage.setItem(keys.dismissed, JSON.stringify([...next].slice(-DISMISS_LIMIT)));
+  }, [keys.dismissed]);
 
-  const persistDismissed = useCallback(
-    (next: Set<string>) => {
-      setDismissedIds(next);
-      localStorage.setItem(dismissedKey, JSON.stringify(Array.from(next).slice(-DISMISS_LIMIT)));
-    },
-    [dismissedKey],
-  );
-
-  const dismissNotification = useCallback(
-    (id: string) => {
-      persistDismissed(new Set([...dismissedIds, id]));
-      persistRead(new Set([...readIds, id]));
-    },
-    [dismissedIds, persistDismissed, persistRead, readIds],
-  );
-
-  const fetchNotifications = useCallback(async () => {
-    const response = await fetch("/api/notifications", { cache: "no-store" });
-    if (!response.ok) return;
-    const payload = (await response.json()) as { notifications: AppNotification[] };
-    const next = payload.notifications ?? [];
-    setNotifications(next);
-
-    const known = previousIdsRef.current;
-    const fresh = next
-      .filter((item) => !known.has(item.id))
-      .filter((item) => !dismissedIds.has(item.id))
-      .filter((item) => !readIds.has(item.id))
-      .filter((item) => item.senderClientId !== clientId)
-      .reverse();
-
-    if (known.size > 0 && fresh.length > 0) {
-      setToast(fresh[fresh.length - 1]);
+  const systemAlert = useCallback(async (item: AppNotification) => {
+    if (!desktop || !pushSupported || permissionNow() !== "granted" || alerted.current.has(item.id)) return;
+    alerted.current.add(item.id);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const opts: PersistentNotificationOptions = { body: item.body, icon: "/icon-192.png", badge: "/icon-192.png", tag: item.id, data: { id: item.id, url: "/dashboard", tone: item.tone }, actions: [{ action: "open", title: "Open" }], renotify: true, requireInteraction: item.tone === "urgent", silent: false, vibrate: [160, 70, 160] };
+      await reg.showNotification(`${item.senderLabel}: ${item.title}`, opts);
+    } catch {
+      alerted.current.delete(item.id);
     }
+  }, [desktop, pushSupported]);
 
-    previousIdsRef.current = new Set(next.map((item) => item.id));
-  }, [clientId, dismissedIds, readIds]);
+  const fetchItems = useCallback(async () => {
+    const res = await fetch("/api/notifications", { cache: "no-store" }).catch(() => null);
+    if (!res?.ok) return;
+    const data = (await res.json().catch(() => ({}))) as { notifications?: AppNotification[] };
+    const next = data.notifications ?? [];
+    setItems(next);
+    // The first load only learns what is already there; anything after that is new and pops up.
+    if (known.current) {
+      const fresh = next.filter((i) => !known.current!.has(i.id) && !(clientId && i.senderClientId === clientId));
+      if (fresh.length) {
+        setToast(fresh[0]);
+        fresh.slice(0, 3).forEach((i) => void systemAlert(i));
+      }
+    }
+    known.current = new Set(next.map((i) => i.id));
+  }, [clientId, systemAlert]);
+
+  const checkLink = useCallback(async () => {
+    const res = await fetch("/api/notifications?partner=1", { cache: "no-store" }).catch(() => null);
+    const data = res?.ok ? await res.json().catch(() => null) : null;
+    setLink(data ? { linked: Boolean(data.linked), problem: data.problem ?? null } : { linked: false, problem: "Could not check the link." });
+  }, []);
+
+  const ensurePush = useCallback(async ({ ask = false, test = false } = {}) => {
+    if (!clientId || !pushSupported) return false;
+    let perm = permissionNow();
+    if (ask && perm !== "granted") perm = await Notification.requestPermission();
+    setPermission(perm);
+    if (perm !== "granted") {
+      setPushOn(false);
+      if (ask) setStatus({ tone: "bad", text: "Notifications are blocked — allow them in the browser's site settings." });
+      return false;
+    }
+    const cfgRes = await fetch("/api/push-subscriptions", { cache: "no-store" }).catch(() => null);
+    const cfg = cfgRes?.ok ? ((await cfgRes.json()) as { publicKey?: string; configured?: boolean }) : null;
+    if (!cfg?.configured || !cfg.publicKey) {
+      if (ask) setStatus({ tone: "bad", text: "Push keys are missing on the server." });
+      return false;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(cfg.publicKey) }));
+    const saved = await fetch("/api/push-subscriptions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ subscription: JSON.parse(JSON.stringify(sub)), senderClientId: clientId }) }).catch(() => null);
+    if (!saved?.ok) {
+      setPushOn(false);
+      if (ask) setStatus({ tone: "bad", text: "Could not save this device for push." });
+      return false;
+    }
+    setPushOn(true);
+    if (test) {
+      const t = await fetch("/api/push-subscriptions/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint, senderClientId: clientId }) }).catch(() => null);
+      setStatus(t?.ok ? { tone: "good", text: "This device will now get alerts — a test was just sent." } : { tone: "bad", text: "Saved, but the test push failed. Check the device's notification settings." });
+    }
+    return true;
+  }, [clientId, pushSupported]);
 
   useEffect(() => {
-    let id = localStorage.getItem(clientIdKey);
+    setMounted(true);
+    let id = localStorage.getItem(keys.client);
     if (!id) {
-      id = globalThis.crypto?.randomUUID?.() ?? `client-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-      localStorage.setItem(clientIdKey, id);
+      id = crypto.randomUUID();
+      localStorage.setItem(keys.client, id);
     }
     setClientId(id);
-    setSenderLabel(localStorage.getItem(senderKey) || defaultSender);
-    setReadIds(new Set(safeJson<string[]>(readKey, [])));
-    setDismissedIds(new Set(safeJson<string[]>(dismissedKey, [])));
-    setBrowserAlertsSupported("Notification" in window && "serviceWorker" in navigator && "PushManager" in window);
-    if ("Notification" in window) setPermission(Notification.permission);
-  }, [clientIdKey, defaultSender, dismissedKey, readKey, senderKey]);
+    setSender(localStorage.getItem(keys.sender) || defaultSender);
+    setReadIds(new Set(safeJson<string[]>(keys.read, [])));
+    setDismissed(new Set(safeJson<string[]>(keys.dismissed, [])));
+    setPushSupported("Notification" in window && "serviceWorker" in navigator && "PushManager" in window);
+    setPermission(permissionNow());
+    const media = window.matchMedia(DESKTOP_ALERT_QUERY);
+    const update = () => setDesktop(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // Keep this device's push subscription fresh (it can rotate silently).
   useEffect(() => {
-    if (!clientId || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
-
-    navigator.serviceWorker.ready
-      .then((registration) => registration.pushManager.getSubscription())
-      .then(async (subscription) => {
-        setPushEnabled(Boolean(subscription));
-        if (subscription) {
-          await fetch("/api/push-subscriptions", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ subscription: JSON.parse(JSON.stringify(subscription)), senderClientId: clientId }),
-          }).catch(() => {});
-        }
-      })
-      .catch(() => {});
-  }, [clientId]);
+    if (!clientId || !pushSupported) return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (cancelled) return;
+        setPushOn(Boolean(sub));
+        if (sub) await fetch("/api/push-subscriptions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ subscription: JSON.parse(JSON.stringify(sub)), senderClientId: clientId }) }).catch(() => {});
+        else if (permissionNow() === "granted") await ensurePush();
+      } catch {
+        if (!cancelled) setPushOn(false);
+      }
+    };
+    void refresh();
+    window.addEventListener("online", refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", refresh);
+    };
+  }, [clientId, pushSupported, ensurePush]);
 
   useEffect(() => {
     if (!clientId) return;
-    void fetchNotifications();
-    const timer = window.setInterval(fetchNotifications, POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [clientId, fetchNotifications]);
+    void fetchItems();
+    const timer = window.setInterval(fetchItems, POLL_MS);
+    const onVisible = () => document.visibilityState === "visible" && void fetchItems();
+    window.addEventListener("online", fetchItems);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("online", fetchItems);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [clientId, fetchItems]);
+
+  useEffect(() => {
+    if (open && !link) void checkLink();
+  }, [open, link, checkLink]);
+
+  useEffect(() => {
+    const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
+    if (unread.length) void nav.setAppBadge?.(unread.length).catch(() => {});
+    else void nav.clearAppBadge?.().catch(() => {});
+  }, [unread.length]);
 
   useEffect(() => {
     if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 5200);
-    return () => window.clearTimeout(timer);
+    const t = window.setTimeout(() => setToast(null), 6000);
+    return () => window.clearTimeout(t);
   }, [toast]);
 
-  async function enablePushAlerts() {
-    if (!browserAlertsSupported) {
-      setPushStatus("Push is not supported in this browser.");
-      return;
-    }
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [open]);
 
-    const next = await Notification.requestPermission();
-    setPermission(next);
-    if (next !== "granted") {
-      setPushStatus("Notifications are blocked until permission is allowed.");
-      return;
-    }
-
-    const configResponse = await fetch("/api/push-subscriptions", { cache: "no-store" });
-    if (!configResponse.ok) {
-      setPushStatus("Sign in again to enable push.");
-      return;
-    }
-
-    const config = (await configResponse.json()) as { publicKey?: string; configured?: boolean };
-    if (!config.configured || !config.publicKey) {
-      setPushStatus("Push keys are missing on the server.");
-      return;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
-    if (existing) {
-      await fetch("/api/push-subscriptions", {
-        method: "DELETE",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ endpoint: existing.endpoint }),
-      }).catch(() => {});
-      await existing.unsubscribe().catch(() => false);
-    }
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(config.publicKey),
-    });
-
-    const saveResponse = await fetch("/api/push-subscriptions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ subscription: JSON.parse(JSON.stringify(subscription)), senderClientId: clientId }),
-    });
-
-    if (saveResponse.ok) {
-      setPushEnabled(true);
-      const testResponse = await fetch("/api/push-subscriptions/test", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ endpoint: subscription.endpoint, senderClientId: clientId }),
-      });
-      setPushStatus(testResponse.ok ? copy.pushReady : "Push is saved, but the server push test failed. Check VAPID env keys and device notification settings.");
-    } else {
-      setPushStatus("Could not save this device for push.");
-    }
-  }
-
-  async function sendNotification(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const title = String(form.get("title") || "").trim();
-    const body = String(form.get("body") || "").trim();
-    const tone = String(form.get("tone") || "focus");
-    const target = String(form.get("target") || "local");
-    const sender = String(form.get("senderLabel") || defaultSender).trim() || defaultSender;
+  async function send(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const f = new FormData(form);
+    const title = String(f.get("title") || "").trim();
+    const body = String(f.get("body") || "").trim();
+    const from = String(f.get("senderLabel") || defaultSender).trim() || defaultSender;
     if (!title || !body) return;
-
     setSending(true);
-    localStorage.setItem(senderKey, sender);
-    setSenderLabel(sender);
-
+    setStatus(null);
+    localStorage.setItem(keys.sender, from);
+    setSender(from);
     try {
-      const response = await fetch("/api/notifications", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, body, tone, target, senderLabel: sender, senderClientId: clientId }),
-      });
-      if (response.ok) {
-        const result = (await response.json().catch(() => null)) as {
-          push?: { sent?: number; failed?: number };
-          partner?: { push?: { sent?: number; failed?: number }; forwarded?: boolean };
-        } | null;
-        const sent = (result?.push?.sent ?? 0) + (result?.partner?.push?.sent ?? 0);
-        const failed = (result?.push?.failed ?? 0) + (result?.partner?.push?.failed ?? 0);
-        if (sent > 0) {
-          setPushStatus(`Device push sent to ${pushCountLabel(sent)}${failed ? `; ${failed} failed` : ""}.`);
-        } else if (target !== "local" && result?.partner?.forwarded) {
-          setPushStatus(`Sent to ${partnerLabel}. Enable device push there to see it in the notification panel.`);
-        } else {
-          setPushStatus("Saved in the notification center. Enable device push on the receiving device for OS alerts.");
-        }
-        event.currentTarget.reset();
-        setComposerOpen(false);
-        await fetchNotifications();
+      const res = await fetch("/api/notifications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, body, tone, target, senderLabel: from, senderClientId: clientId }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStatus({ tone: "bad", text: data.error ?? "Not sent — try again." });
+        if (target !== "local") void checkLink();
+        return;
       }
+      const pushed = (data.partner?.push?.sent ?? 0) + (data.push?.sent ?? 0);
+      setStatus({
+        tone: "good",
+        text: target === "local" ? "Saved on this desk." : `Delivered to ${partnerLabel}.${pushed ? ` Alert sent to ${pushed} device${pushed === 1 ? "" : "s"}.` : " They'll see it in their panel; device alerts need push turned on there."}`,
+      });
+      form.reset();
+      setCompose(false);
+      await fetchItems();
+    } catch {
+      setStatus({ tone: "bad", text: "Network error — not sent." });
     } finally {
       setSending(false);
     }
   }
 
-  function markAllRead() {
-    persistRead(new Set([...readIds, ...visibleNotifications.map((item) => item.id)]));
-  }
+  const panel = (
+    <section className={`nc-panel ${floating ? "is-floating" : ""}`} role="dialog" aria-label={`${appLabel} messages`}>
+      <header className="nc-head">
+        <div>
+          <h2>Messages</h2>
+          <p>{unread.length ? `${unread.length} new` : "All caught up"} · kept for 7 days</p>
+        </div>
+        <button type="button" className="nc-icon" onClick={() => setOpen(false)} aria-label="Close"><X size={16} /></button>
+      </header>
 
-  function clearRead() {
-    const readVisible = visibleNotifications.filter((item) => readIds.has(item.id)).map((item) => item.id);
-    const idsToClear = readVisible.length ? readVisible : visibleNotifications.map((item) => item.id);
-    persistDismissed(new Set([...dismissedIds, ...idsToClear]));
-  }
+      <button type="button" className={`nc-link ${link ? (link.linked ? "is-ok" : "is-bad") : ""}`} onClick={() => void checkLink()} title="Check the link again">
+        {link?.linked === false ? <Link2Off size={14} /> : <Link2 size={14} />}
+        <span>{!link ? `Checking the link to ${partnerLabel}…` : link.linked ? `Linked with ${partnerLabel}` : `Not linked — ${link.problem ?? "unknown problem"}`}</span>
+      </button>
+
+      <div className="nc-actions">
+        <button type="button" className={`nc-chip ${compose ? "is-on" : ""}`} onClick={() => setCompose((v) => !v)} aria-expanded={compose}><Send size={14} /> Write</button>
+        <button type="button" className="nc-chip" onClick={() => persistRead(new Set([...readIds, ...visible.map((i) => i.id)]))} disabled={!unread.length}><Check size={14} /> Mark read</button>
+        <button type="button" className="nc-chip" onClick={() => persistDismissed(new Set([...dismissed, ...visible.filter((i) => readIds.has(i.id) || isMine(i)).map((i) => i.id)]))} disabled={!visible.length}><X size={14} /> Clear read</button>
+        {pushSupported ? (
+          <button type="button" className={`nc-chip ${pushOn && permission === "granted" ? "is-good" : ""}`} onClick={async () => { setArming(true); try { await ensurePush({ ask: true, test: true }); } finally { setArming(false); } }} disabled={arming || permission === "denied"}>
+            <BellRing size={14} /> {permission === "denied" ? "Alerts blocked" : arming ? "Turning on…" : pushOn && permission === "granted" ? "Alerts on" : "Alerts on this device"}
+          </button>
+        ) : null}
+      </div>
+
+      {status ? <p className={`nc-status is-${status.tone}`} role="status">{status.text}</p> : null}
+
+      {compose ? (
+        <form className="nc-compose" onSubmit={send}>
+          <div className="nc-to" role="group" aria-label="Send to">
+            {([["partner", partnerName], ["local", "This desk"], ["both", "Both"]] as const).map(([k, l]) => (
+              <button key={k} type="button" aria-pressed={target === k} onClick={() => setTarget(k)}>{l}</button>
+            ))}
+          </div>
+          <input name="title" placeholder="Title" maxLength={90} required autoFocus />
+          <textarea name="body" placeholder="Message" maxLength={420} required rows={3} />
+          <div className="nc-compose-row">
+            <div className="nc-tones" role="group" aria-label="Tone">
+              {TONES.map((t) => <button key={t.key} type="button" className={`t-${t.key}`} aria-pressed={tone === t.key} onClick={() => setTone(t.key)}>{t.label}</button>)}
+            </div>
+            <input name="senderLabel" defaultValue={sender} maxLength={42} aria-label="Signed as" className="nc-from" />
+          </div>
+          <button type="submit" className="nc-send" disabled={sending}><Send size={15} /> {sending ? "Sending…" : target === "local" ? "Save" : `Send to ${target === "both" ? "both" : partnerName}`}</button>
+        </form>
+      ) : null}
+
+      <ul className="nc-list">
+        {visible.length ? (
+          visible.map((i) => (
+            <Row key={i.id} item={i} mine={isMine(i)} read={readIds.has(i.id)} partnerName={partnerName} onRead={() => persistRead(new Set([...readIds, i.id]))} onDismiss={() => persistDismissed(new Set([...dismissed, i.id]))} />
+          ))
+        ) : (
+          <li className="nc-empty">No messages this week.</li>
+        )}
+      </ul>
+    </section>
+  );
 
   return (
     <>
-      <div className={`notify-dock ${isNeetDesk ? "notify-dock-offset" : ""}`}>
-        <button
-          className="notify-button"
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-label="Open notifications"
-          aria-expanded={open}
-        >
+      <div className={floating ? "nc-dock" : "nc-inline"}>
+        <button className={`nc-bell ${floating ? "" : "v2-iconbtn notify-button"} ${open ? "is-open" : ""}`} type="button" onClick={() => setOpen((v) => !v)} aria-label={unread.length ? `Messages, ${unread.length} new` : "Messages"} aria-expanded={open}>
           <Bell size={18} />
-          {unread.length > 0 ? <span>{Math.min(unread.length, 9)}</span> : null}
+          {unread.length ? <span className="nc-badge">{Math.min(unread.length, 9)}</span> : null}
         </button>
       </div>
-
-      {toast && (
-        <button className={`notify-toast tone-${toast.tone} ${isNeetDesk ? "notify-toast-offset" : ""}`} type="button" onClick={() => setOpen(true)}>
-          <Sparkles size={15} />
-          <span>
-            <strong>{toast.title}</strong>
-            <small>{toast.senderLabel}</small>
-          </span>
-        </button>
-      )}
-
-      {open && (
-        <section className={`notify-panel ${isNeetDesk ? "notify-panel-offset" : ""}`} aria-label={`${appLabel} notification center`}>
-          <header className="notify-head">
-            <div className="notify-head-copy">
-              <div className="notify-kicker">{copy.kicker}</div>
-              <h2>{appLabel}</h2>
-            </div>
-            <span className="notify-count">{unread.length ? `${unread.length} unread` : "All clear"}</span>
-            <button type="button" className="notify-icon" onClick={() => setOpen(false)} aria-label="Close notifications">
-              <X size={16} />
-            </button>
-          </header>
-
-          <div className="notify-actions">
-            <button type="button" onClick={() => setComposerOpen((value) => !value)} aria-pressed={composerOpen}>
-              <Send size={14} />
-              Compose
-            </button>
-            <button type="button" onClick={markAllRead} disabled={!unread.length}>
-              <Check size={14} />
-              Mark read
-            </button>
-            <button type="button" onClick={clearRead} disabled={!visibleNotifications.length}>
-              <X size={14} />
-              Clear read
-            </button>
-            {browserAlertsSupported ? (
-              <button type="button" onClick={enablePushAlerts}>
-                <BellRing size={14} />
-                {pushEnabled ? "Push ready" : "Device push"}
-              </button>
-            ) : null}
-          </div>
-
-          {pushStatus ? <div className="notify-push-status">{pushStatus}</div> : null}
-
-          {composerOpen && (
-            <form className="notify-compose" onSubmit={sendNotification}>
-              <input name="senderLabel" defaultValue={senderLabel} placeholder="Your name" maxLength={42} />
-              <input name="title" placeholder={copy.titlePlaceholder} maxLength={90} required />
-              <textarea name="body" placeholder={copy.bodyPlaceholder} maxLength={420} required />
-              <select className="notify-target-select" name="target" defaultValue="partner" aria-label="Notification destination">
-                <option value="partner">{partnerLabel}</option>
-                <option value="local">This app only</option>
-                <option value="both">Both apps</option>
-              </select>
-              <div className="notify-compose-row">
-                <select name="tone" defaultValue="focus">
-                  <option value="focus">Focus</option>
-                  <option value="urgent">Urgent</option>
-                  <option value="care">Care</option>
-                  <option value="win">Win</option>
-                </select>
-                <button type="submit" disabled={sending}>
-                  <Send size={14} />
-                  {sending ? "Sending" : copy.compose}
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="notify-list">
-            {visibleNotifications.length ? visibleNotifications.map((item) => (
-              <NotificationRow
-                key={item.id}
-                item={item}
-                read={readIds.has(item.id)}
-                onRead={() => persistRead(new Set([...readIds, item.id]))}
-                onDismiss={() => dismissNotification(item.id)}
-              />
-            )) : <div className="notify-empty">No notifications yet.</div>}
-          </div>
-        </section>
-      )}
-
-      <style jsx>{`
-        .notify-dock,
-        .notify-panel,
-        .notify-toast {
-          --text: var(--text-primary, var(--text));
-        }
-
-        .notify-dock {
-          position: fixed;
-          top: calc(18px + env(safe-area-inset-top));
-          right: 22px;
-          z-index: 9998;
-        }
-
-        .notify-dock-offset {
-          top: calc(70px + env(safe-area-inset-top));
-        }
-
-        .notify-button,
-        .notify-icon,
-        .notify-actions button,
-        .notify-compose button,
-        .notify-toast {
-          border: 1px solid rgba(255,255,255,0.18);
-          background:
-            linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.055) 42%, rgba(255,255,255,0.025)),
-            rgba(8,10,22,0.66);
-          color: var(--text);
-          backdrop-filter: blur(24px) saturate(180%);
-          -webkit-backdrop-filter: blur(24px) saturate(180%);
-          box-shadow:
-            0 16px 34px rgba(0,0,0,0.34),
-            inset 0 1px 0 rgba(255,255,255,0.18),
-            inset 0 -1px 0 rgba(255,255,255,0.06);
-          cursor: pointer;
-        }
-
-        .notify-button {
-          position: relative;
-          width: 52px;
-          height: 52px;
-          border-radius: 999px;
-          display: grid;
-          place-items: center;
-          background:
-            linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)),
-            rgba(8,10,22,0.78);
-          border-color: rgba(255,255,255,0.16);
-          box-shadow:
-            0 18px 42px rgba(0,0,0,0.38),
-            inset 0 1px 0 rgba(255,255,255,0.24),
-            inset 0 -8px 18px rgba(255,255,255,0.035);
-          transition: transform 180ms var(--ease-out), border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
-        }
-
-        .notify-button:hover {
-          transform: translateY(-2px);
-          border-color: rgba(212,168,83,0.38);
-          box-shadow:
-            0 22px 48px rgba(0,0,0,0.44),
-            0 0 24px rgba(212,168,83,0.14),
-            inset 0 1px 0 rgba(255,255,255,0.18);
-        }
-
-        .notify-button span {
-          position: absolute;
-          top: -4px;
-          right: -2px;
-          min-width: 20px;
-          height: 20px;
-          border-radius: 999px;
-          display: grid;
-          place-items: center;
-          background: linear-gradient(135deg, var(--gold), var(--rose-bright));
-          color: #07070c;
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .notify-panel {
-          position: fixed;
-          top: calc(82px + env(safe-area-inset-top));
-          right: 22px;
-          z-index: 10000;
-          width: min(404px, calc(100vw - 28px));
-          max-height: min(680px, calc(100svh - 108px - env(safe-area-inset-top)));
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding: 16px;
-          border-radius: 24px;
-          overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.14);
-          background:
-            linear-gradient(150deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06) 36%, rgba(255,255,255,0.025) 72%),
-            rgba(6,8,20,0.88);
-          box-shadow:
-            0 24px 70px rgba(0,0,0,0.48),
-            inset 0 1px 0 rgba(255,255,255,0.18),
-            inset 0 -1px 0 rgba(255,255,255,0.06);
-          backdrop-filter: blur(38px) saturate(190%);
-          -webkit-backdrop-filter: blur(38px) saturate(190%);
-        }
-
-        .notify-panel-offset {
-          top: calc(130px + env(safe-area-inset-top));
-          max-height: min(640px, calc(100svh - 148px - env(safe-area-inset-top)));
-        }
-
-        .notify-panel::before {
-          content: "";
-          position: absolute;
-          inset: 0 0 auto;
-          height: 46%;
-          pointer-events: none;
-          background:
-            linear-gradient(180deg, rgba(255,255,255,0.16), transparent),
-            radial-gradient(circle at 18% 0%, rgba(255,255,255,0.18), transparent 36%);
-          opacity: 0.72;
-        }
-
-        .notify-panel > * {
-          position: relative;
-          z-index: 1;
-        }
-
-        .notify-head,
-        .notify-actions {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-        }
-
-        .notify-head-copy {
-          min-width: 0;
-          flex: 1 1 auto;
-        }
-
-        .notify-kicker {
-          color: var(--gold-bright);
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-        }
-
-        h2 {
-          margin: 4px 0 0;
-          font: 800 1.45rem/1 var(--font-display), serif;
-        }
-
-        .notify-icon {
-          width: 34px;
-          height: 34px;
-          border-radius: 12px;
-          display: grid;
-          place-items: center;
-          flex: 0 0 auto;
-        }
-
-        .notify-actions {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          align-items: stretch;
-          gap: 8px;
-        }
-
-        .notify-count {
-          flex: 0 0 auto;
-          min-height: 26px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 999px;
-          padding: 0 10px;
-          border: 1px solid rgba(255,255,255,0.12);
-          background: rgba(255,255,255,0.055);
-          color: rgba(255,242,218,0.68);
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .notify-push-status {
-          padding: 9px 11px;
-          border: 1px solid rgba(255,255,255,0.14);
-          border-radius: 14px;
-          background:
-            linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)),
-            rgba(0,0,0,0.2);
-          color: rgba(255,250,238,0.82);
-          font-size: 12px;
-          line-height: 1.45;
-        }
-
-        .notify-actions button,
-        .notify-compose button {
-          min-height: 34px;
-          border-radius: 14px;
-          padding: 0 12px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          font-size: 12px;
-          font-weight: 850;
-          min-width: 0;
-          line-height: 1.15;
-          text-align: center;
-          white-space: normal;
-        }
-
-        .notify-actions button[aria-pressed="true"] {
-          border-color: rgba(255,235,190,0.34);
-          background:
-            linear-gradient(135deg, rgba(212,168,83,0.24), rgba(255,255,255,0.06)),
-            rgba(8,10,22,0.76);
-        }
-
-        .notify-actions button:disabled {
-          opacity: 0.42;
-          cursor: default;
-        }
-
-        .notify-compose {
-          display: grid;
-          gap: 10px;
-          padding: 12px;
-          border-radius: 18px;
-          border: 1px solid rgba(255,255,255,0.12);
-          background:
-            linear-gradient(145deg, rgba(255,255,255,0.11), rgba(255,255,255,0.035)),
-            rgba(0,0,0,0.20);
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.12),
-            0 12px 26px rgba(0,0,0,0.14);
-        }
-
-        .notify-compose input,
-        .notify-compose textarea,
-        .notify-compose select {
-          width: 100%;
-          border: 1px solid rgba(255,255,255,0.16);
-          border-radius: 13px;
-          background:
-            linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025)),
-            rgba(0,0,0,0.28);
-          color: rgba(255,250,238,0.96);
-          padding: 11px 12px;
-          font: inherit;
-          outline: none;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-          min-width: 0;
-        }
-
-        .notify-compose textarea {
-          min-height: 88px;
-          resize: vertical;
-        }
-
-        .notify-compose select {
-          max-width: none;
-          appearance: none;
-          -webkit-appearance: none;
-          background-image:
-            linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025));
-        }
-
-        .notify-target-select {
-          width: 100%;
-        }
-
-        .notify-compose-row {
-          display: grid;
-          grid-template-columns: minmax(104px, 0.42fr) minmax(0, 1fr);
-          gap: 10px;
-          align-items: stretch;
-        }
-
-        .notify-list {
-          min-height: 86px;
-          flex: 1 1 auto;
-          overflow-y: auto;
-          display: grid;
-          align-content: start;
-          gap: 8px;
-          padding-right: 2px;
-          scrollbar-gutter: stable;
-        }
-
-        .notify-item {
-          --drag-x: 0px;
-          --drag-progress: 0;
-          --drag-tilt: 0deg;
-          --drag-scale: 1;
-          position: relative;
-          overflow: hidden;
-          border-radius: 20px;
-          isolation: isolate;
-          transform-origin: center;
-          transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1), margin 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
-        }
-
-        .notify-item.exiting {
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .notify-dismiss-bg {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          border-radius: inherit;
-          opacity: var(--drag-progress);
-          transform: scale(calc(0.96 + (var(--drag-progress) * 0.04)));
-          transition: opacity 180ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .notify-dismiss-bg::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          background:
-            radial-gradient(circle at var(--clear-glow-x, 90%) 50%, rgba(255,255,255,0.18), transparent 34%),
-            linear-gradient(135deg, rgba(232,114,138,0.28), rgba(255,111,122,0.13));
-          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-        }
-
-        .notify-dismiss-bg-left {
-          justify-content: flex-start;
-          padding-left: 18px;
-          --clear-glow-x: 10%;
-        }
-
-        .notify-dismiss-bg-right {
-          justify-content: flex-end;
-          padding-right: 18px;
-          --clear-glow-x: 90%;
-        }
-
-        .notify-dismiss-bg span {
-          position: relative;
-          z-index: 1;
-          min-width: 62px;
-          min-height: 34px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.12);
-          color: #fff8f8;
-          font-size: 10px;
-          font-weight: 950;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 14px 28px rgba(0,0,0,0.18);
-        }
-
-        .notify-item-card {
-          position: relative;
-          z-index: 1;
-          width: 100%;
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr);
-          gap: 11px;
-          padding: 13px;
-          text-align: left;
-          overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.18);
-          border-radius: 20px;
-          background:
-            linear-gradient(150deg, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.035)),
-            rgba(9,11,22,0.58);
-          color: rgba(255,250,238,0.96);
-          cursor: pointer;
-          box-shadow:
-            0 18px 34px rgba(0,0,0,0.22),
-            inset 0 1px 0 rgba(255,255,255,0.22),
-            inset 0 -1px 0 rgba(255,255,255,0.055);
-          backdrop-filter: blur(20px) saturate(170%);
-          -webkit-backdrop-filter: blur(20px) saturate(170%);
-          transform: translate3d(var(--drag-x), 0, 0) rotateZ(var(--drag-tilt)) scale(var(--drag-scale));
-          transition:
-            transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
-            opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            background 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
-          touch-action: pan-y;
-          will-change: transform;
-        }
-
-        .notify-item-card::before {
-          content: "";
-          position: absolute;
-          inset: 0 0 auto;
-          height: 44%;
-          pointer-events: none;
-          background:
-            linear-gradient(180deg, rgba(255,255,255,0.18), transparent),
-            radial-gradient(circle at 16% 0%, rgba(255,255,255,0.2), transparent 34%);
-          opacity: 0.68;
-        }
-
-        .notify-item-card > * {
-          position: relative;
-          z-index: 1;
-        }
-
-        .notify-item.dragging .notify-item-card,
-        .notify-item.exiting .notify-item-card {
-          transition:
-            transform 180ms cubic-bezier(0.2, 0.86, 0.22, 1),
-            opacity 160ms ease,
-            border-color 160ms ease,
-            background 160ms ease;
-        }
-
-        .notify-item-card:hover {
-          border-color: rgba(255,235,190,0.32);
-          background:
-            linear-gradient(150deg, rgba(255,255,255,0.23), rgba(255,255,255,0.085) 46%, rgba(255,255,255,0.045)),
-            rgba(9,11,22,0.64);
-          box-shadow:
-            0 22px 42px rgba(0,0,0,0.26),
-            0 0 22px rgba(212,168,83,0.12),
-            inset 0 1px 0 rgba(255,255,255,0.28);
-        }
-
-        .notify-dismiss-btn {
-          position: absolute;
-          right: 9px;
-          top: 50%;
-          z-index: 2;
-          width: 30px !important;
-          height: 30px;
-          min-height: 30px;
-          display: grid !important;
-          place-items: center;
-          padding: 0 !important;
-          border-radius: 999px !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          background: rgba(0,0,0,0.32) !important;
-          color: var(--text-secondary) !important;
-          transform: translateY(-50%) scale(0.9);
-          opacity: 0;
-          backdrop-filter: blur(18px) saturate(150%);
-          -webkit-backdrop-filter: blur(18px) saturate(150%);
-          transition: opacity 180ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.22, 1, 0.36, 1), color 160ms ease, border-color 160ms ease;
-        }
-
-        .notify-item:hover .notify-dismiss-btn,
-        .notify-item:focus-within .notify-dismiss-btn {
-          opacity: 1;
-          transform: translateY(-50%) scale(1);
-        }
-
-        .notify-dismiss-btn:hover {
-          color: #fff8f8 !important;
-          border-color: rgba(232,114,138,0.38) !important;
-        }
-
-        .notify-item-card > span:nth-child(2) {
-          min-width: 0;
-          padding-right: 28px;
-        }
-
-        .notify-copy {
-          display: grid;
-          gap: 7px;
-          min-width: 0;
-        }
-
-        .notify-row-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 10px;
-          min-width: 0;
-        }
-
-        .notify-tone {
-          flex-shrink: 0;
-          min-height: 22px;
-          display: inline-flex;
-          align-items: center;
-          border-radius: 999px;
-          padding: 0 8px;
-          border: 1px solid rgba(255,255,255,0.16);
-          background:
-            linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06)),
-            rgba(0,0,0,0.18);
-          color: rgba(255,229,168,0.96);
-          font-size: 9px;
-          font-weight: 950;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-        }
-
-        .notify-item.read .notify-item-card {
-          border-color: rgba(255,255,255,0.12);
-          background:
-            linear-gradient(150deg, rgba(255,255,255,0.12), rgba(255,255,255,0.045) 48%, rgba(255,255,255,0.025)),
-            rgba(9,11,22,0.5);
-          box-shadow:
-            0 12px 26px rgba(0,0,0,0.16),
-            inset 0 1px 0 rgba(255,255,255,0.16);
-        }
-
-        .notify-dot {
-          width: 10px;
-          height: 10px;
-          margin-top: 5px;
-          border-radius: 999px;
-          background: var(--gold);
-          box-shadow: 0 0 16px var(--gold-glow);
-        }
-
-        .tone-urgent .notify-dot { background: var(--danger); }
-        .tone-care .notify-dot { background: var(--physics); }
-        .tone-win .notify-dot { background: var(--botany); }
-
-        .notify-item strong,
-        .notify-item em,
-        .notify-item small {
-          display: block;
-        }
-
-        .notify-item strong {
-          color: rgba(255,250,238,0.98);
-          font-size: 13px;
-          line-height: 1.25;
-          overflow-wrap: anywhere;
-          text-shadow: 0 1px 12px rgba(0,0,0,0.28);
-        }
-
-        .notify-item em {
-          color: rgba(255,248,232,0.78);
-          font-size: 12px;
-          font-style: normal;
-          line-height: 1.45;
-          overflow-wrap: anywhere;
-        }
-
-        .notify-item small {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          flex-wrap: wrap;
-          color: rgba(255,242,218,0.58);
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .notify-item small span {
-          min-width: 0;
-          overflow-wrap: anywhere;
-        }
-
-        .notify-item.read strong {
-          color: rgba(255,250,238,0.86);
-        }
-
-        .notify-item.read em {
-          color: rgba(255,248,232,0.66);
-        }
-
-        .notify-item.read small {
-          color: rgba(255,242,218,0.48);
-        }
-
-        .notify-toast {
-          position: fixed;
-          top: calc(84px + env(safe-area-inset-top));
-          right: 22px;
-          z-index: 10001;
-          max-width: min(360px, calc(100vw - 28px));
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 14px;
-          border-radius: 18px;
-          text-align: left;
-          background:
-            linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.075)),
-            rgba(8,10,22,0.68);
-          border-color: rgba(255,255,255,0.2);
-          animation: notifyIn 240ms var(--ease-out);
-        }
-
-        .notify-toast-offset {
-          top: calc(130px + env(safe-area-inset-top));
-        }
-
-        .notify-toast strong,
-        .notify-toast small {
-          display: block;
-        }
-
-        .notify-toast strong {
-          font-size: 13px;
-        }
-
-        .notify-toast small {
-          margin-top: 2px;
-          color: var(--text-muted);
-          font-size: 11px;
-        }
-
-        .notify-empty {
-          padding: 22px;
-          border: 1px dashed rgba(255,255,255,0.12);
-          border-radius: 18px;
-          color: var(--text-muted);
-          text-align: center;
-          font-size: 13px;
-        }
-
-        @keyframes notifyIn {
-          from { opacity: 0; transform: translateY(10px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @media (max-width: 560px) {
-          .notify-dock {
-            top: calc(12px + env(safe-area-inset-top));
-            right: 12px;
-          }
-
-          .notify-dock-offset {
-            top: calc(66px + env(safe-area-inset-top));
-          }
-
-          .notify-button {
-            width: 48px;
-            height: 48px;
-          }
-
-          .notify-panel {
-            top: calc(72px + env(safe-area-inset-top));
-            right: 10px;
-            width: calc(100vw - 20px);
-            max-height: calc(100svh - 86px - env(safe-area-inset-top));
-            border-radius: 22px;
-            padding: 14px;
-          }
-
-          .notify-panel-offset {
-            top: calc(124px + env(safe-area-inset-top));
-            max-height: calc(100svh - 136px - env(safe-area-inset-top));
-          }
-
-          .notify-actions,
-          .notify-compose-row {
-            grid-template-columns: 1fr;
-          }
-
-          .notify-toast {
-            top: calc(72px + env(safe-area-inset-top));
-            right: 10px;
-          }
-
-          .notify-toast-offset {
-            top: calc(124px + env(safe-area-inset-top));
-          }
-        }
-      `}</style>
+      {mounted && open ? createPortal(<><div className="nc-scrim" onClick={() => setOpen(false)} />{panel}</>, document.body) : null}
+      {mounted && toast && !open
+        ? createPortal(
+            <button className={`nc-toast t-${toast.tone}`} type="button" onClick={() => { setToast(null); setOpen(true); }}>
+              <span className="nc-stripe" aria-hidden="true" />
+              <span><b>{toast.title}</b><small>{toast.senderLabel} · {toast.body.slice(0, 80)}{toast.body.length > 80 ? "…" : ""}</small></span>
+            </button>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

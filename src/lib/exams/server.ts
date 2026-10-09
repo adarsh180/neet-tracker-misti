@@ -2,11 +2,12 @@ import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
 import { getPrivateSession } from "@/lib/server-auth";
+import { GATE_COOKIE, verifyGateToken } from "@/lib/exams/gate-token";
 import { dayKey, type Records } from "@/lib/exams/metrics";
 import type { Customisations, ExamKey, ExamPrefs } from "@/lib/exams/syllabus";
 
 export const EXAM_COOKIE = "neet-exam";
-export const EXAMS = ["ug", "pg", "ss"] as const;
+export const EXAMS = ["ug", "pg", "ss", "hub"] as const;
 export type AnyExam = (typeof EXAMS)[number];
 
 export const isWorkspaceExam = (v: unknown): v is ExamKey => v === "pg" || v === "ss";
@@ -17,7 +18,7 @@ export async function guardExam(exam: string): Promise<{ ok: true; exam: ExamKey
   const session = await getPrivateSession();
   if (!session) return { ok: false, status: 401, error: "Unauthorized" };
   const store = await cookies();
-  if (store.get(EXAM_COOKIE)?.value !== exam) return { ok: false, status: 403, error: `Open ${exam.toUpperCase()} from the exam picker first.` };
+  if (store.get(EXAM_COOKIE)?.value !== exam || !verifyGateToken(store.get(GATE_COOKIE)?.value)) return { ok: false, status: 403, error: `Open ${exam.toUpperCase()} from the exam picker first.` };
   return { ok: true, exam };
 }
 
