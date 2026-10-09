@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 
 import { db } from "@/lib/db";
 import { verifyGatePassword } from "@/lib/gate-secret";
+import { isNewDevice, requestInfo, securityAlert } from "@/lib/security-alert";
 import { GATE_COOKIE, GATE_HOURS, makeGateToken, verifyGateToken } from "@/lib/exams/gate-token";
 
 /**
@@ -44,6 +45,7 @@ export async function unlockGate(password: string): Promise<GateResult> {
         update: { failureCount: failures, lockedUntil, lastFailedAt: now },
       })
       .catch((e) => console.error("[gate] attempt write failed", e));
+    if (lockedUntil) await securityAlert("Dashboard switch locked", `5 wrong dashboard passwords from ${(await requestInfo()).label}. PG, SS and Saath are locked there for 15 minutes.`);
     await new Promise((r) => setTimeout(r, 500));
     return lockedUntil
       ? { ok: false, error: `Locked after ${MAX_FAILURES} wrong attempts.`, lockedMinutes: LOCK_MINUTES }
@@ -51,6 +53,7 @@ export async function unlockGate(password: string): Promise<GateResult> {
   }
   await db.loginRateLimit.deleteMany({ where: { scopeHash } }).catch(() => null);
   const store = await cookies();
+  if (await isNewDevice()) await securityAlert("Dashboards opened on a new browser", `PG, SS and Saath were unlocked from ${(await requestInfo()).label}. If this wasn’t you, change the dashboard password.`, "care");
   store.set(GATE_COOKIE, makeGateToken(), { httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/", maxAge: GATE_HOURS * 3600 });
   return { ok: true };
 }

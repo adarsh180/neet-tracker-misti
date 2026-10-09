@@ -1,21 +1,21 @@
 "use client";
 
-import { Bell, BellRing, Check, CheckCheck, Link2, Link2Off, Send, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { Bell, BellRing, CheckCheck, Eraser, Link2, Link2Off, Send, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 
 /**
  * Messages between the UPSC desk and the NEET desk, plus each site's own
- * alerts. Identical in both repos. Polls every 5 s, keeps a week, shows what
- * you sent and whether it was delivered, checks the link to the other site,
- * and arms OS push per device.
+ * alerts, as one conversation. Identical in both repos. Polls every 5 s,
+ * keeps a week, shows what you sent and whether it was delivered, checks the
+ * link to the other site, and arms OS push per device.
  */
 
-type AppNotification = { id: string; title: string; body: string; tone: "focus" | "urgent" | "care" | "win" | string; senderLabel: string; senderClientId: string | null; createdAt: string };
+type AppNotification = { id: string; title: string; body: string; tone: "focus" | "urgent" | "care" | "win" | string; senderLabel: string; senderClientId: string | null; createdAt: string; readAt?: string | null };
 type PersistentNotificationOptions = NotificationOptions & { actions?: Array<{ action: string; title: string }>; renotify?: boolean; requireInteraction?: boolean; vibrate?: number[] };
+type Kind = "mine" | "theirs" | "alert";
 
 const POLL_MS = 5000;
-const DISMISS_LIMIT = 300;
 const DESKTOP_ALERT_QUERY = "(min-width: 900px) and (hover: hover) and (pointer: fine)";
 const TONES = [
   { key: "focus", label: "Focus" },
@@ -31,13 +31,14 @@ function safeJson<T>(key: string, fallback: T): T {
     return fallback;
   }
 }
-function relativeTime(value: string) {
-  const minutes = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return new Date(value).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+const time = (v: string) => new Date(v).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+function dayLabel(v: string) {
+  const d = new Date(v);
+  const today = new Date();
+  const y = new Date(Date.now() - 864e5);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === y.toDateString()) return "Yesterday";
+  return d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" });
 }
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -45,63 +46,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 }
 const permissionNow = (): NotificationPermission => ("Notification" in window ? Notification.permission : "default");
-
-function Row({ item, mine, read, partnerName, onRead, onDismiss }: { item: AppNotification; mine: boolean; read: boolean; partnerName: string; onRead: () => void; onDismiss: () => void }) {
-  const [dx, setDx] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-  const start = useRef<number | null>(null);
-  const moved = useRef(false);
-  const leave = (dir: number) => {
-    setLeaving(true);
-    setDx(dir * 420);
-    navigator.vibrate?.(14);
-    window.setTimeout(onDismiss, 180);
-  };
-  const end = () => {
-    if (start.current === null) return;
-    start.current = null;
-    if (Math.abs(dx) > 96) leave(Math.sign(dx));
-    else setDx(0);
-  };
-  return (
-    <li className={`nc-item t-${item.tone} ${read ? "is-read" : ""} ${mine ? "is-mine" : ""} ${leaving ? "is-leaving" : ""}`} style={{ "--dx": `${dx}px`, "--p": Math.min(1, Math.abs(dx) / 110) } as CSSProperties}>
-      <button
-        type="button"
-        className="nc-item-card"
-        onClick={() => !moved.current && onRead()}
-        onPointerDown={(e) => {
-          start.current = e.clientX;
-          moved.current = false;
-          e.currentTarget.setPointerCapture(e.pointerId);
-        }}
-        onPointerMove={(e) => {
-          if (start.current === null) return;
-          const d = e.clientX - start.current;
-          if (Math.abs(d) > 5) moved.current = true;
-          setDx(Math.sign(d) * Math.min(Math.abs(d), 200));
-        }}
-        onPointerUp={end}
-        onPointerCancel={end}
-      >
-        <span className="nc-stripe" aria-hidden="true" />
-        <span className="nc-item-body">
-          <span className="nc-item-top">
-            <b>{item.title}</b>
-            {!read && !mine ? <i className="nc-unread" aria-label="unread" /> : null}
-          </span>
-          <span className="nc-text">{item.body}</span>
-          <span className="nc-meta">
-            {mine ? <span className="nc-sent"><CheckCheck size={13} /> You → {partnerName === "this desk" ? "this desk" : partnerName}</span> : <span>From {item.senderLabel}</span>}
-            <span>·</span>
-            <span>{relativeTime(item.createdAt)}</span>
-            <span className="nc-tone">{TONES.find((t) => t.key === item.tone)?.label ?? "Focus"}</span>
-          </span>
-        </span>
-      </button>
-      <button type="button" className="nc-x" onClick={() => leave(-1)} aria-label={`Clear ${item.title}`}><X size={14} /></button>
-    </li>
-  );
-}
+const initial = (s: string) => s.trim().charAt(0).toUpperCase() || "•";
 
 export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Partner app", floating = false }: { appLabel: string; defaultSender: string; partnerLabel?: string; floating?: boolean }) {
   const prefix = useMemo(() => appLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-"), [appLabel]);
@@ -114,9 +59,10 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
-  const [compose, setCompose] = useState(false);
   const [target, setTarget] = useState<"partner" | "local" | "both">("partner");
   const [tone, setTone] = useState("focus");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [pushSupported, setPushSupported] = useState(false);
   const [pushOn, setPushOn] = useState(false);
@@ -129,10 +75,29 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
   const [mounted, setMounted] = useState(false);
   const known = useRef<Set<string> | null>(null);
   const alerted = useRef<Set<string>>(new Set());
+  const scroller = useRef<HTMLDivElement>(null);
 
-  const visible = items.filter((i) => !dismissed.has(i.id));
-  const isMine = useCallback((i: AppNotification) => Boolean(clientId) && i.senderClientId === clientId, [clientId]);
-  const unread = visible.filter((i) => !readIds.has(i.id) && !isMine(i));
+  const kindOf = useCallback(
+    (i: AppNotification): Kind => {
+      // Sent from this browser, or from another of my devices (same name, a person not an app) → mine.
+      if (clientId && i.senderClientId === clientId) return "mine";
+      if (i.senderClientId && i.senderLabel.toLowerCase() === defaultSender.toLowerCase()) return "mine";
+      return i.senderClientId || i.senderLabel.toLowerCase() === partnerName.toLowerCase() ? "theirs" : "alert";
+    },
+    [clientId, partnerName, defaultSender],
+  );
+  const visible = useMemo(() => items.filter((i) => !dismissed.has(i.id)), [items, dismissed]);
+  const unread = visible.filter((i) => !i.readAt && !readIds.has(i.id) && kindOf(i) !== "mine");
+  // Oldest first, grouped by day — reads like a conversation.
+  const groups = useMemo(() => {
+    const out: Array<{ day: string; list: AppNotification[] }> = [];
+    for (const i of [...visible].reverse()) {
+      const d = dayLabel(i.createdAt);
+      if (out.at(-1)?.day === d) out.at(-1)!.list.push(i);
+      else out.push({ day: d, list: [i] });
+    }
+    return out;
+  }, [visible]);
 
   const persistRead = useCallback((next: Set<string>) => {
     setReadIds(next);
@@ -140,8 +105,22 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
   }, [keys.read]);
   const persistDismissed = useCallback((next: Set<string>) => {
     setDismissed(next);
-    localStorage.setItem(keys.dismissed, JSON.stringify([...next].slice(-DISMISS_LIMIT)));
+    localStorage.setItem(keys.dismissed, JSON.stringify([...next].slice(-300)));
   }, [keys.dismissed]);
+
+  // Read / cleared state lives on the server, so every device of this desk agrees.
+  const sync = useCallback((op: "read" | "clear", ids: string[]) => {
+    if (!ids.length) return;
+    void fetch("/api/notifications", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ op, ids }) }).catch(() => null);
+  }, []);
+  const clearIds = useCallback(
+    (ids: string[]) => {
+      persistDismissed(new Set([...dismissed, ...ids]));
+      setItems((list) => list.filter((i) => !ids.includes(i.id)));
+      sync("clear", ids);
+    },
+    [dismissed, persistDismissed, sync],
+  );
 
   const systemAlert = useCallback(async (item: AppNotification) => {
     if (!desktop || !pushSupported || permissionNow() !== "granted" || alerted.current.has(item.id)) return;
@@ -199,13 +178,13 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
     const saved = await fetch("/api/push-subscriptions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ subscription: JSON.parse(JSON.stringify(sub)), senderClientId: clientId }) }).catch(() => null);
     if (!saved?.ok) {
       setPushOn(false);
-      if (ask) setStatus({ tone: "bad", text: "Could not save this device for push." });
+      if (ask) setStatus({ tone: "bad", text: "Could not save this device for alerts." });
       return false;
     }
     setPushOn(true);
     if (test) {
       const t = await fetch("/api/push-subscriptions/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint, senderClientId: clientId }) }).catch(() => null);
-      setStatus(t?.ok ? { tone: "good", text: "This device will now get alerts — a test was just sent." } : { tone: "bad", text: "Saved, but the test push failed. Check the device's notification settings." });
+      setStatus(t?.ok ? { tone: "good", text: "This device now gets alerts — a test was just sent." } : { tone: "bad", text: "Saved, but the test alert failed. Check the device's notification settings." });
     }
     return true;
   }, [clientId, pushSupported]);
@@ -270,8 +249,21 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
   }, [clientId, fetchItems]);
 
   useEffect(() => {
-    if (open && !link) void checkLink();
-  }, [open, link, checkLink]);
+    if (!open) return;
+    if (!link) void checkLink();
+    // Opening the conversation reads it — on every device — and lands at the newest message.
+    persistRead(new Set([...readIds, ...visible.map((i) => i.id)]));
+    sync("read", visible.filter((i) => !i.readAt).map((i) => i.id));
+    requestAnimationFrame(() => scroller.current?.scrollTo({ top: scroller.current.scrollHeight }));
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" }));
+  }, [items.length, open]);
 
   useEffect(() => {
     const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
@@ -285,27 +277,16 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  useEffect(() => {
-    if (!open) return;
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", esc);
-    return () => window.removeEventListener("keydown", esc);
-  }, [open]);
-
-  async function send(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const f = new FormData(form);
-    const title = String(f.get("title") || "").trim();
-    const body = String(f.get("body") || "").trim();
-    const from = String(f.get("senderLabel") || defaultSender).trim() || defaultSender;
-    if (!title || !body) return;
+  async function send(e?: FormEvent) {
+    e?.preventDefault();
+    const text = body.trim();
+    if (!text) return;
+    const head = title.trim() || (text.length > 48 ? `${text.slice(0, 46).trimEnd()}…` : text);
     setSending(true);
     setStatus(null);
-    localStorage.setItem(keys.sender, from);
-    setSender(from);
+    localStorage.setItem(keys.sender, sender);
     try {
-      const res = await fetch("/api/notifications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, body, tone, target, senderLabel: from, senderClientId: clientId }) });
+      const res = await fetch("/api/notifications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: head, body: text, tone, target, senderLabel: sender || defaultSender, senderClientId: clientId }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setStatus({ tone: "bad", text: data.error ?? "Not sent — try again." });
@@ -313,12 +294,9 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
         return;
       }
       const pushed = (data.partner?.push?.sent ?? 0) + (data.push?.sent ?? 0);
-      setStatus({
-        tone: "good",
-        text: target === "local" ? "Saved on this desk." : `Delivered to ${partnerLabel}.${pushed ? ` Alert sent to ${pushed} device${pushed === 1 ? "" : "s"}.` : " They'll see it in their panel; device alerts need push turned on there."}`,
-      });
-      form.reset();
-      setCompose(false);
+      setStatus(target === "local" ? null : { tone: "good", text: `Delivered to ${partnerName}${pushed ? ` · alert on ${pushed} device${pushed === 1 ? "" : "s"}` : " · they'll see it when they open their desk"}` });
+      setTitle("");
+      setBody("");
       await fetchItems();
     } catch {
       setStatus({ tone: "bad", text: "Network error — not sent." });
@@ -326,70 +304,101 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
       setSending(false);
     }
   }
+  const onKey = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey && desktop) {
+      e.preventDefault();
+      void send();
+    }
+  };
 
   const panel = (
     <section className={`nc-panel ${floating ? "is-floating" : ""}`} role="dialog" aria-label={`${appLabel} messages`}>
+      <span className="nc-ambient" aria-hidden="true" />
       <header className="nc-head">
-        <div>
-          <h2>Messages</h2>
-          <p>{unread.length ? `${unread.length} new` : "All caught up"} · kept for 7 days</p>
-        </div>
-        <button type="button" className="nc-icon" onClick={() => setOpen(false)} aria-label="Close"><X size={16} /></button>
-      </header>
-
-      <button type="button" className={`nc-link ${link ? (link.linked ? "is-ok" : "is-bad") : ""}`} onClick={() => void checkLink()} title="Check the link again">
-        {link?.linked === false ? <Link2Off size={14} /> : <Link2 size={14} />}
-        <span>{!link ? `Checking the link to ${partnerLabel}…` : link.linked ? `Linked with ${partnerLabel}` : `Not linked — ${link.problem ?? "unknown problem"}`}</span>
-      </button>
-
-      <div className="nc-actions">
-        <button type="button" className={`nc-chip ${compose ? "is-on" : ""}`} onClick={() => setCompose((v) => !v)} aria-expanded={compose}><Send size={14} /> Write</button>
-        <button type="button" className="nc-chip" onClick={() => persistRead(new Set([...readIds, ...visible.map((i) => i.id)]))} disabled={!unread.length}><Check size={14} /> Mark read</button>
-        <button type="button" className="nc-chip" onClick={() => persistDismissed(new Set([...dismissed, ...visible.filter((i) => readIds.has(i.id) || isMine(i)).map((i) => i.id)]))} disabled={!visible.length}><X size={14} /> Clear read</button>
-        {pushSupported ? (
-          <button type="button" className={`nc-chip ${pushOn && permission === "granted" ? "is-good" : ""}`} onClick={async () => { setArming(true); try { await ensurePush({ ask: true, test: true }); } finally { setArming(false); } }} disabled={arming || permission === "denied"}>
-            <BellRing size={14} /> {permission === "denied" ? "Alerts blocked" : arming ? "Turning on…" : pushOn && permission === "granted" ? "Alerts on" : "Alerts on this device"}
+        <span className="nc-pair" aria-hidden="true">
+          <i className="me">{initial(defaultSender)}</i>
+          <i className="you">{initial(partnerName)}</i>
+        </span>
+        <div className="nc-head-copy">
+          <h2>{partnerName}</h2>
+          <button type="button" className={`nc-link ${link ? (link.linked ? "is-ok" : "is-bad") : ""}`} onClick={() => void checkLink()} title={link?.problem ?? "Check the link again"}>
+            {link?.linked === false ? <Link2Off size={12} /> : <Link2 size={12} />}
+            {!link ? "checking the link…" : link.linked ? `linked · ${partnerLabel}` : `not linked — ${link.problem ?? "unknown"}`}
           </button>
-        ) : null}
-      </div>
+        </div>
+        <div className="nc-tools">
+          {pushSupported ? (
+            <button type="button" className={`nc-tool ${pushOn && permission === "granted" ? "is-on" : ""}`} onClick={async () => { setArming(true); try { await ensurePush({ ask: true, test: true }); } finally { setArming(false); } }} disabled={arming || permission === "denied"} title={permission === "denied" ? "Alerts are blocked in this browser" : pushOn && permission === "granted" ? "Alerts are on for this device — tap to send a test" : "Turn on alerts for this device"}>
+              <BellRing size={16} />
+            </button>
+          ) : null}
+          <button type="button" className="nc-tool" onClick={() => confirm("Clear the whole conversation on all your devices?") && clearIds(visible.map((i) => i.id))} disabled={!visible.length} title="Clear the conversation (on all your devices)"><Eraser size={16} /></button>
+          <button type="button" className="nc-tool" onClick={() => setOpen(false)} aria-label="Close"><X size={17} /></button>
+        </div>
+      </header>
 
       {status ? <p className={`nc-status is-${status.tone}`} role="status">{status.text}</p> : null}
 
-      {compose ? (
-        <form className="nc-compose" onSubmit={send}>
+      <div className="nc-thread" ref={scroller}>
+        {groups.length ? (
+          groups.map((g) => (
+            <div key={g.day} className="nc-day">
+              <span className="nc-day-label">{g.day}</span>
+              {g.list.map((i) => {
+                const k = kindOf(i);
+                return (
+                  <article key={i.id} className={`nc-msg k-${k} t-${i.tone}`}>
+                    {k === "alert" ? <span className="nc-alert-icon" aria-hidden="true"><Sparkles size={13} /></span> : null}
+                    <div className="nc-bubble">
+                      {k === "alert" ? <span className="nc-from">{i.senderLabel}</span> : null}
+                      <b>{i.title}</b>
+                      {i.body && i.body !== i.title ? <p>{i.body}</p> : null}
+                      <span className="nc-meta">
+                        {k === "theirs" && i.senderLabel.toLowerCase() !== partnerName.toLowerCase() ? <span>{i.senderLabel}</span> : null}
+                        <span>{time(i.createdAt)}</span>
+                        {i.tone !== "focus" ? <span className="nc-tone">{TONES.find((t) => t.key === i.tone)?.label}</span> : null}
+                        {k === "mine" ? <CheckCheck size={13} className="nc-tick" aria-label="Delivered" /> : null}
+                      </span>
+                    </div>
+                    <button type="button" className="nc-x" onClick={() => clearIds([i.id])} aria-label={`Clear ${i.title}`}><X size={12} /></button>
+                  </article>
+                );
+              })}
+            </div>
+          ))
+        ) : (
+          <div className="nc-empty">
+            <span className="nc-pair big" aria-hidden="true"><i className="me">{initial(defaultSender)}</i><i className="you">{initial(partnerName)}</i></span>
+            <b>No messages this week</b>
+            <small>Write to {partnerName} below — it lands on their desk and their phone.</small>
+          </div>
+        )}
+      </div>
+
+      <form className="nc-compose" onSubmit={send}>
+        <div className="nc-compose-top">
           <div className="nc-to" role="group" aria-label="Send to">
-            {([["partner", partnerName], ["local", "This desk"], ["both", "Both"]] as const).map(([k, l]) => (
+            {([["partner", partnerName], ["both", "Both desks"], ["local", "Note to self"]] as const).map(([k, l]) => (
               <button key={k} type="button" aria-pressed={target === k} onClick={() => setTarget(k)}>{l}</button>
             ))}
           </div>
-          <input name="title" placeholder="Title" maxLength={90} required autoFocus />
-          <textarea name="body" placeholder="Message" maxLength={420} required rows={3} />
-          <div className="nc-compose-row">
-            <div className="nc-tones" role="group" aria-label="Tone">
-              {TONES.map((t) => <button key={t.key} type="button" className={`t-${t.key}`} aria-pressed={tone === t.key} onClick={() => setTone(t.key)}>{t.label}</button>)}
-            </div>
-            <input name="senderLabel" defaultValue={sender} maxLength={42} aria-label="Signed as" className="nc-from" />
+          <div className="nc-tones" role="group" aria-label="Tone">
+            {TONES.map((t) => <button key={t.key} type="button" className={`t-${t.key}`} aria-pressed={tone === t.key} onClick={() => setTone(t.key)} title={t.label} aria-label={t.label} />)}
           </div>
-          <button type="submit" className="nc-send" disabled={sending}><Send size={15} /> {sending ? "Sending…" : target === "local" ? "Save" : `Send to ${target === "both" ? "both" : partnerName}`}</button>
-        </form>
-      ) : null}
-
-      <ul className="nc-list">
-        {visible.length ? (
-          visible.map((i) => (
-            <Row key={i.id} item={i} mine={isMine(i)} read={readIds.has(i.id)} partnerName={partnerName} onRead={() => persistRead(new Set([...readIds, i.id]))} onDismiss={() => persistDismissed(new Set([...dismissed, i.id]))} />
-          ))
-        ) : (
-          <li className="nc-empty">No messages this week.</li>
-        )}
-      </ul>
+        </div>
+        <input className="nc-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (optional)" maxLength={90} />
+        <div className="nc-compose-row">
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} onKeyDown={onKey} placeholder={`Message ${target === "local" ? "yourself" : partnerName}…`} maxLength={420} rows={1} aria-label="Message" />
+          <button type="submit" className="nc-send" disabled={sending || !body.trim()} aria-label="Send"><Send size={17} /></button>
+        </div>
+      </form>
     </section>
   );
 
   return (
     <>
       <div className={floating ? "nc-dock" : "nc-inline"}>
-        <button className={`nc-bell ${floating ? "" : "v2-iconbtn notify-button"} ${open ? "is-open" : ""}`} type="button" onClick={() => setOpen((v) => !v)} aria-label={unread.length ? `Messages, ${unread.length} new` : "Messages"} aria-expanded={open}>
+        <button className={`nc-bell ${floating ? "" : "v2-iconbtn notify-button"} ${open ? "is-open" : ""} ${unread.length ? "has-new" : ""}`} type="button" onClick={() => setOpen((v) => !v)} aria-label={unread.length ? `Messages, ${unread.length} new` : "Messages"} aria-expanded={open}>
           <Bell size={18} />
           {unread.length ? <span className="nc-badge">{Math.min(unread.length, 9)}</span> : null}
         </button>
@@ -397,9 +406,9 @@ export function NotificationCenter({ appLabel, defaultSender, partnerLabel = "Pa
       {mounted && open ? createPortal(<><div className="nc-scrim" onClick={() => setOpen(false)} />{panel}</>, document.body) : null}
       {mounted && toast && !open
         ? createPortal(
-            <button className={`nc-toast t-${toast.tone}`} type="button" onClick={() => { setToast(null); setOpen(true); }}>
-              <span className="nc-stripe" aria-hidden="true" />
-              <span><b>{toast.title}</b><small>{toast.senderLabel} · {toast.body.slice(0, 80)}{toast.body.length > 80 ? "…" : ""}</small></span>
+            <button className={`nc-toast t-${toast.tone}`} type="button" onClick={() => { setToast(null); setOpen(true); }} style={{ "--i": 0 } as CSSProperties}>
+              <span className="nc-toast-avatar">{initial(toast.senderLabel)}</span>
+              <span><b>{toast.senderLabel}</b><small>{toast.title}{toast.body && toast.body !== toast.title ? ` — ${toast.body.slice(0, 70)}${toast.body.length > 70 ? "…" : ""}` : ""}</small></span>
             </button>,
             document.body,
           )

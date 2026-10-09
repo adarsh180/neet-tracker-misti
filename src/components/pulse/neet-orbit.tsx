@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { GraduationCap, HeartHandshake, HeartPulse, Stethoscope } from "lucide-react";
 
 import { DashOrbit } from "@/components/dash-orbit";
 
@@ -25,10 +24,10 @@ export function NeetOrbit() {
   return (
     <DashOrbit
       items={[
-        { key: "ug", label: "NEET UG", sub: "MBBS", icon: <GraduationCap size={20} />, current: ug, onPick: () => open("ug") },
-        { key: "pg", label: "NEET PG", icon: <Stethoscope size={20} />, current: at("/pg"), locked: true, onPick: () => open("pg") },
-        { key: "ss", label: "NEET SS", icon: <HeartPulse size={20} />, current: at("/ss"), locked: true, onPick: () => open("ss") },
-        { key: "hub", label: "Saath", icon: <HeartHandshake size={20} />, current: at("/hub"), locked: true, onPick: () => open("hub") },
+        { key: "ug", label: "NEET UG", sub: "MBBS", logo: "/brand/neet-doctor-logo-mark.png", current: ug, onPick: () => open("ug") },
+        { key: "pg", label: "NEET PG", logo: "/brand/neet-pg-160.webp", current: at("/pg"), locked: true, onPick: () => open("pg") },
+        { key: "ss", label: "NEET SS", logo: "/brand/neet-ss-160.webp", current: at("/ss"), locked: true, onPick: () => open("ss") },
+        { key: "hub", label: "Saath", logo: "/brand/saath-160.webp", current: at("/hub"), locked: true, onPick: () => open("hub") },
       ]}
     />
   );

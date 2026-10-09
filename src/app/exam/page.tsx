@@ -2,34 +2,34 @@
 
 import { Suspense, useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, GraduationCap, HeartHandshake, HeartPulse, Lock, Stethoscope } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 
 const EXAMS = [
   {
     key: "ug",
     title: "NEET UG",
-    icon: GraduationCap,
+    logo: "/brand/neet-doctor-logo-mark.png",
     line: "The MBBS entrance — syllabus, mocks, practice arena and seat odds for AIIMS.",
     facts: ["180 Qs · 720 marks", "Physics · Chemistry · Biology", "Your current workspace"],
   },
   {
     key: "pg",
     title: "NEET PG",
-    icon: Stethoscope,
+    logo: "/brand/neet-pg-512.webp",
     line: "MD/MS entrance — 19 subjects weighted by the paper, grand tests and MD/MS seat odds.",
     facts: ["180 Qs · 720 marks", "19 subjects", "Password"],
   },
   {
     key: "ss",
     title: "NEET SS",
-    icon: HeartPulse,
+    logo: "/brand/neet-ss-512.webp",
     line: "DM/MCh entrance — pick your group and super-specialties; every metric follows that choice.",
     facts: ["150 Qs · 600 marks", "13 groups · 50+ courses", "Password"],
   },
   {
     key: "hub",
     title: "Saath",
-    icon: HeartHandshake,
+    logo: "/brand/saath-512.webp",
     line: "Your shared dashboard with Adarsh — money, funds, goals, plans and the marriage plan.",
     facts: ["Shared with UPSC desk", "Money · Funds · Goals", "Password"],
   },
@@ -106,7 +106,7 @@ function Picker() {
             disabled={busy !== null}
             autoFocus={want === e.key && !GATED.has(e.key)}
           >
-            <span className="xp-icon"><e.icon size={28} /></span>
+            <span className="xp-logo"><img src={e.logo} alt="" width={72} height={72} /></span>
             <h2>{e.title}</h2>
             <p>{e.line}</p>
             <div className="xp-facts">{e.facts.map((f) => <span key={f}>{f === "Password" ? <><Lock size={11} /> {f}</> : f}</span>)}</div>

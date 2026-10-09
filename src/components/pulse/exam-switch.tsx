@@ -2,13 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
-import { GraduationCap, HeartHandshake, HeartPulse, Stethoscope } from "lucide-react";
 
 const EXAMS = [
-  { key: "ug", label: "UG", name: "NEET UG", icon: GraduationCap },
-  { key: "pg", label: "PG", name: "NEET PG", icon: Stethoscope },
-  { key: "ss", label: "SS", name: "NEET SS", icon: HeartPulse },
-  { key: "hub", label: "Saath", name: "Saath, the personal dashboard", icon: HeartHandshake },
+  { key: "ug", label: "UG", name: "NEET UG", logo: "/brand/neet-doctor-logo-mark.png" },
+  { key: "pg", label: "PG", name: "NEET PG", logo: "/brand/neet-pg-160.webp" },
+  { key: "ss", label: "SS", name: "NEET SS", logo: "/brand/neet-ss-160.webp" },
+  { key: "hub", label: "Saath", name: "Saath, the personal dashboard", logo: "/brand/saath-160.webp" },
 ] as const;
 
 /**
@@ -48,7 +47,7 @@ export function ExamSwitch() {
         <i className="xs-thumb" aria-hidden="true" />
         {EXAMS.map((e) => (
           <button key={e.key} type="button" aria-pressed={e.key === current} title={e.key === current ? `${e.name} is open` : `Open ${e.name}`} onClick={() => void open(e.key)} disabled={busy !== null && busy !== e.key}>
-            <e.icon size={14} />
+            <img src={e.logo} alt="" width={18} height={18} />
             {e.label}
           </button>
         ))}

@@ -480,8 +480,8 @@ button.xw-alloc-row:hover { background: var(--pl-well-2); }
 .xs.is-error { box-shadow: var(--pl-glass-shadow), inset 0 0 0 1.5px var(--pl-bad); }
 @media (max-width: 760px) { .xs { display: none; } }
 /* Phones: the round dashboard switch sits in the free top-left corner. */
-.do-fixed { position: fixed; top: calc(14px + env(safe-area-inset-top)); left: 12px; z-index: 9990; display: none; }
-@media (max-width: 760px) { .do-fixed { display: block; } }
+.do-fixed { position: fixed; top: calc(14px + env(safe-area-inset-top)); left: 14px; z-index: 9990; }
+@media (min-width: 1100px) { .do-fixed { top: calc(18px + env(safe-area-inset-top)); left: 22px; } }
 
 /* Picker: four dashboards + the password step */
 .xp-grid.is-four { grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(1320px, 100%); }
@@ -507,3 +507,24 @@ button.xw-alloc-row:hover { background: var(--pl-well-2); }
 .xp-gate .xw-btn { height: 42px; color: var(--pl-ink); background: var(--pl-well-2); box-shadow: inset 0 0 0 1px var(--pl-line-2); }
 .xp-gate .xw-btn.is-primary { color: #fff; background: linear-gradient(135deg, #5cb8ff, #ff7aa8); box-shadow: 0 12px 26px -14px rgba(255, 122, 168, 0.8); }
 .xp-gate { align-items: center; }
+
+/* Brand logos in the arenas, picker and switch */
+.xw-badge img { width: 30px; height: 30px; object-fit: contain; margin-left: -2px; }
+.xp-logo { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 24px; background: color-mix(in srgb, var(--pl-ink) 6%, transparent); box-shadow: inset 0 0 0 1px var(--pl-line), inset 0 1px 0 rgba(255, 255, 255, 0.12); transition: transform 0.5s var(--pl-spring); }
+.xp-logo img { width: 62px; height: 62px; object-fit: contain; }
+.xp-card:hover .xp-logo { transform: rotate(-6deg) scale(1.06); }
+.xs button img { width: 18px; height: 18px; object-fit: contain; }
+.xs button[aria-pressed="true"] img { filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6)); }
+.pl-rail-logo img { width: 32px; height: 32px; object-fit: contain; }
+
+/* ── Living colour: accents, titles, charts and spiral dots drift slowly
+   through nearby hues (the shell nudges --x-drift every few seconds). ── */
+.xw { --x-drift: 0; --x-a1: hsl(calc(160 + var(--x-drift)) 64% 54%); --x-a2: hsl(calc(36 + var(--x-drift) * 0.6) 100% 64%); --x-a3: hsl(calc(205 + var(--x-drift)) 100% 74%); }
+.xw[data-exam="ss"] { --x-a1: hsl(calc(42 + var(--x-drift) * 0.7) 86% 63%); --x-a2: hsl(calc(268 + var(--x-drift)) 100% 80%); --x-a3: hsl(calc(350 + var(--x-drift)) 100% 78%); }
+html[data-theme="light"] .xw { --x-a1: hsl(calc(164 + var(--x-drift)) 86% 29%); --x-a2: hsl(calc(36 + var(--x-drift) * 0.6) 100% 35%); --x-a3: hsl(calc(211 + var(--x-drift)) 61% 45%); }
+html[data-theme="light"] .xw[data-exam="ss"] { --x-a1: hsl(calc(41 + var(--x-drift) * 0.7) 100% 30%); --x-a2: hsl(calc(262 + var(--x-drift)) 51% 50%); --x-a3: hsl(calc(345 + var(--x-drift)) 52% 47%); }
+.xw-title em, .xw-kicker, .xw-index-num, .xw-spiral-read strong { transition: color 2.8s linear; }
+.xw-spiral .core { stroke: hsl(calc(var(--h) + var(--x-drift)) 55% 58%); }
+.xw-spiral .s-done .core { fill: hsl(calc(var(--h) + var(--x-drift)) 66% 56%); stroke: hsl(calc(var(--h) + var(--x-drift)) 70% 66%); }
+.xw-spiral .half { fill: hsl(calc(var(--h) + var(--x-drift)) 66% 56%); }
+.xw-alloc .cov i, .xw-subtests .bar i, .xw-bar .d, .xw .dot, .xw-menu-pop .meter i { filter: hue-rotate(calc(var(--x-drift) * 1deg)); }

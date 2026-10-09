@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowDownRight, ArrowUpRight, Check, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Check, Pencil, Plus, RefreshCw, Sparkles, Trash2, Wallet } from "lucide-react";
 
-import { BudgetBars, CategoryDonut, FundRings, GoalTrack, IndexOrbit, MoneyBars, PartsList, SpendStrip, TaskWeeks } from "./charts";
+import { addMoneyToGoal, addToFund, editAccount, editEvent, editFund, editGoal, editPlan, editTask, editTxn, payPlan } from "./editors";
+
+import { BudgetBars, CategoryDonut, CategoryPace, FundRings, GoalTrack, IndexOrbit, MoneyBars, PartsList, SpendStrip, TaskWeeks, TrendLine, WeekdaySpend } from "./charts";
 import { useHub } from "./hub-context";
 import {
   ACCOUNT_KINDS,
@@ -152,7 +154,7 @@ export function HubOverview() {
             </div>
             <div className="sth-card">
               <CardHead title="Funds" link={`${hub.base}/funds`} />
-              <FundRings m={m} compact />
+              <FundRings m={m} compact onAdd={(f) => hub.openSheet(addToFund(f, hub.act))} />
             </div>
           </section>
 
@@ -271,6 +273,21 @@ export function HubMoney() {
             </div>
           </section>
 
+          <section className="sth-sect sth-grid g2">
+            <div className="sth-card">
+              <CardHead title="Twelve months" />
+              <p className="sth-sub">Spending and income month by month. The dashed line is a least-squares fit through spending — its slope says how fast the monthly bill is moving.</p>
+              <TrendLine m={m} />
+            </div>
+            <div className="sth-card">
+              <CardHead title="Patterns" />
+              <p className="sth-sub">Last 30 days by weekday, and each category's month-end pace against its own 3-month average.</p>
+              <WeekdaySpend m={m} />
+              <h3 className="sth-h3">Categories vs their average</h3>
+              <CategoryPace m={m} />
+            </div>
+          </section>
+
           <section className="sth-sect sth-card">
             <CardHead title={`Entries · ${hub.view === "all" ? "both" : PEOPLE[hub.view].name}`} />
             {txns.length ? (
@@ -285,7 +302,7 @@ export function HubMoney() {
                         <td>{labelOf(t.kind === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES, t.category)}{t.recurring ? <span className="sth-pill">monthly</span> : null}{t.note ? <small className="sth-note">{t.note}</small> : null}</td>
                         <td>{t.method?.toUpperCase() ?? "—"}</td>
                         <td className={`num ${t.kind === "income" ? "t-good" : ""}`}>{t.kind === "income" ? "+" : "−"}{rupees(t.amount)}</td>
-                        <td>{t.owner === r.actor ? <Del label="Delete this entry" onClick={() => void hub.act({ action: "txn.delete", id: t.id })} /> : null}</td>
+                        <td>{t.owner === r.actor ? <button type="button" className="sth-btn is-sm is-icon" aria-label="Edit this entry" onClick={() => hub.openSheet(editTxn(t, hub.act))}><Pencil size={13} /></button> : null}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -365,21 +382,31 @@ export function HubGoals() {
                   {g.targetAmount ? ` · needs ${rupees(g.targetAmount)}` : ""}
                   {g.openTasks ? ` · ${g.openTasks} open task${g.openTasks === 1 ? "" : "s"}` : ""}
                 </p>
-                <div className="sth-goal-bar"><i /></div>
+                {g.fund ? (
+                  <p className="sth-goal-money"><Wallet size={13} /> {rupees(g.fund.balance)} of {rupees(g.targetAmount ?? g.fund.target)} in <b>{g.fund.name}</b></p>
+                ) : null}
+                <div className="sth-goal-bar"><i /><b>{g.progress}%</b></div>
+                {g.status !== "done" && g.etaDate ? (
+                  <p className={`sth-eta ${g.slackDays !== null && g.slackDays < 0 ? "t-bad" : ""}`}>
+                    At this pace: done by {fmtDate(g.etaDate)}{g.slackDays !== null ? ` · ${Math.abs(g.slackDays)} days ${g.slackDays >= 0 ? "before" : "after"} the deadline` : ""}
+                  </p>
+                ) : null}
                 <div className="sth-goal-foot">
                   <span className={`sth-health h-${g.health}`}>{g.health.replace("-", " ")}</span>
                   {g.owner === r.actor || g.owner === "joint" ? (
                     <span className="sth-goal-acts">
+                      {g.status !== "done" && (g.targetAmount || g.fund) ? (
+                        <button type="button" className="sth-btn is-sm is-primary" onClick={() => hub.openSheet(addMoneyToGoal(g, hub.act))}><Plus size={13} /> Add money</button>
+                      ) : null}
+                      {g.status !== "done" && !(g.fundId && g.targetAmount) ? (
+                        <input type="range" min={0} max={100} step={5} defaultValue={g.progress} aria-label={`Progress of ${g.title}`} onPointerUp={(e) => void hub.act({ action: "goal.update", id: g.id, progress: Number((e.target as HTMLInputElement).value) })} onKeyUp={(e) => e.key.startsWith("Arrow") && void hub.act({ action: "goal.update", id: g.id, progress: Number((e.target as HTMLInputElement).value) })} />
+                      ) : null}
                       {g.status !== "done" ? (
-                        <>
-                          <input type="range" min={0} max={100} step={5} defaultValue={g.progress} aria-label={`Progress of ${g.title}`} disabled={Boolean(g.fundId && g.targetAmount)} onPointerUp={(e) => void hub.act({ action: "goal.update", id: g.id, progress: Number((e.target as HTMLInputElement).value) })} onKeyUp={(e) => e.key.startsWith("Arrow") && void hub.act({ action: "goal.update", id: g.id, progress: Number((e.target as HTMLInputElement).value) })} />
-                          <b>{g.progress}%</b>
-                          <button type="button" className="sth-btn is-sm" onClick={() => void hub.act({ action: "goal.update", id: g.id, status: "done" })}><Check size={13} /> Done</button>
-                        </>
+                        <button type="button" className="sth-btn is-sm is-icon" title="Mark done" aria-label={`Mark ${g.title} done`} onClick={() => void hub.act({ action: "goal.update", id: g.id, status: "done" })}><Check size={14} /></button>
                       ) : <button type="button" className="sth-btn is-sm" onClick={() => void hub.act({ action: "goal.update", id: g.id, status: "active" })}>Reopen</button>}
-                      <Del label={`Delete “${g.title}”`} onClick={() => void hub.act({ action: "goal.delete", id: g.id })} />
+                      <button type="button" className="sth-btn is-sm is-icon" title="Edit" aria-label={`Edit ${g.title}`} onClick={() => hub.openSheet(editGoal(g, r, m, hub.act))}><Pencil size={13} /></button>
                     </span>
-                  ) : <b>{g.progress}%</b>}
+                  ) : null}
                 </div>
               </article>
             )) : <div className="sth-empty"><b>No goals yet</b>Start with the two or three that matter most this year.</div>}
@@ -405,7 +432,7 @@ function TaskList({ compact = false }: { compact?: boolean }) {
           <li key={t.id} className={`${t.status === "done" ? "is-done" : ""} ${overdue ? "is-overdue" : ""}`} style={{ "--i": i } as CSSProperties}>
             <button type="button" className="tick" disabled={!mine} aria-label={t.status === "done" ? `Reopen ${t.title}` : `Mark ${t.title} done`} onClick={() => void hub.act({ action: "task.toggle", id: t.id })}><Check size={12} /></button>
             <span><b>{t.title}</b><small>P{t.priority}{t.due ? ` · ${overdue ? "was due" : "due"} ${short(t.due)}` : ""} · {PEOPLE[t.owner].name}</small></span>
-            {!compact && mine ? <Del label={`Delete “${t.title}”`} onClick={() => void hub.act({ action: "task.delete", id: t.id })} /> : null}
+            {mine ? <button type="button" className="sth-btn is-sm is-icon" aria-label={`Edit ${t.title}`} onClick={() => hub.openSheet(editTask(t, m, hub.act))}><Pencil size={13} /></button> : null}
           </li>
         );
       })}
@@ -418,7 +445,6 @@ export function HubFunds() {
   const hub = useHub();
   const fund = useForm("fund.add");
   const entry = useForm("fund.entry");
-  const account = useForm("account.set");
   const settings = useForm("settings.set");
   const m = hub.m;
   const r = hub.records;
@@ -435,7 +461,8 @@ export function HubFunds() {
 
           <section className="sth-sect sth-card">
             <CardHead title="Funds" />
-            <FundRings m={m} />
+            <p className="sth-sub">Tap <b>+ Add</b> on a fund to put money in (or take it out with a minus amount); <b>Edit</b> renames it or changes its target and date. Goals linked to a fund fill from it automatically.</p>
+            <FundRings m={m} onAdd={(f) => hub.openSheet(addToFund(f, hub.act))} onEdit={(f) => hub.openSheet(editFund(f, r, hub.act))} />
           </section>
 
           <section className="sth-sect sth-grid g2">
@@ -486,7 +513,6 @@ export function HubFunds() {
                     <span key={f.id}>
                       {f.name}
                       <button type="button" className="sth-btn is-sm" onClick={() => void hub.act({ action: "fund.archive", id: f.id })}>Archive</button>
-                      <Del label={`Delete the fund “${f.name}” and its history`} onClick={() => void hub.act({ action: "fund.delete", id: f.id })} />
                     </span>
                   ))}
                 </div>
@@ -501,23 +527,17 @@ export function HubFunds() {
                       <span><b>{a.name}</b><small>{labelOf(ACCOUNT_KINDS, a.kind)} · {PEOPLE[a.owner].name} · updated {short(a.updatedAt)}</small></span>
                       <em className={ACCOUNT_KINDS.find((k) => k.key === a.kind)?.liability ? "t-bad" : ""}>{ACCOUNT_KINDS.find((k) => k.key === a.kind)?.liability ? "−" : ""}{rupees(Math.abs(a.balance))}</em>
                       {a.owner === r.actor || a.owner === "joint" ? (
-                        <span className="sth-acc-acts">
-                          <button type="button" className="sth-btn is-sm" onClick={() => { const v = prompt(`New balance for ${a.name} (₹)`, String(a.balance)); if (v !== null) void hub.act({ action: "account.set", id: a.id, owner: a.owner, name: a.name, kind: a.kind, balance: v }); }}>Update</button>
-                          <Del label={`Delete ${a.name}`} onClick={() => void hub.act({ action: "account.delete", id: a.id })} />
-                        </span>
+                        <button type="button" className="sth-btn is-sm is-icon" aria-label={`Update ${a.name}`} onClick={() => hub.openSheet(editAccount(a, r.actor, hub.act))}><Pencil size={13} /></button>
                       ) : <span />}
                     </li>
                   ))}
                 </ul>
               ) : <p className="sth-sub">Add bank, cash, investments and anything owed — net worth adds them up.</p>}
-              <form className="sth-inline is-wrap" onSubmit={account.onSubmit}>
-                <input name="name" maxLength={120} required placeholder="Account name" aria-label="Account name" />
-                <select name="kind" aria-label="Account kind">{ACCOUNT_KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}</select>
-                <input name="balance" type="number" step="0.01" required placeholder="₹ balance" aria-label="Balance" />
-                <select name="owner" aria-label="Whose" defaultValue={r.actor}><option value={r.actor}>Mine</option><option value="joint">Joint</option></select>
-                <button type="submit" className="sth-btn" disabled={account.saving}>Add</button>
-              </form>
-              {account.error ? <p className="sth-error" role="alert">{account.error}</p> : null}
+              <div className="sth-figs is-mini">
+                <Fig label="Cash runway" value={m.netWorth.runwayMonths === null ? "—" : `${m.netWorth.runwayMonths.toFixed(1)} mo`} note="bank + cash ÷ average monthly spend" />
+                <Fig label="Debt ratio" value={m.netWorth.debtRatio === null ? "—" : `${Math.round(m.netWorth.debtRatio * 100)}%`} tone={m.netWorth.debtRatio !== null && m.netWorth.debtRatio > 0.3 ? "warn" : undefined} note="owed ÷ assets · keep under 30%" />
+              </div>
+              <button type="button" className="sth-btn" onClick={() => hub.openSheet(editAccount(null, r.actor, hub.act))}><Plus size={15} /> Add an account</button>
             </div>
           </section>
 
@@ -553,7 +573,7 @@ function EventList({ limit }: { limit?: number }) {
           <span className="date"><b>{new Date(`${e.eventDate}T00:00:00`).getDate()}</b><small>{new Date(`${e.eventDate}T00:00:00`).toLocaleDateString("en-IN", { month: "short" })}</small></span>
           <span><b>{e.title}</b><small>{labelOf(EVENT_KINDS, e.kind)} · {PEOPLE[e.owner].name}{e.budget ? ` · ${rupees(e.budget)}` : ""}</small></span>
           <em>{countdown(e.days)}</em>
-          {!limit && (e.owner === me || e.owner === "joint") ? <Del label={`Delete ${e.title}`} onClick={() => void hub.act({ action: "event.delete", id: e.id })} /> : null}
+          {!limit && (e.owner === me || e.owner === "joint") ? <button type="button" className="sth-btn is-sm is-icon" aria-label={`Edit ${e.title}`} onClick={() => hub.openSheet(editEvent(e, hub.act))}><Pencil size={13} /></button> : null}
         </li>
       ))}
     </ul>
@@ -664,7 +684,7 @@ export function HubPlans() {
                           <td>{labelOf(PLAN_CATEGORIES, p.category)}</td>
                           <td>{p.due ? short(p.due) : "—"}</td>
                           <td className="num">{p.estimate ? rupees(p.estimate) : "—"}</td>
-                          <td className="num">{mine ? <button type="button" className="sth-link" onClick={() => { const v = prompt(`Paid so far for ${p.title} (₹)`, String(p.paid)); if (v !== null) void hub.act({ action: "plan.update", id: p.id, paid: v }); }}>{rupees(p.paid)}</button> : rupees(p.paid)}</td>
+                          <td className="num">{rupees(p.paid)}{mine ? <button type="button" className="sth-btn is-sm sth-pay" onClick={() => hub.openSheet(payPlan(p, hub.act))}>+ Pay</button> : null}</td>
                           <td>
                             {mine ? (
                               <select value={p.status} aria-label={`Status of ${p.title}`} onChange={(e) => void hub.act({ action: "plan.update", id: p.id, status: e.target.value })}>
@@ -672,7 +692,7 @@ export function HubPlans() {
                               </select>
                             ) : p.status}
                           </td>
-                          <td>{mine ? <Del label={`Delete ${p.title}`} onClick={() => void hub.act({ action: "plan.delete", id: p.id })} /> : null}</td>
+                          <td>{mine ? <button type="button" className="sth-btn is-sm is-icon" aria-label={`Edit ${p.title}`} onClick={() => hub.openSheet(editPlan(p, hub.act))}><Pencil size={13} /></button> : null}</td>
                         </tr>
                       );
                     })}
@@ -753,6 +773,28 @@ export function HubInsights({ analyzeApi }: { analyzeApi: string }) {
                 {busy ? <span className="sth-caret" /> : null}
               </div>
             </div>
+          </section>
+          <section className="sth-sect sth-card">
+            <h2>The numbers behind it</h2>
+            <p className="sth-sub">Every figure on Saath comes from a formula you can check — here they are with today&apos;s values.</p>
+            <div className="sth-figs is-math">
+              <Fig label="Savings rate" value={m.money.savingsRate === null ? "—" : `${Math.round(m.money.savingsRate * 100)}%`} note="(income − spending) ÷ income, this month" />
+              <Fig label="Spend run-rate" value={rupees(m.money.runRate, { compact: true })} note={`spent so far ÷ ${m.money.dayOfMonth} days × ${m.money.daysInMonth}`} />
+              <Fig label="Daily spend" value={`${rupees(m.money.dailyMean, { compact: true })} ± ${rupees(m.money.dailySd, { compact: true })}`} note="mean ± standard deviation, last 30 days" />
+              <Fig label="Month on month" value={m.money.momExpense === null ? "—" : `${m.money.momExpense >= 0 ? "+" : "−"}${Math.abs(Math.round(m.money.momExpense * 100))}%`} tone={m.money.momExpense !== null && m.money.momExpense > 0.1 ? "warn" : undefined} note="this month's run-rate ÷ last month − 1" />
+              <Fig label="Spending trend" value={m.money.spendTrend === null ? "—" : `${m.money.spendTrend >= 0 ? "+" : "−"}${rupees(Math.abs(m.money.spendTrend), { compact: true })}/mo`} note="least-squares slope over 11 months" />
+              <Fig label="Average saving" value={rupees(m.money.avgMonthlySaving, { compact: true })} tone={m.money.avgMonthlySaving >= 0 ? "good" : "bad"} note="mean of the last three full months" />
+              <Fig label="Emergency cover" value={m.emergency.cover === null ? "—" : `${m.emergency.cover.toFixed(1)} mo`} note="emergency funds ÷ average monthly spend" />
+              <Fig label="Cash runway" value={m.netWorth.runwayMonths === null ? "—" : `${m.netWorth.runwayMonths.toFixed(1)} mo`} note="bank + cash ÷ average monthly spend" />
+              <Fig label="Debt ratio" value={m.netWorth.debtRatio === null ? "—" : `${Math.round(m.netWorth.debtRatio * 100)}%`} note="what you owe ÷ what you own" />
+              <Fig label="Net worth in 12 months" value={rupees(m.netWorth.projected12, { compact: true })} tone={m.netWorth.projected12 >= m.netWorth.net ? "good" : "bad"} note="today + 12 × average monthly saving" />
+            </div>
+            <ul className="sth-formulas">
+              <li><b>Fund dates</b> — a least-squares line through each fund&apos;s running balance gives its rupees-per-day pace; the target is reached at (target − balance) ÷ pace.</li>
+              <li><b>Goal dates</b> — progress ÷ days since the goal was set gives its pace; it finishes in (100 − progress) ÷ pace days.</li>
+              <li><b>At risk</b> — a goal is at risk when its progress is more than 15 points behind the share of its time already used, or when its pace-based finish date lands more than two weeks after the deadline.</li>
+              <li><b>Together index</b> — six parts with fixed weights (savings 20, emergency 20, goals 20, follow-through 15, fund pace 15, budgets 10), each scored 0–1 against the benchmark; anything without data scores 0.</li>
+            </ul>
           </section>
           <section className="sth-sect sth-grid g2">
             <div className="sth-card">

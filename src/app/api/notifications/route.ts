@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
 
   await pruneExpiredNotifications();
   const notifications = await db.appNotification.findMany({
-    where: { createdAt: { gte: notificationRetentionCutoff() } },
+    // Cleared on any device = gone everywhere; read state comes back too.
+    where: { createdAt: { gte: notificationRetentionCutoff() }, clearedAt: null },
     orderBy: { createdAt: "desc" },
     take: 60,
   });
@@ -67,4 +68,18 @@ export async function POST(request: NextRequest) {
   const push = target === "partner" ? null : await sendWebPushNotification(notification, senderClientId);
 
   return NextResponse.json({ notification, push, partner, delivered: target === "local" ? null : true }, { status: 201 });
+}
+
+/** Read or clear messages for every device of this desk: { ids: string[], op: "read" | "clear" }. */
+export async function PATCH(request: NextRequest) {
+  const session = await getPrivateSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const payload = await request.json().catch(() => ({}));
+  const ids = Array.isArray(payload.ids) ? payload.ids.filter((x: unknown): x is string => typeof x === "string" && /^[a-z0-9]{8,40}$/i.test(x)).slice(0, 200) : [];
+  if (!ids.length) return NextResponse.json({ ok: true, updated: 0 });
+  const now = new Date();
+  const data = payload.op === "clear" ? { clearedAt: now, readAt: now } : { readAt: now };
+  const where = payload.op === "clear" ? { id: { in: ids }, clearedAt: null } : { id: { in: ids }, readAt: null };
+  const r = await db.appNotification.updateMany({ where, data });
+  return NextResponse.json({ ok: true, updated: r.count });
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowLeftRight, BarChart2, BookOpenCheck, Check, ChevronDown, GitBranch, HeartPulse, Layers, LayoutDashboard, NotebookPen, Stethoscope } from "lucide-react";
+import { ArrowLeftRight, BarChart2, BookOpenCheck, Check, ChevronDown, GitBranch, HeartPulse, Layers, LayoutDashboard, NotebookPen } from "lucide-react";
 
 import { WorkspaceProvider, useWorkspace } from "@/components/exams/workspace-context";
 import { NeetOrbit } from "@/components/pulse/neet-orbit";
@@ -28,14 +28,23 @@ export function WorkspaceShell({ exam, children }: { exam: ExamKey; children: Re
 
 function Frame({ exam, children }: { exam: ExamKey; children: React.ReactNode }) {
   const pathname = usePathname();
+  const root = useRef<HTMLDivElement>(null);
+  // Living colour: nudge the hue drift every few seconds (a slow two-minute swing of ±26°) — one cheap style update, not a per-frame animation.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const tick = () => root.current?.style.setProperty("--x-drift", (26 * Math.sin((2 * Math.PI * Date.now()) / 120_000)).toFixed(1));
+    tick();
+    const t = window.setInterval(tick, 2500);
+    return () => window.clearInterval(t);
+  }, []);
   const tabs = TABS(exam);
   const active = (href: string) => (href === `/${exam}` ? pathname === href : pathname.startsWith(href));
   return (
-    <div className="xw" data-exam={exam}>
+    <div className="xw" data-exam={exam} ref={root}>
       <div className="xw-page" style={{ paddingBottom: 0 }}>
         <div className="xw-top">
           <span className="xw-badge">
-            <i>{exam === "pg" ? <Stethoscope size={14} /> : <HeartPulse size={14} />}</i>
+            <img src={exam === "pg" ? "/brand/neet-pg-160.webp" : "/brand/neet-ss-160.webp"} alt="" width={30} height={30} />
             {exam === "pg" ? "NEET PG · Ward" : "NEET SS · Theatre"}
           </span>
           <nav className="xw-tabs" aria-label={`${exam.toUpperCase()} workspace`}>

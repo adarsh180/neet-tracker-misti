@@ -153,15 +153,22 @@ export function BudgetBars({ m }: { m: HubMetrics }) {
 }
 
 /** Each fund as a ring: filled share, with each person's contribution on the inner track. */
-export function FundRings({ m, compact = false }: { m: HubMetrics; compact?: boolean }) {
+export function FundRings({ m, compact = false, onAdd, onEdit }: { m: HubMetrics; compact?: boolean; onAdd?: (f: HubMetrics["funds"][number]) => void; onEdit?: (f: HubMetrics["funds"][number]) => void }) {
   if (!m.funds.length) return <div className="sth-empty"><b>No funds yet</b>Create an emergency fund first, then marriage and other goals, on the Funds page.</div>;
+  const etaText = (f: HubMetrics["funds"][number]) => {
+    if (f.share >= 1) return "Target reached";
+    if (!f.etaDate) return "Add money to see when it fills";
+    const d = new Date(`${f.etaDate}T00:00:00`).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+    return f.slackDays === null ? `Full by ${d} at this rate` : f.slackDays >= 0 ? `Full by ${d} · ${f.slackDays}d early` : `Full by ${d} · ${-f.slackDays}d late`;
+  };
   return (
     <div className={`sth-funds ${compact ? "is-compact" : ""}`}>
       {m.funds.map((f, i) => {
         const a = f.target ? f.byPerson.adarsh / f.target : 0;
         const mm = f.target ? f.byPerson.misti / f.target : 0;
+        const mine = !onAdd ? false : f.owner === "joint" || f.owner === m.viewer;
         return (
-          <div key={f.id} className={`sth-fund k-${f.kind}`} style={{ "--i": i } as CSSProperties}>
+          <div key={f.id} className={`sth-fund k-${f.kind} sth-lit`} style={{ "--i": i } as CSSProperties}>
             <svg viewBox="0 0 100 100" aria-hidden="true">
               <circle className="trk" cx="50" cy="50" r="42" />
               <circle className="fil" cx="50" cy="50" r="42" pathLength={100} strokeDasharray={`${Math.min(100, f.share * 100)} 100`} transform="rotate(-90 50 50)" />
@@ -173,10 +180,85 @@ export function FundRings({ m, compact = false }: { m: HubMetrics; compact?: boo
             <b>{f.name}</b>
             <small>{rupees(f.balance, { compact: true })} of {rupees(f.target, { compact: true })}</small>
             {f.needPerMonth !== null ? <em className={f.onTrack ? "t-good" : "t-warn"}>{rupees(f.needPerMonth, { compact: true })}/mo needed · pace {rupees(f.monthlyPace, { compact: true })}</em> : <em>{PEOPLE[f.owner].name}</em>}
+            {!compact ? <em className="sth-eta">{etaText(f)}</em> : null}
+            {mine ? (
+              <span className="sth-fund-acts">
+                <button type="button" className="sth-btn is-sm is-primary" onClick={() => onAdd?.(f)}>+ Add</button>
+                {onEdit ? <button type="button" className="sth-btn is-sm" onClick={() => onEdit(f)}>Edit</button> : null}
+              </span>
+            ) : null}
           </div>
         );
       })}
     </div>
+  );
+}
+
+/** Twelve months of spending as an area, with its least-squares trend line. */
+export function TrendLine({ m }: { m: HubMetrics }) {
+  const s = m.money.series12;
+  const W = 600;
+  const H = 180;
+  const max = Math.max(1, ...s.flatMap((x) => [x.expense, x.income]));
+  const x = (i: number) => 30 + (i / 11) * (W - 40);
+  const y = (v: number) => H - 22 - (v / max) * (H - 40);
+  const path = (k: "expense" | "income") => s.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
+  const fitted = s.slice(0, 11).map((p, i) => ({ i, v: p.expense })).filter((p) => p.v > 0);
+  const mean = fitted.length ? fitted.reduce((a, p) => a + p.v, 0) / fitted.length : 0;
+  const mi = fitted.length ? fitted.reduce((a, p) => a + p.i, 0) / fitted.length : 0;
+  const b = m.money.spendTrend ?? 0;
+  const line = fitted.length >= 2 ? `M${x(0)},${y(Math.max(0, mean + b * (0 - mi)))} L${x(11)},${y(Math.max(0, mean + b * (11 - mi)))}` : null;
+  return (
+    <div className="sth-trend">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Twelve months of income and spending">
+        {[0.5, 1].map((f) => <line key={f} className="grid" x1="30" x2={W - 10} y1={y(max * f)} y2={y(max * f)} />)}
+        <path className="area" d={`${path("expense")} L${x(11)},${y(0)} L${x(0)},${y(0)} Z`} />
+        <path className="inc" d={path("income")} />
+        <path className="exp" d={path("expense")} />
+        {line ? <path className="fit" d={line} /> : null}
+        {s.map((p, i) => (i % 2 === 1 ? <text key={p.month} x={x(i)} y={H - 4} textAnchor="middle">{new Date(`${p.month}-01T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", timeZone: "UTC" })}</text> : null))}
+      </svg>
+      <div className="sth-legend">
+        <span><i className="k-inc" />income</span>
+        <span><i className="k-exp" />spending</span>
+        <span><i className="k-fit" />trend {b ? `${b > 0 ? "+" : "−"}${rupees(Math.abs(b), { compact: true })}/month` : "—"}</span>
+      </div>
+    </div>
+  );
+}
+
+export function WeekdaySpend({ m }: { m: HubMetrics }) {
+  const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const max = Math.max(1, ...m.money.weekdayTotals);
+  const total = m.money.weekdayTotals.reduce((a, b) => a + b, 0) || 1;
+  return (
+    <div className="sth-weekday">
+      {m.money.weekdayTotals.map((v, i) => (
+        <span key={names[i]} style={{ "--v": v / max, "--i": i } as CSSProperties}>
+          <i />
+          <b>{Math.round((v / total) * 100)}%</b>
+          <small>{names[i]}</small>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Each category's month-end pace against its own 3-month average. */
+export function CategoryPace({ m }: { m: HubMetrics }) {
+  const rows = [...m.money.catDelta].sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0));
+  if (!rows.length) return <div className="sth-empty"><b>Not enough history yet</b>After a month or two of logging, each category is compared with its own average here.</div>;
+  return (
+    <ul className="sth-catpace">
+      {rows.map((c) => (
+        <li key={c.key} className={c.delta === null ? "" : c.delta > 0.15 ? "is-up" : c.delta < -0.15 ? "is-down" : ""}>
+          <span>{c.label}</span>
+          <b>{rupees(c.projected, { compact: true })}</b>
+          <small>avg {rupees(c.avg3, { compact: true })}</small>
+          <em>{c.delta === null ? "new" : `${c.delta > 0 ? "+" : "−"}${Math.abs(Math.round(c.delta * 100))}%`}</em>
+        </li>
+      ))}
+    </ul>
   );
 }
 

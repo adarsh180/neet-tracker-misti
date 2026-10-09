@@ -377,6 +377,8 @@ model AppNotification {
   senderLabel    String
   senderClientId String?
   createdAt      DateTime @default(now())
+  readAt         DateTime?
+  clearedAt      DateTime?
 
   @@index([createdAt])
   @@index([senderClientId])

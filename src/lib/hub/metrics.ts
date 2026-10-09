@@ -186,6 +186,37 @@ export function computeHub(r: HubRecords, view: View = "all", now = new Date()) 
   });
   const noSpendDays = spendDays.filter((d) => d.amount === 0).length;
 
+  // Spending statistics over the last 30 days: mean, standard deviation, the biggest day, and the weekday pattern.
+  const dailyAmounts = spendDays.map((d) => d.amount);
+  const dailyMean = sum(dailyAmounts) / 30;
+  const dailySd = Math.sqrt(sum(dailyAmounts.map((x) => (x - dailyMean) ** 2)) / 30);
+  const weekdayTotals = [0, 0, 0, 0, 0, 0, 0];
+  for (const t of last30) weekdayTotals[(new Date(`${t.txnDate}T00:00:00Z`).getUTCDay() + 6) % 7] += t.amount;
+  // Twelve months for the trend, and a least-squares line through monthly spending (₹ per month, per month).
+  const series12 = Array.from({ length: 12 }, (_, i) => monthRow(new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1 - (11 - i), 1)).toISOString().slice(0, 7)));
+  const fitted = series12.slice(0, 11).map((m, i) => ({ x: i, y: m.expense })).filter((p) => p.y > 0);
+  const slope = (pts: Array<{ x: number; y: number }>) => {
+    if (pts.length < 2) return null;
+    const mx = sum(pts.map((p) => p.x)) / pts.length;
+    const my = sum(pts.map((p) => p.y)) / pts.length;
+    const den = sum(pts.map((p) => (p.x - mx) ** 2));
+    return den ? sum(pts.map((p) => (p.x - mx) * (p.y - my))) / den : null;
+  };
+  const spendTrend = slope(fitted);
+  const prev = series[4];
+  // Compare like with like: this month's projected month-end spend against last month's total.
+  const momExpense = prev.expense > 0 ? (dayOfMonth ? (cur.expense / dayOfMonth) * daysInMonth : cur.expense) / prev.expense - 1 : null;
+  // Per category: this month's pace against its own 3-month average.
+  const catDelta = EXPENSE_CATEGORIES.map((c) => {
+    const past = series.slice(2, 5).map((m) => sum(txns.filter((t) => t.kind === "expense" && t.category === c.key && monthKey(t.txnDate) === m.month).map((t) => t.amount)));
+    const avg3 = sum(past) / 3;
+    const nowAmt = sum(monthExp.filter((t) => t.category === c.key).map((t) => t.amount));
+    const projected = dayOfMonth ? (nowAmt / dayOfMonth) * daysInMonth : nowAmt;
+    return { ...c, avg3, now: nowAmt, projected, delta: avg3 > 0 ? projected / avg3 - 1 : null };
+  }).filter((c) => c.avg3 > 0 || c.now > 0);
+  const savedLast3 = series.slice(2, 5).map((m) => m.income - m.expense);
+  const avgMonthlySaving = sum(savedLast3) / 3;
+
   /* ── Funds & net worth ─────────────────────────────────────────────── */
   const funds = r.funds.filter((f) => !f.archived && inView(f.owner, view)).map((f) => {
     const entries = r.fundEntries.filter((e) => e.fundId === f.id);
@@ -195,7 +226,15 @@ export function computeHub(r: HubRecords, view: View = "all", now = new Date()) 
     const in90 = sum(entries.filter((e) => dayDiff(e.entryDate, today) > -90).map((e) => e.amount)) / 3;
     const etaMonths = balance >= f.target ? 0 : in90 > 0 ? (f.target - balance) / in90 : null;
     const byPerson = { adarsh: sum(entries.filter((e) => e.owner === "adarsh").map((e) => e.amount)), misti: sum(entries.filter((e) => e.owner === "misti").map((e) => e.amount)) };
-    return { ...f, balance, share: f.target > 0 ? balance / f.target : 0, needPerMonth, monthlyPace: in90, etaMonths, onTrack: needPerMonth === null ? null : in90 >= needPerMonth * 0.95, byPerson, entries: entries.length };
+    // Least-squares line through the running balance (₹ per day) → the date the target is reached at this rate.
+    const sorted = [...entries].sort((a, b) => a.entryDate.localeCompare(b.entryDate));
+    let run = 0;
+    const pts = sorted.map((e) => ((run += e.amount), { x: dayDiff(e.entryDate, today), y: run }));
+    const perDay = pts.length >= 2 && pts[0].x !== pts.at(-1)!.x ? slope(pts) : null;
+    const etaDays = balance >= f.target ? 0 : perDay && perDay > 0 ? Math.ceil((f.target - balance) / perDay) : null;
+    const etaDate = etaDays === null ? null : istDay(new Date(now.getTime() + etaDays * DAY));
+    const slackDays = etaDate && f.targetDate ? dayDiff(f.targetDate, etaDate) : null;
+    return { ...f, balance, share: f.target > 0 ? balance / f.target : 0, needPerMonth, monthlyPace: in90, etaMonths, etaDate, slackDays, perMonthTrend: perDay === null ? null : perDay * 30.44, onTrack: needPerMonth === null ? null : in90 >= needPerMonth * 0.95, byPerson, entries: entries.length };
   });
   const emergency = funds.filter((f) => f.kind === "emergency");
   const emergencyBalance = sum(emergency.map((f) => f.balance));
@@ -206,6 +245,10 @@ export function computeHub(r: HubRecords, view: View = "all", now = new Date()) 
   const assets = sum(accounts.filter((a) => !isLiability(a.kind)).map((a) => a.balance));
   const liabilities = sum(accounts.filter((a) => isLiability(a.kind)).map((a) => Math.abs(a.balance)));
   const netWorth = assets - liabilities;
+  const liquid = sum(accounts.filter((a) => a.kind === "bank" || a.kind === "cash").map((a) => a.balance));
+  const runwayMonths = avgMonthlyExpense > 0 ? liquid / avgMonthlyExpense : null;
+  const debtRatio = assets > 0 ? liabilities / assets : null;
+  const projected12 = netWorth + 12 * avgMonthlySaving;
 
   /* ── Goals & tasks ─────────────────────────────────────────────────── */
   const goals = r.goals.filter((g) => inView(g.owner, view)).map((g) => {
@@ -216,7 +259,15 @@ export function computeHub(r: HubRecords, view: View = "all", now = new Date()) 
     const progress = fund && g.targetAmount ? Math.round(clamp(fund.balance / g.targetAmount) * 100) : g.progress;
     const status = g.status === "done" ? "done" : g.status === "dropped" ? "dropped" : days !== null && days < 0 ? "overdue" : elapsed !== null && progress / 100 < elapsed - 0.15 ? "at-risk" : "on-track";
     const openTasks = r.tasks.filter((t) => t.goalId === g.id && t.status !== "done").length;
-    return { ...g, days, elapsed, progress, health: status, openTasks, urgency: (5 - g.priority) * 10 + (days === null ? 0 : Math.max(0, 60 - days) / 3) };
+    // Velocity since the goal was set (percentage points a day) → when it will be finished at that rate.
+    const age = Math.max(1, -dayDiff(g.createdAt.slice(0, 10), today));
+    const perDay = progress / age;
+    const etaDays = progress >= 100 ? 0 : perDay > 0 ? Math.ceil((100 - progress) / perDay) : null;
+    const etaDate = etaDays === null ? null : istDay(new Date(now.getTime() + etaDays * DAY));
+    const slackDays = etaDate && g.deadline ? dayDiff(g.deadline, etaDate) : null;
+    // Two independent checks must agree: time-used vs progress, and the pace-based finish date vs the deadline.
+    const health = status === "on-track" && slackDays !== null && slackDays < -14 ? "at-risk" : status;
+    return { ...g, days, elapsed, progress, health, openTasks, fund: fund ? { id: fund.id, name: fund.name, balance: fund.balance, target: fund.target } : null, etaDate, slackDays, urgency: (5 - g.priority) * 10 + (days === null ? 0 : Math.max(0, 60 - days) / 3) };
   });
   const activeGoals = goals.filter((g) => g.status !== "done" && g.status !== "dropped");
   const tasks = r.tasks.filter((t) => inView(t.owner, view));
@@ -276,15 +327,16 @@ export function computeHub(r: HubRecords, view: View = "all", now = new Date()) 
 
   return {
     today,
+    viewer: r.actor,
     view,
     index,
     band: index >= 80 ? "Thriving" : index >= 60 ? "Steady" : index >= 40 ? "Building" : "Starting",
     parts,
     lever: lever ? { label: lever.label, points: Math.round(lever.weight * (1 - lever.score)) } : null,
-    money: { series, cur, saved, savingsRate, avgMonthlyExpense, runRate, byCategory, budgetRows, recurring, topExpenses, spendDays, noSpendDays, dayOfMonth, daysInMonth },
+    money: { series, series12, cur, prev, saved, savingsRate, avgMonthlyExpense, avgMonthlySaving, runRate, byCategory, catDelta, budgetRows, recurring, topExpenses, spendDays, noSpendDays, dayOfMonth, daysInMonth, dailyMean, dailySd, weekdayTotals, spendTrend, momExpense },
     funds,
     emergency: { balance: emergencyBalance, cover: emergencyCover, target: s.emergencyMonths, needed: Math.max(0, avgMonthlyExpense * s.emergencyMonths - emergencyBalance) },
-    netWorth: { assets, liabilities, net: netWorth, accounts },
+    netWorth: { assets, liabilities, net: netWorth, accounts, liquid, runwayMonths, debtRatio, projected12 },
     goals,
     activeGoals,
     tasks: { open: openTasks.length, overdue: overdueTasks, doneThisWeek, closure30, next: nextTasks, weeks: taskWeeks, all: tasks },

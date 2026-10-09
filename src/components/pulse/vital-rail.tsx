@@ -8,7 +8,6 @@ import {
   BarChart2,
   BookOpenCheck,
   Brain,
-  FlaskConical,
   GitBranch,
   HeartPulse,
   NotebookPen,
@@ -130,7 +129,7 @@ export function VitalRail() {
     <nav className="pl-rail pl-glass" aria-label="Primary" ref={ref as React.RefObject<HTMLElement>}>
       <span className="pl-rail-drop" aria-hidden="true" />
       <SmoothLink href={exam === "ug" ? "/dashboard" : `/${exam}`} className="pl-rail-logo" aria-label="Home of the open exam">
-        {exam === "ug" ? <NeetLogoMark size={30} /> : <FlaskConical size={22} />}
+        {exam === "ug" ? <NeetLogoMark size={30} /> : <img src={exam === "pg" ? "/brand/neet-pg-160.webp" : "/brand/neet-ss-160.webp"} alt="" width={32} height={32} />}
       </SmoothLink>
       {exam === "ug" ? (
         <>

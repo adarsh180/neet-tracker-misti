@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { computeHub, type HubMetrics, type HubRecords, type View } from "../../lib/hub/metrics";
+import type { SheetSpec } from "./sheet";
 
 /**
  * Personal hub data for one browser: loaded once for every tab, every write
@@ -22,6 +23,9 @@ type Hub = {
   base: string;
   site: "upsc" | "neet";
   lock: () => Promise<void>;
+  /** One glass dialog for every edit / add-money / rename. */
+  sheet: SheetSpec | null;
+  openSheet: (spec: SheetSpec | null) => void;
 };
 
 const Ctx = createContext<Hub | null>(null);
@@ -32,6 +36,7 @@ export function HubProvider({ base, site, api, lockUrl, children }: { base: stri
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [view, setViewState] = useState<View>("all");
+  const [sheet, openSheet] = useState<SheetSpec | null>(null);
   const alive = useRef(true);
 
   useEffect(() => {
@@ -108,7 +113,7 @@ export function HubProvider({ base, site, api, lockUrl, children }: { base: stri
   }, [lockUrl, site]);
 
   const m = useMemo(() => (records ? computeHub(records, view) : null), [records, view]);
-  const value = useMemo<Hub>(() => ({ records, m, error, saving, view, setView, load, act, base, site, lock }), [records, m, error, saving, view, setView, load, act, base, site, lock]);
+  const value = useMemo<Hub>(() => ({ records, m, error, saving, view, setView, load, act, base, site, lock, sheet, openSheet }), [records, m, error, saving, view, setView, load, act, base, site, lock, sheet]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

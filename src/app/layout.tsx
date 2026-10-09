@@ -13,6 +13,7 @@ import "./pulse-app.css";
 import "./exams.css";
 import "./hub.css";
 import "./notify.css";
+import "./orbit.css";
 
 const inter = Inter({
   subsets: ["latin"],
