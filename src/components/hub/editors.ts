@@ -212,3 +212,118 @@ export function newEvent(date: string, me: "adarsh" | "misti", act: Act): SheetS
     onSubmit: (v) => act({ action: "event.add", ...v }),
   };
 }
+
+/* ── New entries: every "add" form opens as a sheet, so pages stay about the numbers. ── */
+const methods = [{ value: "upi", label: "UPI" }, { value: "cash", label: "Cash" }, { value: "card", label: "Card" }, { value: "bank", label: "Bank" }];
+
+export function newTxn(kind: "expense" | "income", act: Act): SheetSpec {
+  return {
+    title: kind === "expense" ? "Log an expense" : "Log income",
+    fields: [
+      { name: "amount", label: "Amount (₹)", type: "money", required: true, min: 0.01 },
+      { name: "txnDate", label: "Date", type: "date", value: today() },
+      { name: "category", label: "Category", type: "select", value: (kind === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES)[0].key, options: opts(kind === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES) },
+      { name: "method", label: "Via", type: "select", value: "upi", options: methods },
+      { name: "recurring", label: "Repeats monthly", type: "select", value: "false", options: [{ value: "false", label: "No" }, { value: "true", label: "Yes" }] },
+      { name: "note", label: "Note", type: "text", wide: true, placeholder: kind === "expense" ? "e.g. Laxmikanth 7th edition" : "e.g. October stipend" },
+    ],
+    submit: kind === "expense" ? "Save expense" : "Save income",
+    onSubmit: (v) => act({ action: "txn.add", kind, ...v, recurring: v.recurring === "true" }),
+  };
+}
+
+export function setBudget(act: Act): SheetSpec {
+  return {
+    title: "Set a monthly budget",
+    subtitle: "A limit for one category; the dashboard projects month-end spend against it. Enter 0 to remove a budget.",
+    fields: [
+      { name: "category", label: "Category", type: "select", value: EXPENSE_CATEGORIES[0].key, options: opts(EXPENSE_CATEGORIES) },
+      { name: "monthly", label: "Limit per month (₹)", type: "money", required: true, min: 0, step: 100 },
+    ],
+    submit: "Save budget",
+    onSubmit: (v) => act({ action: "budget.set", ...v }),
+  };
+}
+
+export function newGoal(m: HubMetrics, me: "adarsh" | "misti", act: Act): SheetSpec {
+  return {
+    title: "New goal",
+    subtitle: "A goal is at risk when its progress falls behind the share of its time already used.",
+    fields: [
+      { name: "title", label: "Goal", type: "text", required: true, wide: true, placeholder: "e.g. Clear UPSC Prelims 2027" },
+      { name: "area", label: "Area", type: "select", value: "career", options: opts(GOAL_AREAS) },
+      { name: "priority", label: "Priority", type: "select", value: "2", options: prios },
+      { name: "deadline", label: "Deadline", type: "date" },
+      { name: "owner", label: "Whose", type: "select", value: me, options: whose(me) },
+      { name: "targetAmount", label: "Money needed (₹)", type: "money", min: 0, hint: "Leave empty for goals that are not about money" },
+      { name: "fundId", label: "Linked fund", type: "select", value: "", options: [{ value: "", label: "— none —" }, ...m.funds.map((f) => ({ value: f.id, label: f.name }))] },
+      { name: "note", label: "Why it matters", type: "textarea" },
+    ],
+    submit: "Add goal",
+    onSubmit: (v) => act({ action: "goal.add", ...v }),
+  };
+}
+
+export function newTask(m: HubMetrics, me: "adarsh" | "misti", act: Act): SheetSpec {
+  return {
+    title: "New task",
+    fields: [
+      { name: "title", label: "Task", type: "text", required: true, wide: true, placeholder: "e.g. Open the recurring deposit" },
+      { name: "priority", label: "Priority", type: "select", value: "2", options: prios },
+      { name: "due", label: "Due", type: "date" },
+      { name: "owner", label: "Whose", type: "select", value: me, options: whose(me) },
+      { name: "goalId", label: "For goal", type: "select", value: "", options: [{ value: "", label: "— none —" }, ...m.activeGoals.map((g) => ({ value: g.id, label: g.title }))] },
+    ],
+    submit: "Add task",
+    onSubmit: (v) => act({ action: "task.add", ...v }),
+  };
+}
+
+export function newFund(m: HubMetrics, me: "adarsh" | "misti", act: Act): SheetSpec {
+  return {
+    title: "New fund",
+    subtitle: "Give it a target and, ideally, a date — the dashboard works out the monthly amount it needs.",
+    fields: [
+      { name: "name", label: "Name", type: "text", required: true, wide: true, placeholder: "e.g. Emergency fund" },
+      { name: "kind", label: "Kind", type: "select", value: m.funds.some((f) => f.kind === "emergency") ? "marriage" : "emergency", options: opts(FUND_KINDS) },
+      { name: "owner", label: "Whose", type: "select", value: "joint", options: whose(me) },
+      { name: "target", label: "Target (₹)", type: "money", required: true, min: 1, step: 100 },
+      { name: "targetDate", label: "By", type: "date" },
+    ],
+    submit: "Create fund",
+    onSubmit: (v) => act({ action: "fund.add", ...v }),
+  };
+}
+
+export function fundDeposit(m: HubMetrics, me: "adarsh" | "misti", act: Act): SheetSpec {
+  const mine = m.funds.filter((f) => f.owner === me || f.owner === "joint");
+  return {
+    title: "Add money to a fund",
+    subtitle: "Use a minus amount to take money out.",
+    fields: [
+      { name: "fundId", label: "Fund", type: "select", value: mine[0]?.id ?? "", required: true, wide: true, options: mine.map((f) => ({ value: f.id, label: `${f.name} · ${PEOPLE[f.owner].name}` })) },
+      { name: "amount", label: "Amount (₹)", type: "money", required: true },
+      { name: "entryDate", label: "Date", type: "date", value: today() },
+      { name: "note", label: "Note", type: "text", wide: true },
+    ],
+    submit: "Save",
+    quick: [1000, 5000, 10000],
+    onSubmit: (v) => act({ action: "fund.entry", ...v }),
+  };
+}
+
+export function newPlanItem(me: "adarsh" | "misti", act: Act): SheetSpec {
+  return {
+    title: "Add a plan item",
+    subtitle: "Venue, clothes, jewellery, food, photos, documents — each with an estimate.",
+    fields: [
+      { name: "title", label: "Item", type: "text", required: true, wide: true, placeholder: "e.g. Book the venue" },
+      { name: "category", label: "Category", type: "select", value: PLAN_CATEGORIES[0].key, options: opts(PLAN_CATEGORIES) },
+      { name: "estimate", label: "Estimate (₹)", type: "money", min: 0, step: 500 },
+      { name: "due", label: "Due", type: "date" },
+      { name: "owner", label: "Whose", type: "select", value: "joint", options: whose(me) },
+    ],
+    submit: "Add item",
+    onSubmit: (v) => act({ action: "plan.add", ...v }),
+  };
+}

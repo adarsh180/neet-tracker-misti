@@ -101,7 +101,7 @@ export function CategoryDonut({ m }: { m: HubMetrics }) {
   const [hot, setHot] = useState<string | null>(null);
   const cats = m.money.byCategory;
   const total = cats.reduce((s, c) => s + c.amount, 0);
-  if (!total) return <div className="sth-empty"><b>No spending logged this month</b>Log expenses on the Money page and they group here by category.</div>;
+  if (!total) return <div className="sth-empty"><b>No spending this month yet</b><span>Expenses group here by category as you log them.</span></div>;
   let cursor = 0;
   const h = cats.find((c) => c.key === hot) ?? null;
   return (
@@ -137,7 +137,7 @@ export function CategoryDonut({ m }: { m: HubMetrics }) {
 }
 
 export function BudgetBars({ m }: { m: HubMetrics }) {
-  if (!m.money.budgetRows.length) return <div className="sth-empty"><b>No budgets yet</b>Set monthly limits per category on the Money page.</div>;
+  if (!m.money.budgetRows.length) return <div className="sth-empty"><b>No budgets yet</b><span>Set a monthly limit for a category to see where month-end spending is heading.</span></div>;
   const pace = m.money.dayOfMonth / m.money.daysInMonth;
   return (
     <ul className="sth-budgets" style={{ "--pace": pace } as CSSProperties}>
@@ -157,7 +157,7 @@ export function BudgetBars({ m }: { m: HubMetrics }) {
 
 /** Each fund as a ring: filled share, with each person's contribution on the inner track. */
 export function FundRings({ m, compact = false, onAdd, onEdit }: { m: HubMetrics; compact?: boolean; onAdd?: (f: HubMetrics["funds"][number]) => void; onEdit?: (f: HubMetrics["funds"][number]) => void }) {
-  if (!m.funds.length) return <div className="sth-empty"><b>No funds yet</b>Create an emergency fund first, then marriage and other goals, on the Funds page.</div>;
+  if (!m.funds.length) return <div className="sth-empty"><b>No funds yet</b><span>Emergency first, then marriage and the rest.</span></div>;
   const etaText = (f: HubMetrics["funds"][number]) => {
     if (f.share >= 1) return "Target reached";
     if (!f.etaDate) return "Add money to see when it fills";
@@ -250,7 +250,7 @@ export function WeekdaySpend({ m }: { m: HubMetrics }) {
 /** Each category's month-end pace against its own 3-month average. */
 export function CategoryPace({ m }: { m: HubMetrics }) {
   const rows = [...m.money.catDelta].sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0));
-  if (!rows.length) return <div className="sth-empty"><b>Not enough history yet</b>After a month or two of logging, each category is compared with its own average here.</div>;
+  if (!rows.length) return <div className="sth-empty"><b>Not enough history yet</b><span>After a month or two, each category is compared with its own average.</span></div>;
   return (
     <ul className="sth-catpace">
       {rows.map((c) => (
@@ -269,7 +269,7 @@ export function CategoryPace({ m }: { m: HubMetrics }) {
 export function GoalTrack({ m }: { m: HubMetrics }) {
   const goals = m.activeGoals.filter((g) => g.deadline).sort((a, b) => (a.days ?? 0) - (b.days ?? 0));
   const undated = m.activeGoals.filter((g) => !g.deadline);
-  if (!m.activeGoals.length) return <div className="sth-empty"><b>No goals yet</b>Add your future goals with a deadline and priority on the Goals page.</div>;
+  if (!m.activeGoals.length) return <div className="sth-empty"><b>No active goals</b><span>Goals with a deadline line up here by date.</span></div>;
   const horizon = Math.max(90, ...goals.map((g) => g.days ?? 0));
   return (
     <div className="sth-goaltrack">
@@ -323,7 +323,7 @@ export function PartsList({ m }: { m: HubMetrics }) {
           <span className="n"><b>{p.label}</b><small>{p.value}</small></span>
           <span className="b"><i /></span>
           <span className="p">{Math.round(p.score * p.weight)}<small>/{p.weight}</small></span>
-          <span className="w">{p.evidence ? p.note : `Nothing logged yet — ${p.note}`}</span>
+          <span className="w">{p.evidence ? p.note : `No data yet · ${p.note}`}</span>
         </li>
       ))}
     </ul>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { CalendarDays, CalendarHeart, Goal, LayoutGrid, Lock, PiggyBank, Sparkles, Wallet } from "lucide-react";
 
 import { useHub } from "./hub-context";
@@ -107,6 +107,15 @@ export function HubShell({ children, switcher }: { children: ReactNode; switcher
     };
   }, []);
 
+  // The bar turns solid once the page moves under it, so nothing ever scrolls visibly behind the controls.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 6);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
+
   const pathname = usePathname();
   const href = (p: string) => `${hub.base}${p}`;
   const active = (p: string) => (p ? pathname.startsWith(href(p)) : pathname === hub.base);
@@ -120,32 +129,35 @@ export function HubShell({ children, switcher }: { children: ReactNode; switcher
   return (
     <div className="sth" data-site={hub.site} ref={root}>
       <div className="sth-ambient" aria-hidden="true"><i className="a" /><i className="b" /></div>
-      <header className="sth-top">
-        <Link href={hub.base} className="sth-brand" aria-label="Saath — personal dashboard home">
-          <SaathMark />
-          <span><b>Saath</b><small>साथ · our dashboard</small></span>
-        </Link>
-        <nav className="sth-tabs" aria-label="Personal dashboard">
-          {TABS.map((t) => (
-            <Link key={t.path} href={href(t.path)} aria-current={active(t.path) ? "page" : undefined}>
-              <t.icon size={15} /> {t.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="sth-top-end">
-          <div className="sth-views" role="group" aria-label="Whose numbers">
-            {views.map((x) => (
-              <button key={x.v} type="button" aria-pressed={hub.view === x.v} className={`v-${x.v}`} onClick={() => hub.setView(x.v)}>
-                {x.label}
-              </button>
+      <header className={`sth-top ${scrolled ? "is-scrolled" : ""}`}>
+        <div className="sth-top-in">
+          <Link href={hub.base} className="sth-brand" aria-label="Saath — personal dashboard home">
+            <SaathMark />
+            <span><b>Saath</b><small>साथ</small></span>
+          </Link>
+          <nav className="sth-tabs" aria-label="Personal dashboard">
+            {TABS.map((t) => (
+              <Link key={t.path} href={href(t.path)} title={t.label} aria-current={active(t.path) ? "page" : undefined}>
+                <t.icon size={15} /> <span>{t.label}</span>
+              </Link>
             ))}
+          </nav>
+          <div className="sth-top-end">
+            <div className="sth-views" role="group" aria-label="Whose numbers" data-view={hub.view} style={{ "--vi": Math.max(0, views.findIndex((x) => x.v === hub.view)) } as CSSProperties}>
+              <i className="sth-views-thumb" aria-hidden="true" />
+              {views.map((x) => (
+                <button key={x.v} type="button" aria-pressed={hub.view === x.v} className={`v-${x.v}`} onClick={() => hub.setView(x.v)}>
+                  {x.label}
+                </button>
+              ))}
+            </div>
+            {me ? <span className={`sth-me o-${me}`} title={`Signed in as ${PEOPLE[me].name}`}>{PEOPLE[me].short}</span> : null}
+            <button type="button" className="sth-iconbtn sth-lock" onClick={() => void hub.lock()} aria-label="Lock Saath" title="Lock Saath">
+              <Lock size={15} />
+            </button>
+            <PageDial items={TABS.map((t) => ({ href: href(t.path), label: t.label, icon: t.icon }))} title="Saath" label="All Saath pages" actions={[{ label: "Lock Saath", icon: Lock, onClick: () => void hub.lock() }]} />
+            {switcher}
           </div>
-          {me ? <span className={`sth-me o-${me}`} title={`Signed in as ${PEOPLE[me].name}`}>{PEOPLE[me].short}</span> : null}
-          <button type="button" className="sth-iconbtn" onClick={() => void hub.lock()} aria-label="Lock the personal dashboard">
-            <Lock size={15} /> <span>Lock</span>
-          </button>
-          <PageDial items={TABS.map((t) => ({ href: href(t.path), label: t.label, icon: t.icon }))} title="Saath" label="All Saath pages" />
-          {switcher}
         </div>
       </header>
       {children}

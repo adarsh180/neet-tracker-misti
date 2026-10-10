@@ -18,7 +18,7 @@ type Entry = { id: string; date: string; title: string; kind: Kind; owner: Owner
 
 const KIND_LABEL: Record<Kind, string> = { event: "Event", exam: "Exam", goal: "Goal deadline", task: "Task due", fund: "Fund target", plan: "Plan item", wedding: "Wedding" };
 // Fixed exam dates both of you are working towards.
-const BUILT_IN: Array<{ date: string; title: string; owner: Owner }> = [
+export const BUILT_IN: Array<{ date: string; title: string; owner: Owner }> = [
   { date: "2027-05-02", title: "NEET UG 2027", owner: "misti" },
   { date: "2027-05-23", title: "UPSC CSE Prelims 2027", owner: "adarsh" },
 ];
