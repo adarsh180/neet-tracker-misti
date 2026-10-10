@@ -76,8 +76,7 @@ html[data-theme="light"][data-pulse="night-3"] .xw, html[data-theme="light"][dat
   background:
     radial-gradient(70% 55% at 50% -10%, color-mix(in srgb, var(--pl-a1) 11%, transparent), transparent 70%),
     radial-gradient(45% 40% at 85% 0%, color-mix(in srgb, var(--pl-a2) 7%, transparent), transparent 70%);
-  animation: day-sky 48s ease-in-out infinite alternate;
-  will-change: transform;
+  /* Still: a drifting light under the frosted rail made its blur redraw every frame. */
 }
 html[data-daypart="dawn"] .protected-route-frame::before {
   background:
@@ -109,3 +108,12 @@ html[data-daypart="night"] .protected-route-frame::before {
 .ql-dial .pd-trigger { width: 54px; height: 54px; }
 .ql-dial .pd-trigger .pd-glyph { width: 24px; height: 24px; }
 @media (max-width: 760px) { .ql-dial { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); } }
+
+/* No colour-variable transitions: animating them on the root (or the PG/SS arena)
+   restyles and repaints everything every frame. Palette and theme changes
+   cross-fade as one view transition instead (components/theme-shift.ts). */
+:root, .xw, .xw[data-exam="ss"] { transition: none; }
+
+/* Smooth rail: the active drop and its heartbeat ring move on their own GPU
+   layers, so the frosted rail around them never repaints. */
+.pl-rail-drop, .pl-rail-drop::after { will-change: transform, opacity; }

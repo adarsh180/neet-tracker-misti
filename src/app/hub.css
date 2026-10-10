@@ -932,3 +932,7 @@ html[data-theme="light"] :is(.sth-card, .sth-fig)::after { background: radial-gr
   .sth-views { order: 0; width: auto; }
 }
 @media (max-width: 640px) { .sth-top { padding: 0; } .sth-views button { flex: none; } }
+
+/* Smoothness: the ambient lights are already soft gradients; a live blur on two
+   screen-sized layers cost a GPU pass every frame. */
+.sth-ambient i { filter: none; transition: none; }

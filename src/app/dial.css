@@ -4,7 +4,6 @@
    (UPSC --nv-a*, NEET --pl-a*); motion is transform / clip-path / mask only.
    ========================================================================== */
 
-@property --iris-hole { syntax: "<length>"; inherits: false; initial-value: 0px; }
 
 .pd-trigger, .pd-layer, .iris {
   --pd-a: var(--nv-a1, var(--pl-a1, #8b7cf6));
@@ -76,8 +75,7 @@ html[data-theme="light"] .pd-layer { background: radial-gradient(circle at var(-
   background:
     radial-gradient(circle, color-mix(in srgb, var(--pd-a) 22%, transparent) 0, color-mix(in srgb, var(--pd-b) 8%, transparent) 45%, transparent 72%),
     repeating-radial-gradient(circle, transparent 0 27px, color-mix(in srgb, var(--pd-ink) 6%, transparent) 27px 28px),
-    color-mix(in srgb, var(--pd-disc) 72%, transparent);
-  -webkit-backdrop-filter: blur(16px) saturate(150%); backdrop-filter: blur(16px) saturate(150%);
+    color-mix(in srgb, var(--pd-canvas) 78%, var(--pd-disc));
 }
 /* The rim: liquid glass, lit from the top-left, with the holes carved in. */
 .pd-band {
@@ -86,12 +84,12 @@ html[data-theme="light"] .pd-layer { background: radial-gradient(circle at var(-
     conic-gradient(from 210deg, rgba(255, 255, 255, 0.16), transparent 14%, transparent 40%, rgba(255, 255, 255, 0.07) 52%, transparent 64%, color-mix(in srgb, var(--pd-a) 16%, transparent) 80%, rgba(255, 255, 255, 0.16)),
     radial-gradient(circle, color-mix(in srgb, var(--pd-disc) 85%, var(--pd-a)) calc(var(--bi) + 2px), var(--pd-disc) 70%, color-mix(in srgb, var(--pd-disc) 70%, var(--pd-b)) 100%);
   -webkit-mask: radial-gradient(circle, transparent calc(var(--bi) - 0.5px), #000 var(--bi)); mask: radial-gradient(circle, transparent calc(var(--bi) - 0.5px), #000 var(--bi));
+  background-color: color-mix(in srgb, var(--pd-canvas) 82%, transparent);
   box-shadow: inset 0 0 0 1px var(--pd-edge), inset 0 2px 0 var(--pd-hi), 0 40px 90px -30px rgba(0, 0, 0, 0.7);
-  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
 }
 
 /* Bezel: ticks turn with the plate. */
-.pd-plate { position: absolute; left: 0; top: 0; width: 0; height: 0; transform: rotate(var(--rot, 0deg)); pointer-events: none; }
+.pd-plate { position: absolute; left: 0; top: 0; width: 0; height: 0; transform: rotate(var(--rot, 0deg)); pointer-events: none; will-change: transform; }
 .pd-plate svg { position: absolute; left: calc(var(--bo) * -1); top: calc(var(--bo) * -1); overflow: visible; }
 .pd-plate line { stroke: color-mix(in srgb, var(--pd-ink) 26%, transparent); stroke-width: 1; stroke-linecap: round; }
 .pd-plate line.major { stroke: color-mix(in srgb, var(--pd-a) 75%, var(--pd-ink)); stroke-width: 1.6; }
@@ -100,7 +98,7 @@ html[data-theme="light"] .pd-layer { background: radial-gradient(circle at var(-
 /* The slot at the finger stop glows in the live accent. */
 .pd-spot {
   position: absolute; left: 0; top: 0; width: calc(var(--hole) * 2.1); height: calc(var(--hole) * 2.1); margin: calc(var(--hole) * -1.05); border-radius: 50%; pointer-events: none;
-  transform: rotate(var(--focus)) translateX(var(--R));
+  transform: rotate(var(--focus)) translateX(var(--R)); will-change: opacity;
   background: radial-gradient(circle, color-mix(in srgb, var(--pd-a) 42%, transparent) 0, color-mix(in srgb, var(--pd-a) 12%, transparent) 45%, transparent 70%);
   animation: pd-breathe 3.2s ease-in-out infinite;
 }
@@ -181,19 +179,23 @@ html[data-theme="light"] .pd-hole { background: radial-gradient(circle at 50% 28
 @media (prefers-reduced-motion: reduce) { .pd-layer, .pd-dial, .pd-hub, .pd-readout, .pd-ro-name, .pd-spot { animation: none !important; } .pd-glyph, .pd-trigger { transition: none !important; } }
 
 /* ── Iris: the circular page transition ─────────────────────────────── */
-.iris {
-  position: fixed; inset: 0; z-index: 2147483100; pointer-events: all; overflow: hidden;
-  background:
-    radial-gradient(circle at var(--ix) var(--iy), color-mix(in srgb, var(--pd-a) 34%, var(--pd-canvas)) 0, color-mix(in srgb, var(--pd-b) 12%, var(--pd-canvas)) 34%, var(--pd-canvas) 72%);
-  clip-path: circle(0px at var(--ix) var(--iy));
+/* A disc that scales (GPU) rather than a clip-path (repaints every frame). */
+.iris { position: fixed; inset: 0; z-index: 2147483100; overflow: hidden; pointer-events: all; }
+.iris.is-revealing { pointer-events: none; }
+.iris-disc {
+  position: absolute; border-radius: 50%; will-change: transform, opacity; transform: scale(0.001);
+  background: radial-gradient(circle, color-mix(in srgb, var(--pd-a) 34%, var(--pd-canvas)) 0, color-mix(in srgb, var(--pd-b) 12%, var(--pd-canvas)) 34%, var(--pd-canvas) 70%);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pd-a) 70%, transparent), inset 0 0 60px -10px color-mix(in srgb, var(--pd-a) 55%, transparent);
 }
-.iris.is-revealing {
-  pointer-events: none;
-  -webkit-mask: radial-gradient(circle at var(--ix) var(--iy), transparent var(--iris-hole), #000 calc(var(--iris-hole) + 1px));
-  mask: radial-gradient(circle at var(--ix) var(--iy), transparent var(--iris-hole), #000 calc(var(--iris-hole) + 1px));
-}
-.iris-wave { position: absolute; border-radius: 50%; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pd-a) 80%, #fff), inset 0 0 40px -6px color-mix(in srgb, var(--pd-a) 60%, transparent); transform: scale(0); }
-.iris-label { position: absolute; left: 50%; top: 50%; translate: -50% -50%; color: color-mix(in srgb, var(--pd-a) 50%, #fff); font: 700 clamp(22px, 4vw, 34px) / 1.1 var(--font-display, var(--font-body, system-ui)), system-ui, sans-serif; letter-spacing: -0.03em; white-space: nowrap; animation: iris-label 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s backwards; }
+.iris-label { position: absolute; left: 50%; top: 50%; translate: -50% -50%; color: color-mix(in srgb, var(--pd-a) 50%, #fff); font: 700 clamp(22px, 4vw, 34px) / 1.1 var(--font-display, var(--font-body, system-ui)), system-ui, sans-serif; letter-spacing: -0.03em; white-space: nowrap; animation: iris-label 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.14s backwards; }
 html[data-theme="light"] .iris-label { color: color-mix(in srgb, var(--pd-a) 70%, #000); }
 .iris.is-revealing .iris-label { transition: opacity 0.2s; opacity: 0; }
-@keyframes iris-label { from { opacity: 0; transform: translateY(8px) scale(0.96); filter: blur(4px); } }
+@keyframes iris-label { from { opacity: 0; transform: translateY(8px); } }
+
+/* ── Theme and palette changes (components/theme-shift.ts) ────────────── */
+/* While a change plays as a view transition, nothing on the page animates its colours. */
+html[data-shift], html[data-shift] *, html[data-shift] *::before, html[data-shift] *::after { transition: none !important; }
+html[data-shift]::view-transition-old(root), html[data-shift]::view-transition-new(root) { mix-blend-mode: normal; }
+html[data-shift="theme"]::view-transition-old(root), html[data-shift="theme"]::view-transition-new(root) { animation: none; }
+html[data-shift="theme"]::view-transition-new(root) { z-index: 1; }
+html[data-shift="palette"]::view-transition-old(root), html[data-shift="palette"]::view-transition-new(root) { animation-duration: 1.6s; animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1); }

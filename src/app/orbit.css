@@ -122,3 +122,11 @@ html[data-theme="light"] .theme-coin { color: #121528; background: rgba(255, 255
 /* No rotating light: the dial is still liquid glass, coins travel the arc and settle. */
 .do-track circle { stroke: color-mix(in srgb, var(--do-ink) 22%, transparent); }
 .do-trigger-logo, .do-coin-face img { border-radius: 50%; object-fit: cover; }
+
+/* Smoothness: the dial is scaled while it opens, so it must not carry a live backdrop
+   blur (that re-blurs the screen every frame); the track ring fades instead of scaling
+   (a full-screen SVG scale repaints every frame). */
+.do-dial { -webkit-backdrop-filter: none; backdrop-filter: none; background: radial-gradient(circle, transparent 0 34px, color-mix(in srgb, var(--do-glass-2) 92%, transparent) 35px, color-mix(in srgb, var(--do-glass-2) 78%, transparent) 100%); will-change: transform, opacity; }
+.do-track circle { animation: do-ring-fade 0.5s ease-out; transform: none; }
+@keyframes do-ring-fade { from { opacity: 0; } }
+.do-coin { will-change: transform, opacity; }

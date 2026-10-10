@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
@@ -362,6 +362,28 @@ export function PageDial({
     links.current[next]?.focus({ preventScroll: true });
   };
 
+  // The bezel only changes when the dial opens; built once so detent re-renders stay cheap.
+  const bezel = useMemo(
+    () =>
+      geo ? (
+        <svg viewBox={`${-geo.bo} ${-geo.bo} ${geo.bo * 2} ${geo.bo * 2}`} width={geo.bo * 2} height={geo.bo * 2}>
+          {Array.from({ length: (n - 1) * 4 + 9 }, (_, k) => {
+            const j = k - 4;
+            const a = geo.focus + (j * geo.step) / 4;
+            const major = j % 4 === 0 && j >= 0 && j <= (n - 1) * 4;
+            const p0 = polar(geo.bo - (major ? 15 : 9), a);
+            const p1 = polar(geo.bo - 4, a);
+            return <line key={k} className={major ? "major" : undefined} x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} />;
+          })}
+          {[-1, n].map((j) => {
+            const p = polar(geo.bo - 10, geo.focus + j * geo.step);
+            return <circle key={j} className="pd-endstop" cx={p.x} cy={p.y} r={2.4} />;
+          })}
+        </svg>
+      ) : null,
+    [geo, n],
+  );
+
   const cur = items[focus];
   const CurIcon = cur?.icon;
   const groupStarts = items.map((it, i) => (it.group && (i === 0 || items[i - 1].group !== it.group) ? i : -1)).filter((i) => i >= 0);
@@ -407,20 +429,7 @@ export function PageDial({
                 <div className="pd-core" aria-hidden="true" />
                 <div className="pd-band" aria-hidden="true" />
                 <div className="pd-plate" aria-hidden="true">
-                  <svg viewBox={`${-geo.bo} ${-geo.bo} ${geo.bo * 2} ${geo.bo * 2}`} width={geo.bo * 2} height={geo.bo * 2}>
-                    {Array.from({ length: (n - 1) * 4 + 9 }, (_, k) => {
-                      const j = k - 4;
-                      const a = geo.focus + (j * geo.step) / 4;
-                      const major = j % 4 === 0 && j >= 0 && j <= (n - 1) * 4;
-                      const p0 = polar(geo.bo - (major ? 15 : 9), a);
-                      const p1 = polar(geo.bo - 4, a);
-                      return <line key={k} className={major ? "major" : undefined} x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} />;
-                    })}
-                    {[-1, n].map((j) => {
-                      const p = polar(geo.bo - 10, geo.focus + j * geo.step);
-                      return <circle key={j} className="pd-endstop" cx={p.x} cy={p.y} r={2.4} />;
-                    })}
-                  </svg>
+                  {bezel}
                 </div>
                 <span className="pd-spot" aria-hidden="true" />
                 {groupStarts.map((i) => (

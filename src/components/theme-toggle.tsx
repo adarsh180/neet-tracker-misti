@@ -1,6 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import { originOf, shiftTheme } from "@/components/theme-shift";
 import { useEffect, useState } from "react";
 
 type ThemeMode = "dark" | "light";
@@ -50,9 +51,9 @@ export default function ThemeToggle() {
     <button
       className="theme-toggle"
       type="button"
-      onClick={() => {
+      onClick={(e) => {
         setTheme(nextTheme);
-        applyTheme(nextTheme);
+        shiftTheme(() => applyTheme(nextTheme), originOf(e.currentTarget));
       }}
       aria-label={`Switch to ${nextTheme} mode`}
       data-tip={`Switch to ${nextTheme}`}
