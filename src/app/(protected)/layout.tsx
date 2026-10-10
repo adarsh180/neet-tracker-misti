@@ -10,7 +10,6 @@ import GlobalSearch from "@/components/layout/global-search";
 import SiteVoiceAssistant from "@/components/voice-assistant/site-voice-assistant";
 import { HeartLoader } from "@/components/pulse/heart-loader";
 import { VitalRail } from "@/components/pulse/vital-rail";
-import { ExamSwitch } from "@/components/pulse/exam-switch";
 import { NeetOrbit } from "@/components/pulse/neet-orbit";
 
 const PREFETCH_ROUTES = [
@@ -64,9 +63,13 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       }
 
       setAuth();
-      PREFETCH_ROUTES.forEach((route) => {
-        router.prefetch(route);
-      });
+      // Warm the UG pages only inside UG: from PG, SS or Saath the proxy answers them
+      // with a redirect, and the router would keep that stale answer.
+      if (!/^\/(pg|ss|hub)(\/|$)/.test(window.location.pathname)) {
+        PREFETCH_ROUTES.forEach((route) => {
+          router.prefetch(route);
+        });
+      }
       setReady(true);
     }
 
@@ -89,7 +92,6 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       {inWorkspace ? null : <GlobalSearch />}
       {inWorkspace ? null : <SiteVoiceAssistant />}
       {inWorkspace ? null : <QuickNav />}
-      {inWorkspace ? null : <ExamSwitch />}
       {inWorkspace ? null : <div className="do-fixed"><NeetOrbit /></div>}
     </div>
   );

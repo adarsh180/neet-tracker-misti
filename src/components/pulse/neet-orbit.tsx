@@ -18,7 +18,9 @@ export function NeetOrbit() {
     if (res.status === 401) return router.replace("/signin");
     if (res.status === 403 || res.status === 429) return router.push(`/exam?want=${exam}`);
     const data = await res.json().catch(() => ({}));
-    if (data.home) router.push(data.home);
+    // A full load, not a client push: while another desk was open the router cached the
+    // proxy's redirects for this desk's pages, and a push could replay one of them.
+    if (data.home) window.location.assign(data.home);
   };
   const ug = !at("/pg") && !at("/ss") && !at("/hub");
   return (

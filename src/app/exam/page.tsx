@@ -64,7 +64,8 @@ function Picker() {
         return;
       }
       if (!res.ok) throw new Error(data.error ?? "Could not open that dashboard.");
-      router.replace(data.home);
+      // Full load, so no redirect cached while another desk was open can be replayed.
+      window.location.replace(data.home);
     } catch (e) {
       setError((e as Error).message);
       setBusy(null);
