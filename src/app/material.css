@@ -1,0 +1,351 @@
+/* ==========================================================================
+   MATERIAL — one system for every page of both sites (loaded last).
+     · Clay (~80%): everything you touch or read — buttons, fields, toggles,
+       chips, tabs, cards, panels, rows, sheets. Soft, puffy, pressed-in when
+       active.
+     · Skeuomorphism (~10%): the instruments — progress tracks and meters as
+       recessed grooves with glossy fills, checkboxes and radios as physical
+       keys, sliders with a metal knob.
+     · No liquid glass (the user chose 90% clay / 10% skeuomorphic): every
+       backdrop blur is switched off and chrome is clay too.
+   Colours come from each site's own tokens (UPSC ink/porcelain, NEET plum/
+   lavender via --clay-*) and its live day-cycle accent. Static shadows only —
+   no blur — so it stays smooth. Identical in both repos.
+   ========================================================================== */
+
+:root {
+  --m-acc: var(--su-acc, var(--pl-a1, #8b7cf6));
+  --m-canvas: var(--su-bg, var(--pl-bg, #0c0d14));
+  --m-ink: var(--su-ink, var(--pl-ink, #eef0f8));
+  --m-ink-3: var(--su-ink-3, var(--pl-ink-3, rgba(220, 224, 240, 0.56)));
+  --m-clay: var(--clay, color-mix(in oklab, var(--m-canvas), #ffffff 8%));
+  --m-clay-2: var(--clay-2, color-mix(in oklab, var(--m-canvas), #ffffff 14%));
+  --m-well: color-mix(in oklab, var(--m-clay), #000000 22%);
+  --m-hi: var(--clay-hi, rgba(255, 255, 255, 0.09));
+  --m-lo: var(--clay-lo, rgba(0, 0, 0, 0.5));
+  --m-drop: var(--clay-drop, rgba(0, 0, 0, 0.55));
+  --m-on-acc: #15121c;
+  --m-surface: linear-gradient(150deg, var(--m-clay-2), var(--m-clay));
+  --m-lift: inset 4px 4px 10px var(--m-hi), inset -6px -8px 16px var(--m-lo), 0 22px 44px -24px var(--m-drop), 0 4px 10px -6px var(--m-drop);
+  --m-lift-sm: inset 1.5px 1.5px 3px var(--m-hi), inset -2px -2px 5px var(--m-lo), 0 8px 16px -10px var(--m-drop);
+  --m-press: inset 3px 3px 7px var(--m-lo), inset -2px -2px 5px var(--m-hi);
+  --m-acc-surface: linear-gradient(150deg, color-mix(in srgb, var(--m-acc) 80%, #ffffff), var(--m-acc) 55%, color-mix(in srgb, var(--m-acc) 82%, #000000));
+  --m-acc-lift: inset 2px 2px 4px rgba(255, 255, 255, 0.45), inset -3px -4px 8px color-mix(in srgb, var(--m-acc) 55%, #000000), 0 12px 24px -12px color-mix(in srgb, var(--m-acc) 75%, transparent);
+  --m-ease: cubic-bezier(0.25, 1.25, 0.4, 1);
+}
+html[data-theme="light"] {
+  --m-clay: var(--clay, color-mix(in oklab, var(--m-canvas), #ffffff 58%));
+  --m-clay-2: var(--clay-2, color-mix(in oklab, var(--m-canvas), #ffffff 88%));
+  --m-well: color-mix(in oklab, var(--m-clay), #5a4a30 5%);
+  --m-hi: var(--clay-hi, rgba(255, 255, 255, 0.95));
+  --m-lo: var(--clay-lo, rgba(110, 90, 56, 0.2));
+  --m-drop: var(--clay-drop, rgba(96, 76, 44, 0.24));
+  --m-on-acc: #ffffff;
+}
+
+/* ── Clay surfaces: cards and panels ─────────────────────────────────── */
+html:not(#m) :is(
+  .glass, .glass-strong, .panel, .glass-card, .glass-panel, .premium-card, .metric-card,
+  .fg-panel, .fg-tile, .sth-card, .sth-fig, .xw-card, .gx-card, .nv-glass, .chart-frame, .heatmap-panel,
+  .perf-kpi, .day-plan-approval-card, .study-card-shell, .live-timer-card, .guru-scene-card, .gurux-composer-card,
+  .exam-horizon-card, .ca-story, .todo-column-card, .todo-composer-card, .todo-task-card,
+  .mission-control-block, .mission-control-action-card, .mission-control-why-card, .mission-control-task-card, .mission-control-history-card,
+  .error-analysis-pattern-card, .error-analysis-chart-panel, .error-analysis-report-card, .error-analysis-memory-panel,
+  .error-analysis-comparison-card, .error-analysis-form-panel, .error-analysis-ai-panel, .error-analysis-table-panel, .error-analysis-test-form-panel,
+  .tests-form-panel, .tests-ledger-panel, .mk-glass, .test-folder, .ng-suggestion-card, .sd-label-card, .vt-tile, .lab-rack, .sw-card, .fg-unlock-card, .sth-unlock-card
+) {
+  background: var(--m-surface) !important;
+  border-color: transparent !important;
+  box-shadow: var(--m-lift) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html:not(#m) :is(.glass, .panel, .glass-card, .glass-panel, .premium-card, .fg-panel, .sth-card, .xw-card, .gx-card, .tests-form-panel, .tests-ledger-panel, .todo-column-card, .mission-control-block, .error-analysis-form-panel, .error-analysis-table-panel, .chart-frame, .heatmap-panel) {
+  border-radius: 26px !important;
+}
+/* Rows inside cards: a gentle lift, pressed when chosen. */
+html:not(#m) :is(.todo-task-card, .cbt-test-row, .sw-entry, .xw-item, .sth-tasks li, .sth-entries li) { border-color: transparent !important; }
+
+/* ── Clay buttons ────────────────────────────────────────────────────── */
+html:not(#m) :is(
+  .button, .button-secondary, .su-btn, .sth-btn, .fg-btn, .lg-btn, .icon-action-button, .tests-submit-button,
+  .gurux-icon-button, .gurux-secondary-link, .ck-btn, .ck-rev-btn, .mh-block-btn, .error-analysis-topic-save, .mission-control-delete-btn,
+  .btn, .pl-btn, .xw-btn, .folder-create, .xw-add, .rk-go, .ax-go, .xd-cancel, .pd-action
+):not(:disabled) {
+  border: 0 !important;
+  background: var(--m-surface) !important;
+  color: var(--m-ink) !important;
+  box-shadow: var(--m-lift-sm) !important;
+  transition: transform 0.35s var(--m-ease), box-shadow 0.25s ease, filter 0.2s !important;
+}
+html:not(#m) :is(
+  .button-primary, .su-btn-ink, .sth-btn.is-primary, .fg-btn.is-primary, .btn-primary, .pl-btn-rx, .pl-btn.is-primary, .xw-btn.is-primary,
+  .cbt-primary, .signin-submit, .gurux-primary-button, .gurux-send-button, .xd-unlock, .lg-btn.is-primary, .su-btn-acc
+):not(:disabled) {
+  border: 0 !important;
+  background: var(--m-acc-surface) !important;
+  color: var(--m-on-acc) !important;
+  box-shadow: var(--m-acc-lift) !important;
+  transition: transform 0.35s var(--m-ease), box-shadow 0.25s ease, filter 0.2s !important;
+}
+html:not(#m) :is(
+  .button, .button-secondary, .button-primary, .su-btn, .su-btn-ink, .sth-btn, .fg-btn, .lg-btn, .icon-action-button, .tests-submit-button,
+  .gurux-icon-button, .gurux-primary-button, .gurux-send-button, .gurux-secondary-link, .ck-btn, .ck-rev-btn, .mh-block-btn, .error-analysis-topic-save,
+  .btn, .btn-primary, .pl-btn, .xw-btn, .cbt-primary, .signin-submit, .folder-create, .xw-add, .rk-go, .ax-go, .xd-unlock, .xd-cancel, .pd-action
+):not(:disabled):hover { transform: translateY(-1px); filter: brightness(1.04); }
+html:not(#m) :is(
+  .button, .button-secondary, .su-btn, .sth-btn, .fg-btn, .lg-btn, .icon-action-button, .tests-submit-button, .gurux-icon-button, .gurux-secondary-link,
+  .ck-btn, .ck-rev-btn, .mh-block-btn, .error-analysis-topic-save, .btn, .pl-btn, .xw-btn, .folder-create, .xw-add, .xd-cancel, .pd-action
+):not(:disabled):active { transform: translateY(1px) scale(0.98); box-shadow: var(--m-press) !important; }
+html:not(#m) :is(.button-primary, .su-btn-ink, .sth-btn.is-primary, .fg-btn.is-primary, .btn-primary, .pl-btn-rx, .xw-btn.is-primary, .cbt-primary, .signin-submit, .gurux-primary-button, .gurux-send-button, .xd-unlock):not(:disabled):active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: inset 3px 3px 7px color-mix(in srgb, var(--m-acc) 50%, #000000), inset -2px -2px 5px rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Old sheen overlays on editorial buttons would sit on top of the clay. */
+html:not(#m) .editorial-page :is(.button, .button-secondary, .dlf-btn, .tests-submit-button, .sx-submit)::before { display: none !important; }
+
+/* ── Clay fields: text inputs, selects and text areas sit pressed into the clay ── */
+html:not(#m) :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
+  select, textarea
+):not(:where(.syllabus-command-head *, .pd-layer *, .m-skip, .m-skip *)) {
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: var(--m-well) !important;
+  color: var(--m-ink) !important;
+  box-shadow: var(--m-press) !important;
+  transition: box-shadow 0.2s ease !important;
+}
+html:not(#m) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]), select, textarea):not(:where(.syllabus-command-head *, .pd-layer *, .m-skip, .m-skip *)):focus {
+  outline: none !important;
+  box-shadow: var(--m-press), 0 0 0 3px color-mix(in srgb, var(--m-acc) 32%, transparent) !important;
+}
+html:not(#m) :is(input, textarea)::placeholder { color: var(--m-ink-3); opacity: 0.75; }
+
+/* ── Clay toggle bars: a pressed track with a raised thumb ───────────── */
+html:not(#m) :is(.su-seg, .nv-seg, .perf-seg, .pl-seg, .xw-seg, .sth-seg, .tests-stage-switch, .exam-stage-switch, .sth-views) {
+  border: 0 !important;
+  background: var(--m-well) !important;
+  box-shadow: var(--m-press) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html:not(#m) :is(.su-seg, .nv-seg, .perf-seg, .pl-seg, .xw-seg, .sth-seg, .tests-stage-switch, .exam-stage-switch) :is([aria-pressed="true"], [aria-selected="true"], .active, .is-active) {
+  background: var(--m-surface) !important;
+  color: var(--m-ink) !important;
+  box-shadow: var(--m-lift-sm) !important;
+}
+
+/* ── Clay chips ──────────────────────────────────────────────────────── */
+html:not(#m) :is(.pill, .tag, .fg-pill, .lg-pill, .sth-pill, .sth-chip, .xw-pill, .xw-chip, .badge, .gurux-meta-chip, .tp-chip, .guru-scene-chip, .lab-pill, .cbt-test-chip, .topbar-chip) {
+  border-color: transparent !important;
+  background: var(--m-surface) !important;
+  box-shadow: inset 1px 1px 2px var(--m-hi), inset -1px -2px 4px var(--m-lo), 0 4px 10px -7px var(--m-drop) !important;
+}
+
+/* ── Skeuomorphic instruments ────────────────────────────────────────── */
+/* Tracks are grooves cut into the clay; fills are glossy, lit from above. */
+html:not(#m) :is(
+  .progress-track, .mh-progress-track, .st-meter-track, .insight-track, .sth-goal-bar, .sth-wedding-bar, .xw-bar, .exam-horizon-rail,
+  .lg-scale-track, .fg-meter, .sv-ruler-track, .countdown-progress, .tests-record-progress, .study-card-progress-line
+) {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--m-well), #000000 20%), var(--m-well)) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45), inset 0 -1px 0 var(--m-hi), 0 1px 0 var(--m-hi) !important;
+  border-color: transparent !important;
+}
+html:not(#m) :is(.progress-fill, .exam-horizon-rail-fill, .exam-horizon-readiness-bar) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 3px rgba(0, 0, 0, 0.25), 0 0 10px -2px currentColor !important;
+}
+/* Checkboxes and radios: physical keys. */
+html:not(#m) input:is([type="checkbox"], [type="radio"]):not(:where(.m-skip, .m-skip *, [role="switch"])) {
+  -webkit-appearance: none; appearance: none;
+  display: inline-grid; place-items: center; flex: none;
+  width: 22px; height: 22px; margin: 0; cursor: pointer;
+  border: 1px solid color-mix(in oklab, var(--m-clay), #000000 35%);
+  border-radius: 7px;
+  background: linear-gradient(180deg, var(--m-clay-2), var(--m-clay));
+  box-shadow: inset 0 1px 0 var(--m-hi), 0 2px 0 color-mix(in oklab, var(--m-clay), #000000 45%), 0 3px 6px -2px var(--m-drop);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s;
+}
+html:not(#m) input[type="radio"]:not(:where(.m-skip, .m-skip *)) { border-radius: 50%; }
+html:not(#m) input:is([type="checkbox"], [type="radio"]):not(:where(.m-skip, .m-skip *, [role="switch"])):active { transform: translateY(1px); box-shadow: inset 0 1px 0 var(--m-hi), 0 1px 0 color-mix(in oklab, var(--m-clay), #000000 45%); }
+html:not(#m) input:is([type="checkbox"], [type="radio"]):checked:not(:where(.m-skip, .m-skip *, [role="switch"])) {
+  border-color: color-mix(in srgb, var(--m-acc) 60%, #000000);
+  background: var(--m-acc-surface);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 -2px 3px rgba(0, 0, 0, 0.25), 0 1px 0 color-mix(in srgb, var(--m-acc) 50%, #000000), 0 0 12px -3px var(--m-acc);
+}
+html:not(#m) input[type="checkbox"]:checked:not(:where(.m-skip, .m-skip *, [role="switch"]))::after {
+  content: ""; width: 11px; height: 6px; margin-top: -2px;
+  border: solid var(--m-on-acc); border-width: 0 0 2.4px 2.4px; transform: rotate(-45deg);
+}
+html:not(#m) input[type="radio"]:checked:not(:where(.m-skip, .m-skip *))::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--m-on-acc); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3); }
+html:not(#m) input:is([type="checkbox"], [type="radio"]):focus-visible { outline: 2px solid var(--m-acc); outline-offset: 2px; }
+/* Sliders: a groove and a brushed-metal knob. */
+html:not(#m) input[type="range"]:not(:where(.m-skip, .m-skip *)) { -webkit-appearance: none; appearance: none; height: 22px; background: transparent; cursor: pointer; }
+html:not(#m) input[type="range"]:not(:where(.m-skip, .m-skip *))::-webkit-slider-runnable-track { height: 8px; border-radius: 8px; background: linear-gradient(180deg, color-mix(in oklab, var(--m-well), #000000 22%), var(--m-well)); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45), 0 1px 0 var(--m-hi); }
+html:not(#m) input[type="range"]:not(:where(.m-skip, .m-skip *))::-moz-range-track { height: 8px; border-radius: 8px; background: var(--m-well); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45), 0 1px 0 var(--m-hi); }
+html:not(#m) input[type="range"]:not(:where(.m-skip, .m-skip *))::-moz-range-progress { height: 8px; border-radius: 8px; background: var(--m-acc-surface); }
+html:not(#m) input[type="range"]:not(:where(.m-skip, .m-skip *))::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; margin-top: -7px; border: 1px solid rgba(0, 0, 0, 0.35); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #d7dbe4 45%, #9aa1b0 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45), inset 0 -2px 3px rgba(0, 0, 0, 0.2), 0 0 0 3px color-mix(in srgb, var(--m-acc) 28%, transparent);
+}
+html:not(#m) input[type="range"]:not(:where(.m-skip, .m-skip *))::-moz-range-thumb {
+  width: 20px; height: 20px; border: 1px solid rgba(0, 0, 0, 0.35); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #d7dbe4 45%, #9aa1b0 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45), 0 0 0 3px color-mix(in srgb, var(--m-acc) 28%, transparent);
+}
+
+/* ── Editorial spreads become clay: figure strips are tiles; a section that
+      holds no panels of its own becomes one soft card (never box-in-box). ── */
+html:not(#m) .su-figs { gap: 14px; border-top: 0 !important; }
+html:not(#m) .su-fig { padding: 18px 20px 16px !important; border: 0 !important; border-radius: 22px; background: var(--m-surface); box-shadow: var(--m-lift); }
+html:not(#m) .su-fig + .su-fig { padding-left: 20px !important; }
+html:not(#m) :is(.su-sect, .db-section) { border-top: 0 !important; }
+html:not(#m) :is(.su-sect, .db-section, .mh, .st, .gs, .sw-sessions, .ld3-sect):not(:has(:is(.glass, .panel, .su-figs, .sth-card, .sth-cards, .gx-card, .sw-card, .glass-card, .fg-panel, .perf-kpi, .countdown-mini-card, .tests-form-panel, .todo-column-card, .rd-board, .od-board))) {
+  margin-top: clamp(18px, 2.6vw, 30px);
+  padding: clamp(22px, 3vw, 36px) !important;
+  border-radius: 30px;
+  background: var(--m-surface);
+  box-shadow: var(--m-lift);
+}
+html:not(#m) :is(.su-sect, .db-section):has(:is(.glass, .panel, .su-figs, .sth-card, .gx-card, .sw-card, .glass-card, .fg-panel, .perf-kpi, .countdown-mini-card, .tests-form-panel, .todo-column-card)) { padding-top: clamp(26px, 3.4vw, 44px); }
+
+/* Tiles inside a clay card are pressed-in wells; small markers are clay chips. */
+html:not(#m) :is(.rd-dial, .od-levers, .db-strengths, .gx-note, .db-streak-ring-wrap, .xw-odd, .xw-figs > *, .sth-wedding-top > div, .day-plan-task, .mission-control-command-note, .todo-rationale, .error-analysis-alert, .ca-brief-disclosure) {
+  border: 0 !important;
+  border-radius: 22px !important;
+  background: var(--m-well) !important;
+  box-shadow: var(--m-press) !important;
+}
+html:not(#m) :is(.rd-stage, .md-option, .rd-lever) {
+  border-color: transparent !important;
+  background: var(--m-surface) !important;
+  box-shadow: var(--m-lift-sm) !important;
+}
+html:not(#m) :is(.rd-stage, .md-option):is(.is-on, .active, [aria-pressed="true"], [aria-checked="true"]) { background: var(--m-acc-surface) !important; color: var(--m-on-acc) !important; box-shadow: var(--m-acc-lift) !important; }
+
+/* ── Page layouts that the material pass rebuilds ───────────────────── */
+/* Number strips (subject pages, daily ledger) become a row of clay tiles. */
+html:not(#m) .gm-line { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px !important; border: 0 !important; }
+html:not(#m) .gm-line > * { padding: 14px 16px !important; border: 0 !important; border-radius: 18px !important; background: var(--m-surface) !important; box-shadow: var(--m-lift-sm) !important; }
+/* NEET page heads: each test-tube figure is a clay tile (the tube stays an instrument). */
+html:not(#m) .ph-stats { gap: 12px !important; border: 0 !important; }
+html:not(#m) .ph-stat { padding: 14px 16px !important; border: 0 !important; border-radius: 20px !important; background: var(--m-surface) !important; box-shadow: var(--m-lift-sm) !important; }
+html:not(#m) .ph-stat + .ph-stat { padding-left: 16px !important; }
+/* NEET search: a clay pill and a clay dialog. */
+html:not(#m) :is(.global-search-trigger, .global-search-dialog, .global-voice-trigger) { border-color: transparent !important; background: var(--m-surface) !important; box-shadow: var(--m-lift) !important; }
+html:not(#m) .global-search-backdrop { background: color-mix(in srgb, var(--m-canvas) 72%, transparent) !important; }
+/* NEET desk picker: each desk is a clay row; the open one is pressed in. */
+html:not(#m) .xd-list { display: grid; gap: 14px; border: 0 !important; }
+html:not(#m) .xd-item { border: 0 !important; border-radius: 26px !important; background: var(--m-surface) !important; box-shadow: var(--m-lift) !important; overflow: hidden; }
+html:not(#m) .xd-item.is-gating { box-shadow: var(--m-lift), 0 0 0 2px color-mix(in srgb, var(--a, var(--m-acc)) 45%, transparent) !important; }
+html:not(#m) .xd-row::before { border-radius: 26px; }
+/* AI workspaces list: each tool is a clay row. */
+html:not(#m) .ai-row { margin-top: 12px; padding: 18px 22px !important; border: 0 !important; border-radius: 22px !important; background: var(--m-surface) !important; box-shadow: var(--m-lift-sm) !important; transition: transform 0.35s var(--m-ease) !important; }
+html:not(#m) .ai-row:hover { transform: translateY(-2px); }
+html:not(#m) :is(.todo-stat-block, .todo-meta-cell, .mission-glass-stat) { border: 0 !important; border-radius: 16px !important; background: var(--m-well) !important; box-shadow: var(--m-press) !important; }
+
+/* NEET daily log: each subject is one clay row — name and quick fills on top,
+   hours / questions / intensity evenly split underneath, at any card width. */
+html:not(#m) .subject-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "info chips" "inputs inputs";
+  align-items: center;
+  gap: 14px 16px;
+  padding: 16px 18px !important;
+  border: 0 !important;
+  border-radius: 22px !important;
+  background: var(--m-surface) !important;
+  box-shadow: var(--m-lift-sm) !important;
+  transform: none !important;
+}
+html:not(#m) .subject-row-active { box-shadow: var(--m-lift-sm), 0 0 0 2px color-mix(in srgb, var(--m-acc) 45%, transparent) !important; }
+html:not(#m) .subject-row .subject-info { grid-area: info; }
+html:not(#m) .subject-row .quick-subject-actions { grid-area: chips; flex: none !important; flex-wrap: nowrap !important; justify-content: flex-end !important; width: auto !important; }
+html:not(#m) .subject-row .inputs-group { grid-area: inputs; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px !important; width: 100% !important; }
+html:not(#m) .subject-row .input-field { align-items: stretch !important; }
+html:not(#m) .subject-row .glass-input { width: 100% !important; }
+html:not(#m) .subject-avatar { border: 0 !important; background: var(--m-well) !important; box-shadow: var(--m-press) !important; }
+@media (max-width: 560px) {
+  html:not(#m) .subject-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "info" "inputs" "chips"; }
+  html:not(#m) .subject-row .quick-subject-actions { justify-content: flex-start !important; flex-wrap: wrap !important; }
+}
+html:not(#m) :is(.quick-log-btn, .quick-subject-chip) {
+  border: 0 !important;
+  background: var(--m-surface) !important;
+  color: var(--m-ink) !important;
+  box-shadow: var(--m-lift-sm) !important;
+}
+html:not(#m) :is(.quick-log-btn, .quick-subject-chip):active { box-shadow: var(--m-press) !important; transform: translateY(1px); }
+html:not(#m) :is(.summary-pill, .heatmap-meta-card, .quick-log-dock) { border: 0 !important; background: var(--m-well) !important; box-shadow: var(--m-press) !important; }
+
+/* ── No liquid glass: 90% clay, 10% skeuomorphic. Every blur is off; each
+      surface that relied on one gets a solid clay body instead. ─────────── */
+html:not(#m) *, html:not(#m) *::before, html:not(#m) *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* Chrome: top bars, rails, sidebars, panels and sheets. */
+html:not(#m) :is(
+  .su-glass, .pl-glass, .fg-nav, .topbar, .gurux-mobile-head, .gurux-sidebar, .gurux-composer-shell, .quicknav-panel, .nc-panel,
+  .sth-tabs, .sth-dock, .sth-sheet, .reader-toolbar, .sv-levers, .test-folders, .lab, .cbt-empty, .pl-loader-monitor, .xw-menu-pop, .xw-settings
+) {
+  border-color: transparent !important;
+  background: var(--m-surface) !important;
+  box-shadow: var(--m-lift) !important;
+}
+html:not(#m) .su-glass::before { opacity: 0 !important; }
+html:not(#m) .su-glass::after { background: none !important; }
+html:not(#m) .sth-top.is-scrolled { background: var(--m-clay) !important; box-shadow: inset 0 -1px 0 var(--m-hi), 0 14px 26px -18px var(--m-drop) !important; }
+/* The sliding pill under the active link is pressed into the clay bar. */
+html:not(#m) .su-blob { background: var(--m-well) !important; box-shadow: var(--m-press) !important; }
+
+/* Coins and small chrome buttons. */
+html:not(#m) :is(.theme-coin, .do-trigger, .pd-trigger:not(.is-dock), .nc-bell, .notify-button, .theme-toggle-public, .sth-iconbtn, .gurux-sidebar-toggle-floating, .btn-glass, .pd-hub, .v2-iconbtn, .su-more-btn .pd-trigger) {
+  border-color: transparent !important;
+  background: var(--m-surface) !important;
+  color: var(--m-ink) !important;
+  box-shadow: var(--m-lift-sm) !important;
+}
+html:not(#m) :is(.theme-coin, .do-trigger, .pd-trigger:not(.is-dock), .nc-bell, .notify-button, .sth-iconbtn, .btn-glass, .v2-iconbtn):active { box-shadow: var(--m-press) !important; transform: scale(0.95); }
+html:not(#m) :is(.pd-trigger-glass, .do-trigger-glass) { opacity: 0.3; }
+
+/* Tooltips, toasts, readouts: small clay pebbles. */
+html:not(#m) :is(.su-tip, .pl-tip, .prem-tooltip, .test-chart-tooltip, .daily-xy-tooltip, .ga-tip, .nc-toast, .nc-day-label, .pd-readout.is-out, .guru-scene-node, .pd-action, .pd-ro-nav button) {
+  border-color: transparent !important;
+  background: var(--m-surface) !important;
+  color: var(--m-ink) !important;
+  box-shadow: var(--m-lift-sm) !important;
+}
+
+/* Overlays: a still, tinted veil instead of a frosted one. */
+html:not(#m) :is(.syllabus-command-backdrop, .quicknav-backdrop, .gurux-sidebar-backdrop, .error-analysis-history-backdrop, .sth-sheet-backdrop, .nav-backdrop) {
+  background: color-mix(in srgb, var(--m-canvas) 72%, transparent) !important;
+}
+
+/* The rotary page dial and the dashboard switch, in clay on both sites. */
+html:not(#m) .pd-layer { background: radial-gradient(circle at var(--cx) var(--cy), color-mix(in srgb, var(--m-clay) 82%, transparent) 0, color-mix(in srgb, var(--m-clay) 55%, transparent) calc(var(--bo) + 30px), color-mix(in srgb, var(--m-clay) 18%, transparent) 100%) !important; }
+html:not(#m) .pd-band {
+  background: radial-gradient(circle, color-mix(in srgb, var(--m-clay-2) 92%, var(--pd-a)) calc(var(--bi) + 2px), var(--m-clay) 72%, color-mix(in srgb, var(--m-clay) 88%, #000000) 100%) !important;
+  box-shadow: inset 6px 7px 14px var(--m-hi), inset -8px -9px 18px var(--m-lo), 22px 26px 50px -22px var(--m-drop) !important;
+}
+html:not(#m) .pd-core { background: radial-gradient(circle, color-mix(in srgb, var(--pd-a) 18%, var(--m-clay-2)) 0, var(--m-clay-2) 55%, var(--m-clay) 100%) !important; }
+html:not(#m) .pd-hole { background: linear-gradient(145deg, color-mix(in srgb, var(--m-clay) 90%, #000000), var(--m-clay-2)) !important; box-shadow: var(--m-press), 0 1px 0 var(--m-hi) !important; color: var(--m-ink) !important; }
+html:not(#m) .pd-hole.is-focus {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pd-a) 70%, #ffffff), var(--pd-a)) !important;
+  box-shadow: inset 3px 3px 6px rgba(255, 255, 255, 0.55), inset -4px -5px 10px color-mix(in srgb, var(--pd-a) 55%, #000000), 8px 10px 22px -8px color-mix(in srgb, var(--pd-a) 80%, transparent), 0 0 26px -2px color-mix(in srgb, var(--pd-a) 70%, transparent) !important;
+}
+html:not(#m) .pd-hole-in small { color: var(--m-ink-3); }
+html:not(#m) .do-layer { background: color-mix(in srgb, var(--m-clay) 45%, transparent) !important; }
+html:not(#m) .do-dial {
+  background: radial-gradient(circle, transparent 0 34px, var(--m-clay-2) 35px, var(--m-clay) 100%) !important;
+  box-shadow: inset 6px 7px 14px var(--m-hi), inset -8px -9px 18px var(--m-lo), 20px 24px 46px -20px var(--m-drop) !important;
+}
+html:not(#m) :is(.do-coin-face, .do-coin-label) { background: var(--m-surface) !important; box-shadow: var(--m-lift-sm) !important; color: var(--m-ink) !important; }
+html:not(#m) .do-coin.is-current .do-coin-face { box-shadow: var(--m-press), 0 0 0 2px color-mix(in srgb, var(--m-acc) 55%, transparent) !important; }
+html:not(#m) :is(.do-coin:hover, .do-coin:focus-visible) .do-coin-face { box-shadow: var(--m-lift-sm), 0 0 0 3px color-mix(in srgb, var(--m-acc) 45%, transparent), 0 0 22px -4px color-mix(in srgb, var(--m-acc) 70%, transparent) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(#m) :is(.button, .su-btn, .sth-btn, .fg-btn, .btn, .pl-btn, .xw-btn) { transition: none !important; }
+}

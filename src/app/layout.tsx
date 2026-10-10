@@ -18,6 +18,7 @@ import "./orbit.css";
 import "./dial.css";
 import "./daycycle.css";
 import "./clay.css";
+import "./material.css";
 
 const inter = Inter({
   subsets: ["latin"],
