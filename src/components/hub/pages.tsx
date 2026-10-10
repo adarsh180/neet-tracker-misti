@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowDownRight, ArrowUpRight, CalendarPlus, Check, Goal, ListPlus, Pencil, PiggyBank, Plus, RefreshCw, Sparkles, Target, Trash2, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Check, Pencil, RefreshCw, Sparkles, Trash2, Wallet } from "lucide-react";
 
 import { BUILT_IN, HubCalendar } from "./calendar";
 import { addMoneyToGoal, addToFund, editAccount, editEvent, editFund, editGoal, editPlan, editTask, editTxn, fundDeposit, newEvent, newFund, newGoal, newPlanItem, newTask, newTxn, payPlan, setBudget } from "./editors";
 
 import { BudgetBars, CategoryDonut, CategoryPace, FundRings, GoalTrack, IndexOrbit, MoneyBars, PartsList, SpendStrip, TaskWeeks, TrendLine, WeekdaySpend } from "./charts";
 import { useHub } from "./hub-context";
+import { SaathAdd } from "./add-icon";
 import { ACCOUNT_KINDS, EVENT_KINDS, EXPENSE_CATEGORIES, GOAL_AREAS, INCOME_CATEGORIES, labelOf, PEOPLE, PLAN_CATEGORIES, PRIORITIES, rupees, type Owner } from "../../lib/hub/metrics";
 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
@@ -154,7 +155,7 @@ export function HubOverview() {
     <Page
       title={me ? `${greeting()}, ${PEOPLE[me].name}.` : "Saath"}
       summary={`${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" })} · ${viewLabel}`}
-      actions={started ? <><Btn primary onClick={add.expense} icon={<ArrowDownRight size={15} />}>Expense</Btn><Btn onClick={add.goal} icon={<Plus size={15} />}>Goal</Btn></> : undefined}
+      actions={started ? <><Btn primary onClick={add.expense} icon={<ArrowDownRight size={15} />}>Expense</Btn><Btn onClick={add.goal} icon={<SaathAdd size={15} />}>Goal</Btn></> : undefined}
     >
       {m && r && has ? (
         started ? (
@@ -282,9 +283,9 @@ function StartHere({ has }: { has: { money: boolean; funds: boolean; goals: bool
   const add = useAdders();
   const steps = [
     { done: has.money, title: "Log what comes in and goes out", note: "Income and spending start the savings rate and every money chart.", acts: <><Btn primary onClick={add.income} icon={<ArrowUpRight size={14} />}>Income</Btn><Btn onClick={add.expense} icon={<ArrowDownRight size={14} />}>Expense</Btn></> },
-    { done: has.funds, title: "Start an emergency fund", note: "Six months of expenses first — it protects every other goal.", acts: <Btn onClick={add.fund} icon={<PiggyBank size={14} />}>Create a fund</Btn> },
-    { done: has.goals, title: "Write down two or three goals", note: "Each with a deadline, so Saath can tell when one falls behind.", acts: <Btn onClick={add.goal} icon={<Target size={14} />}>Add a goal</Btn> },
-    { done: has.events, title: "Put the big dates in", note: "Birthdays, exams, trips — they land on the shared calendar.", acts: <Btn onClick={add.event} icon={<CalendarPlus size={14} />}>Add a date</Btn> },
+    { done: has.funds, title: "Start an emergency fund", note: "Six months of expenses first — it protects every other goal.", acts: <Btn onClick={add.fund} icon={<SaathAdd size={15} />}>Create a fund</Btn> },
+    { done: has.goals, title: "Write down two or three goals", note: "Each with a deadline, so Saath can tell when one falls behind.", acts: <Btn onClick={add.goal} icon={<SaathAdd size={15} />}>Add a goal</Btn> },
+    { done: has.events, title: "Put the big dates in", note: "Birthdays, exams, trips — they land on the shared calendar.", acts: <Btn onClick={add.event} icon={<SaathAdd size={15} />}>Add a date</Btn> },
   ];
   const done = steps.filter((s) => s.done).length;
   return (
@@ -318,7 +319,7 @@ export function HubMoney() {
     <Page
       title="Money"
       summary={m ? `${monthName()} · ${rupees(m.money.cur.income, { compact: true })} in · ${rupees(m.money.cur.expense, { compact: true })} out · ${rupees(m.money.saved, { compact: true })} left` : undefined}
-      actions={r?.txns.length ? <><Btn primary onClick={add.expense} icon={<ArrowDownRight size={15} />}>Expense</Btn><Btn onClick={add.income} icon={<ArrowUpRight size={15} />}>Income</Btn><Btn onClick={add.budget}>Budget</Btn></> : undefined}
+      actions={r?.txns.length ? <><Btn primary onClick={add.expense} icon={<ArrowDownRight size={15} />}>Expense</Btn><Btn onClick={add.income} icon={<ArrowUpRight size={15} />}>Income</Btn><Btn onClick={add.budget} icon={<SaathAdd size={16} />}>Budget</Btn></> : undefined}
     >
       {m && r ? (
         r.txns.length ? (
@@ -400,7 +401,7 @@ export function HubGoals() {
     <Page
       title="Goals"
       summary={m ? `${m.activeGoals.length} active · ${onTrack} on track · ${m.tasks.open} task${m.tasks.open === 1 ? "" : "s"} open` : undefined}
-      actions={m && (m.goals.length || m.tasks.all.length) ? <><Btn primary onClick={add.goal} icon={<Goal size={15} />}>Goal</Btn><Btn onClick={add.task} icon={<ListPlus size={15} />}>Task</Btn></> : undefined}
+      actions={m && (m.goals.length || m.tasks.all.length) ? <><Btn primary onClick={add.goal} icon={<SaathAdd size={16} />}>Goal</Btn><Btn onClick={add.task} icon={<SaathAdd size={16} />}>Task</Btn></> : undefined}
     >
       {m && r ? (
         m.goals.length || m.tasks.all.length ? (
@@ -431,7 +432,7 @@ export function HubGoals() {
                       <span className={`sth-health h-${g.health}`}>{g.health.replace("-", " ")}</span>
                       {g.owner === r.actor || g.owner === "joint" ? (
                         <span className="sth-goal-acts">
-                          {g.status !== "done" && (g.targetAmount || g.fund) ? <button type="button" className="sth-btn is-sm is-primary" onClick={() => hub.openSheet(addMoneyToGoal(g, hub.act))}><Plus size={13} /> Add money</button> : null}
+                          {g.status !== "done" && (g.targetAmount || g.fund) ? <button type="button" className="sth-btn is-sm is-primary" onClick={() => hub.openSheet(addMoneyToGoal(g, hub.act))}><SaathAdd size={13} /> Add money</button> : null}
                           {g.status !== "done" && !(g.fundId && g.targetAmount) ? (
                             <input type="range" min={0} max={100} step={5} defaultValue={g.progress} aria-label={`Progress of ${g.title}`} onPointerUp={(e) => void hub.act({ action: "goal.update", id: g.id, progress: Number((e.target as HTMLInputElement).value) })} onKeyUp={(e) => e.key.startsWith("Arrow") && void hub.act({ action: "goal.update", id: g.id, progress: Number((e.target as HTMLInputElement).value) })} />
                           ) : null}
@@ -454,13 +455,13 @@ export function HubGoals() {
                 </div>
               ) : null}
               <div className="sth-card">
-                <CardHead title="Tasks"><button type="button" className="sth-more" onClick={add.task}>Add</button></CardHead>
+                <CardHead title="Tasks"><button type="button" className="sth-more" onClick={add.task}><SaathAdd size={15} /> Add</button></CardHead>
                 <TaskList />
               </div>
             </section>
           </>
         ) : (
-          <Empty boxed title="No goals yet" actions={<><Btn primary onClick={add.goal} icon={<Goal size={14} />}>Add a goal</Btn><Btn onClick={add.task} icon={<ListPlus size={14} />}>Add a task</Btn></>}>
+          <Empty boxed title="No goals yet" actions={<><Btn primary onClick={add.goal} icon={<SaathAdd size={15} />}>Add a goal</Btn><Btn onClick={add.task} icon={<SaathAdd size={15} />}>Add a task</Btn></>}>
             Start with the two or three that matter most this year — yours, hers or shared — each with a deadline. Break them into tasks.
           </Empty>
         )
@@ -505,7 +506,7 @@ export function HubFunds() {
     <Page
       title="Funds"
       summary={m ? `${rupees(total, { compact: true })} across ${m.funds.length} fund${m.funds.length === 1 ? "" : "s"} · net worth ${rupees(m.netWorth.net, { compact: true })}` : undefined}
-      actions={<>{mine.length ? <Btn primary onClick={add.deposit} icon={<Plus size={15} />}>Add money</Btn> : null}<Btn primary={!mine.length} onClick={add.fund} icon={<PiggyBank size={15} />}>New fund</Btn><Btn onClick={add.account}>Account</Btn></>}
+      actions={<>{mine.length ? <Btn primary onClick={add.deposit} icon={<SaathAdd size={15} />}>Add money</Btn> : null}<Btn primary={!mine.length} onClick={add.fund} icon={<SaathAdd size={16} />}>New fund</Btn><Btn onClick={add.account} icon={<SaathAdd size={16} />}>Account</Btn></>}
     >
       {m && r ? (
         <>
@@ -533,7 +534,7 @@ export function HubFunds() {
                 ) : null}
               </>
             ) : (
-              <Empty title="No funds yet" actions={<Btn primary onClick={add.fund} icon={<PiggyBank size={14} />}>Create the emergency fund</Btn>}>
+              <Empty title="No funds yet" actions={<Btn primary onClick={add.fund} icon={<SaathAdd size={15} />}>Create the emergency fund</Btn>}>
                 Emergency first — six months of spending — then marriage and the rest. Goals linked to a fund fill from it.
               </Empty>
             )}
@@ -555,7 +556,7 @@ export function HubFunds() {
               </div>
             ) : null}
             <div className="sth-card">
-              <CardHead title="Accounts & net worth"><button type="button" className="sth-more" onClick={add.account}>Add</button></CardHead>
+              <CardHead title="Accounts & net worth"><button type="button" className="sth-more" onClick={add.account}><SaathAdd size={15} /> Add</button></CardHead>
               {m.netWorth.accounts.length ? (
                 <>
                   <ul className="sth-entries">
@@ -646,7 +647,7 @@ export function HubPlans() {
     <Page
       title="Plans"
       summary={m ? `${m.events.length} date${m.events.length === 1 ? "" : "s"} ahead${m.wedding.days !== null && m.wedding.days >= 0 ? ` · wedding in ${m.wedding.days} days` : ""}` : undefined}
-      actions={<><Btn primary onClick={add.event} icon={<CalendarPlus size={15} />}>Date</Btn><Btn onClick={add.plan} icon={<ListPlus size={15} />}>Plan item</Btn></>}
+      actions={<><Btn primary onClick={add.event} icon={<SaathAdd size={16} />}>Date</Btn><Btn onClick={add.plan} icon={<SaathAdd size={16} />}>Plan item</Btn></>}
     >
       {m && r ? (
         <>
@@ -680,7 +681,7 @@ export function HubPlans() {
 
           {m.wedding.items.length ? (
             <section className="sth-sect sth-card">
-              <CardHead title="Plan checklist"><button type="button" className="sth-more" onClick={add.plan}>Add</button></CardHead>
+              <CardHead title="Plan checklist"><button type="button" className="sth-more" onClick={add.plan}><SaathAdd size={15} /> Add</button></CardHead>
               <div className="sth-scroll">
                 <table className="sth-table">
                   <thead><tr><th>Item</th><th>Category</th><th>Due</th><th className="num">Estimate</th><th className="num">Paid</th><th>Status</th><th /></tr></thead>
@@ -863,7 +864,7 @@ export function HubCalendarPage() {
   const m = hub.m;
   const soon = m ? m.events.filter((e) => e.days >= 0 && e.days <= 30).length : 0;
   return (
-    <Page title="Calendar" summary={m ? `${soon} in the next 30 days · exams, deadlines, funds and plans in one month view` : undefined} actions={<Btn primary onClick={add.event} icon={<CalendarPlus size={15} />}>Add a date</Btn>}>
+    <Page title="Calendar" summary={m ? `${soon} in the next 30 days · exams, deadlines, funds and plans in one month view` : undefined} actions={<Btn primary onClick={add.event} icon={<SaathAdd size={16} />}>Add a date</Btn>}>
       <HubCalendar />
     </Page>
   );

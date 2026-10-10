@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { editEvent, editGoal, editTask, newEvent } from "./editors";
 import { useHub } from "./hub-context";
+import { SaathAdd } from "./add-icon";
 import { EVENT_KINDS, labelOf, PEOPLE, PLAN_CATEGORIES, rupees, type Owner } from "../../lib/hub/metrics";
 
 /**
@@ -108,7 +109,7 @@ export function HubCalendar() {
         <div className="sth-card">
           <div className="sth-card-head">
             <h2>{new Date(`${picked}T00:00:00`).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</h2>
-            <button type="button" className="sth-btn is-sm is-primary" onClick={() => hub.openSheet(newEvent(picked, r.actor, hub.act))}><Plus size={14} /> Add</button>
+            <button type="button" className="sth-btn is-sm is-primary" onClick={() => hub.openSheet(newEvent(picked, r.actor, hub.act))}><SaathAdd size={14} /> Add</button>
           </div>
           {dayList.length ? (
             <ul className="sth-agenda">

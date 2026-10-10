@@ -936,3 +936,19 @@ html[data-theme="light"] :is(.sth-card, .sth-fig)::after { background: radial-gr
 /* Smoothness: the ambient lights are already soft gradients; a live blur on two
    screen-sized layers cost a GPU pass every frame. */
 .sth-ambient i { filter: none; transition: none; }
+
+/* Saath "add" mark (components/hub/add-icon.tsx): the two dots are the two of you. */
+.sth-add { flex: none; overflow: visible; }
+.sth-add .orbit { transform-box: view-box; transform-origin: 50% 50%; transition: transform 0.6s cubic-bezier(0.25, 1.3, 0.4, 1); }
+.sth-add .a { fill: var(--sx-a, #7aa7ff); }
+.sth-add .m { fill: var(--sx-m, #f07ab0); }
+.sth-add .arc { opacity: 0.55; }
+.sth-add .plus { transform-box: view-box; transform-origin: 50% 50%; transition: transform 0.45s cubic-bezier(0.25, 1.3, 0.4, 1); }
+:is(.sth-btn, .sth-more):hover .sth-add .orbit { transform: rotate(180deg); }
+:is(.sth-btn, .sth-more):hover .sth-add .plus { transform: rotate(90deg) scale(1.08); }
+.sth-btn.is-primary .sth-add .a, .sth-btn.is-primary .sth-add .m { stroke: var(--btn, #12152a); stroke-width: 0.8; }
+@media (prefers-reduced-motion: reduce) { .sth-add .orbit, .sth-add .plus { transition: none; } }
+
+/* Number tiles beside the index keep their own height instead of stretching to the card. */
+.sth-hero { align-items: start; }
+.sth-hero > .sth-figs { align-content: start; }

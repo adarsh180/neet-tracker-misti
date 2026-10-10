@@ -17,6 +17,7 @@ import "./notify.css";
 import "./orbit.css";
 import "./dial.css";
 import "./daycycle.css";
+import "./clay.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -105,7 +106,7 @@ export default function RootLayout({
                   ${DAYCYCLE_SCRIPT}
                   document.documentElement.style.colorScheme = theme;
                   var meta = document.querySelector('meta[name="theme-color"]');
-                  if (meta) meta.setAttribute("content", theme === "light" ? "#f8f1e7" : "#050508");
+                  if (meta) meta.setAttribute("content", theme === "light" ? "#f4effd" : "#050508");
                 } catch (error) {
                   document.documentElement.dataset.theme = "dark";
                   document.documentElement.style.colorScheme = "dark";

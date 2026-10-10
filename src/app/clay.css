@@ -1,0 +1,171 @@
+/* ==========================================================================
+   CLAY + LAVENDER (NEET only, loaded last)
+   Menus are claymorphic — soft, puffy, pressed-in when active — for the side
+   rail, the PG/SS and Saath bars, the circular page dial, the dashboard
+   switch and the theme coin. Light mode is lavender with soft coloured
+   lights. Static shadows only (no backdrop blur), so it stays smooth.
+   ========================================================================== */
+
+:root {
+  --clay: #241d35;
+  --clay-2: #30284a;
+  --clay-hi: rgba(255, 255, 255, 0.11);
+  --clay-lo: rgba(0, 0, 0, 0.5);
+  --clay-drop: rgba(0, 0, 0, 0.55);
+  --clay-lift: rgba(150, 120, 230, 0.12);
+  --clay-ink: #efeafc;
+  --clay-ink-3: rgba(225, 218, 248, 0.6);
+  --clay-shadow:
+    inset 3px 3px 7px var(--clay-hi),
+    inset -4px -5px 10px var(--clay-lo),
+    10px 14px 26px -10px var(--clay-drop),
+    -6px -6px 16px -8px var(--clay-lift);
+  --clay-press:
+    inset 4px 5px 10px var(--clay-lo),
+    inset -3px -3px 7px var(--clay-hi);
+}
+html[data-theme="light"]:root {
+  --clay: #ece3ff;
+  --clay-2: #f8f4ff;
+  --clay-hi: rgba(255, 255, 255, 0.95);
+  --clay-lo: rgba(128, 98, 205, 0.26);
+  --clay-drop: rgba(108, 78, 186, 0.32);
+  --clay-lift: rgba(255, 255, 255, 0.95);
+  --clay-ink: #2b2147;
+  --clay-ink-3: rgba(43, 33, 71, 0.56);
+}
+
+/* ── Lavender light mode ─────────────────────────────────────────────── */
+html[data-theme="light"]:root {
+  --pl-ink: #2b2147;
+  --pl-ink-2: rgba(43, 33, 71, 0.78);
+  --pl-ink-3: rgba(43, 33, 71, 0.56);
+  --pl-ink-4: rgba(43, 33, 71, 0.38);
+  --pl-line: rgba(90, 64, 160, 0.11);
+  --pl-line-2: rgba(90, 64, 160, 0.2);
+  --pl-well: rgba(110, 80, 190, 0.045);
+  --pl-well-2: rgba(110, 80, 190, 0.08);
+  --pl-glass: rgba(251, 248, 255, 0.78);
+  --pl-glass-shadow: 0 16px 40px -20px rgba(96, 66, 176, 0.35), 0 2px 6px -2px rgba(96, 66, 176, 0.14), inset 0 0 0 0.5px rgba(96, 66, 176, 0.14), inset 0 1px 0 #fff;
+  --bg-surface: rgba(252, 250, 255, 0.86);
+  --bg-elevated: #ffffff;
+  --bg-hover: #efe8fd;
+}
+/* Lavender at every hour, with a breath of the time of day. */
+html[data-theme="light"][data-daypart="dawn"]:root { --pl-bg: #f7f0fc; --bg-void: #f7f0fc; --bg-deep: #efe5f9; }
+html[data-theme="light"][data-daypart="noon"]:root { --pl-bg: #f2f0fe; --bg-void: #f2f0fe; --bg-deep: #e8e4fb; }
+html[data-theme="light"][data-daypart="dusk"]:root { --pl-bg: #f6eefc; --bg-void: #f6eefc; --bg-deep: #ede3f8; }
+html[data-theme="light"][data-daypart="night"]:root { --pl-bg: #f1edfd; --bg-void: #f1edfd; --bg-deep: #e7e1fa; }
+html[data-theme="light"] body { background-color: var(--pl-bg); }
+/* PG / SS arenas take the same lavender paper. */
+html[data-theme="light"][data-pulse] .xw, html[data-theme="light"][data-pulse] .xw[data-exam="ss"] { --x-canvas: #f3effd; --x-panel: #fdfbff; --x-panel-2: #efe8fd; }
+
+/* Soft lights in light mode: lavender, rose and sky glows behind the page. */
+html[data-theme="light"] .protected-route-frame::before {
+  background:
+    radial-gradient(38% 34% at 6% 28%, rgba(176, 146, 255, 0.34), transparent 70%),
+    radial-gradient(34% 30% at 96% 8%, rgba(255, 170, 214, 0.28), transparent 70%),
+    radial-gradient(40% 36% at 78% 96%, rgba(150, 200, 255, 0.26), transparent 72%),
+    radial-gradient(30% 26% at 40% 60%, color-mix(in srgb, var(--pl-a1) 14%, transparent), transparent 70%) !important;
+}
+
+/* ── Side rail: a clay column; the active item is pressed in and glows ── */
+.pl-rail.pl-glass {
+  background: linear-gradient(160deg, var(--clay-2), var(--clay));
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--clay-shadow);
+}
+.pl-rail-item { color: var(--clay-ink-3); }
+.pl-rail-item:hover, .pl-rail-item.active { color: var(--clay-ink); }
+.pl-rail-item:hover:not(.active) { background: linear-gradient(145deg, var(--clay-2), var(--clay)); box-shadow: 3px 4px 10px -4px var(--clay-drop), inset 2px 2px 4px var(--clay-hi); }
+.pl-rail-drop {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pl-a1) 22%, var(--clay)), color-mix(in srgb, var(--pl-a1) 10%, var(--clay)));
+  box-shadow: var(--clay-press), 0 0 0 1px color-mix(in srgb, var(--pl-a1) 30%, transparent), 0 0 22px -2px color-mix(in srgb, var(--pl-a1) 60%, transparent);
+}
+.pl-rail-drop::after { border-color: color-mix(in srgb, var(--pl-a1) 55%, transparent); }
+.pl-rail-item .pl-dot { width: 8px; height: 8px; box-shadow: 0 0 10px 1px var(--c), inset 1px 1px 1px rgba(255, 255, 255, 0.6); }
+.pl-rail-item .pl-tip { background: linear-gradient(145deg, var(--clay-2), var(--clay)); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--clay-shadow); color: var(--clay-ink); }
+.pl-rail-logo { border-radius: 50%; box-shadow: 4px 5px 12px -5px var(--clay-drop), inset 2px 2px 4px var(--clay-hi); }
+.pl-rail-sep { background: var(--clay-lo); box-shadow: 0 1px 0 var(--clay-hi); }
+
+/* ── PG / SS bars ────────────────────────────────────────────────────── */
+.xw-tabs, .xw-dock, .xw-badge {
+  background: linear-gradient(160deg, var(--clay-2), var(--clay)) !important;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--clay-shadow) !important;
+  border-radius: 18px;
+}
+.xw-tabs a { color: var(--clay-ink-3); border-radius: 12px; }
+.xw-tabs a:hover { color: var(--clay-ink); background: transparent; }
+.xw-tabs a[aria-current="page"] { color: var(--clay-ink); background: color-mix(in srgb, var(--x-a1) 14%, var(--clay)); box-shadow: var(--clay-press), 0 0 18px -6px color-mix(in srgb, var(--x-a1) 70%, transparent); }
+.xw-tabs a[aria-current="page"]::after { display: none; }
+.xw-dock { border-radius: 22px; }
+.xw-dock a { color: var(--clay-ink-3); border-radius: 16px; }
+.xw-dock a[aria-current="page"] { color: var(--clay-ink); background: color-mix(in srgb, var(--x-a1) 18%, var(--clay)); box-shadow: var(--clay-press), 0 0 18px -6px color-mix(in srgb, var(--x-a1) 70%, transparent); }
+
+/* ── Saath on the NEET site ──────────────────────────────────────────── */
+.sth[data-site="neet"] :is(.sth-tabs, .sth-views, .sth-dock, .sth-iconbtn) {
+  background: linear-gradient(160deg, var(--clay-2), var(--clay));
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--clay-shadow);
+}
+.sth[data-site="neet"] .sth-tabs a[aria-current="page"] { background: color-mix(in srgb, var(--sx-m) 14%, var(--clay)); box-shadow: var(--clay-press); }
+.sth[data-site="neet"] .sth-views-thumb { background: linear-gradient(145deg, color-mix(in srgb, var(--sx-m) 30%, var(--clay-2)), color-mix(in srgb, var(--sx-m) 16%, var(--clay))); box-shadow: 3px 4px 10px -4px var(--clay-drop), inset 2px 2px 4px var(--clay-hi), inset -2px -3px 6px var(--clay-lo); }
+.sth[data-site="neet"] .sth-views button[aria-pressed="true"] { color: var(--clay-ink); }
+.sth[data-site="neet"] .sth-dock a[aria-current="page"] { color: var(--clay-ink); background: color-mix(in srgb, var(--sx-m) 18%, var(--clay)); box-shadow: var(--clay-press); }
+
+/* ── Coins: theme, page dial and dashboard switch ────────────────────── */
+:is(.pd-trigger:not(.is-dock), .do-trigger, .theme-coin) {
+  background: linear-gradient(145deg, var(--clay-2), var(--clay)) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  color: var(--clay-ink) !important;
+  box-shadow: var(--clay-shadow) !important;
+}
+:is(.pd-trigger:not(.is-dock), .do-trigger, .theme-coin):active { box-shadow: var(--clay-press) !important; transform: scale(0.95); }
+.pd-trigger-glass, .do-trigger-glass { opacity: 0.35; }
+
+/* The theme coin lives bottom-left on every NEET page. */
+.nt-theme { position: fixed; left: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 1002; width: 48px; height: 48px; }
+@media (max-width: 760px) { .nt-theme { left: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: 44px; height: 44px; } }
+
+/* ── The rotary page dial in clay ────────────────────────────────────── */
+.pd-band {
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--clay-2) 92%, var(--pd-a)) calc(var(--bi) + 2px), var(--clay) 72%, color-mix(in srgb, var(--clay) 88%, #000) 100%) !important;
+  box-shadow: inset 6px 7px 14px var(--clay-hi), inset -8px -9px 18px var(--clay-lo), 22px 26px 50px -22px var(--clay-drop) !important;
+}
+.pd-core { background: radial-gradient(circle, color-mix(in srgb, var(--pd-a) 18%, var(--clay-2)) 0, var(--clay-2) 55%, var(--clay) 100%) !important; }
+.pd-hole {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--clay) 92%, #000), var(--clay-2)) !important;
+  box-shadow: var(--clay-press), 0 1px 0 var(--clay-hi) !important;
+  color: var(--clay-ink) !important;
+}
+.pd-hole.is-focus {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pd-a) 70%, #fff), var(--pd-a)) !important;
+  box-shadow: inset 3px 3px 6px rgba(255, 255, 255, 0.55), inset -4px -5px 10px color-mix(in srgb, var(--pd-a) 55%, #000), 8px 10px 22px -8px color-mix(in srgb, var(--pd-a) 80%, transparent), 0 0 26px -2px color-mix(in srgb, var(--pd-a) 70%, transparent) !important;
+}
+.pd-hole-in small { color: var(--clay-ink-3); }
+:is(.pd-hub, .pd-readout.is-out, .pd-action, .pd-ro-nav button) {
+  background: linear-gradient(145deg, var(--clay-2), var(--clay)) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: var(--clay-shadow) !important;
+  color: var(--clay-ink) !important;
+}
+.pd-stop { background: linear-gradient(145deg, var(--clay-2), color-mix(in srgb, var(--pd-a) 40%, var(--clay))); box-shadow: 3px 3px 8px var(--clay-drop), inset 1px 1px 2px var(--clay-hi), 0 0 14px color-mix(in srgb, var(--pd-a) 60%, transparent); }
+.pd-layer { background: radial-gradient(circle at var(--cx) var(--cy), color-mix(in srgb, var(--clay) 80%, transparent) 0, color-mix(in srgb, var(--clay) 55%, transparent) calc(var(--bo) + 30px), color-mix(in srgb, var(--clay) 18%, transparent) 100%) !important; }
+
+/* ── The dashboard switch in clay ────────────────────────────────────── */
+.do-dial {
+  background: radial-gradient(circle, transparent 0 34px, var(--clay-2) 35px, var(--clay) 100%) !important;
+  box-shadow: inset 6px 7px 14px var(--clay-hi), inset -8px -9px 18px var(--clay-lo), 20px 24px 46px -20px var(--clay-drop) !important;
+}
+.do-coin-face {
+  background: linear-gradient(145deg, var(--clay-2), var(--clay)) !important;
+  box-shadow: var(--clay-shadow) !important;
+}
+.do-coin:hover .do-coin-face, .do-coin:focus-visible .do-coin-face { box-shadow: var(--clay-shadow), 0 0 0 3px color-mix(in srgb, var(--pl-a1) 45%, transparent), 0 0 24px -4px color-mix(in srgb, var(--pl-a1) 70%, transparent) !important; }
+.do-coin.is-current .do-coin-face { box-shadow: var(--clay-press), 0 0 0 2px color-mix(in srgb, var(--pl-a2) 60%, transparent) !important; }
+.do-coin-label { background: linear-gradient(145deg, var(--clay-2), var(--clay)) !important; box-shadow: 4px 5px 12px -6px var(--clay-drop), inset 2px 2px 4px var(--clay-hi) !important; color: var(--clay-ink); }
+.do-layer { background: color-mix(in srgb, var(--clay) 40%, transparent) !important; }
+
+@media (prefers-reduced-motion: reduce) { :is(.pd-trigger, .do-trigger, .theme-coin):active { transform: none; } }
