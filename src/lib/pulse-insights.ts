@@ -33,6 +33,8 @@ export type PulseTest = {
 };
 export type PulseRisk = { id: string; severity: "high" | "medium" | "low"; title: string; detail: string; href: string };
 export type PulseChapter = { subject: SubjectKey; chapter: string; damage: number; mastery: number; completion: number; priority: string };
+/** Every chapter, for the priority radar: its zone comes from the rank model priority. */
+export type PulseZoneChapter = PulseChapter & { marks: number; revision: number };
 
 export type PulseInsights = {
   generatedAt: string;
@@ -47,6 +49,7 @@ export type PulseInsights = {
   totals: { hours: number; questions: number; loggedDays: number; avgHours28: number; avgQuestions28: number };
   subjects: Array<{ key: SubjectKey; slug: string; completion: number; expected: number; damage: number; pendingRevisions: number; topics: number; done: number }>;
   chapters: PulseChapter[];
+  zones: PulseZoneChapter[];
   syllabus: SyllabusCompletion;
   readiness: Readiness;
   risks: PulseRisk[];
@@ -387,6 +390,16 @@ export async function getPulseInsights(): Promise<PulseInsights> {
       mastery: c.mastery,
       completion: c.completionPct,
       priority: c.priority,
+    })),
+    zones: intel.chapterSignals.map((c) => ({
+      subject: c.subject,
+      chapter: c.chapter,
+      damage: c.damageMarks,
+      mastery: c.mastery,
+      completion: c.completionPct,
+      priority: c.priority,
+      marks: c.expectedMarks,
+      revision: c.revisionHealth,
     })),
     syllabus,
     readiness,

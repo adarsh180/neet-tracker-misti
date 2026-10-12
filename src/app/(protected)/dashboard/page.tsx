@@ -118,7 +118,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="pd-holo">
-        <DashboardCore subjects={data.subjects} today={data.today} aside={<CountdownGlass target={data.exam} />} />
+        <DashboardCore subjects={data.subjects} zones={data.zones} aside={<CountdownGlass target={data.exam} />} />
       </div>
 
       <section className="vt" aria-label="Today's vitals">
