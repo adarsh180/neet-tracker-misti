@@ -218,7 +218,7 @@ function sectionScoreForSubject(test: AIContext["recentTests"][number], subject:
   return clamp((score / SUBJECT_MAX_MARKS[subject]) * 100, 0, 100);
 }
 
-function getSubjectTestSignal(context: AIContext, subject: SubjectName) {
+export function getSubjectTestSignal(context: AIContext, subject: SubjectName) {
   const directTests = context.recentTests.filter((test) => test.subjectName === subject);
   if (directTests.length) {
     return weightedAverage(directTests.map((test, index) => ({
@@ -235,7 +235,7 @@ function getSubjectTestSignal(context: AIContext, subject: SubjectName) {
   })));
 }
 
-function getChapterErrorPenalty(context: AIContext, subject: SubjectName, chapter: string) {
+export function getChapterErrorPenalty(context: AIContext, subject: SubjectName, chapter: string) {
   const detailedErrors = context.errorTopicAnalysis || [];
   const matchedDetailed = detailedErrors.filter((error) => {
     if (error.subject !== subject) return false;

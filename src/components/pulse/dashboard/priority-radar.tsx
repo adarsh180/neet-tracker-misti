@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import SmoothLink from "@/components/layout/smooth-link";
 import type { PulseInsights, PulseZoneChapter } from "@/lib/pulse-insights";
@@ -22,7 +22,15 @@ const ZONES: Array<{ key: Zone; label: string; hint: string }> = [
   { key: "watch", label: "Watch", hint: "keep an eye on" },
   { key: "safe", label: "Safe", hint: "locked in" },
 ];
-const ZONE_OF: Record<string, Zone> = { HIGH: "danger", MEDIUM: "watch", LOW: "safe" };
+const FACTORS: Array<{ key: keyof PulseZoneChapter["factors"]; label: string; fix: string }> = [
+  { key: "coverage", label: "Topics done", fix: "finish its remaining topics" },
+  { key: "revision", label: "Revision freshness", fix: "revise it again — the last pass is fading" },
+  { key: "practice", label: "Questions practised", fix: "solve more questions on it" },
+  { key: "tests", label: "Test accuracy", fix: "fix the mistakes tests keep showing here" },
+  { key: "consistency", label: "Studied recently", fix: "come back to it — it has gone cold" },
+];
+const weightLabel = (w: number) => (w >= 0.75 ? "high-weight" : w >= 0.4 ? "mid-weight" : "low-weight");
+const ago = (d: number | null) => (d === null ? "not studied yet" : d === 0 ? "studied today" : `last studied ${d} day${d === 1 ? "" : "s"} ago`);
 const SPAN = 90;
 const EDGE = 9; // keeps beads off the quadrant dividers
 
@@ -31,23 +39,30 @@ const xy = (r: number, deg: number) => ({ x: Math.cos(rad(deg)) * r, y: Math.sin
 const clean = (name: string) => name.replace(/^\d+\s*/, "");
 const keyOf = (c: PulseZoneChapter) => `${c.subject}|${c.chapter}`;
 
-type Bead = PulseZoneChapter & { id: string; zone: Zone; x: number; y: number; r: number; i: number };
+type Bead = PulseZoneChapter & { id: string; x: number; y: number; r: number; i: number };
+
+/* Where inside its ring a chapter sits: the further below its bar, the further out. */
+function depth(c: PulseZoneChapter) {
+  const gap = c.bar - c.readiness;
+  const t = c.zone === "danger" ? (gap - 15) / 70 : c.zone === "watch" ? (gap - 8) / 32 : (gap + 50) / 58;
+  return Math.max(0, Math.min(1, t));
+}
 
 function place(chapters: PulseZoneChapter[]): Bead[] {
   const beads: Bead[] = [];
   for (const q of QUADRANTS) {
     for (const z of ZONES) {
       const group = chapters
-        .filter((c) => c.subject === q.key && (ZONE_OF[c.priority] ?? "watch") === z.key)
-        .sort((a, b) => b.damage - a.damage || b.marks - a.marks);
+        .filter((c) => c.subject === q.key && c.zone === z.key)
+        .sort((a, b) => b.risk - a.risk || b.marks - a.marks);
       const [inner, outer] = BANDS[z.key];
       group.forEach((c, k) => {
-        const t = 1 - Math.max(0, Math.min(100, c.mastery)) / 100; // weaker sits further out
+        const t = depth(c);
         const lane = group.length > 5 ? (k % 2 ? 0.2 : -0.2) : 0; // two lanes when crowded
         const r = inner + 12 + (outer - inner - 24) * Math.max(0, Math.min(1, t + lane));
         const a = q.mid - SPAN / 2 + EDGE + ((SPAN - EDGE * 2) * (k + 0.5)) / group.length;
         const p = xy(r, a);
-        beads.push({ ...c, id: keyOf(c), zone: z.key, x: p.x, y: p.y, r: Math.min(12.5, 4 + Math.sqrt(Math.max(0, c.marks)) * 1.7), i: beads.length });
+        beads.push({ ...c, id: keyOf(c), x: p.x, y: p.y, r: Math.min(12.5, 4 + Math.sqrt(Math.max(0, c.marks)) * 1.7), i: beads.length });
       });
     }
   }
@@ -56,24 +71,30 @@ function place(chapters: PulseZoneChapter[]): Bead[] {
 
 /**
  * Light mode's dashboard hero: every chapter as a clay bead on a radar. The
- * quarter is the subject, the ring is the zone (from the rank model's
- * priority), the bead's size is how many marks NEET puts on it and the further
- * out it sits the weaker it is. Danger beads pulse; tap one for its numbers.
+ * quarter is the subject; the ring is the zone — her readiness in the chapter
+ * against the bar its real NEET weight demands (lib/chapter-zones); the bead's
+ * size is how many marks NEET puts on it and the further out it sits the
+ * further below its bar it is. The top danger beads pulse; tap one for why.
  */
 export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChapter[]; subjects: Subject[]; aside?: ReactNode }) {
   const beads = useMemo(() => place(zones), [zones]);
   const [focus, setFocus] = useState<Subject["key"] | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  const side = useRef<HTMLDivElement>(null);
+  // On a phone the card sits below the radar: bring it into view when a bead is tapped.
+  useEffect(() => {
+    if (picked && window.innerWidth <= 1080) side.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [picked]);
 
   const scope = focus ? beads.filter((b) => b.subject === focus) : beads;
   const tally = ZONES.map((z) => {
     const list = scope.filter((b) => b.zone === z.key);
-    return { ...z, count: list.length, risk: Math.round(list.reduce((s, b) => s + b.damage, 0)) };
+    return { ...z, count: list.length, risk: Math.round(list.reduce((s, b) => s + b.risk, 0)) };
   });
-  const totalRisk = Math.round(scope.reduce((s, b) => s + b.damage, 0));
-  const riskBy = (key: string) => Math.round(beads.filter((b) => b.subject === key).reduce((s, b) => s + b.damage, 0));
-  const danger = scope.filter((b) => b.zone === "danger").sort((a, b) => b.damage - a.damage).slice(0, 5);
+  const totalRisk = Math.round(scope.reduce((s, b) => s + b.risk, 0));
+  const riskBy = (key: string) => Math.round(beads.filter((b) => b.subject === key).reduce((s, b) => s + b.risk, 0));
+  const danger = scope.filter((b) => b.zone === "danger").sort((a, b) => b.risk - a.risk).slice(0, 5);
   const urgent = new Set(danger.map((b) => b.id)); // only the top five pulse
   const active = beads.find((b) => b.id === (hover ?? picked)) ?? null;
   const slug = (key: string) => subjects.find((s) => s.key === key)?.slug ?? key.toLowerCase();
@@ -92,7 +113,7 @@ export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChap
       <div className="pr-stage">
         <div className="pr-head">
           <strong>PRIORITY RADAR</strong>
-          <span>Every chapter, placed by how safe it is. Outer ring first.</span>
+          <span>Every chapter: your readiness against its real NEET weight. Outer ring first.</span>
         </div>
         <div className="pr-dial">
           <svg className="pr-svg" viewBox="-340 -292 680 584" role="group" aria-label={`Priority radar: ${tally.map((t) => `${t.count} ${t.label.toLowerCase()}`).join(", ")}`}>
@@ -156,7 +177,7 @@ export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChap
                 return (
                   <g key={b.id} transform={`translate(${b.x.toFixed(1)} ${b.y.toFixed(1)})`}>
                     <g className={`pr-bead is-${b.zone}`} data-dim={dim} data-on={on} style={{ "--i": Math.min(b.i, 60) } as CSSProperties}
-                      role="button" tabIndex={dim ? -1 : 0} aria-label={`${clean(b.chapter)}, ${b.subject}: ${b.zone}, ${b.mastery}% mastery, about ${Math.round(b.damage)} marks at risk`}
+                      role="button" tabIndex={dim ? -1 : 0} aria-label={`${clean(b.chapter)}, ${b.subject}: ${b.zone}, ${b.readiness}% ready against a bar of ${b.bar}, about ${Math.round(b.risk)} marks at risk`}
                       onClick={() => pick(b.id)} onKeyDown={onKey(b.id)} onPointerEnter={() => setHover(b.id)} onPointerLeave={() => setHover(null)} onFocus={() => setHover(b.id)} onBlur={() => setHover(null)}>
                       {urgent.has(b.id) ? <circle className="pr-halo" r={b.r + 3} /> : null}
                       <circle className="pr-dot" r={b.r} fill={`url(#pr-b-${b.zone})`} />
@@ -168,7 +189,7 @@ export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChap
 
             <circle className="pr-hub" r={BANDS.safe[0] - 4} fill="url(#pr-hub)" filter="url(#pr-lift)" />
             <text className="pr-hub-n" y="-1" textAnchor="middle">−{totalRisk}</text>
-            <text className="pr-hub-s" y="15" textAnchor="middle">at risk</text>
+            <text className="pr-hub-s" y="15" textAnchor="middle">to secure</text>
           </svg>
         </div>
         <div className="pr-legend" aria-hidden="true">
@@ -179,7 +200,7 @@ export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChap
         </div>
       </div>
 
-      <div className="pr-side">
+      <div className="pr-side" ref={side}>
         <div className="pr-tally">
           {tally.map((t, i) => (
             <div key={t.key} className={`pr-zone is-${t.key}`} style={{ "--i": i } as CSSProperties}>
@@ -194,12 +215,26 @@ export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChap
           <div className={`pr-card is-${active.zone}`} key={active.id}>
             <span className="pr-card-k" style={{ "--c": QUADRANTS.find((q) => q.key === active.subject)?.color } as CSSProperties}>{active.subject} · {active.zone}</span>
             <h3>{clean(active.chapter)}</h3>
-            <p>About <b>{Math.round(active.damage)}</b> of its ~{Math.round(active.marks)} NEET marks are at risk.</p>
-            {[["Mastery", active.mastery], ["Topics done", active.completion], ["Revision health", active.revision]].map(([label, v]) => (
-              <div className="pr-meter" key={label as string} style={{ "--v": (v as number) / 100 } as CSSProperties}>
-                <span>{label}</span><i /><b>{v}%</b>
-              </div>
-            ))}
+            <p>
+              A <b className="w">{weightLabel(active.weight)}</b> chapter — about {Math.round(active.marks)} marks in NEET, heavier than {Math.round(active.weight * 100)}% of your chapters.
+              {active.risk >= 0.5 ? <> About <b>{Math.round(active.risk)}</b> of them are not secure yet.</> : null}
+            </p>
+            <div className={`pr-gauge is-${active.zone}`} style={{ "--v": active.readiness / 100, "--bar": active.bar / 100 } as CSSProperties}>
+              <div className="pr-gauge-top"><span>Ready</span><b>{active.readiness}%</b><span className="need">needs {active.bar}%</span></div>
+              <div className="pr-gauge-track"><i /><em /></div>
+            </div>
+            {FACTORS.map((f) => {
+              const v = active.factors[f.key];
+              return (
+                <div className="pr-meter" key={f.key} data-weak={active.drag === f.key || undefined} style={{ "--v": (v ?? 0) / 100 } as CSSProperties}>
+                  <span>{f.label}</span><i /><b>{v === null ? "—" : `${v}%`}</b>
+                </div>
+              );
+            })}
+            <p className="pr-why">
+              {active.zone === "safe" ? "On track for its weight. " : active.drag ? <>To move it up: <b>{FACTORS.find((f) => f.key === active.drag)?.fix}</b>. </> : null}
+              <span>{ago(active.lastDays)} · {active.done}/{active.topics} topics{active.factors.tests === null ? " · no tests logged yet" : ""}</span>
+            </p>
             <div className="pr-card-foot">
               <SmoothLink href={`/subjects/${slug(active.subject)}`} className="pr-go">Open {active.subject} →</SmoothLink>
               {picked ? <button type="button" className="pr-back" onClick={() => setPicked(null)}>Back to list</button> : null}
@@ -211,11 +246,11 @@ export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChap
             {danger.length ? (
               <ol>
                 {danger.map((b, i) => (
-                  <li key={b.id} style={{ "--i": i, "--c": QUADRANTS.find((q) => q.key === b.subject)?.color, "--m": Math.min(1, b.damage / Math.max(1, danger[0].damage)) } as CSSProperties}>
+                  <li key={b.id} style={{ "--i": i, "--c": QUADRANTS.find((q) => q.key === b.subject)?.color, "--m": Math.min(1, b.risk / Math.max(1, danger[0].risk)) } as CSSProperties}>
                     <button type="button" onClick={() => pick(b.id)}>
-                      <span className="pr-li-name"><b>{clean(b.chapter)}</b><small>{b.subject} · {b.mastery}% mastery</small></span>
+                      <span className="pr-li-name"><b>{clean(b.chapter)}</b><small>{b.subject} · {b.readiness}% ready of {b.bar}% needed</small></span>
                       <span className="pr-li-bar"><i /></span>
-                      <span className="pr-li-risk">−{Math.round(b.damage)}</span>
+                      <span className="pr-li-risk">−{Math.round(b.risk)}</span>
                     </button>
                   </li>
                 ))}

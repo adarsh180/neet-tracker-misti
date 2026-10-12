@@ -121,7 +121,7 @@ html[data-theme="light"][data-pulse] .xw, html[data-theme="light"][data-pulse] .
 .pr-card-k { display: block; margin-bottom: 6px; color: color-mix(in srgb, var(--c) 75%, #000000); font: 800 10.5px/1 var(--font-sans); letter-spacing: 0.14em; text-transform: uppercase; }
 .pr-card p { margin: 0 0 14px; color: var(--pl-ink-2); font-size: 13px; }
 .pr-card p b { color: var(--pr-danger); }
-.pr-meter { display: grid; grid-template-columns: 112px minmax(0, 1fr) 40px; align-items: center; gap: 10px; margin-bottom: 9px; color: var(--pl-ink-3); font-size: 12px; font-weight: 600; }
+.pr-meter { display: grid; grid-template-columns: 138px minmax(0, 1fr) 40px; align-items: center; gap: 10px; margin-bottom: 9px; color: var(--pl-ink-3); font-size: 12px; font-weight: 600; }
 .pr-meter i { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--pl-a1) calc(var(--v) * 100%), rgba(75, 47, 158, 0.12) 0); box-shadow: inset 0 1px 2px rgba(75, 47, 158, 0.22); }
 .pr-meter b { color: var(--pl-ink); font: 700 12px/1 var(--font-mono); text-align: right; }
 .pr-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
@@ -139,9 +139,27 @@ html[data-theme="light"][data-pulse] .xw, html[data-theme="light"][data-pulse] .
   .pr-side { padding: 20px 16px; }
   .pr-qlabel .n { font-size: 17px; } .pr-qlabel .v { font-size: 13px; } .pr-zlabel { font-size: 12px; }
   .pr-zone b { font-size: 24px; }
-  .pr-meter { grid-template-columns: 96px minmax(0, 1fr) 38px; }
+  .pr-meter { grid-template-columns: 124px minmax(0, 1fr) 38px; font-size: 11.5px; }
 }
 @media (prefers-reduced-motion: reduce) { .pr-bead, .pr-halo, .pr-zone, .pr-list li, .pr-li-bar i, .pr-card { animation: none !important; } .pr-halo { display: none; } }
+
+/* Readiness against the bar its NEET weight demands: a groove, a clay fill and a notch. */
+.pr-card p b.w { color: var(--pl-ink); }
+.pr-gauge { margin: 0 0 14px; padding: 12px 14px 14px; border-radius: 18px; background: var(--m-well); box-shadow: var(--m-press); }
+.pr-gauge-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 9px; color: var(--pl-ink-3); font-size: 12px; font-weight: 650; }
+.pr-gauge-top b { color: var(--pl-ink); font: 800 20px/1 var(--font-display); letter-spacing: -0.03em; }
+.pr-gauge-top .need { margin-left: auto; color: var(--pl-ink-2); }
+.pr-gauge-track { position: relative; height: 12px; border-radius: 99px; background: rgba(75, 47, 158, 0.12); box-shadow: inset 0 1px 3px rgba(75, 47, 158, 0.25); }
+.pr-gauge-track i { position: absolute; inset: 0 auto 0 0; width: calc(var(--v) * 100%); border-radius: inherit; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6); animation: pr-bar 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards; transform-origin: left; }
+.pr-gauge.is-danger .pr-gauge-track i { background: linear-gradient(90deg, var(--pr-danger-hi), var(--pr-danger)); }
+.pr-gauge.is-watch .pr-gauge-track i { background: linear-gradient(90deg, var(--pr-watch-hi), var(--pr-watch)); }
+.pr-gauge.is-safe .pr-gauge-track i { background: linear-gradient(90deg, var(--pr-safe-hi), var(--pr-safe)); }
+.pr-gauge-track em { position: absolute; top: -4px; bottom: -4px; left: calc(var(--bar) * 100%); width: 3px; margin-left: -1.5px; border-radius: 3px; background: var(--pl-ink); }
+.pr-meter[data-weak] span { color: var(--pr-danger); font-weight: 750; }
+.pr-meter[data-weak] i { background: linear-gradient(90deg, var(--pr-danger) calc(var(--v) * 100%), rgba(224, 64, 95, 0.14) 0); }
+.pr-why { margin: 10px 0 0 !important; color: var(--pl-ink-2); font-size: 12.5px; line-height: 1.5; }
+.pr-why b { color: var(--pl-ink) !important; }
+.pr-why span { color: var(--pl-ink-3); }
 
 /* ── 3. "What if you changed the routine?" ───────────────────────────── */
 html:not(#m) .sv-levers { padding: clamp(20px, 3vw, 32px) !important; border-radius: 30px !important; }

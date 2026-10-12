@@ -3,7 +3,8 @@ import "server-only";
 import { buildAIContext } from "@/lib/ai-context-builder";
 import { db } from "@/lib/db";
 import { MISTI_PREVIOUS_ATTEMPTS } from "@/lib/neet-rank-calibration";
-import { buildChapterRankIntelligence, examTopicWeights } from "@/lib/neet-rank-intelligence";
+import { buildChapterZones, type ChapterZone } from "@/lib/chapter-zones";
+import { buildChapterRankIntelligence, examTopicWeights, getChapterErrorPenalty, getSubjectTestSignal } from "@/lib/neet-rank-intelligence";
 import { computeReadiness, type Readiness, type SyllabusCompletion, type SyllabusTopic } from "@/lib/readiness";
 import { SEAT_TARGETS, scoreForRank, type SeatInputs, type SeatLevers, type SubjectKey } from "@/lib/seat-model";
 
@@ -33,8 +34,8 @@ export type PulseTest = {
 };
 export type PulseRisk = { id: string; severity: "high" | "medium" | "low"; title: string; detail: string; href: string };
 export type PulseChapter = { subject: SubjectKey; chapter: string; damage: number; mastery: number; completion: number; priority: string };
-/** Every chapter, for the priority radar: its zone comes from the rank model priority. */
-export type PulseZoneChapter = PulseChapter & { marks: number; revision: number };
+/** Every chapter for the priority radar — readiness against its real NEET weight (lib/chapter-zones). */
+export type PulseZoneChapter = ChapterZone;
 
 export type PulseInsights = {
   generatedAt: string;
@@ -71,20 +72,27 @@ function shiftKey(key: string, days: number) {
 
 export async function getPulseInsights(): Promise<PulseInsights> {
   const now = new Date();
-  const [context, goals, tests, topicRevisions] = await Promise.all([
+  const [context, goals, tests, topicRevisions, activities] = await Promise.all([
     buildAIContext("misti"),
     db.dailyGoal.findMany({ select: { date: true, hoursStudied: true, questionsSolved: true, disciplineScore: true }, orderBy: { date: "asc" } }),
     db.testRecord.findMany({ orderBy: { takenAt: "asc" } }),
     db.topic.findMany({
       select: {
+        id: true,
         name: true,
         chapter: true,
         isCompleted: true,
+        completedAt: true,
         questionsSolved: true,
         subject: { select: { name: true } },
         revisions: { select: { revisedAt: true }, orderBy: { revisedAt: "desc" }, take: 1 },
       },
       orderBy: [{ classLevel: "asc" }, { chapterOrder: "asc" }, { topicOrder: "asc" }],
+    }),
+    // Logged study in the last 90 days: how recently each chapter was worked on.
+    db.studyActivity.findMany({
+      where: { date: { gte: new Date(now.getTime() - 90 * DAY) } },
+      select: { date: true, topicId: true, chapter: true, subject: { select: { name: true } } },
     }),
   ]);
   const intel = buildChapterRankIntelligence(context);
@@ -304,6 +312,27 @@ export async function getPulseInsights(): Promise<PulseInsights> {
     revisedBy.set(t.subject.name, (revisedBy.get(t.subject.name) ?? 0) + 1);
     if (isFresh) fresh += 1;
   });
+  /* ── Chapter zones for the priority radar ───────────────────────── */
+  const cleanCh = (c: string) => c.replace(/^d+s*/, "").trim().toLowerCase();
+  const touchedBy = new Map<string, number>();
+  const touch = (key: string, at: number) => touchedBy.set(key, Math.max(touchedBy.get(key) ?? 0, at));
+  for (const a of activities) {
+    if (a.topicId) touch(`t:${a.topicId}`, a.date.getTime());
+    touch(`c:${a.subject.name}|${cleanCh(a.chapter)}`, a.date.getTime());
+  }
+  const hasTests = context.recentTests.length > 0;
+  const zones = buildChapterZones({
+    topics: topicRevisions.map((t, i) => {
+      const chapter = (t.chapter || t.name).replace(/^d+s*/, "").trim();
+      const lastRevised = t.revisions[0]?.revisedAt ?? null;
+      const latest = Math.max(t.completedAt?.getTime() ?? 0, lastRevised?.getTime() ?? 0, touchedBy.get(`t:${t.id}`) ?? 0, touchedBy.get(`c:${t.subject.name}|${cleanCh(chapter)}`) ?? 0);
+      return { subject: t.subject.name, chapter, marks: weights.marks[i], done: t.isCompleted, questions: t.questionsSolved, lastRevised, lastTouched: latest ? new Date(latest) : null };
+    }),
+    testSignal: (subject) => (hasTests ? getSubjectTestSignal(context, subject as SubjectKey) : null),
+    errorPenalty: (subject, chapter) => getChapterErrorPenalty(context, subject as SubjectKey, chapter),
+    daysToExam,
+    now,
+  });
   const sumMarks = (items: SyllabusTopic[], doneOnly: boolean) => items.reduce((n, x) => n + (doneOnly && !x.done ? 0 : x.marks), 0);
   const syllabus: SyllabusCompletion = {
     topics: subjects.reduce((n, x) => n + x.topics, 0),
@@ -391,16 +420,7 @@ export async function getPulseInsights(): Promise<PulseInsights> {
       completion: c.completionPct,
       priority: c.priority,
     })),
-    zones: intel.chapterSignals.map((c) => ({
-      subject: c.subject,
-      chapter: c.chapter,
-      damage: c.damageMarks,
-      mastery: c.mastery,
-      completion: c.completionPct,
-      priority: c.priority,
-      marks: c.expectedMarks,
-      revision: c.revisionHealth,
-    })),
+    zones,
     syllabus,
     readiness,
     risks,
