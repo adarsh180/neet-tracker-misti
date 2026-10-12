@@ -5,7 +5,7 @@ import { ArrowUpRight, Brain, RefreshCw, Target } from "lucide-react";
 
 import SmoothLink from "@/components/layout/smooth-link";
 import { HeartLoader } from "@/components/pulse/heart-loader";
-import { HologramWidget } from "@/components/hologram/hologram-widget";
+import { DashboardCore } from "@/components/pulse/dashboard/dashboard-core";
 import { CountdownGlass } from "@/components/pulse/dashboard/countdown-glass";
 import { ReadinessFlask } from "@/components/pulse/dashboard/readiness-flask";
 import { ScoreHistory } from "@/components/pulse/dashboard/score-history";
@@ -118,7 +118,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="pd-holo">
-        <HologramWidget aside={<CountdownGlass target={data.exam} />} />
+        <DashboardCore subjects={data.subjects} today={data.today} aside={<CountdownGlass target={data.exam} />} />
       </div>
 
       <section className="vt" aria-label="Today's vitals">

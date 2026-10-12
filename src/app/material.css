@@ -131,11 +131,18 @@ html:not(#m) :is(.su-seg, .nv-seg, .perf-seg, .pl-seg, .xw-seg, .sth-seg, .tests
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
-html:not(#m) :is(.su-seg, .nv-seg, .perf-seg, .pl-seg, .xw-seg, .sth-seg, .tests-stage-switch, .exam-stage-switch) :is([aria-pressed="true"], [aria-selected="true"], .active, .is-active) {
+html:not(#m) :is(.su-seg, .nv-seg, .perf-seg, .pl-seg, .xw-seg, .sth-seg, .tests-stage-switch, .exam-stage-switch) { border-radius: 999px !important; }
+/* The chosen option is a raised clay pill — round, never a square tile. */
+html:not(#m) :is(.su-seg, .nv-seg, .perf-seg, .xw-seg, .sth-seg, .tests-stage-switch, .exam-stage-switch) :is([aria-pressed="true"], [aria-selected="true"], .active, .is-active) {
+  border-radius: 999px !important;
   background: var(--m-surface) !important;
   color: var(--m-ink) !important;
   box-shadow: var(--m-lift-sm) !important;
 }
+/* .pl-seg marks its choice with a sliding thumb (::before): that thumb is the clay pill. */
+html:not(#m) .pl-seg::before { border-radius: 999px !important; background: var(--m-surface) !important; box-shadow: var(--m-lift-sm) !important; }
+html:not(#m) .pl-seg > button { border-radius: 999px !important; background: none !important; box-shadow: none !important; }
+html:not(#m) .pl-seg > button[aria-pressed="true"] { color: var(--m-ink) !important; font-weight: 650; }
 
 /* ── Clay chips ──────────────────────────────────────────────────────── */
 html:not(#m) :is(.pill, .tag, .fg-pill, .lg-pill, .sth-pill, .sth-chip, .xw-pill, .xw-chip, .badge, .gurux-meta-chip, .tp-chip, .guru-scene-chip, .lab-pill, .cbt-test-chip, .topbar-chip) {
