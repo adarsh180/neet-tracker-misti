@@ -95,7 +95,6 @@ export function PriorityRadar({ zones, subjects, aside }: { zones: PulseZoneChap
           <span>Every chapter, placed by how safe it is. Outer ring first.</span>
         </div>
         <div className="pr-dial">
-          <span className="pr-sweep" aria-hidden="true" />
           <svg className="pr-svg" viewBox="-340 -292 680 584" role="group" aria-label={`Priority radar: ${tally.map((t) => `${t.count} ${t.label.toLowerCase()}`).join(", ")}`}>
             <defs>
               <filter id="pr-inset" x="-5%" y="-5%" width="110%" height="110%">

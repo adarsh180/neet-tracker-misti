@@ -57,12 +57,6 @@ html[data-theme="light"][data-pulse] .xw, html[data-theme="light"][data-pulse] .
 .pr-head span { color: var(--pl-ink-3); font-size: 12.5px; }
 .pr-dial { position: relative; width: min(100%, 640px); margin: 0 auto; aspect-ratio: 680 / 584; }
 .pr-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-/* The sweep: a soft lavender beam turning once every 9s (transform only). */
-.pr-sweep {
-  position: absolute; left: 50%; top: 50%; width: 69.4%; aspect-ratio: 1; border-radius: 50%; pointer-events: none; z-index: 1;
-  background: conic-gradient(from 0deg, transparent 0deg 290deg, rgba(124, 92, 230, 0.05) 330deg, rgba(124, 92, 230, 0.2) 359.5deg, transparent 360deg);
-  transform: translate(-50%, -50%) rotate(0deg); animation: pr-sweep 9s linear infinite; will-change: transform;
-}
 .pr-ring { stroke: rgba(255, 255, 255, 0.95); stroke-width: 2; }
 .pr-ring.is-danger { fill: #f6e6f1; }
 .pr-ring.is-watch { fill: #f4eefa; }
@@ -135,7 +129,6 @@ html[data-theme="light"][data-pulse] .xw, html[data-theme="light"][data-pulse] .
 .pr-go { background: var(--m-surface); box-shadow: var(--m-lift-sm); color: var(--pl-ink); }
 .pr-back { background: var(--m-well); box-shadow: var(--m-press); color: var(--pl-ink-2); }
 .pr-aside { display: flex; align-items: center; min-width: 0; padding-top: 16px; border-top: 1px solid var(--pl-line); }
-@keyframes pr-sweep { to { transform: translate(-50%, -50%) rotate(360deg); } }
 @keyframes pr-pop { from { opacity: 0; transform: scale(0); } }
 @keyframes pr-ping { 0% { opacity: 0.75; transform: scale(1); } 80%, 100% { opacity: 0; transform: scale(2.2); } }
 @keyframes pr-rise { from { opacity: 0; transform: translateY(10px); } }
@@ -148,7 +141,7 @@ html[data-theme="light"][data-pulse] .xw, html[data-theme="light"][data-pulse] .
   .pr-zone b { font-size: 24px; }
   .pr-meter { grid-template-columns: 96px minmax(0, 1fr) 38px; }
 }
-@media (prefers-reduced-motion: reduce) { .pr-sweep, .pr-bead, .pr-halo, .pr-zone, .pr-list li, .pr-li-bar i, .pr-card { animation: none !important; } .pr-halo { display: none; } }
+@media (prefers-reduced-motion: reduce) { .pr-bead, .pr-halo, .pr-zone, .pr-list li, .pr-li-bar i, .pr-card { animation: none !important; } .pr-halo { display: none; } }
 
 /* ── 3. "What if you changed the routine?" ───────────────────────────── */
 html:not(#m) .sv-levers { padding: clamp(20px, 3vw, 32px) !important; border-radius: 30px !important; }
