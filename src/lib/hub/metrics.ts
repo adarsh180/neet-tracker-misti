@@ -145,7 +145,7 @@ export const PLAN_CATEGORIES = [
 
 export type Goal = { id: string; owner: Owner; title: string; area: string; priority: number; deadline: string | null; status: string; progress: number; targetAmount: number | null; fundId: string | null; note: string | null; completedAt: string | null; createdAt: string };
 export type Task = { id: string; owner: Owner; title: string; priority: number; due: string | null; goalId: string | null; status: string; doneAt: string | null; createdAt: string };
-export type Txn = { id: string; owner: Person; kind: "income" | "expense"; amount: number; category: string; method: string | null; txnDate: string; note: string | null; recurring: boolean; tag: string | null };
+export type Txn = { id: string; owner: Person; kind: "income" | "expense"; amount: number; category: string; method: string | null; txnDate: string; note: string | null; recurring: boolean; tag: string | null; quickId?: string | null };
 export type Budget = { id: string; owner: Person; category: string; monthly: number };
 export type Fund = { id: string; owner: Owner; name: string; kind: string; target: number; targetDate: string | null; note: string | null; archived: boolean; createdAt: string };
 export type FundEntry = { id: string; fundId: string; owner: Person; amount: number; entryDate: string; note: string | null };
@@ -153,13 +153,15 @@ export type Account = { id: string; owner: Owner; name: string; kind: string; ba
 export type HubEvent = { id: string; owner: Owner; title: string; kind: string; eventDate: string; budget: number | null; note: string | null };
 export type PlanItem = { id: string; plan: string; owner: Owner; title: string; category: string; estimate: number | null; paid: number; due: string | null; status: string; note: string | null };
 export type Settings = { weddingDate?: string | null; weddingBudget?: number | null; emergencyMonths?: number | null; savingsRateTarget?: number | null };
-export type Pantry = { id: string; owner: Owner; name: string; kind: string; unit: string; stock: number; stockAt: string; perDay: number; packSize: number; packPrice: number | null; store: string; altPrice: number | null; altStore: string | null; leadDays: number };
+export type Pantry = { id: string; owner: Owner; name: string; kind: string; unit: string; stock: number; stockAt: string; perDay: number; packSize: number; packPrice: number | null; store: string; altPrice: number | null; altStore: string | null; leadDays: number; basePerDay?: number | null; rateVar?: number | null; obsCount?: number; learnedAt?: string | null };
+/** One event in an item's life: bought (`packs`, `unitPrice`), counted (`left`) or finished (`left` = 0). */
+export type PantryLog = { id: string; itemId: string; owner: Person; kind: "restock" | "count" | "out"; packs: number | null; left: number | null; unitPrice: number | null; store: string | null; at: string };
 export type Quick = { id: string; owner: Person; label: string; unitPrice: number; count: number; category: string; tag: string; sort: number };
 /** A person's month: what comes in, what is fixed (rent…), what to keep, and a limit per spending category. */
 export type KitchenPlan = { income: number; fixed: Array<{ label: string; category: string; amount: number }>; save: number; buckets: Record<string, number> };
 export type Meal = { b: string; l: string; d: string };
-export type KitchenSettings = { plan?: KitchenPlan; menu?: Partial<Record<(typeof WEEKDAYS)[number]["key"], Meal>> };
-export type HubRecords = { actor: Person; goals: Goal[]; tasks: Task[]; txns: Txn[]; budgets: Budget[]; funds: Fund[]; fundEntries: FundEntry[]; accounts: Account[]; events: HubEvent[]; planItems: PlanItem[]; settings: Settings; pantry: Pantry[]; quicks: Quick[]; kitchen: Partial<Record<Person, KitchenSettings>> };
+export type KitchenSettings = { plan?: KitchenPlan; menu?: Partial<Record<(typeof WEEKDAYS)[number]["key"], Meal>>; reminders?: boolean };
+export type HubRecords = { actor: Person; goals: Goal[]; tasks: Task[]; txns: Txn[]; budgets: Budget[]; funds: Fund[]; fundEntries: FundEntry[]; accounts: Account[]; events: HubEvent[]; planItems: PlanItem[]; settings: Settings; pantry: Pantry[]; pantryLog?: PantryLog[]; quicks: Quick[]; kitchen: Partial<Record<Person, KitchenSettings>> };
 export type View = "all" | Person;
 
 const DAY = 86_400_000;

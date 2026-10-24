@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
-import { Check, ClipboardCopy, PackagePlus, Pencil, Ruler, ShoppingBasket } from "lucide-react";
+import { BellRing, Check, ClipboardCopy, PackagePlus, Pencil, Ruler, ShoppingBasket, Sparkles } from "lucide-react";
 
 import { SaathAdd } from "./add-icon";
 import { useHub } from "./hub-context";
 import { Btn, CardHead, Empty, Fig, Page } from "./pages";
 import type { SheetSpec } from "./sheet";
 import { computeKitchen, MENU_SLOTS, qty, shoppingText, type Kitchen } from "../../lib/hub/kitchen";
+import { learnKitchen, rangeText, type KitchenLearning } from "../../lib/hub/learn";
 import { EXPENSE_CATEGORIES, PANTRY_KINDS, PANTRY_UNITS, PEOPLE, STORES, TXN_TAGS, WEEKDAYS, labelOf, rupees, type KitchenPlan, type Meal, type Person } from "../../lib/hub/metrics";
 
 /**
@@ -35,12 +36,12 @@ function unitRate(price: number | null, unit: string) {
 }
 
 /* ── Sheets ──────────────────────────────────────────────────────────── */
-function logQuick(q: QuickBtn, act: Act): SheetSpec {
+function logQuick(q: QuickBtn, act: Act, usual = q.count): SheetSpec {
   return {
     title: q.label,
-    subtitle: `${rupees(q.unitPrice)} each · logged as ${labelOf(TXN_TAGS, q.tag).toLowerCase()}.`,
+    subtitle: `${rupees(q.unitPrice)} each · logged as ${labelOf(TXN_TAGS, q.tag).toLowerCase()}${usual !== q.count ? ` · ${usual} is your usual lately` : ""}.`,
     fields: [
-      { name: "count", label: "How many", type: "number", value: q.count, min: 1, max: 200, step: 1, required: true },
+      { name: "count", label: "How many", type: "number", value: usual, min: 1, max: 200, step: 1, required: true },
       { name: "txnDate", label: "Date", type: "date", value: today() },
       { name: "method", label: "Via", type: "select", value: "upi", options: methods },
     ],
@@ -119,7 +120,7 @@ function setLeft(p: Item, act: Act): SheetSpec {
 
 const PLAN_BUCKETS = ["food", "transport", "fun", "health", "bills", "shopping", "study", "other"] as const;
 
-function editPlan(plan: KitchenPlan | null, act: Act): SheetSpec {
+function editPlan(plan: KitchenPlan | null, reminders: boolean, act: Act): SheetSpec {
   const rent = plan?.fixed.find((f) => f.category === "rent");
   const otherFixed = plan?.fixed.find((f) => f.category !== "rent");
   return {
@@ -131,6 +132,7 @@ function editPlan(plan: KitchenPlan | null, act: Act): SheetSpec {
       { name: "save", label: "Keep aside (₹)", type: "money", value: plan?.save ?? "", min: 0, step: 100 },
       { name: "otherFixed", label: "Other fixed (₹)", type: "money", value: otherFixed?.amount ?? "", min: 0, step: 50, hint: "Coaching instalment, subscriptions…" },
       ...PLAN_BUCKETS.map((c) => ({ name: `b_${c}`, label: `${labelOf(EXPENSE_CATEGORIES, c)} (₹)`, type: "money" as const, value: plan?.buckets[c] ?? "", min: 0, step: 50 })),
+      { name: "reminders", label: "Reminders", type: "select", value: reminders ? "on" : "off", options: [{ value: "on", label: "On — 6 am stock, 9 pm habits" }, { value: "off", label: "Off" }], wide: true },
     ],
     submit: "Save plan",
     onSubmit: (v) => {
@@ -139,7 +141,7 @@ function editPlan(plan: KitchenPlan | null, act: Act): SheetSpec {
         ...(Number(v.otherFixed) > 0 ? [{ label: otherFixed?.label ?? "Other fixed", category: otherFixed?.category ?? "subscriptions", amount: Number(v.otherFixed) }] : []),
       ];
       const buckets = Object.fromEntries(PLAN_BUCKETS.map((c) => [c, Number(v[`b_${c}`]) || 0]));
-      return act({ action: "kitchen.set", plan: { income: Number(v.income) || 0, save: Number(v.save) || 0, fixed, buckets } });
+      return act({ action: "kitchen.set", plan: { income: Number(v.income) || 0, save: Number(v.save) || 0, fixed, buckets }, reminders: v.reminders !== "off" });
     },
   };
 }
@@ -154,19 +156,22 @@ function editMenu(day: (typeof WEEKDAYS)[number], meal: Meal | null, act: Act): 
 }
 
 /* ── Pieces ──────────────────────────────────────────────────────────── */
-function daysText(p: Item) {
+function daysText(p: Item, L?: KitchenLearning | null) {
+  const learned = L?.byId.get(p.id);
+  if (learned) return rangeText(learned);
   if (p.days === null) return "not used daily";
   if (p.left <= 0) return "finished";
   if (p.days < 1) return "runs out today";
   return `${Math.round(p.days)} day${Math.round(p.days) === 1 ? "" : "s"} · till ${short(p.runOut!)}`;
 }
 
-function QuickRow({ k, act, onOpen, editing }: { k: Kitchen; act: Act; onOpen: (s: SheetSpec) => void; editing: boolean }) {
+function QuickRow({ k, L, act, onOpen, editing }: { k: Kitchen; L: KitchenLearning | null; act: Act; onOpen: (s: SheetSpec) => void; editing: boolean }) {
   const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const tap = async (q: QuickBtn) => {
     if (editing) return onOpen(editQuick(q, act));
-    if (q.count > 1) return onOpen(logQuick(q, act));
+    const h = L?.habits.find((x) => x.id === q.id);
+    if (q.count > 1) return onOpen(logQuick(q, act, h?.usualCount ?? q.count));
     setBusy(q.id);
     const err = await act({ action: "quick.use", id: q.id });
     setBusy(null);
@@ -177,7 +182,7 @@ function QuickRow({ k, act, onOpen, editing }: { k: Kitchen; act: Act; onOpen: (
   return (
     <div className={`sth-kq ${editing ? "is-editing" : ""}`}>
       {k.quicks.map((q, i) => (
-        <button key={q.id} type="button" className={`sth-kq-btn ${done === q.id ? "is-done" : ""}`} style={{ "--i": i } as CSSProperties} disabled={busy === q.id} onClick={() => void tap(q)}>
+        <button key={q.id} type="button" className={`sth-kq-btn ${done === q.id ? "is-done" : ""} ${L?.missing.some((m) => m.id === q.id) ? "is-due" : ""}`} title={L?.missing.some((m) => m.id === q.id) ? "You usually log this by now" : undefined} style={{ "--i": i } as CSSProperties} disabled={busy === q.id} onClick={() => void tap(q)}>
           <b>{done === q.id ? <><Check size={14} strokeWidth={3} /> Logged</> : q.label}</b>
           <small>{q.count > 1 ? `${q.count} × ${rupees(q.unitPrice)}` : rupees(q.unitPrice)}</small>
           {editing ? <Pencil size={12} className="sth-kq-pen" /> : null}
@@ -195,8 +200,10 @@ function QuickRow({ k, act, onOpen, editing }: { k: Kitchen; act: Act; onOpen: (
 export function KitchenGlance({ link }: { link: string }) {
   const hub = useHub();
   const k = useMemo(() => (hub.records ? computeKitchen(hub.records, hub.view) : null), [hub.records, hub.view]);
+  const L = useMemo(() => (hub.records && k ? learnKitchen(hub.records, k) : null), [hub.records, k]);
   if (!k || (!k.pantry.length && !k.plan)) return null;
   const soon = k.pantry.filter((p) => p.status !== "ok" && p.status !== "idle").slice(0, 4);
+  const top = L?.alerts.find((a) => a.kind !== "habit");
   return (
     <div className="sth-card">
       <CardHead title="Kitchen" link={link} />
@@ -206,12 +213,13 @@ export function KitchenGlance({ link }: { link: string }) {
           <small>{rupees(k.budgetToday ?? 0)} a day for the {k.daysLeft} days left</small>
         </p>
       ) : null}
+      {top ? <p className={`sth-kg-alert tone-${top.tone}`}><Sparkles size={13} /> {top.title}</p> : null}
       {soon.length ? (
         <ul className="sth-kg-list">
           {soon.map((p) => (
             <li key={p.id} className={`s-${p.status}`}>
               <span>{p.name}</span>
-              <small>{daysText(p)}</small>
+              <small>{daysText(p, L)}</small>
             </li>
           ))}
         </ul>
@@ -226,6 +234,10 @@ export function HubKitchen() {
   const r = hub.records;
   const me = r?.actor ?? "adarsh";
   const k = useMemo(() => (r ? computeKitchen(r, hub.view) : null), [r, hub.view]);
+  const L = useMemo(() => (r && k ? learnKitchen(r, k) : null), [r, k]);
+  const reminders = k ? r?.kitchen?.[k.person]?.reminders !== false : true;
+  const istHour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "numeric", hourCycle: "h23" }).format(new Date()));
+  const notices = L ? L.alerts.filter((a) => a.slot === "morning" || istHour >= 12) : [];
   const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [seeding, setSeeding] = useState(false);
@@ -243,7 +255,7 @@ export function HubKitchen() {
     <Page
       title="Kitchen"
       summary={k ? `${rupees(k.food)} on food this month · ${rupees(k.foodPerDay)} a day${k.nextOut && k.nextOut.days !== null ? ` · ${k.nextOut.name.toLowerCase()} lasts ${Math.max(0, Math.round(k.nextOut.days))} more days` : ""}` : undefined}
-      actions={k && !empty ? <><Btn primary onClick={() => open(editItem(null, me, act))} icon={<SaathAdd size={16} />}>Item</Btn><Btn onClick={() => open(editPlan(k.plan, act))} icon={<Ruler size={15} />}>Plan</Btn></> : undefined}
+      actions={k && !empty ? <><Btn primary onClick={() => open(editItem(null, me, act))} icon={<SaathAdd size={16} />}>Item</Btn><Btn onClick={() => open(editPlan(k.plan, reminders, act))} icon={<Ruler size={15} />}>Plan</Btn></> : undefined}
     >
       {k && r ? (
         empty ? (
@@ -287,12 +299,21 @@ export function HubKitchen() {
                 tone={foodPace !== null && k.foodLimit ? (foodPace > k.foodLimit * 1.05 ? "warn" : "good") : undefined}
                 note={k.foodLimit ? `of ${rupees(k.foodLimit)} · heading to ${rupees(foodPace ?? 0)}` : `${rupees(k.foodPerDay)} a day`}
               />
-              <Fig
-                label="You'll keep"
-                value={k.plan ? rupees(k.projectedSaving) : "—"}
-                tone={!k.plan ? undefined : k.projectedSaving >= k.save ? "good" : k.projectedSaving >= 0 ? "warn" : "bad"}
-                note={k.plan ? `aim ${rupees(k.save)} · if every limit holds` : "set a month plan"}
-              />
+              {L?.forecastSaving !== null && L?.forecastSaving !== undefined ? (
+                <Fig
+                  label="You'll keep"
+                  value={rupees(L.forecastSaving)}
+                  tone={L.forecastSaving >= k.save ? "good" : L.forecastSaving >= 0 ? "warn" : "bad"}
+                  note={`aim ${rupees(k.save)} · forecast from your last 8 weeks`}
+                />
+              ) : (
+                <Fig
+                  label="You'll keep"
+                  value={k.plan ? rupees(k.projectedSaving) : "—"}
+                  tone={!k.plan ? undefined : k.projectedSaving >= k.save ? "good" : k.projectedSaving >= 0 ? "warn" : "bad"}
+                  note={k.plan ? `aim ${rupees(k.save)} · if every limit holds` : "set a month plan"}
+                />
+              )}
               <Fig
                 label="Runs out next"
                 value={k.nextOut && k.nextOut.days !== null ? `${Math.max(0, Math.round(k.nextOut.days))} days` : "—"}
@@ -301,12 +322,29 @@ export function HubKitchen() {
               />
             </section>
 
+            {notices.length ? (
+              <section className="sth-sect sth-knotice" aria-label="Saath noticed">
+                <header>
+                  <Sparkles size={15} /> <b>Saath noticed</b>
+                  <small>{reminders ? <><BellRing size={12} /> reminders on · 6 am & 9 pm</> : "reminders off"}{L && L.learnedCount ? ` · learned ${L.learnedCount} item${L.learnedCount === 1 ? "" : "s"}` : ""}</small>
+                </header>
+                <ul>
+                  {notices.map((a, i) => (
+                    <li key={a.key} className={`tone-${a.tone}`} style={{ "--i": i } as CSSProperties}>
+                      <b>{a.title}</b>
+                      <span>{a.body}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             {own ? (
               <section className="sth-sect sth-card">
                 <CardHead title="One-tap log">
                   <button type="button" className="sth-more" onClick={() => setEditing((e) => !e)}>{editing ? "Done" : "Edit"}</button>
                 </CardHead>
-                <QuickRow k={k} act={act} onOpen={open} editing={editing} />
+                <QuickRow k={k} L={L} act={act} onOpen={open} editing={editing} />
               </section>
             ) : null}
 
@@ -331,6 +369,13 @@ export function HubKitchen() {
                     </button>
                   ) : null}
                 </CardHead>
+                {L?.order ? (
+                  <p className="sth-korder">
+                    <b>{L.order.days === 0 ? "Order today" : L.order.days === 1 ? "Order tomorrow" : `Next order ${short(L.order.date)}`}</b>
+                    <span>{L.order.items.length} item{L.order.items.length === 1 ? "" : "s"} · about {rupees(L.order.total)}{L.order.coversUntil ? ` · then nothing runs out until ${short(L.order.coversUntil)}` : ""}</span>
+                    <small>{L.order.items.map((i) => i.name).join(", ")}</small>
+                  </p>
+                ) : null}
                 {k.toBuy.length ? (
                   <>
                     {k.byStore.map((s) => (
@@ -355,7 +400,7 @@ export function HubKitchen() {
 
               <div className="sth-card">
                 <CardHead title="This month against the plan">
-                  {own ? <button type="button" className="sth-more" onClick={() => open(editPlan(k.plan, act))}>{k.plan ? "Edit" : "Set"}</button> : null}
+                  {own ? <button type="button" className="sth-more" onClick={() => open(editPlan(k.plan, reminders, act))}>{k.plan ? "Edit" : "Set"}</button> : null}
                 </CardHead>
                 {k.plan ? (
                   <>
@@ -432,18 +477,35 @@ export function HubKitchen() {
                       {g.rows.map((p, i) => (
                         <li key={p.id} className={`s-${p.status}`} style={{ "--p": p.share, "--i": i } as CSSProperties}>
                           <span className="sth-pan-name">
-                            <b>{p.name}{p.owner === "joint" ? <span className="sth-pill">shared</span> : null}</b>
-                            <small>{qty(p.left, p.unit)} left · {daysText(p)}</small>
+                            <b>
+                              {p.name}
+                              {p.owner === "joint" ? <span className="sth-pill">shared</span> : null}
+                              {L?.byId.get(p.id)?.learned ? <span className="sth-pill is-learned" title={`Learned from ${L.byId.get(p.id)!.checks} check${L.byId.get(p.id)!.checks === 1 ? "" : "s"}`}>learned</span> : null}
+                            </b>
+                            <small>{qty(p.left, p.unit)} left · {daysText(p, L)}</small>
+                            {(() => {
+                              const x = L?.byId.get(p.id);
+                              const bits = [
+                                x?.drift !== null && x?.drift !== undefined && Math.abs(x.drift) >= 0.15 ? `you use ${Math.round(Math.abs(x.drift) * 100)}% ${x.drift > 0 ? "more" : "less"} than you set` : null,
+                                x?.rhythm ? `bought every ~${Math.round(x.rhythm.every)} days` : null,
+                              ].filter(Boolean);
+                              return bits.length ? <small className="sth-pan-learn">{bits.join(" · ")}</small> : null;
+                            })()}
                           </span>
                           <i className="sth-pan-bar"><i /></i>
                           <span className="sth-pan-price">
                             {unitRate(p.unitPrice, p.unit) ?? "—"}
                             <small>{storeName(p.store)}{p.altPrice && p.packPrice && p.altPrice < p.packPrice ? ` · ${rupees(p.packPrice - p.altPrice)} less at ${storeName(p.altStore)}` : ""}</small>
+                            {L?.byId.get(p.id)?.priceUp ? <small className="t-warn">last bought {Math.round(L.byId.get(p.id)!.priceUp! * 100)}% above your usual</small> : null}
+                            {L?.byId.get(p.id)?.cheapest && L.byId.get(p.id)!.cheapest!.key !== p.store ? <small>usually cheapest at {L.byId.get(p.id)!.cheapest!.label}</small> : null}
                           </span>
                           {canEdit(p) ? (
                             <span className="sth-pan-acts">
                               <button type="button" className="sth-btn is-sm" onClick={() => open(restock(p, act))}>Bought</button>
                               <button type="button" className="sth-btn is-sm" onClick={() => open(setLeft(p, act))}>Left?</button>
+                              {p.left > 0 && p.perDay > 0 ? (
+                                <button type="button" className="sth-btn is-sm" title="It's finished — Saath learns how fast it goes" onClick={async () => { if (!confirm(`${p.name} is finished?`)) return; const err = await act({ action: "pantry.out", id: p.id }); if (err) alert(err); }}>Finished</button>
+                              ) : null}
                               <button type="button" className="sth-btn is-sm is-icon" aria-label={`Edit ${p.name}`} onClick={() => open(editItem(p, me, act))}><Pencil size={13} /></button>
                             </span>
                           ) : <span />}

@@ -1053,3 +1053,26 @@ html[data-theme="light"] :is(.sth-card, .sth-fig)::after { background: radial-gr
 @media (prefers-reduced-motion: reduce) {
   .sth-kq-btn, .sth-pan li, .sth-pan-bar > i, .sth-kplan-bar > i, .sth-ktags li > i > i { animation: none; transition: none; }
 }
+
+/* ── Kitchen learning: what Saath noticed, next order, learned badges ─────── */
+.sth-knotice { padding: 14px 16px; border-radius: 18px; background: color-mix(in srgb, var(--sx-j) 8%, var(--sx-panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sx-j) 26%, transparent); }
+.sth-knotice header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 10px; color: var(--sx-j); }
+.sth-knotice header b { color: var(--sx-ink); font-size: 14px; }
+.sth-knotice header small { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--sx-ink-3); font-size: 11.5px; }
+.sth-knotice ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sth-knotice li { --t: var(--sx-j); display: grid; gap: 3px; padding: 10px 12px; border-radius: 12px; background: var(--sx-panel); box-shadow: inset 3px 0 0 var(--t); animation: sth-rise 0.5s var(--sx-ease) calc(var(--i, 0) * 50ms) backwards; }
+.sth-knotice li.tone-warn { --t: var(--sx-warn); }
+.sth-knotice li.tone-bad { --t: var(--sx-bad); }
+.sth-knotice li.tone-good { --t: var(--sx-good); }
+.sth-knotice li b { color: var(--sx-ink); font-size: 13.5px; }
+.sth-knotice li span { color: var(--sx-ink-2); font-size: 12.5px; line-height: 1.45; }
+.sth-korder { display: grid; gap: 2px; margin: 0 0 14px; padding: 10px 12px; border-radius: 12px; background: var(--sx-panel-2); }
+.sth-korder b { color: var(--sx-ink); font-size: 13.5px; }
+.sth-korder span { color: var(--sx-ink-2); font-size: 12.5px; }
+.sth-korder small { color: var(--sx-ink-3); font-size: 11.5px; }
+.sth-kq-btn.is-due::after { content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--sx-j); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sx-j) 25%, transparent); }
+.sth-pill.is-learned { background: color-mix(in srgb, var(--sx-good) 16%, var(--sx-panel-2)); color: var(--sx-good); }
+.sth-pan-learn { color: var(--sx-j) !important; font-size: 11px !important; }
+.sth-kg-alert { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; color: var(--sx-ink); font-size: 13px; font-weight: 650; }
+.sth-kg-alert svg { color: var(--sx-j); }
+@media (prefers-reduced-motion: reduce) { .sth-knotice li { animation: none; } }
