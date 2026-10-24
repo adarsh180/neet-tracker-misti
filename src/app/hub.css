@@ -1076,3 +1076,52 @@ html[data-theme="light"] :is(.sth-card, .sth-fig)::after { background: radial-gr
 .sth-kg-alert { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; color: var(--sx-ink); font-size: 13px; font-weight: 650; }
 .sth-kg-alert svg { color: var(--sx-j); }
 @media (prefers-reduced-motion: reduce) { .sth-knotice li { animation: none; } }
+
+/* ── Smart cards: auto-category hint, repeating bills, optimiser, odds, patterns, dates ── */
+.sth-guess { margin: 2px 0 0; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--sx-a) 10%, var(--sx-panel-2)); color: var(--sx-ink-2); font-size: 12.5px; }
+.sth-bills, .sth-odds, .sth-dates, .sth-life-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sth-bills li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 12px; animation: sth-rise 0.5s var(--sx-ease) calc(var(--i, 0) * 35ms) backwards; }
+.sth-bills li:hover { background: var(--sx-panel-2); }
+.sth-bills li > span:first-child { display: grid; min-width: 0; }
+.sth-bills b { color: var(--sx-ink); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sth-bills small { color: var(--sx-ink-3); font-size: 11.5px; }
+.sth-bills-when { display: grid; justify-items: end; color: var(--sx-ink-2); font-size: 12.5px; font-weight: 650; }
+.sth-bills .is-soon .sth-bills-when { color: var(--sx-warn); }
+.sth-bills .is-late .sth-bills-when { color: var(--sx-bad); }
+.sth-bills .num { font-variant-numeric: tabular-nums; }
+.sth-optim { margin: 4px 0 12px; }
+.sth-odds li { --c: var(--sx-good); display: grid; grid-template-columns: minmax(140px, 1fr) minmax(90px, 1fr) minmax(170px, 1.2fr); align-items: center; gap: 14px; padding: 8px 6px; animation: sth-rise 0.5s var(--sx-ease) calc(var(--i, 0) * 40ms) backwards; }
+.sth-odds li.is-warn { --c: var(--sx-warn); }
+.sth-odds li.is-bad { --c: var(--sx-bad); }
+.sth-odds li.is-muted { --c: var(--sx-ink-4); }
+.sth-odds li > span:first-child { display: grid; min-width: 0; }
+.sth-odds b { color: var(--sx-ink); font-size: 13.5px; }
+.sth-odds small { color: var(--sx-ink-3); font-size: 11.5px; }
+.sth-odds-bar { display: block; height: 10px; border-radius: 6px; background: var(--sx-panel-2); }
+.sth-odds-bar > i { display: block; height: 100%; width: max(3px, calc(var(--p) * 100%)); border-radius: inherit; background: var(--c); animation: sth-grow 1s var(--sx-ease) backwards; }
+.sth-odds-read { display: grid; }
+.sth-odds-read b { color: var(--c); }
+.sth-life { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 22px; align-items: start; }
+.sth-life-list li { display: flex; gap: 8px; align-items: baseline; color: var(--sx-ink); font-size: 13.5px; line-height: 1.5; }
+.sth-life-list li.is-muted { color: var(--sx-ink-3); font-size: 12.5px; }
+.sth-pill.is-clear { background: color-mix(in srgb, var(--sx-good) 16%, var(--sx-panel-2)); color: var(--sx-good); }
+.sth-pill.is-likely { background: color-mix(in srgb, var(--sx-warn) 16%, var(--sx-panel-2)); color: var(--sx-warn); }
+.sth-pill.is-weekly, .sth-pill.is-money { background: color-mix(in srgb, var(--sx-a) 14%, var(--sx-panel-2)); color: var(--sx-a); }
+.sth-life-list .sth-pill { flex: none; margin: 0; }
+.sth-life-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 120px; }
+.sth-life-week span { display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: 4px; height: 100%; }
+.sth-life-week i { align-self: end; width: 100%; height: max(4px, calc(var(--v) * 100%)); border-radius: 6px 6px 3px 3px; background: color-mix(in srgb, var(--sx-a) 70%, var(--sx-good)); transform-origin: bottom; animation: sth-up 0.8s var(--sx-ease) backwards; }
+.sth-life-week small { color: var(--sx-ink-3); font-size: 11px; font-weight: 650; }
+.sth-dates li { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 12px; background: var(--sx-panel-2); animation: sth-rise 0.5s var(--sx-ease) calc(var(--i, 0) * 50ms) backwards; }
+.sth-dates-day b { color: var(--sx-ink); font-size: 14px; }
+.sth-dates-why { display: grid; gap: 2px; color: var(--sx-ink-2); font-size: 12.5px; }
+.sth-dates-why small { font-size: 11.5px; }
+@media (max-width: 760px) {
+  .sth-life { grid-template-columns: minmax(0, 1fr); }
+  .sth-odds li { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .sth-bills li { grid-template-columns: minmax(0, 1fr) auto; }
+  .sth-bills li > .num, .sth-bills li > button { justify-self: end; }
+  .sth-dates li { grid-template-columns: minmax(0, 1fr) auto; }
+  .sth-dates-why { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .sth-bills li, .sth-odds li, .sth-odds-bar > i, .sth-life-week i, .sth-dates li { animation: none; } }

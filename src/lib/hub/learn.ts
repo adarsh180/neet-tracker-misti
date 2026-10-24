@@ -57,7 +57,7 @@ export function kalmanStep(prev: RateState, obs: { used: number; days: number; a
   return { rate: Math.max(0, prev.rate + k * (z - prev.rate)), variance: Math.max(1e-12, (1 - k) * p), observed: z, gain: k };
 }
 
-export type KitchenAlert = { key: string; kind: "stock" | "order" | "budget" | "unusual" | "habit"; tone: "warn" | "bad" | "good"; slot: "morning" | "evening"; title: string; body: string; items?: string[] };
+export type KitchenAlert = { key: string; kind: "stock" | "order" | "budget" | "unusual" | "habit" | "bill"; tone: "warn" | "bad" | "good"; slot: "morning" | "evening"; title: string; body: string; items?: string[] };
 
 export function learnKitchen(r: HubRecords, k: Kitchen, now = new Date()) {
   const person: Person = k.person;

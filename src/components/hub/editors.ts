@@ -15,6 +15,7 @@ import {
   type Owner,
 } from "../../lib/hub/metrics";
 import type { SheetSpec } from "./sheet";
+import { trainClassifier } from "../../lib/hub/smart";
 
 /**
  * Every edit / rename / add-money dialog in Saath, as data. Each returns a
@@ -220,17 +221,33 @@ export function newEvent(date: string, me: "adarsh" | "misti", act: Act): SheetS
 /* ── New entries: every "add" form opens as a sheet, so pages stay about the numbers. ── */
 const methods = [{ value: "upi", label: "UPI" }, { value: "cash", label: "Cash" }, { value: "card", label: "Card" }, { value: "bank", label: "Bank" }];
 
-export function newTxn(kind: "expense" | "income", act: Act): SheetSpec {
+export function newTxn(kind: "expense" | "income", act: Act, r?: HubRecords | null): SheetSpec {
+  // Auto-category: a Naive Bayes model trained on your own notes guesses category and tag as you type.
+  const clf = kind === "expense" && r ? trainClassifier(r, r.actor) : null;
   return {
     title: kind === "expense" ? "Log an expense" : "Log income",
+    ...(clf
+      ? {
+          predictOn: ["note"],
+          predict: (v: Record<string, string>) => {
+            const g = clf.predict(v.note ?? "");
+            if (!g || g.pCategory < 0.45) return null;
+            const tag = g.tag && g.pTag >= 0.45 ? g.tag : null;
+            return {
+              set: { category: g.category, ...(tag ? { tag } : {}) },
+              hint: `Saath guessed ${EXPENSE_CATEGORIES.find((c) => c.key === g.category)?.label ?? g.category}${tag ? ` · ${TXN_TAGS.find((t) => t.key === tag)?.label}` : ""} (${Math.round(g.pCategory * 100)}% sure) — change it if it's wrong.`,
+            };
+          },
+        }
+      : {}),
     fields: [
       { name: "amount", label: "Amount (₹)", type: "money", required: true, min: 0.01 },
+      ...(kind === "expense" ? [{ name: "note", label: "What was it?", type: "text" as const, wide: true, placeholder: "e.g. Laxmikanth 7th edition, metro, milk" }] : []),
       { name: "txnDate", label: "Date", type: "date", value: today() },
       { name: "category", label: "Category", type: "select", value: (kind === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES)[0].key, options: opts(kind === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES) },
       { name: "method", label: "Via", type: "select", value: "upi", options: methods },
       { name: "recurring", label: "Repeats monthly", type: "select", value: "false", options: [{ value: "false", label: "No" }, { value: "true", label: "Yes" }] },
-      ...(kind === "expense" ? [{ name: "tag", label: "Exactly (optional)", type: "select" as const, value: "", options: tagOptions }] : []),
-      { name: "note", label: "Note", type: "text", wide: true, placeholder: kind === "expense" ? "e.g. Laxmikanth 7th edition" : "e.g. October stipend" },
+      ...(kind === "expense" ? [{ name: "tag", label: "Exactly (optional)", type: "select" as const, value: "", options: tagOptions }] : [{ name: "note", label: "Note", type: "text" as const, wide: true, placeholder: "e.g. October stipend" }]),
     ],
     submit: kind === "expense" ? "Save expense" : "Save income",
     onSubmit: (v) => act({ action: "txn.add", kind, ...v, recurring: v.recurring === "true" }),

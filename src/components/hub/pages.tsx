@@ -13,6 +13,7 @@ import { BudgetBars, CategoryDonut, CategoryPace, FundRings, GoalTrack, IndexOrb
 import { useHub } from "./hub-context";
 import { SaathAdd } from "./add-icon";
 import { KitchenGlance } from "./kitchen";
+import { BudgetSuggestion, DatePlanner, FundOdds, LifePatterns, UpcomingBills } from "./smart";
 import { ACCOUNT_KINDS, EVENT_KINDS, EXPENSE_CATEGORIES, GOAL_AREAS, INCOME_CATEGORIES, labelOf, PEOPLE, PLAN_CATEGORIES, PRIORITIES, rupees, TXN_TAGS, type Owner } from "../../lib/hub/metrics";
 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
@@ -109,7 +110,7 @@ function useAdders() {
   const m = hub.m;
   const me = r?.actor ?? "adarsh";
   return {
-    expense: () => hub.openSheet(newTxn("expense", hub.act)),
+    expense: () => hub.openSheet(newTxn("expense", hub.act, r)),
     income: () => hub.openSheet(newTxn("income", hub.act)),
     budget: () => hub.openSheet(setBudget(hub.act)),
     goal: () => m && hub.openSheet(newGoal(m, me, hub.act)),
@@ -357,6 +358,8 @@ export function HubMoney() {
                 <h3 className="sth-h3">Categories against their usual</h3>
                 <CategoryPace m={m} />
               </div>
+              <UpcomingBills />
+              <BudgetSuggestion />
             </section>
 
             <section className="sth-sect sth-card">
@@ -518,6 +521,8 @@ export function HubFunds() {
             <Fig label="Net worth" value={rupees(m.netWorth.net)} note={`${m.netWorth.accounts.length} account${m.netWorth.accounts.length === 1 ? "" : "s"}`} />
             <Fig label="Owed" value={rupees(m.netWorth.liabilities)} tone={m.netWorth.liabilities > 0 ? "warn" : undefined} note="loans and cards" />
           </section>
+
+          <FundOdds />
 
           <section className="sth-sect sth-card">
             <CardHead title="Funds" />
@@ -777,6 +782,8 @@ export function HubInsights({ analyzeApi }: { analyzeApi: string }) {
             </div>
           </section>
 
+          <LifePatterns />
+
           <section className="sth-sect sth-cards">
             <div className="sth-card sth-recs">
               <CardHead title="What the numbers say" />
@@ -867,6 +874,7 @@ export function HubCalendarPage() {
   const soon = m ? m.events.filter((e) => e.days >= 0 && e.days <= 30).length : 0;
   return (
     <Page title="Calendar" summary={m ? `${soon} in the next 30 days · exams, deadlines, funds and plans in one month view` : undefined} actions={<Btn primary onClick={add.event} icon={<SaathAdd size={16} />}>Add a date</Btn>}>
+      <DatePlanner />
       <HubCalendar />
     </Page>
   );

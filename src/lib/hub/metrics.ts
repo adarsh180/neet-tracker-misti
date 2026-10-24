@@ -160,8 +160,10 @@ export type Quick = { id: string; owner: Person; label: string; unitPrice: numbe
 /** A person's month: what comes in, what is fixed (rent…), what to keep, and a limit per spending category. */
 export type KitchenPlan = { income: number; fixed: Array<{ label: string; category: string; amount: number }>; save: number; buckets: Record<string, number> };
 export type Meal = { b: string; l: string; d: string };
+/** One day of Adarsh's study log (UPSC tracker) with that day's mood, for Saath's study-vs-life patterns. */
+export type LifeDay = { date: string; hours: number; mood?: { energy: number; focus: number; stress: number } | null };
 export type KitchenSettings = { plan?: KitchenPlan; menu?: Partial<Record<(typeof WEEKDAYS)[number]["key"], Meal>>; reminders?: boolean };
-export type HubRecords = { actor: Person; goals: Goal[]; tasks: Task[]; txns: Txn[]; budgets: Budget[]; funds: Fund[]; fundEntries: FundEntry[]; accounts: Account[]; events: HubEvent[]; planItems: PlanItem[]; settings: Settings; pantry: Pantry[]; pantryLog?: PantryLog[]; quicks: Quick[]; kitchen: Partial<Record<Person, KitchenSettings>> };
+export type HubRecords = { actor: Person; goals: Goal[]; tasks: Task[]; txns: Txn[]; budgets: Budget[]; funds: Fund[]; fundEntries: FundEntry[]; accounts: Account[]; events: HubEvent[]; planItems: PlanItem[]; settings: Settings; pantry: Pantry[]; pantryLog?: PantryLog[]; quicks: Quick[]; kitchen: Partial<Record<Person, KitchenSettings>>; life?: LifeDay[] };
 export type View = "all" | Person;
 
 const DAY = 86_400_000;

@@ -29,6 +29,9 @@ export type SheetSpec = {
   onSubmit: (values: Record<string, string>) => Promise<string | null>;
   danger?: { label: string; confirm: string; onConfirm: () => Promise<string | null> };
   quick?: number[];
+  /** Guess other fields while these are typed (auto-category); fields the user changed by hand are left alone. */
+  predictOn?: string[];
+  predict?: (values: Record<string, string>) => { set: Record<string, string>; hint: string } | null;
 };
 
 /** The single liquid-glass dialog Saath uses for every edit, rename and "add money". Identical in both repos. */
@@ -38,11 +41,15 @@ export function SheetHost() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
+  const touched = useRef(new Set<string>());
   const form = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     setError(null);
     setClosing(false);
+    setHint(null);
+    touched.current = new Set();
     if (!spec) return;
     const t = setTimeout(() => form.current?.querySelector<HTMLInputElement>("input, select, textarea")?.focus(), 80);
     const esc = (e: KeyboardEvent) => e.key === "Escape" && close();
@@ -75,7 +82,30 @@ export function SheetHost() {
 
   return createPortal(
     <div className={`sth-sheet-layer ${closing ? "is-closing" : ""}`} onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <form ref={form} className="sth-sheet" onSubmit={submit} role="dialog" aria-label={spec.title}>
+      <form
+        ref={form}
+        className="sth-sheet"
+        onSubmit={submit}
+        role="dialog"
+        aria-label={spec.title}
+        onInput={(e) => {
+          const name = (e.target as HTMLInputElement).name;
+          if (!spec.predict || !name) return;
+          if (!spec.predictOn?.includes(name)) {
+            touched.current.add(name);
+            return;
+          }
+          const values: Record<string, string> = {};
+          new FormData(e.currentTarget).forEach((v, k) => (values[k] = String(v)));
+          const guess = spec.predict(values);
+          setHint(guess?.hint ?? null);
+          if (!guess) return;
+          for (const [k, v] of Object.entries(guess.set)) {
+            const el = e.currentTarget.elements.namedItem(k) as HTMLSelectElement | HTMLInputElement | null;
+            if (el && !touched.current.has(k)) el.value = v;
+          }
+        }}
+      >
         <span className="sth-sheet-light" aria-hidden="true" />
         <header>
           <div>
@@ -127,6 +157,7 @@ export function SheetHost() {
             ))}
           </div>
         ) : null}
+        {hint ? <p className="sth-guess" aria-live="polite">{hint}</p> : null}
         {error ? <p className="sth-error" role="alert">{error}</p> : null}
         <footer>
           {spec.danger ? (
