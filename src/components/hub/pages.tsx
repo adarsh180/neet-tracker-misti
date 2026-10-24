@@ -12,7 +12,8 @@ import { addMoneyToGoal, addToFund, editAccount, editEvent, editFund, editGoal, 
 import { BudgetBars, CategoryDonut, CategoryPace, FundRings, GoalTrack, IndexOrbit, MoneyBars, PartsList, SpendStrip, TaskWeeks, TrendLine, WeekdaySpend } from "./charts";
 import { useHub } from "./hub-context";
 import { SaathAdd } from "./add-icon";
-import { ACCOUNT_KINDS, EVENT_KINDS, EXPENSE_CATEGORIES, GOAL_AREAS, INCOME_CATEGORIES, labelOf, PEOPLE, PLAN_CATEGORIES, PRIORITIES, rupees, type Owner } from "../../lib/hub/metrics";
+import { KitchenGlance } from "./kitchen";
+import { ACCOUNT_KINDS, EVENT_KINDS, EXPENSE_CATEGORIES, GOAL_AREAS, INCOME_CATEGORIES, labelOf, PEOPLE, PLAN_CATEGORIES, PRIORITIES, rupees, TXN_TAGS, type Owner } from "../../lib/hub/metrics";
 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
 const fmtDate = (d: string) => new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -22,7 +23,7 @@ const monthName = () => new Date().toLocaleDateString("en-IN", { month: "long", 
 
 /* ── Shared bits ─────────────────────────────────────────────────────── */
 /** A page: a plain title, one line of live numbers, and the page's own actions. No marketing copy. */
-function Page({ title, summary, actions, children }: { title: string; summary?: ReactNode; actions?: ReactNode; children: ReactNode }) {
+export function Page({ title, summary, actions, children }: { title: string; summary?: ReactNode; actions?: ReactNode; children: ReactNode }) {
   const hub = useHub();
   if (!hub.m || !hub.records) {
     return (
@@ -49,7 +50,7 @@ function Page({ title, summary, actions, children }: { title: string; summary?: 
   );
 }
 
-function Empty({ title, children, actions, boxed }: { title: string; children?: ReactNode; actions?: ReactNode; boxed?: boolean }) {
+export function Empty({ title, children, actions, boxed }: { title: string; children?: ReactNode; actions?: ReactNode; boxed?: boolean }) {
   return (
     <div className={`sth-empty ${boxed ? "is-boxed" : ""}`}>
       <b>{title}</b>
@@ -81,7 +82,7 @@ function Del({ onClick, label }: { onClick: () => void; label: string }) {
   return <button type="button" className="sth-btn is-icon" aria-label={label} onClick={() => confirm(`${label}?`) && onClick()}><Trash2 size={13} /></button>;
 }
 
-function Fig({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: "good" | "warn" | "bad" }) {
+export function Fig({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: "good" | "warn" | "bad" }) {
   return (
     <div className="sth-fig">
       <span>{label}</span>
@@ -91,7 +92,7 @@ function Fig({ label, value, note, tone }: { label: string; value: string; note?
   );
 }
 
-function CardHead({ title, link, children }: { title: string; link?: string; children?: ReactNode }) {
+export function CardHead({ title, link, children }: { title: string; link?: string; children?: ReactNode }) {
   return (
     <div className="sth-card-head">
       <h2>{title}</h2>
@@ -121,7 +122,7 @@ function useAdders() {
   };
 }
 
-function Btn({ onClick, icon, children, primary }: { onClick: () => void; icon?: ReactNode; children: ReactNode; primary?: boolean }) {
+export function Btn({ onClick, icon, children, primary }: { onClick: () => void; icon?: ReactNode; children: ReactNode; primary?: boolean }) {
   return <button type="button" className={`sth-btn ${primary ? "is-primary" : ""}`} onClick={onClick}>{icon}{children}</button>;
 }
 
@@ -225,6 +226,7 @@ export function HubOverview() {
                 </div>
               ) : null}
               <BigDays />
+              <KitchenGlance link={`${hub.base}/kitchen`} />
               {has.events ? (
                 <div className="sth-card">
                   <CardHead title="Coming up" link={`${hub.base}/calendar`} />
@@ -368,7 +370,7 @@ export function HubMoney() {
                         <tr key={t.id}>
                           <td>{short(t.txnDate)}</td>
                           <td><Who owner={t.owner} /></td>
-                          <td>{labelOf(t.kind === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES, t.category)}{t.recurring ? <span className="sth-pill">monthly</span> : null}{t.note ? <small className="sth-note">{t.note}</small> : null}</td>
+                          <td>{labelOf(t.kind === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES, t.category)}{t.tag ? <span className="sth-pill">{labelOf(TXN_TAGS, t.tag)}</span> : null}{t.recurring ? <span className="sth-pill">monthly</span> : null}{t.note ? <small className="sth-note">{t.note}</small> : null}</td>
                           <td>{t.method?.toUpperCase() ?? "—"}</td>
                           <td className={`num ${t.kind === "income" ? "t-good" : ""}`}>{t.kind === "income" ? "+" : "−"}{rupees(t.amount)}</td>
                           <td>{t.owner === r.actor ? <button type="button" className="sth-btn is-sm is-icon" aria-label="Edit this entry" onClick={() => hub.openSheet(editTxn(t, hub.act))}><Pencil size={13} /></button> : null}</td>

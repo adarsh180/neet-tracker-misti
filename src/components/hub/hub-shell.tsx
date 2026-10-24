@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { CalendarDays, CalendarHeart, Goal, LayoutGrid, Lock, PiggyBank, Sparkles, Wallet } from "lucide-react";
+import { CalendarDays, CalendarHeart, CookingPot, Goal, LayoutGrid, Lock, PiggyBank, Sparkles, Wallet } from "lucide-react";
 
 import { useHub } from "./hub-context";
 import { SheetHost } from "./sheet";
@@ -13,6 +13,7 @@ import { PEOPLE, type View } from "../../lib/hub/metrics";
 const TABS = [
   { path: "", label: "Overview", icon: LayoutGrid },
   { path: "/money", label: "Money", icon: Wallet },
+  { path: "/kitchen", label: "Kitchen", icon: CookingPot },
   { path: "/goals", label: "Goals", icon: Goal },
   { path: "/funds", label: "Funds", icon: PiggyBank },
   { path: "/calendar", label: "Calendar", icon: CalendarDays },

@@ -9,6 +9,7 @@ import {
   PLAN_CATEGORIES,
   PRIORITIES,
   rupees,
+  TXN_TAGS,
   type HubMetrics,
   type HubRecords,
   type Owner,
@@ -28,6 +29,8 @@ type Fund = HubMetrics["funds"][number];
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
 const opts = (list: ReadonlyArray<{ key: string; label: string }>) => list.map((x) => ({ value: x.key, label: x.label }));
 const prios = PRIORITIES.map((p) => ({ value: String(p.value), label: p.label }));
+/** The finer split inside a category — rotis, milk, metro, dates… */
+const tagOptions = [{ value: "", label: "—" }, ...TXN_TAGS.map((t) => ({ value: t.key, label: t.label }))];
 const whose = (me: "adarsh" | "misti") => [
   { value: me, label: `${PEOPLE[me].name} (me)` },
   { value: "joint", label: "Both of us" },
@@ -172,6 +175,7 @@ export function editTxn(t: HubRecords["txns"][number], act: Act): SheetSpec {
       { name: "category", label: "Category", type: "select", value: t.category, options: opts(t.kind === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES) },
       { name: "method", label: "Via", type: "select", value: t.method ?? "upi", options: [{ value: "upi", label: "UPI" }, { value: "cash", label: "Cash" }, { value: "card", label: "Card" }, { value: "bank", label: "Bank" }] },
       { name: "recurring", label: "Repeats monthly", type: "select", value: t.recurring ? "true" : "false", options: [{ value: "false", label: "No" }, { value: "true", label: "Yes" }] },
+      ...(t.kind === "expense" ? [{ name: "tag", label: "Exactly", type: "select" as const, value: t.tag ?? "", options: tagOptions }] : []),
       { name: "note", label: "Note", type: "text", value: t.note ?? "", wide: true },
     ],
     submit: "Save",
@@ -225,6 +229,7 @@ export function newTxn(kind: "expense" | "income", act: Act): SheetSpec {
       { name: "category", label: "Category", type: "select", value: (kind === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES)[0].key, options: opts(kind === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES) },
       { name: "method", label: "Via", type: "select", value: "upi", options: methods },
       { name: "recurring", label: "Repeats monthly", type: "select", value: "false", options: [{ value: "false", label: "No" }, { value: "true", label: "Yes" }] },
+      ...(kind === "expense" ? [{ name: "tag", label: "Exactly (optional)", type: "select" as const, value: "", options: tagOptions }] : []),
       { name: "note", label: "Note", type: "text", wide: true, placeholder: kind === "expense" ? "e.g. Laxmikanth 7th edition" : "e.g. October stipend" },
     ],
     submit: kind === "expense" ? "Save expense" : "Save income",

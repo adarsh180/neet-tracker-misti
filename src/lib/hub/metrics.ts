@@ -57,6 +57,50 @@ export const INCOME_CATEGORIES = [
   { key: "other", label: "Other" },
 ] as const;
 export const METHODS = ["upi", "cash", "card", "bank"] as const;
+/** What exactly a spend was, inside its category — quick logs and restocks set it. */
+export const TXN_TAGS = [
+  { key: "groceries", label: "Groceries", category: "food" },
+  { key: "veggies", label: "Vegetables & fruit", category: "food" },
+  { key: "dairy", label: "Milk & dairy", category: "food" },
+  { key: "rotis", label: "Rotis", category: "food" },
+  { key: "eatout", label: "Tea, snacks & eating out", category: "food" },
+  { key: "date", label: "Dates & café", category: "fun" },
+  { key: "commute", label: "Coaching commute", category: "transport" },
+  { key: "visit", label: "Visits", category: "transport" },
+  { key: "care", label: "Care & protection", category: "health" },
+  { key: "home", label: "Home & cleaning", category: "shopping" },
+  { key: "phone", label: "Phone & internet", category: "bills" },
+  { key: "prints", label: "Prints & stationery", category: "study" },
+] as const;
+export const PANTRY_KINDS = [
+  { key: "staple", label: "Rice, oil & staples" },
+  { key: "pulse", label: "Daal & pulses" },
+  { key: "dairy", label: "Dairy & bread" },
+  { key: "veg", label: "Vegetables & fruit" },
+  { key: "breakfast", label: "Breakfast & snacks" },
+  { key: "spice", label: "Spices" },
+  { key: "home", label: "Home & cleaning" },
+] as const;
+export const PANTRY_UNITS = ["kg", "g", "L", "ml", "pcs", "pack"] as const;
+export const STORES = [
+  { key: "blinkit", label: "Blinkit" },
+  { key: "zepto", label: "Zepto" },
+  { key: "instamart", label: "Instamart" },
+  { key: "local", label: "Local shop" },
+  { key: "mandi", label: "Sabzi market" },
+  { key: "safal", label: "Safal / dairy booth" },
+  { key: "wholesale", label: "Wholesale market" },
+  { key: "other", label: "Other" },
+] as const;
+export const WEEKDAYS = [
+  { key: "mon", label: "Monday" },
+  { key: "tue", label: "Tuesday" },
+  { key: "wed", label: "Wednesday" },
+  { key: "thu", label: "Thursday" },
+  { key: "fri", label: "Friday" },
+  { key: "sat", label: "Saturday" },
+  { key: "sun", label: "Sunday" },
+] as const;
 export const FUND_KINDS = [
   { key: "emergency", label: "Emergency" },
   { key: "marriage", label: "Marriage" },
@@ -101,7 +145,7 @@ export const PLAN_CATEGORIES = [
 
 export type Goal = { id: string; owner: Owner; title: string; area: string; priority: number; deadline: string | null; status: string; progress: number; targetAmount: number | null; fundId: string | null; note: string | null; completedAt: string | null; createdAt: string };
 export type Task = { id: string; owner: Owner; title: string; priority: number; due: string | null; goalId: string | null; status: string; doneAt: string | null; createdAt: string };
-export type Txn = { id: string; owner: Person; kind: "income" | "expense"; amount: number; category: string; method: string | null; txnDate: string; note: string | null; recurring: boolean };
+export type Txn = { id: string; owner: Person; kind: "income" | "expense"; amount: number; category: string; method: string | null; txnDate: string; note: string | null; recurring: boolean; tag: string | null };
 export type Budget = { id: string; owner: Person; category: string; monthly: number };
 export type Fund = { id: string; owner: Owner; name: string; kind: string; target: number; targetDate: string | null; note: string | null; archived: boolean; createdAt: string };
 export type FundEntry = { id: string; fundId: string; owner: Person; amount: number; entryDate: string; note: string | null };
@@ -109,7 +153,13 @@ export type Account = { id: string; owner: Owner; name: string; kind: string; ba
 export type HubEvent = { id: string; owner: Owner; title: string; kind: string; eventDate: string; budget: number | null; note: string | null };
 export type PlanItem = { id: string; plan: string; owner: Owner; title: string; category: string; estimate: number | null; paid: number; due: string | null; status: string; note: string | null };
 export type Settings = { weddingDate?: string | null; weddingBudget?: number | null; emergencyMonths?: number | null; savingsRateTarget?: number | null };
-export type HubRecords = { actor: Person; goals: Goal[]; tasks: Task[]; txns: Txn[]; budgets: Budget[]; funds: Fund[]; fundEntries: FundEntry[]; accounts: Account[]; events: HubEvent[]; planItems: PlanItem[]; settings: Settings };
+export type Pantry = { id: string; owner: Owner; name: string; kind: string; unit: string; stock: number; stockAt: string; perDay: number; packSize: number; packPrice: number | null; store: string; altPrice: number | null; altStore: string | null; leadDays: number };
+export type Quick = { id: string; owner: Person; label: string; unitPrice: number; count: number; category: string; tag: string; sort: number };
+/** A person's month: what comes in, what is fixed (rent…), what to keep, and a limit per spending category. */
+export type KitchenPlan = { income: number; fixed: Array<{ label: string; category: string; amount: number }>; save: number; buckets: Record<string, number> };
+export type Meal = { b: string; l: string; d: string };
+export type KitchenSettings = { plan?: KitchenPlan; menu?: Partial<Record<(typeof WEEKDAYS)[number]["key"], Meal>> };
+export type HubRecords = { actor: Person; goals: Goal[]; tasks: Task[]; txns: Txn[]; budgets: Budget[]; funds: Fund[]; fundEntries: FundEntry[]; accounts: Account[]; events: HubEvent[]; planItems: PlanItem[]; settings: Settings; pantry: Pantry[]; quicks: Quick[]; kitchen: Partial<Record<Person, KitchenSettings>> };
 export type View = "all" | Person;
 
 const DAY = 86_400_000;

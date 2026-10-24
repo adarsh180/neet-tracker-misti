@@ -952,3 +952,104 @@ html[data-theme="light"] :is(.sth-card, .sth-fig)::after { background: radial-gr
 /* Number tiles beside the index keep their own height instead of stretching to the card. */
 .sth-hero { align-items: start; }
 .sth-hero > .sth-figs { align-content: start; }
+
+/* ── Kitchen: one-tap log, pantry countdown, shopping list, plan, menu ─────── */
+.sth-kq { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.sth-kq-btn { position: relative; display: grid; gap: 3px; min-height: 58px; padding: 10px 12px; border: 0; border-radius: 14px; background: var(--sx-panel-2); box-shadow: inset 0 0 0 1px var(--sx-line); color: var(--sx-ink); text-align: left; cursor: pointer; transition: transform 0.35s var(--sx-spring), box-shadow 0.2s, background-color 0.2s; animation: sth-rise 0.5s var(--sx-ease) calc(var(--i, 0) * 30ms) backwards; }
+.sth-kq-btn b { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 700; }
+.sth-kq-btn small { color: var(--sx-ink-3); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.sth-kq-btn:hover { box-shadow: inset 0 0 0 1px var(--sx-line-2); }
+.sth-kq-btn:active { transform: scale(0.95); }
+.sth-kq-btn:disabled { opacity: 0.6; cursor: progress; }
+.sth-kq-btn.is-done { background: color-mix(in srgb, var(--sx-good) 16%, var(--sx-panel-2)); }
+.sth-kq-btn.is-done b { color: var(--sx-good); }
+.sth-kq-btn.is-new { background: transparent; box-shadow: inset 0 0 0 1.5px var(--sx-line-2); }
+.sth-kq-btn.is-new b, .sth-kq-btn.is-new small { color: var(--sx-ink-3); }
+.sth-kq.is-editing .sth-kq-btn:not(.is-new) { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sx-j) 55%, transparent); }
+.sth-kq-pen { position: absolute; top: 8px; right: 8px; color: var(--sx-j); }
+
+.sth-kg-big { display: grid; gap: 2px; margin: 0 0 12px; color: var(--sx-ink-2); font-size: 13px; }
+.sth-kg-big b { font: 750 1.6rem/1.1 var(--sx-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.sth-kg-big small { color: var(--sx-ink-3); font-size: 12px; }
+.sth-kg-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sth-kg-list li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.sth-kg-list small { color: var(--sx-ink-3); }
+.sth-kg-list .s-out small, .sth-shop .s-out small { color: var(--sx-bad); }
+.sth-kg-list .s-low small, .sth-shop .s-low small { color: var(--sx-warn); }
+
+.sth-shop + .sth-shop { margin-top: 4px; }
+.sth-shop .sth-h3 { display: flex; justify-content: space-between; margin-top: 4px; }
+.sth-shop .sth-h3 span { color: var(--sx-ink-3); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.sth-shop ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sth-shop li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; }
+.sth-shop li > span:first-child { display: grid; min-width: 0; }
+.sth-shop b { overflow: hidden; color: var(--sx-ink); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
+.sth-shop small { color: var(--sx-ink-3); font-size: 11.5px; }
+.sth-shop-price { color: var(--sx-ink-2); font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.sth-kplan { display: grid; gap: 10px; margin: 0 0 6px; padding: 0; list-style: none; }
+.sth-kplan li { display: grid; grid-template-columns: minmax(84px, 0.9fr) minmax(0, 1.4fr) auto; align-items: center; gap: 10px; font-size: 13px; }
+.sth-kplan li > span { color: var(--sx-ink); font-weight: 600; }
+.sth-kplan li small { color: var(--sx-ink-3); font-size: 11.5px; font-variant-numeric: tabular-nums; text-align: right; }
+.sth-kplan-bar { position: relative; display: block; height: 10px; border-radius: 6px; background: var(--sx-panel-2); }
+.sth-kplan-bar > i { position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); border-radius: inherit; background: var(--sx-good); animation: sth-grow 1s var(--sx-ease) backwards; }
+.sth-kplan-bar > em { position: absolute; top: -3px; bottom: -3px; left: calc(var(--q, 0) * 100%); width: 2px; background: var(--sx-ink-2); opacity: calc(var(--q, 0) * 10); }
+.sth-kplan li.is-over .sth-kplan-bar > i { background: var(--sx-bad); }
+.sth-kplan li.is-over small { color: var(--sx-bad); }
+.sth-kplan li.is-paid .sth-kplan-bar > i { background: var(--sx-ink-4); }
+
+.sth-ktags { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.sth-ktags li { --c: var(--sx-a); display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 1.3fr) auto; align-items: center; gap: 10px; font-size: 13px; }
+.sth-ktags li > span { color: var(--sx-ink-2); }
+.sth-ktags li > i { display: block; height: 10px; border-radius: 6px; background: var(--sx-panel-2); }
+.sth-ktags li > i > i { display: block; height: 100%; width: calc(var(--p) * 100%); border-radius: inherit; background: var(--c); animation: sth-grow 1s var(--sx-ease) backwards; }
+.sth-ktags li > b { color: var(--sx-ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.sth-ktags .c-food { --c: var(--sx-good); }
+.sth-ktags .c-fun { --c: var(--sx-m); }
+.sth-ktags .c-transport { --c: var(--sx-a); }
+.sth-ktags .c-health { --c: var(--sx-j); }
+.sth-ktags :is(.c-shopping, .c-bills, .c-study) { --c: var(--sx-ink-3); }
+.sth-ktags .is-plain > i > i { opacity: 0.5; }
+
+.sth-kmenu { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sth-kmenu button { display: grid; grid-template-columns: 38px repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 12px; background: transparent; color: var(--sx-ink-2); font: inherit; font-size: 12.5px; line-height: 1.4; text-align: left; cursor: pointer; }
+.sth-kmenu button:disabled { cursor: default; }
+.sth-kmenu button:not(:disabled):hover { background: var(--sx-panel-2); }
+.sth-kmenu b { color: var(--sx-ink); font-size: 12.5px; }
+.sth-kmenu span small { display: block; color: var(--sx-ink-4); font-size: 10.5px; font-weight: 650; }
+.sth-kmenu .is-today button { background: color-mix(in srgb, var(--sx-j) 13%, var(--sx-panel-2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sx-j) 40%, transparent); }
+.sth-kmenu .is-today b { color: var(--sx-j); }
+
+.sth-pan-group + .sth-pan-group { margin-top: 6px; }
+.sth-pan-group .sth-h3 { margin-top: 10px; }
+.sth-pan { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.sth-pan li { --c: var(--sx-good); display: grid; grid-template-columns: minmax(150px, 1.4fr) minmax(80px, 1fr) minmax(110px, 0.9fr) auto; align-items: center; gap: 14px; padding: 8px 6px; border-radius: 12px; animation: sth-rise 0.5s var(--sx-ease) calc(var(--i, 0) * 25ms) backwards; }
+.sth-pan li:hover { background: var(--sx-panel-2); }
+.sth-pan li.s-low { --c: var(--sx-warn); }
+.sth-pan li.s-out { --c: var(--sx-bad); }
+.sth-pan li.s-idle { --c: var(--sx-ink-4); }
+.sth-pan-name { display: grid; min-width: 0; }
+.sth-pan-name b { overflow: hidden; color: var(--sx-ink); font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
+.sth-pan-name small { color: var(--sx-ink-3); font-size: 11.5px; }
+.sth-pan li.s-low .sth-pan-name small, .sth-pan li.s-out .sth-pan-name small { color: var(--c); font-weight: 650; }
+.sth-pan-bar { display: block; height: 8px; border-radius: 5px; background: var(--sx-panel-2); }
+.sth-pan li:hover .sth-pan-bar { background: var(--sx-panel); }
+.sth-pan-bar > i { display: block; height: 100%; width: max(4px, calc(var(--p) * 100%)); border-radius: inherit; background: var(--c); animation: sth-grow 1s var(--sx-ease) backwards; }
+.sth-pan-price { display: grid; color: var(--sx-ink-2); font-size: 12.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.sth-pan-price small { color: var(--sx-ink-3); font-size: 11px; font-weight: 500; }
+.sth-pan-acts { display: flex; gap: 6px; }
+@media (max-width: 860px) {
+  .sth-pan li { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+  .sth-pan-bar { grid-column: 1 / -1; grid-row: 2; }
+  .sth-pan-price { text-align: right; }
+  .sth-pan-acts { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .sth-kmenu button { grid-template-columns: 34px minmax(0, 1fr); }
+  .sth-kmenu button span { grid-column: 2; }
+  .sth-kplan li, .sth-ktags li { grid-template-columns: minmax(0, 1fr) auto; }
+  .sth-kplan-bar, .sth-ktags li > i { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sth-kq-btn, .sth-pan li, .sth-pan-bar > i, .sth-kplan-bar > i, .sth-ktags li > i > i { animation: none; transition: none; }
+}
