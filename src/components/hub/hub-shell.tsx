@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { CalendarDays, CalendarHeart, CookingPot, Goal, LayoutGrid, Lock, PiggyBank, Sparkles, Wallet } from "lucide-react";
+import { CalendarDays, CalendarHeart, CookingPot, Goal, LayoutGrid, Lock, PiggyBank, Rocket, Sparkles, Wallet } from "lucide-react";
 
 import { useHub } from "./hub-context";
 import { SheetHost } from "./sheet";
@@ -19,6 +19,7 @@ const TABS = [
   { path: "/calendar", label: "Calendar", icon: CalendarDays },
   { path: "/plans", label: "Plans", icon: CalendarHeart },
   { path: "/insights", label: "Insights", icon: Sparkles },
+  { path: "/semdiv", label: "SEMDIV", icon: Rocket },
 ];
 
 /** The Saath logo (two people, one road) on a soft glass halo. */
